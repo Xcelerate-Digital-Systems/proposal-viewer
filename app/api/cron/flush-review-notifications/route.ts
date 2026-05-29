@@ -15,9 +15,11 @@ import { getResend, FROM_EMAIL } from '@/lib/resend';
 import { buildReviewUrl } from '@/lib/proposal-url';
 import {
   buildCommentDigestEmail,
+  withUnsubscribeLink,
   type DigestCommentEntry,
   type EmailBranding,
 } from '@/lib/review-notification-emails';
+import { buildUnsubscribeUrl } from '@/lib/feedback/unsubscribe-token';
 
 export const dynamic = 'force-dynamic';
 
@@ -160,11 +162,12 @@ async function handle(req: NextRequest) {
     });
 
     try {
+      const unsub = buildUnsubscribeUrl(appUrl, first.review_project_id, first.recipient_email);
       await getResend().emails.send({
         from: FROM_EMAIL,
         to: first.recipient_email,
         subject,
-        html,
+        html: withUnsubscribeLink(html, unsub),
       });
       digestsSent++;
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, FileText, Pause, Play } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, Pause, Play, CalendarDays } from 'lucide-react';
 import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
 import ReviewerNoteModal from '@/components/admin/feedback/ReviewerNoteModal';
 import ShareMenu from '@/components/feedback/ShareMenu';
@@ -103,10 +103,26 @@ export default function FeedbackProjectHeader({
                 fullWidth={false}
               />
             </div>
-            <p className="text-xs text-faint truncate">
-              {project.client_company || project.client_name}
-              {(project.client_company || project.client_name) && project.description && ' · '}
-              {project.description}
+            <p className="text-xs text-faint truncate flex items-center gap-1.5">
+              <span>
+                {project.client_company || project.client_name}
+                {(project.client_company || project.client_name) && project.description && ' · '}
+                {project.description}
+              </span>
+              {project.due_date && (() => {
+                const isOverdue = new Date(project.due_date + 'T23:59:59') < new Date();
+                const label = new Date(project.due_date + 'T00:00:00').toLocaleDateString('en-AU', {
+                  day: 'numeric', month: 'short',
+                });
+                return (
+                  <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-2xs font-medium ${
+                    isOverdue ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'
+                  }`}>
+                    <CalendarDays size={10} />
+                    {isOverdue ? 'Overdue' : `Due ${label}`}
+                  </span>
+                );
+              })()}
             </p>
           </div>
         </div>

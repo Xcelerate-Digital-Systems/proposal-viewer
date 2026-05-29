@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Copy, Check, Trash2, ExternalLink, MessageSquareText,
+  Copy, Check, Trash2, ExternalLink, MessageSquareText, CalendarDays,
 } from 'lucide-react';
 import { supabase, type FeedbackProject } from '@/lib/supabase';
 import { buildReviewUrl } from '@/lib/proposal-url';
@@ -116,10 +116,22 @@ export default function FeedbackProjectRow({ project, onRefresh, customDomain }:
         </span>
       )}
 
-      {/* Date */}
-      <span className="text-xs text-faint shrink-0 hidden md:block w-16 text-right">
-        {formatDate(project.created_at)}
-      </span>
+      {/* Due date */}
+      {project.due_date ? (() => {
+        const isOverdue = new Date(project.due_date + 'T23:59:59') < new Date();
+        return (
+          <span className={`shrink-0 hidden md:flex items-center gap-1 text-2xs font-medium px-1.5 py-0.5 rounded-full ${
+            isOverdue ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'
+          }`}>
+            <CalendarDays size={10} />
+            {isOverdue ? 'Overdue' : formatDate(project.due_date)}
+          </span>
+        );
+      })() : (
+        <span className="text-xs text-faint shrink-0 hidden md:block w-16 text-right">
+          {formatDate(project.created_at)}
+        </span>
+      )}
 
       {/* Actions */}
       <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">

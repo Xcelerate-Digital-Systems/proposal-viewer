@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getCompanyMarkupDefaults } from '@/lib/markup-notification-defaults';
+import { sendGuestInviteEmail } from '@/lib/feedback/send-guest-invite';
 import type { FeedbackStatus } from '@/lib/types/feedback';
 
 const VALID_STAGES: FeedbackStatus[] = [
@@ -199,11 +200,12 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   }
 
   if (kind === 'guest') {
-    const { email, name } = body as { email?: string; name?: string };
+    const { email, name, sendInvite: rawSendInvite } = body as { email?: string; name?: string; sendInvite?: boolean };
     if (!email || typeof email !== 'string') {
       return NextResponse.json({ error: 'email required' }, { status: 400 });
     }
     const normalizedEmail = email.trim().toLowerCase();
+    const wantInvite = rawSendInvite !== false;
 
     const { data: existing } = await supabase
       .from('review_project_guest_recipients')
@@ -211,6 +213,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       .eq('review_project_id', params.id)
       .eq('email', normalizedEmail)
       .maybeSingle();
+
+    const isNewGuest = !existing;
 
     const nextStages = Array.from(
       new Set([...((existing?.stages as string[] | undefined) ?? []), stage]),
@@ -240,7 +244,24 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       console.error('[api/campaigns/[id]/stage-assignees]', error.message);
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-    return NextResponse.json({ success: true });
+
+    let invited = false;
+    if (isNewGuest && wantInvite && auth.member?.user_id) {
+      try {
+        await sendGuestInviteEmail({
+          supabase,
+          projectId: params.id,
+          guestEmail: normalizedEmail,
+          guestName: name?.trim() || '',
+          inviterUserId: auth.member.user_id as string,
+        });
+        invited = true;
+      } catch (err) {
+        console.error('[api/campaigns/[id]/stage-assignees] invite email failed:', err);
+      }
+    }
+
+    return NextResponse.json({ success: true, invited });
   }
 
   return NextResponse.json({ error: 'Invalid kind' }, { status: 400 });

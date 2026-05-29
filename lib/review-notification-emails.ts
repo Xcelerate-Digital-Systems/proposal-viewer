@@ -13,6 +13,23 @@ export interface EmailBranding {
   logoUrl: string | null;
 }
 
+/**
+ * Inject an unsubscribe link into an already-built email HTML. Appends a
+ * small grey link after the last footer `</p>` inside the shell layout.
+ * Safe to call on any email — if the pattern isn't found it appends before `</body>`.
+ */
+export function withUnsubscribeLink(html: string, unsubscribeUrl: string): string {
+  const link = `<p style="margin:8px 0 0;color:#9ca3af;font-size:11px;"><a href="${escapeHtml(unsubscribeUrl)}" style="color:#9ca3af;text-decoration:underline;">Unsubscribe from this project</a></p>`;
+  // Insert after the footer <p>…</p> — the shell layout always has a
+  // border-top td with a single <p>. We match the last </p></td></tr> sequence.
+  const footerPattern = /(<\/p>\s*<\/td>\s*<\/tr>\s*<\/table>\s*<\/td>\s*<\/tr>\s*<\/table>)/;
+  const match = html.match(footerPattern);
+  if (match && match.index !== undefined) {
+    return html.slice(0, match.index) + `</p>${link}</td></tr></table></td></tr></table>` + html.slice(match.index + match[0].length);
+  }
+  return html.replace('</body>', `${link}</body>`);
+}
+
 export function escapeHtml(str: string) {
   return str
     .replace(/&/g, '&amp;')
@@ -248,6 +265,87 @@ export function buildNewVersionEmail(params: {
 // ──────────────────────────────────────────────────────────────────────────
 // Comment tasks
 // ──────────────────────────────────────────────────────────────────────────
+
+// ──────────────────────────────────────────────────────────────────────────
+// Guest invite
+// ──────────────────────────────────────────────────────────────────────────
+
+export function buildGuestInviteEmail(params: {
+  branding: EmailBranding;
+  projectTitle: string;
+  reviewUrl: string;
+  guestName: string;
+  inviterName: string;
+}): { subject: string; html: string } {
+  const { branding, projectTitle, reviewUrl, guestName, inviterName } = params;
+
+  const subject = `${inviterName} invited you to review "${projectTitle}"`;
+  const greeting = guestName ? `Hi ${escapeHtml(guestName)},` : 'Hi,';
+
+  const body = `<h1 style="margin:0 0 16px;color:#111827;font-size:22px;font-weight:600;">You're invited to review</h1>
+    <div style="color:#6b7280;font-size:15px;line-height:1.6;">
+      <p style="margin:0 0 12px;">${greeting}</p>
+      <p style="margin:0 0 12px;">${escapeHtml(inviterName)} from ${escapeHtml(branding.companyName)} has invited you to review <strong>"${escapeHtml(projectTitle)}"</strong>.</p>
+      <p style="margin:0 0 4px;color:#6b7280;font-size:14px;">Open the link below to view the project and leave your feedback.</p>
+    </div>
+    <div style="margin-top:28px;">${ctaButton(reviewUrl, 'Open Review', branding.accentColor)}</div>`;
+
+  return {
+    subject,
+    html: shell(
+      branding,
+      body,
+      `You're receiving this because ${escapeHtml(inviterName)} added you as a reviewer on this project.`,
+    ),
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Reminder nudge
+// ──────────────────────────────────────────────────────────────────────────
+
+export function buildReminderEmail(params: {
+  branding: EmailBranding;
+  projectTitle: string;
+  reviewUrl: string;
+  guestName: string;
+  senderName: string;
+  dueDate: string | null;
+  openComments: number;
+  totalItems: number;
+}): { subject: string; html: string } {
+  const { branding, projectTitle, reviewUrl, guestName, senderName, dueDate, openComments, totalItems } = params;
+
+  const subject = `Reminder: Your feedback is needed on "${projectTitle}"`;
+  const greeting = guestName ? `Hi ${escapeHtml(guestName)},` : 'Hi,';
+
+  const dueLine = dueDate
+    ? `<p style="margin:0 0 12px;padding:8px 12px;background:#fef3c7;border-radius:8px;font-size:14px;color:#92400e;">Due date: <strong>${escapeHtml(dueDate)}</strong></p>`
+    : '';
+
+  const statsLine = (openComments > 0 || totalItems > 0)
+    ? `<p style="margin:0 0 12px;color:#6b7280;font-size:14px;">${totalItems > 0 ? `${totalItems} item${totalItems !== 1 ? 's' : ''} to review` : ''}${totalItems > 0 && openComments > 0 ? ' · ' : ''}${openComments > 0 ? `${openComments} open comment${openComments !== 1 ? 's' : ''}` : ''}</p>`
+    : '';
+
+  const body = `<h1 style="margin:0 0 16px;color:#111827;font-size:22px;font-weight:600;">Your feedback is needed</h1>
+    <div style="color:#6b7280;font-size:15px;line-height:1.6;">
+      <p style="margin:0 0 12px;">${greeting}</p>
+      <p style="margin:0 0 12px;">${escapeHtml(senderName)} from ${escapeHtml(branding.companyName)} is waiting for your feedback on <strong>"${escapeHtml(projectTitle)}"</strong>.</p>
+      ${dueLine}
+      ${statsLine}
+      <p style="margin:0 0 4px;color:#6b7280;font-size:14px;">Please take a moment to review and share your thoughts.</p>
+    </div>
+    <div style="margin-top:28px;">${ctaButton(reviewUrl, 'Open Review', branding.accentColor)}</div>`;
+
+  return {
+    subject,
+    html: shell(
+      branding,
+      body,
+      `You're receiving this because you're a reviewer on this project.`,
+    ),
+  };
+}
 
 /** @deprecated Use buildTaskEmail instead */
 export const buildAssignmentEmail = buildTaskEmail;

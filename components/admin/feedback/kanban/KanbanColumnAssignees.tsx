@@ -119,6 +119,7 @@ export default function KanbanColumnAssignees({
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [guestEmail, setGuestEmail] = useState('');
+  const [guestSendInvite, setGuestSendInvite] = useState(true);
   const popoverRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -179,7 +180,7 @@ export default function KanbanColumnAssignees({
       const res = await authFetch(`/api/campaigns/${projectId}/stage-assignees`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'guest', stage, email, name: name || undefined }),
+        body: JSON.stringify({ kind: 'guest', stage, email, name: name || undefined, sendInvite: guestSendInvite }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed');
       setGuestEmail('');
@@ -189,7 +190,7 @@ export default function KanbanColumnAssignees({
     } finally {
       setBusy(false);
     }
-  }, [busy, projectId, stage, onChanged, toast]);
+  }, [busy, projectId, stage, onChanged, toast, guestSendInvite]);
 
   const addGuest = useCallback(() => addGuestByEmail(guestEmail), [addGuestByEmail, guestEmail]);
 
@@ -339,7 +340,7 @@ export default function KanbanColumnAssignees({
                 </div>
               )}
 
-              <div className="flex items-center gap-1.5 px-2 pb-1 pt-0.5 border-t border-edge mt-1">
+              <div className="flex items-center gap-1.5 px-2 pb-0.5 pt-0.5 border-t border-edge mt-1">
                 <Mail size={13} className="text-faint shrink-0" />
                 <input
                   value={guestEmail}
@@ -358,6 +359,15 @@ export default function KanbanColumnAssignees({
                   Add
                 </button>
               </div>
+              <label className="flex items-center gap-1.5 px-2 pb-1.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={guestSendInvite}
+                  onChange={(e) => setGuestSendInvite(e.target.checked)}
+                  className="h-3 w-3 rounded border-edge-strong text-teal accent-teal"
+                />
+                <span className="text-detail text-faint">Send invite email</span>
+              </label>
             </>
           )}
         </div>

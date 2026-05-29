@@ -10,8 +10,10 @@ import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit';
 import {
   buildStatusEmail,
   buildNewVersionEmail as buildBrandedNewVersionEmail,
+  withUnsubscribeLink,
   type EmailBranding,
 } from '@/lib/review-notification-emails';
+import { buildUnsubscribeUrl } from '@/lib/feedback/unsubscribe-token';
 import { syncCommentMentions, type PersistedMention } from '@/lib/feedback/persist-mentions';
 import { htmlToPlainText } from '@/lib/feedback/mention-html';
 import {
@@ -230,7 +232,8 @@ export async function POST(req: NextRequest) {
             commentContent: comment_content ?? null,
             mentionedName: m.displayName,
           });
-          await getResend().emails.send({ from: FROM_EMAIL, to: m.targetEmail, subject, html });
+          const unsub = buildUnsubscribeUrl(appUrl, project.id, m.targetEmail);
+          await getResend().emails.send({ from: FROM_EMAIL, to: m.targetEmail, subject, html: withUnsubscribeLink(html, unsub) });
           mentioned++;
           // Don't double-email this person via the digest queue.
           recipientEmails.delete(m.targetEmail);
@@ -372,7 +375,8 @@ export async function POST(req: NextRequest) {
 
         for (const email of Array.from(recipientEmails)) {
           try {
-            await getResend().emails.send({ from: FROM_EMAIL, to: email, subject, html });
+            const unsub = buildUnsubscribeUrl(appUrl, project.id, email);
+            await getResend().emails.send({ from: FROM_EMAIL, to: email, subject, html: withUnsubscribeLink(html, unsub) });
             sent++;
           } catch (err) {
             console.error(`Failed to notify ${email}:`, err);

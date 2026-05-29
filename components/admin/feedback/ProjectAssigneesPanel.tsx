@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Check, ChevronDown, X, MessageSquare, CornerDownRight,
-  CheckCheck, Layers, Package, RotateCcw, UserPlus, Users, Bell,
+  CheckCheck, Layers, Package, RotateCcw, UserPlus, Users, Bell, Send,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { REVIEW_STATUS_ORDER, getFeedbackStatusDef } from '@/lib/feedback/status';
@@ -71,6 +71,7 @@ export default function ProjectAssigneesPanel({
   const [guestFormOpen, setGuestFormOpen] = useState(false);
   const [guestEmail, setGuestEmail] = useState('');
   const [guestName, setGuestName] = useState('');
+  const [guestSendInvite, setGuestSendInvite] = useState(true);
   const [guestSaving, setGuestSaving] = useState(false);
   const guestEmailRef = useRef<HTMLInputElement>(null);
 
@@ -150,11 +151,12 @@ export default function ProjectAssigneesPanel({
     setGuestSaving(true);
     await authedFetch(guestsUrl, {
       method: 'POST',
-      body: JSON.stringify({ email, name: guestName.trim() }),
+      body: JSON.stringify({ email, name: guestName.trim(), sendInvite: guestSendInvite }),
     });
     setGuestSaving(false);
     setGuestEmail('');
     setGuestName('');
+    setGuestSendInvite(true);
     setGuestFormOpen(false);
     refresh();
   };
@@ -173,6 +175,16 @@ export default function ProjectAssigneesPanel({
       body: JSON.stringify({ email, prefs: { [key]: next } }),
     });
     if (!res.ok) refresh();
+  };
+
+  const [resending, setResending] = useState<string | null>(null);
+  const resendInvite = async (email: string, name: string) => {
+    setResending(email);
+    await authedFetch(guestsUrl, {
+      method: 'POST',
+      body: JSON.stringify({ email, name, sendInvite: true }),
+    });
+    setResending(null);
   };
 
   const setGuestRemoved = async (email: string, removed: boolean) => {
@@ -393,6 +405,8 @@ export default function ProjectAssigneesPanel({
                   onTogglePref={toggleGuestPref}
                   onToggleStage={toggleGuestStage}
                   onSetRemoved={setGuestRemoved}
+                  onResendInvite={resendInvite}
+                  resending={resending === g.email}
                 />
               ))}
               {removedGuests.map((g) => (
@@ -402,6 +416,8 @@ export default function ProjectAssigneesPanel({
                   onTogglePref={toggleGuestPref}
                   onToggleStage={toggleGuestStage}
                   onSetRemoved={setGuestRemoved}
+                  onResendInvite={resendInvite}
+                  resending={resending === g.email}
                 />
               ))}
             </>
@@ -444,6 +460,15 @@ export default function ProjectAssigneesPanel({
                   />
                 </div>
               </div>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={guestSendInvite}
+                  onChange={(e) => setGuestSendInvite(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-edge-strong text-teal focus:ring-teal/30 accent-teal"
+                />
+                <span className="text-detail text-dim">Send invite email with review link</span>
+              </label>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -464,6 +489,7 @@ export default function ProjectAssigneesPanel({
                     setGuestFormOpen(false);
                     setGuestEmail('');
                     setGuestName('');
+                    setGuestSendInvite(true);
                   }}
                   className="px-3 py-1.5 text-caption font-medium text-dim hover:text-prose transition-colors"
                 >
@@ -497,11 +523,15 @@ function GuestRow({
   onTogglePref,
   onToggleStage,
   onSetRemoved,
+  onResendInvite,
+  resending,
 }: {
   guest: Guest;
   onTogglePref: (email: string, key: PrefKey) => void;
   onToggleStage: (email: string, stage: FeedbackStatus) => void;
   onSetRemoved: (email: string, removed: boolean) => void;
+  onResendInvite: (email: string, name: string) => void;
+  resending: boolean;
 }) {
   return (
     <div className={`px-4 py-3 ${g.removed ? 'opacity-50' : ''}`}>
@@ -512,23 +542,41 @@ function GuestRow({
           </p>
           <p className="text-xs text-faint truncate">{g.email}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => onSetRemoved(g.email, !g.removed)}
-          className="text-xs text-faint hover:text-red-500 transition-colors flex items-center gap-1 shrink-0"
-        >
-          {g.removed ? (
-            <>
-              <RotateCcw size={14} />
-              Restore
-            </>
-          ) : (
-            <>
-              <X size={14} />
-              Remove
-            </>
+        <div className="flex items-center gap-2 shrink-0">
+          {!g.removed && (
+            <button
+              type="button"
+              onClick={() => onResendInvite(g.email, g.name)}
+              disabled={resending}
+              className="text-xs text-faint hover:text-teal transition-colors flex items-center gap-1 disabled:opacity-50"
+              title="Resend invite email"
+            >
+              {resending ? (
+                <div className="w-3 h-3 border-2 border-gray-300 border-t-teal rounded-full animate-spin" />
+              ) : (
+                <Send size={12} />
+              )}
+              Resend
+            </button>
           )}
-        </button>
+          <button
+            type="button"
+            onClick={() => onSetRemoved(g.email, !g.removed)}
+            className="text-xs text-faint hover:text-red-500 transition-colors flex items-center gap-1"
+          >
+            {g.removed ? (
+              <>
+                <RotateCcw size={14} />
+                Restore
+              </>
+            ) : (
+              <>
+                <X size={14} />
+                Remove
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {!g.removed && (

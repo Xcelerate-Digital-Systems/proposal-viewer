@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getCompanyMarkupDefaults } from '@/lib/markup-notification-defaults';
+import { sendGuestInviteEmail } from '@/lib/feedback/send-guest-invite';
 
 type GuestPrefs = {
   notify_comment: boolean;
@@ -163,6 +164,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
 
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
   const name = typeof body.name === 'string' ? body.name.trim() : '';
+  const sendInvite = body.sendInvite !== false;
   if (!email) return NextResponse.json({ error: 'email required' }, { status: 400 });
 
   const supabase = createServiceClient();
@@ -195,7 +197,24 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     console.error('[api/campaigns/[id]/guests]', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-  return NextResponse.json({ success: true });
+
+  let invited = false;
+  if (sendInvite && auth.member?.user_id) {
+    try {
+      await sendGuestInviteEmail({
+        supabase,
+        projectId: params.id,
+        guestEmail: email,
+        guestName: name,
+        inviterUserId: auth.member.user_id,
+      });
+      invited = true;
+    } catch (err) {
+      console.error('[api/campaigns/[id]/guests] invite email failed:', err);
+    }
+  }
+
+  return NextResponse.json({ success: true, invited });
 }
 
 // PATCH — upsert prefs (or removed flag) for a single guest email.

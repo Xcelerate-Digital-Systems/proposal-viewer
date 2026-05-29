@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   Copy, Check, Trash2, ExternalLink, MessageSquareText,
   MoreHorizontal, Pencil,
-  Eye, FolderOpen,
+  Eye, FolderOpen, CalendarDays,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { supabase, type FeedbackProject, type FeedbackStatus } from '@/lib/supabase';
@@ -274,6 +274,22 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
               {project.description}
             </p>
           )}
+
+          {/* Due date badge */}
+          {project.due_date && (() => {
+            const isOverdue = new Date(project.due_date + 'T23:59:59') < new Date();
+            const label = new Date(project.due_date + 'T00:00:00').toLocaleDateString('en-AU', {
+              day: 'numeric', month: 'short', year: 'numeric',
+            });
+            return (
+              <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-2xs font-medium mb-2.5 ${
+                isOverdue ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'
+              }`}>
+                <CalendarDays size={11} />
+                {isOverdue ? `Overdue — ${label}` : `Due ${label}`}
+              </div>
+            );
+          })()}
 
           {/* Status dropdown */}
           <div className="mb-3">
