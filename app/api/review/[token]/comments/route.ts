@@ -132,9 +132,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    // Determine thread_number for new top-level comments
+    // Determine thread_number for new top-level annotated comments
+    const NUMBERED_TYPES = ['pin', 'box', 'text', 'screenshot', 'text_highlight'];
     let thread_number: number | null = null;
-    if (!parent_comment_id && (comment_type === 'pin' || comment_type === 'text_highlight')) {
+    if (!parent_comment_id && NUMBERED_TYPES.includes(comment_type)) {
       const { data: nextNum } = await supabase.rpc('claim_next_thread_number', {
         p_review_item_id: review_item_id,
       });

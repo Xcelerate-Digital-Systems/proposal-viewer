@@ -12,8 +12,10 @@ import type { FeedbackStatus } from '@/lib/types/feedback';
 /** Stages the public/guest viewer can render and the API can return. */
 export const GUEST_VISIBLE_STAGES: FeedbackStatus[] = [
   'client_review',
+  'revision_needed',
   'approved',
   'rejected',
+  'archived',
 ];
 
 /** Stages explicitly internal — items here are filtered out of every
@@ -22,8 +24,6 @@ export const INTERNAL_STAGES: FeedbackStatus[] = [
   'draft',
   'in_progress',
   'internal_review',
-  'revision_needed',
-  'archived',
 ];
 
 export function isGuestVisibleStage(status: string | null | undefined): boolean {

@@ -14,6 +14,55 @@ function corsJson(data: unknown, status = 200) {
   return NextResponse.json(data, { status, headers: CORS_HEADERS });
 }
 
+/* ── Notification dispatch (fire-and-forget) ──────────── */
+async function notifyWidgetCommentAsync(
+  supabase: ReturnType<typeof createServiceClient>,
+  params: {
+    review_item_id: string;
+    review_comment_id: string;
+    review_project_id: string;
+    author_name: string;
+    author_email: string | null;
+    content: string;
+    parent_comment_id: string | null;
+  },
+) {
+  try {
+    const { data: project } = await supabase
+      .from('review_projects')
+      .select('share_token')
+      .eq('id', params.review_project_id)
+      .maybeSingle();
+    if (!project?.share_token) return;
+
+    const { data: item } = await supabase
+      .from('review_items')
+      .select('title')
+      .eq('id', params.review_item_id)
+      .maybeSingle();
+
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
+    await fetch(`${appUrl}/api/review-notify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_type: 'review_comment_added',
+        share_token: project.share_token,
+        review_item_id: params.review_item_id,
+        review_comment_id: params.review_comment_id,
+        comment_author: params.author_name,
+        comment_author_email: params.author_email,
+        comment_content: params.content,
+        item_title: item?.title ?? null,
+        parent_comment_id: params.parent_comment_id,
+        author_type: 'client',
+      }),
+    });
+  } catch (err) {
+    console.error('Widget notification dispatch failed:', err);
+  }
+}
+
 /* ── Preflight ──────────────────────────────────────────── */
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
@@ -199,6 +248,17 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       console.error('Comment insert error:', insertErr);
       return corsJson({ error: 'Failed to post comment' }, 500);
     }
+
+    // Fire participant notifications (matches public review route behaviour).
+    void notifyWidgetCommentAsync(supabase, {
+      review_item_id,
+      review_comment_id: comment.id,
+      review_project_id: item.review_project_id as string,
+      author_name: author_name.trim(),
+      author_email: author_email?.trim() || null,
+      content: content.trim(),
+      parent_comment_id: parent_comment_id || null,
+    });
 
     return corsJson(comment);
   } catch (err) {

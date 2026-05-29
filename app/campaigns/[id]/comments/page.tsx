@@ -355,26 +355,23 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
 
   // ── Resolve ───────────────────────────────────────────────────────
   const handleToggleResolve = async (comment: CommentWithItem, resolved: boolean) => {
-    await supabase
-      .from('review_comments')
-      .update({
-        resolved,
-        resolved_at: resolved ? new Date().toISOString() : null,
-      })
-      .eq('id', comment.id);
+    const { authFetch } = await import('@/lib/auth-fetch');
+    const res = await authFetch(`/api/review-comments/${comment.id}/resolve?company_id=${companyId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resolved, resolved_by: authorName }),
+    });
 
-    setAllComments((prev) =>
-      prev.map((c) =>
-        c.id === comment.id
-          ? { ...c, resolved, resolved_at: resolved ? new Date().toISOString() : null }
-          : c
-      )
-    );
-
-    if (selectedComment?.id === comment.id) {
-      setSelectedComment((prev) =>
-        prev ? { ...prev, resolved, resolved_at: resolved ? new Date().toISOString() : null } : prev
+    if (res.ok) {
+      const updated = await res.json();
+      setAllComments((prev) =>
+        prev.map((c) => (c.id === comment.id ? { ...c, resolved: updated.resolved, resolved_at: updated.resolved_at } : c))
       );
+      if (selectedComment?.id === comment.id) {
+        setSelectedComment((prev) =>
+          prev ? { ...prev, resolved: updated.resolved, resolved_at: updated.resolved_at } : prev
+        );
+      }
     }
   };
 

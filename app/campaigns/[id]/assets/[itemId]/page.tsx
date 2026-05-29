@@ -292,11 +292,10 @@ function ItemViewerContent({
     let thread_number: number | null = null;
     const isNumberedAnnotation = pinX != null || highlightData != null;
     if (!parentId && isNumberedAnnotation) {
-      const existingTopLevel = comments.filter((c) => !c.parent_comment_id);
-      const maxThread = existingTopLevel
-        .filter((c) => c.thread_number != null)
-        .reduce((max, c) => Math.max(max, c.thread_number || 0), 0);
-      thread_number = maxThread + 1;
+      const { data: nextNum } = await supabase.rpc('claim_next_thread_number', {
+        p_review_item_id: reviewItemId,
+      });
+      thread_number = nextNum ?? 1;
     }
 
     const insertData: Record<string, unknown> = {
