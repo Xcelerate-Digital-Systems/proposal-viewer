@@ -1,33 +1,49 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { Smile } from 'lucide-react';
 
-// emoji-picker-react bundles its own data + UI (~150kb). Load it on demand
-// so the first paint of the composer stays cheap; ssr:false because the
-// picker reaches for window during init.
 const Picker = dynamic(() => import('emoji-picker-react'), { ssr: false });
 
 interface EmojiPickerProps {
   onSelect: (emoji: string) => void;
 }
 
-// emoji-picker-react's onEmojiClick gets a full EmojiClickData object; we
-// only need the `emoji` field (the native character). Typed inline to avoid
-// pulling the package's types into our public component surface.
 interface EmojiClickPayload {
   emoji: string;
 }
 
-/**
- * Drop-in emoji picker — categories, search, frequently used, skin tones.
- * Preserves the `onSelect(emoji)` contract so all existing call-sites keep
- * working without changes.
- */
 export default function EmojiPicker({ onSelect }: EmojiPickerProps) {
   const [open, setOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  const updatePosition = useCallback(() => {
+    if (!btnRef.current) return;
+    const rect = btnRef.current.getBoundingClientRect();
+    const pickerHeight = 420;
+    const pickerWidth = 320;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const top = spaceBelow < pickerHeight
+      ? Math.max(8, rect.top - pickerHeight - 4)
+      : rect.bottom + 4;
+    const left = Math.min(rect.left, window.innerWidth - pickerWidth - 8);
+    setPos({ top, left: Math.max(8, left) });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [open, updatePosition]);
 
   useEffect(() => {
     if (!open) return;
@@ -35,7 +51,10 @@ export default function EmojiPicker({ onSelect }: EmojiPickerProps) {
       if (e.key === 'Escape') setOpen(false);
     };
     const onClick = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+      if (
+        pickerRef.current && !pickerRef.current.contains(e.target as Node) &&
+        btnRef.current && !btnRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     };
@@ -55,8 +74,9 @@ export default function EmojiPicker({ onSelect }: EmojiPickerProps) {
   };
 
   return (
-    <div ref={wrapperRef} className="relative">
+    <>
       <button
+        ref={btnRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="p-1.5 rounded-lg text-faint hover:text-prose hover:bg-surface transition-colors"
@@ -65,8 +85,12 @@ export default function EmojiPicker({ onSelect }: EmojiPickerProps) {
         <Smile size={16} />
       </button>
 
-      {open && (
-        <div className="absolute bottom-full left-0 mb-1 z-50">
+      {open && pos && createPortal(
+        <div
+          ref={pickerRef}
+          style={{ top: pos.top, left: pos.left }}
+          className="fixed z-[9999]"
+        >
           <Picker
             onEmojiClick={handleSelect}
             previewConfig={{ showPreview: false }}
@@ -74,8 +98,9 @@ export default function EmojiPicker({ onSelect }: EmojiPickerProps) {
             width={320}
             height={400}
           />
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 }
