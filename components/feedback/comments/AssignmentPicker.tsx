@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, UserPlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -14,12 +15,14 @@ interface AssignmentPickerProps {
   participantsUrl: string | null;
   onAssign: (memberId: string, note: string) => Promise<void>;
   onClose: () => void;
+  anchorRef?: React.RefObject<HTMLElement | null>;
 }
 
 export default function AssignmentPicker({
   participantsUrl,
   onAssign,
   onClose,
+  anchorRef,
 }: AssignmentPickerProps) {
   const [members, setMembers] = useState<AssignableTeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +30,33 @@ export default function AssignmentPicker({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  const updatePosition = useCallback(() => {
+    if (!anchorRef?.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    const popoverHeight = 280;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const top = spaceBelow < popoverHeight
+      ? Math.max(8, rect.top - popoverHeight)
+      : rect.bottom + 4;
+    setPos({
+      top,
+      left: Math.min(rect.left, window.innerWidth - 296),
+    });
+  }, [anchorRef]);
+
+  useEffect(() => {
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [updatePosition]);
 
   useEffect(() => {
     if (!participantsUrl) { setLoading(false); return; }
@@ -36,13 +65,16 @@ export default function AssignmentPicker({
       try {
         const { authFetch } = await import('@/lib/auth-fetch');
         const res = await authFetch(participantsUrl);
-        if (!res.ok || cancelled) return;
+        if (cancelled) return;
+        if (!res.ok) { setFetchError(true); setLoading(false); return; }
         const data = await res.json();
         const team = (data.participants ?? []).filter(
           (p: { kind: string }) => p.kind === 'team'
         );
         if (!cancelled) setMembers(team);
-      } catch { /* swallow */ }
+      } catch {
+        if (!cancelled) setFetchError(true);
+      }
       finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
@@ -76,10 +108,13 @@ export default function AssignmentPicker({
     }
   };
 
-  return (
+  if (!pos) return null;
+
+  const picker = (
     <div
       ref={panelRef}
-      className="absolute z-50 mt-1 w-72 rounded-xl bg-white shadow-lg border border-edge ring-1 ring-black/5"
+      style={{ top: pos.top, left: pos.left }}
+      className="fixed z-[9999] w-72 rounded-xl bg-white shadow-lg border border-edge ring-1 ring-black/5"
     >
       <div className="flex items-center justify-between px-3 pt-3 pb-2">
         <span className="text-xs font-semibold text-ink">Assign to team member</span>
@@ -108,7 +143,10 @@ export default function AssignmentPicker({
         {loading && (
           <p className="text-xs text-faint text-center py-4">Loading…</p>
         )}
-        {!loading && filtered.length === 0 && (
+        {!loading && fetchError && (
+          <p className="text-xs text-faint text-center py-4">Could not load team members</p>
+        )}
+        {!loading && !fetchError && filtered.length === 0 && (
           <p className="text-xs text-faint text-center py-4">No team members found</p>
         )}
         {filtered.map((m) => (
@@ -157,4 +195,6 @@ export default function AssignmentPicker({
       )}
     </div>
   );
+
+  return createPortal(picker, document.body);
 }

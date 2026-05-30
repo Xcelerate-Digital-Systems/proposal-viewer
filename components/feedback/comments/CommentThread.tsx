@@ -115,6 +115,7 @@ export default function CommentThread({
   const [resolving, setResolving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showAssignPicker, setShowAssignPicker] = useState(false);
+  const assignBtnRef = useRef<HTMLButtonElement | null>(null);
   const replyEditorRef = useRef<MentionEditorHandle | null>(null);
 
   const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '').trim();
@@ -403,8 +404,9 @@ export default function CommentThread({
             </Button>
           )}
           {isAdmin && (onQuickAssign || onOpenTasks) && (
-            <div className="relative shrink-0">
+            <>
               <Button
+                ref={assignBtnRef}
                 variant="ghost"
                 size="sm"
                 onClick={() => onQuickAssign ? setShowAssignPicker((v) => !v) : onOpenTasks?.()}
@@ -415,6 +417,7 @@ export default function CommentThread({
               {showAssignPicker && onQuickAssign && (
                 <AssignmentPicker
                   participantsUrl={participantsUrl ?? null}
+                  anchorRef={assignBtnRef}
                   onAssign={async (memberId, note) => {
                     await onQuickAssign(memberId, note);
                     setShowAssignPicker(false);
@@ -422,7 +425,7 @@ export default function CommentThread({
                   onClose={() => setShowAssignPicker(false)}
                 />
               )}
-            </div>
+            </>
           )}
           {deleting && (
             <span className="flex items-center gap-1 text-xs text-faint">
