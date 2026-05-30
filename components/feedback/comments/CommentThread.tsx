@@ -54,6 +54,8 @@ interface CommentThreadProps {
   currentUserNameOverride?: string;
   /** API endpoint that returns mentionable participants for this surface. */
   participantsUrl?: string | null;
+  /** Share token for public viewer auth (reactions, etc.) */
+  shareToken?: string;
 
   /** When true, show a temporary highlight ring (e.g. when scrolled to via pin click) */
   highlighted?: boolean;
@@ -95,6 +97,7 @@ export default function CommentThread({
   currentUserEmail,
   currentUserNameOverride,
   participantsUrl,
+  shareToken,
   highlighted = false,
   memberLookup,
   onOpenTasks,
@@ -190,6 +193,7 @@ export default function CommentThread({
   const canModify = ownsComment(comment);
   const { reactions, toggle: toggleReaction } = useCommentReactions(comment.id, {
     currentUserName,
+    shareToken,
   });
 
   return (

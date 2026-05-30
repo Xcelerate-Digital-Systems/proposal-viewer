@@ -11,6 +11,8 @@ interface UseCommentReactionsOptions {
   currentUserId?: string | null;
   /** Skip fetch when false (e.g. comment thread closed) */
   enabled?: boolean;
+  /** Share token for public viewer auth (admin path uses authFetch instead) */
+  shareToken?: string | null;
 }
 
 interface UseCommentReactionsResult {
@@ -24,16 +26,30 @@ interface UseCommentReactionsResult {
  */
 export function useCommentReactions(
   commentId: string,
-  { currentUserName, currentUserId, enabled = true }: UseCommentReactionsOptions
+  { currentUserName, currentUserId, enabled = true, shareToken }: UseCommentReactionsOptions
 ): UseCommentReactionsResult {
   const [reactions, setReactions] = useState<FeedbackCommentReaction[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const buildUrl = useCallback(
+    (base: string) => shareToken ? `${base}?share_token=${encodeURIComponent(shareToken)}` : base,
+    [shareToken]
+  );
+
+  const doFetch = useCallback(
+    async (input: string, init?: RequestInit) => {
+      if (shareToken) return fetch(input, init);
+      const { authFetch } = await import('@/lib/auth-fetch');
+      return authFetch(input, init);
+    },
+    [shareToken]
+  );
 
   useEffect(() => {
     if (!enabled || !commentId) return;
     let cancelled = false;
     setLoading(true);
-    fetch(`/api/review-comments/${commentId}/reactions`)
+    doFetch(buildUrl(`/api/review-comments/${commentId}/reactions`))
       .then((r) => (r.ok ? r.json() : { reactions: [] }))
       .then((data) => {
         if (!cancelled) setReactions(data.reactions || []);
@@ -47,7 +63,7 @@ export function useCommentReactions(
     return () => {
       cancelled = true;
     };
-  }, [commentId, enabled]);
+  }, [commentId, enabled, buildUrl, doFetch]);
 
   const toggle = useCallback(
     async (emoji: string) => {
@@ -77,7 +93,7 @@ export function useCommentReactions(
       }
 
       try {
-        const res = await fetch(`/api/review-comments/${commentId}/reactions`, {
+        const res = await doFetch(buildUrl(`/api/review-comments/${commentId}/reactions`), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -103,7 +119,7 @@ export function useCommentReactions(
         setReactions(optimisticPrev);
       }
     },
-    [commentId, currentUserName, currentUserId, reactions]
+    [commentId, currentUserName, currentUserId, reactions, doFetch, buildUrl]
   );
 
   return { reactions, loading, toggle };

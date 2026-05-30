@@ -30,6 +30,7 @@ interface Props {
   onRemoveTask?: (commentId: string, taskId: string) => Promise<void>;
   onPriorityChange?: (comment: CommentWithItem, priority: FeedbackCommentPriority) => void;
   teamMembers?: TeamMemberOption[];
+  projectId?: string;
 }
 
 export default function FeedbackModal({
@@ -47,6 +48,7 @@ export default function FeedbackModal({
   onRemoveTask,
   onPriorityChange,
   teamMembers = [],
+  projectId,
 }: Props) {
   const [showReplies, setShowReplies] = useState(true);
   const [replyText, setReplyText] = useState('');
@@ -413,10 +415,21 @@ export default function FeedbackModal({
 
               <div>
                 <p className="text-xs font-medium text-dim mb-1.5">Item</p>
-                <div className="flex items-center gap-2 text-sm text-prose">
-                  <TypeIcon size={14} className="text-faint shrink-0" />
-                  <span className="truncate">{comment.item_title}</span>
-                </div>
+                {projectId ? (
+                  <a
+                    href={`/campaigns/${projectId}/assets/${comment.review_item_id}`}
+                    className="flex items-center gap-2 text-sm text-teal hover:text-teal-hover transition-colors group"
+                  >
+                    <TypeIcon size={14} className="shrink-0" />
+                    <span className="truncate group-hover:underline">{comment.item_title}</span>
+                    <ExternalLink size={11} className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </a>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-prose">
+                    <TypeIcon size={14} className="text-faint shrink-0" />
+                    <span className="truncate">{comment.item_title}</span>
+                  </div>
+                )}
               </div>
 
               <div>

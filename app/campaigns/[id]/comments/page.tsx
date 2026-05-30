@@ -712,6 +712,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           onRemoveTask={removeTask}
           onPriorityChange={changePriority}
           teamMembers={teamMembers}
+          projectId={projectId}
         />
       )}
 

@@ -203,6 +203,7 @@ export default function CommentsPanel({
             currentUserEmail={currentUserEmail}
             currentUserNameOverride={currentUserNameProp}
             participantsUrl={participantsUrl}
+            shareToken={shareToken}
             highlighted={highlightCommentId === c.id}
             memberLookup={memberLookup}
             onOpenTasks={onOpenTasks ? () => onOpenTasks(c.id) : undefined}
