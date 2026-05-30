@@ -19,7 +19,6 @@ import { Button } from '@/components/ui/Button';
 import MentionEditor, { type MentionEditorHandle } from '@/components/feedback/mentions/MentionEditor';
 import CommentContent from '@/components/feedback/mentions/CommentContent';
 import AssignmentBadge from './AssignmentBadge';
-import AssignmentPicker from './AssignmentPicker';
 
 interface CommentThreadProps {
   comment: FeedbackComment;
@@ -114,8 +113,6 @@ export default function CommentThread({
   const [savingEdit, setSavingEdit] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [showAssignPicker, setShowAssignPicker] = useState(false);
-  const assignBtnRef = useRef<HTMLButtonElement | null>(null);
   const replyEditorRef = useRef<MentionEditorHandle | null>(null);
 
   const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '').trim();
@@ -403,29 +400,15 @@ export default function CommentThread({
               {resolving ? 'Reopening…' : 'Reopen'}
             </Button>
           )}
-          {isAdmin && (onQuickAssign || onOpenTasks) && (
-            <>
-              <Button
-                ref={assignBtnRef}
-                variant="ghost"
-                size="sm"
-                onClick={() => onQuickAssign ? setShowAssignPicker((v) => !v) : onOpenTasks?.()}
-                leftIcon={UserPlus}
-              >
-                Assign
-              </Button>
-              {showAssignPicker && onQuickAssign && (
-                <AssignmentPicker
-                  participantsUrl={participantsUrl ?? null}
-                  anchorRef={assignBtnRef}
-                  onAssign={async (memberId, note) => {
-                    await onQuickAssign(memberId, note);
-                    setShowAssignPicker(false);
-                  }}
-                  onClose={() => setShowAssignPicker(false)}
-                />
-              )}
-            </>
+          {isAdmin && onOpenTasks && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onOpenTasks()}
+              leftIcon={UserPlus}
+            >
+              Assign
+            </Button>
           )}
           {deleting && (
             <span className="flex items-center gap-1 text-xs text-faint">
