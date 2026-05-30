@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import {
   CheckCircle2, ChevronDown, ChevronUp, CircleDashed, Clock, ExternalLink,
-  ListTodo, MessageSquare, Paperclip, Send, Trash2, UserPlus, X,
+  ListTodo, MessageSquare, Paperclip, Search, Send, Trash2, UserPlus, X,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { formatTimeAgo } from '@/lib/review-utils';
@@ -12,7 +12,8 @@ import type { CommentTask, FeedbackCommentPriority } from '@/lib/types/feedback'
 import { TYPE_ICONS, type CommentWithItem } from './types';
 import { Button } from '@/components/ui/Button';
 import PrioritySelector from '@/components/feedback/comments/PrioritySelector';
-import AssignmentPicker from '@/components/feedback/comments/AssignmentPicker';
+
+type TeamMemberOption = { id: string; name: string; email: string };
 
 interface Props {
   comment: CommentWithItem;
@@ -28,7 +29,7 @@ interface Props {
   onToggleTaskComplete?: (commentId: string, taskId: string, completed: boolean) => Promise<void>;
   onRemoveTask?: (commentId: string, taskId: string) => Promise<void>;
   onPriorityChange?: (comment: CommentWithItem, priority: FeedbackCommentPriority) => void;
-  participantsUrl?: string | null;
+  teamMembers?: TeamMemberOption[];
 }
 
 export default function FeedbackModal({
@@ -45,12 +46,16 @@ export default function FeedbackModal({
   onToggleTaskComplete,
   onRemoveTask,
   onPriorityChange,
-  participantsUrl,
+  teamMembers = [],
 }: Props) {
   const [showReplies, setShowReplies] = useState(true);
   const [replyText, setReplyText] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
-  const [showAssignPicker, setShowAssignPicker] = useState(false);
+  const [showAssignForm, setShowAssignForm] = useState(false);
+  const [assignSearch, setAssignSearch] = useState('');
+  const [assignSelectedId, setAssignSelectedId] = useState<string | null>(null);
+  const [assignNote, setAssignNote] = useState('');
+  const [assignSubmitting, setAssignSubmitting] = useState(false);
 
   const replies = allComments
     .filter((c) => c.parent_comment_id === comment.id)
@@ -320,25 +325,89 @@ export default function FeedbackModal({
                       {completedCount}/{taskCount} done
                     </button>
                   )}
-                  <div className="relative">
-                    <button
-                      onClick={() => onQuickAssign ? setShowAssignPicker((v) => !v) : onOpenTasks?.()}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-teal hover:bg-teal-hover transition-colors"
+                  {!showAssignForm ? (
+                    <Button
+                      size="sm"
+                      onClick={() => { setShowAssignForm(true); setAssignSearch(''); setAssignSelectedId(null); setAssignNote(''); }}
+                      leftIcon={UserPlus}
                     >
-                      <UserPlus size={12} />
                       Assign
-                    </button>
-                    {showAssignPicker && onQuickAssign && (
-                      <AssignmentPicker
-                        participantsUrl={participantsUrl ?? null}
-                        onAssign={async (memberId, note) => {
-                          await onQuickAssign(memberId, note);
-                          setShowAssignPicker(false);
-                        }}
-                        onClose={() => setShowAssignPicker(false)}
-                      />
-                    )}
-                  </div>
+                    </Button>
+                  ) : (
+                    <div className="space-y-2 border border-edge rounded-xl p-3 bg-white">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-ink">Assign to team member</span>
+                        <button onClick={() => setShowAssignForm(false)} className="p-0.5 rounded text-faint hover:text-prose">
+                          <X size={14} />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-warm-dark">
+                        <Search size={13} className="text-faint shrink-0" />
+                        <input
+                          type="text"
+                          value={assignSearch}
+                          onChange={(e) => setAssignSearch(e.target.value)}
+                          placeholder="Search team…"
+                          autoFocus
+                          className="flex-1 text-xs bg-transparent text-ink placeholder:text-faint focus:outline-none"
+                        />
+                      </div>
+                      <div className="max-h-[140px] overflow-y-auto space-y-0.5">
+                        {(() => {
+                          const q = assignSearch.toLowerCase();
+                          const matches = teamMembers.filter((m) =>
+                            !q || m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)
+                          );
+                          if (matches.length === 0) return <p className="text-xs text-faint text-center py-3">No team members found</p>;
+                          return matches.map((m) => (
+                            <button
+                              key={m.id}
+                              onClick={() => setAssignSelectedId(assignSelectedId === m.id ? null : m.id)}
+                              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors ${
+                                assignSelectedId === m.id ? 'bg-teal/8 ring-1 ring-teal/20' : 'hover:bg-surface'
+                              }`}
+                            >
+                              <div className="w-6 h-6 rounded-full bg-teal/10 text-teal flex items-center justify-center text-2xs font-semibold shrink-0">
+                                {m.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-ink truncate">{m.name}</p>
+                                <p className="text-2xs text-faint truncate">{m.email}</p>
+                              </div>
+                            </button>
+                          ));
+                        })()}
+                      </div>
+                      {assignSelectedId && (
+                        <div className="space-y-2 pt-1 border-t border-edge-subtle">
+                          <textarea
+                            value={assignNote}
+                            onChange={(e) => setAssignNote(e.target.value)}
+                            placeholder="Instructions (optional)…"
+                            rows={2}
+                            className="w-full text-xs rounded-lg bg-warm-dark px-2.5 py-2 text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 resize-none"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={async () => {
+                              if (!assignSelectedId || assignSubmitting || !onQuickAssign) return;
+                              setAssignSubmitting(true);
+                              try {
+                                await onQuickAssign(assignSelectedId, assignNote);
+                                setShowAssignForm(false);
+                              } finally { setAssignSubmitting(false); }
+                            }}
+                            disabled={assignSubmitting}
+                            loading={assignSubmitting}
+                            leftIcon={UserPlus}
+                            fullWidth
+                          >
+                            Assign
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

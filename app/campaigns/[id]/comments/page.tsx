@@ -711,7 +711,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           onToggleTaskComplete={toggleTaskComplete}
           onRemoveTask={removeTask}
           onPriorityChange={changePriority}
-          participantsUrl={project ? `/api/campaigns/${project.id}/participants` : null}
+          teamMembers={teamMembers}
         />
       )}
 
