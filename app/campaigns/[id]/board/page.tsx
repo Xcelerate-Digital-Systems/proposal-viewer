@@ -3,8 +3,7 @@
 import { useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { FeedbackBoard } from '@/components/admin/feedback/board';
-import { useFeedbackBoardContext } from '@/components/admin/feedback/board/FeedbackBoardContext';
+import { FeedbackBoard, FeedbackBoardProvider, useFeedbackBoardContext } from '@/components/admin/feedback/board';
 import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHeader';
 
 export default function ReviewBoardPage(props: { params: Promise<{ id: string }> }) {
@@ -12,13 +11,20 @@ export default function ReviewBoardPage(props: { params: Promise<{ id: string }>
   return (
     <AdminLayout collapseSidebar>
       {(auth) => (
-        <BoardGate accountType={auth.accountType} projectId={params.id} />
+        <BoardGate
+          accountType={auth.accountType}
+          projectId={params.id}
+          companyId={auth.companyId!}
+          userId={auth.session?.user?.id ?? null}
+        />
       )}
     </AdminLayout>
   );
 }
 
-function BoardGate({ accountType, projectId }: { accountType?: 'agency' | 'client'; projectId: string }) {
+function BoardGate({ accountType, projectId, companyId, userId }: {
+  accountType?: 'agency' | 'client'; projectId: string; companyId: string; userId: string | null;
+}) {
   const router = useRouter();
   const allowed = accountType === 'agency';
 
@@ -28,7 +34,11 @@ function BoardGate({ accountType, projectId }: { accountType?: 'agency' | 'clien
 
   if (!allowed) return null;
 
-  return <BoardContent projectId={projectId} />;
+  return (
+    <FeedbackBoardProvider projectId={projectId} companyId={companyId} userId={userId}>
+      <BoardContent projectId={projectId} />
+    </FeedbackBoardProvider>
+  );
 }
 
 function BoardContent({ projectId }: { projectId: string }) {
