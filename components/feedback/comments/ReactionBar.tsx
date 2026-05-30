@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { SmilePlus } from 'lucide-react';
 import type { FeedbackCommentReaction } from '@/lib/supabase';
 
 const EMOJI_OPTIONS = ['👍', '❤️', '👀', '🔥', '✅', '❓'];
@@ -21,10 +20,8 @@ export default function ReactionBar({
   currentUserId,
   onToggleReaction,
 }: ReactionBarProps) {
-  const [showPicker, setShowPicker] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
 
-  // Group reactions by emoji
   const grouped = reactions.reduce<Record<string, FeedbackCommentReaction[]>>((acc, r) => {
     (acc[r.emoji] ||= []).push(r);
     return acc;
@@ -46,13 +43,15 @@ export default function ReactionBar({
       await onToggleReaction(commentId, emoji);
     } finally {
       setToggling(null);
-      setShowPicker(false);
     }
   };
 
+  const hasAnyReactions = Object.keys(grouped).length > 0;
+
+  if (!hasAnyReactions) return null;
+
   return (
     <div className="flex items-center gap-1 flex-wrap">
-      {/* Existing reaction chips */}
       {Object.entries(grouped).map(([emoji, group]) => {
         const active = hasReacted(emoji);
         return (
@@ -71,38 +70,6 @@ export default function ReactionBar({
           </button>
         );
       })}
-
-      {/* Add reaction button */}
-      <div className="relative">
-        <button
-          onClick={() => setShowPicker(!showPicker)}
-          className="w-5 h-5 rounded-full flex items-center justify-center text-gray-300 hover:text-dim hover:bg-gray-100 transition-colors"
-        >
-          <SmilePlus size={10} />
-        </button>
-
-        {showPicker && (
-          <>
-            {/* Backdrop */}
-            <div className="fixed inset-0 z-40" onClick={() => setShowPicker(false)} />
-            {/* Picker */}
-            <div className="absolute bottom-full left-0 mb-1 z-50 flex gap-0.5 bg-white border border-edge-strong rounded-lg shadow-lg px-1.5 py-1">
-              {EMOJI_OPTIONS.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => handleToggle(emoji)}
-                  disabled={toggling !== null}
-                  className={`w-6 h-6 rounded hover:bg-gray-100 flex items-center justify-center text-sm transition-colors ${
-                    hasReacted(emoji) ? 'bg-teal/10' : ''
-                  }`}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
     </div>
   );
 }
