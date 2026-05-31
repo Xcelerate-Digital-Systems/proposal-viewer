@@ -4,7 +4,7 @@
 import {
   LayoutDashboard, MessageSquareText, FileText, Files, LayoutTemplate,
   Palette, Settings as SettingsIcon, Bookmark, Plug, ReceiptText,
-  Workflow,
+  Workflow, LifeBuoy,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -76,11 +76,12 @@ export const ALL_SECTIONS: SectionDef[] = [
 /** Workspace-level top-nav entries that aren't sections (no sub-nav, no
  *  children). Rendered alongside the section entries in renderTopLevelNav. */
 export const WORKSPACE_ITEMS: NavItem[] = [
-  { href: '/integrations/looker-studio', label: 'Integrations', icon: Plug },
+  { href: '/integrations/looker-studio', label: 'Looker Studio', icon: Plug },
 ];
 
 export const STANDALONE_ITEMS: NavItem[] = [
   { href: '/company',  label: 'Brand Kit', icon: Palette },
+  { href: '/support',  label: 'Support',   icon: LifeBuoy },
   { href: '/settings', label: 'Settings',  icon: SettingsIcon },
 ];
 

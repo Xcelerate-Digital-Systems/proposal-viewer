@@ -1,26 +1,20 @@
 // components/admin/connectors/MetaConnectorCard.tsx
 //
-// Self-contained Facebook Ads → Looker Studio integration card. Owns the full
-// two-step setup: (1) Connect Facebook accounts, (2) Add to Looker Studio via
-// the deployment ID. Visual language follows the dashboard section pattern
-// (shadow-card top-level + crisp header band + uppercase eyebrows for
-// sub-sections).
+// Meta / Facebook Ads connection card for Settings → Integrations.
+// Handles OAuth connection and ad account management. Looker Studio
+// setup instructions live on the Looker Studio page.
 
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Check, Copy, ExternalLink, Loader2, Plus, Trash2, Users,
+  Loader2, Plus, Trash2, Users,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
-
-// Apps Script deployment ID (AKfyc…) for the Meta Looker Studio community
-// connector. Distinct from the Apps Script project's *script* id — Looker
-// Studio's "Build with Apps Script" dialog expects the deployment id.
-const META_DEPLOYMENT_ID = process.env.NEXT_PUBLIC_LOOKER_DEPLOYMENT_ID_META || '';
+import Image from 'next/image';
 
 type ConnectionStatus = 'active' | 'needs_reauth' | 'revoked';
 
@@ -44,17 +38,6 @@ interface AdAccount {
 interface AccountsResponse {
   success: true;
   data: { connections: Connection[]; accounts: AdAccount[] };
-}
-
-function FacebookGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" width={20} height={20} aria-hidden="true">
-      <path
-        fill="#ffffff"
-        d="M14.5 21v-7.6h2.55l.38-2.96H14.5V8.55c0-.86.24-1.44 1.47-1.44h1.57V4.46c-.27-.04-1.2-.12-2.28-.12-2.25 0-3.79 1.37-3.79 3.9v2.2H8.9v2.96h2.58V21h3.02Z"
-      />
-    </svg>
-  );
 }
 
 function formatRelativeTime(iso: string | null): string {
@@ -87,18 +70,6 @@ function StatusPill({
   );
 }
 
-function StepEyebrow({ step, title, hint }: { step: string; title: string; hint?: string }) {
-  return (
-    <div className="flex items-baseline gap-2 px-6 pt-5 pb-3">
-      <span className="text-2xs font-semibold uppercase tracking-wider text-faint">
-        {step}
-      </span>
-      <span className="text-caption font-semibold text-ink">{title}</span>
-      {hint && <span className="text-detail text-faint">{hint}</span>}
-    </div>
-  );
-}
-
 interface Props {
   /** Bump to force the card to re-fetch. */
   refreshKey?: number;
@@ -111,7 +82,6 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [pendingDisconnect, setPendingDisconnect] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const confirm = useConfirm();
   const toast = useToast();
 
@@ -150,7 +120,7 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
       const res = await fetch('/api/connectors/meta/oauth/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
-        body: JSON.stringify({ redirect_to: '/integrations/looker-studio' }),
+        body: JSON.stringify({ redirect_to: '/settings?tab=integrations' }),
       });
       const json = await res.json();
       if (json.success && json.authorize_url) {
@@ -194,16 +164,6 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
     }
   };
 
-  const copyDeploymentId = async () => {
-    try {
-      await navigator.clipboard.writeText(META_DEPLOYMENT_ID);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error('Clipboard blocked — copy the ID from the connector settings.');
-    }
-  };
-
   const activeConnections = connections.filter((c) => c.status !== 'revoked');
   const hasConnection = activeConnections.length > 0;
   const needsReauth = !hasConnection
@@ -222,31 +182,26 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
       {/* Header band — matches dashboard section header */}
       <header className="flex items-start justify-between gap-4 px-6 py-5 border-b border-edge">
         <div className="flex items-start gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-[#1877F2]">
-            <FacebookGlyph />
-          </div>
+          <Image
+            src="/integrations/facebook-icon.png"
+            alt="Meta / Facebook"
+            width={40}
+            height={40}
+            className="rounded-2xl shrink-0"
+          />
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-base font-semibold text-ink">Facebook Ads</h2>
-              <span className="text-faint text-xs">→</span>
-              <span className="text-caption font-medium text-muted">Looker Studio</span>
+              <h2 className="text-base font-semibold text-ink">Meta / Facebook Ads</h2>
               <StatusPill state={headerState} />
             </div>
             <p className="text-xs text-faint mt-1 leading-relaxed max-w-[58ch]">
-              Pull campaign, ad set, ad, and creative performance from Meta into Looker Studio.
-              Supports daily, weekly, and custom date ranges.
+              Connect your Facebook Ads accounts to pipe campaign and creative data into Looker Studio reports.
             </p>
           </div>
         </div>
       </header>
 
-      {/* Step 1 — Connect Facebook */}
-      <StepEyebrow
-        step="Step 1"
-        title="Connect a Facebook account"
-        hint={hasConnection ? `${activeConnections.length} connected` : undefined}
-      />
-      <div className="px-6 pb-5">
+      <div className="px-6 py-5">
         {loading ? (
           <div className="flex items-center gap-2 text-xs text-faint py-3">
             <Loader2 size={13} className="animate-spin" />
@@ -333,74 +288,6 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
         )}
       </div>
 
-      {/* Step 2 — Add to Looker Studio */}
-      <div className="border-t border-edge bg-surface/50">
-        <StepEyebrow
-          step="Step 2"
-          title="Add the connector to Looker Studio"
-        />
-        <div className="px-6 pb-6">
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            <button
-              type="button"
-              onClick={copyDeploymentId}
-              disabled={!META_DEPLOYMENT_ID}
-              title={META_DEPLOYMENT_ID ? `Deployment ID: ${META_DEPLOYMENT_ID}` : undefined}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-teal text-white hover:bg-teal-hover disabled:opacity-50 transition-colors"
-            >
-              {copied ? <Check size={13} /> : <Copy size={13} />}
-              {copied ? 'Deployment ID copied' : 'Copy deployment ID'}
-            </button>
-            <a
-              href="https://lookerstudio.google.com"
-              target="_blank"
-              rel="noreferrer noopener"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted hover:text-ink border border-edge rounded-lg hover:bg-white transition-colors"
-            >
-              Open Looker Studio
-              <ExternalLink size={12} />
-            </a>
-          </div>
-
-          <ol className="space-y-2.5 text-xs text-muted leading-relaxed">
-            <li className="flex gap-3">
-              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full bg-white border border-edge-strong text-faint text-2xs font-semibold">
-                1
-              </span>
-              <span className="pt-0.5">
-                In Looker Studio, click <span className="font-medium text-ink">Create → Data source</span>.
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full bg-white border border-edge-strong text-faint text-2xs font-semibold">
-                2
-              </span>
-              <span className="pt-0.5">
-                Scroll to <span className="font-medium text-ink">Build your own</span> and choose{' '}
-                <span className="font-medium text-ink">Build with Apps Script</span>.
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full bg-white border border-edge-strong text-faint text-2xs font-semibold">
-                3
-              </span>
-              <span className="pt-0.5">
-                Paste the deployment ID into the <span className="font-medium text-ink">Deployment ID</span> field,
-                click <span className="font-medium text-ink">Validate</span>, then{' '}
-                <span className="font-medium text-ink">Next</span>.
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full bg-white border border-edge-strong text-faint text-2xs font-semibold">
-                4
-              </span>
-              <span className="pt-0.5">
-                Sign in with AgencyViz when prompted, then pick the ad account to pull data from.
-              </span>
-            </li>
-          </ol>
-        </div>
-      </div>
     </section>
   );
 }
