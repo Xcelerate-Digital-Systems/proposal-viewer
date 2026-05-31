@@ -182,7 +182,7 @@ export default function DecisionPagePreview({
 
   // No-op handlers — the panel just needs at least one defined to render the
   // pending-state form. We never submit from the preview.
-  const noopAccept = async (_name: string) => { void _name; };
+  const noopAccept = async (_name: string, _sig?: unknown) => { void _name; };
   const noopDecline = async (_name: string, _reason: string) => { void _name; void _reason; };
   const noopRevision = async (_name: string, _notes: string) => { void _name; void _notes; };
 

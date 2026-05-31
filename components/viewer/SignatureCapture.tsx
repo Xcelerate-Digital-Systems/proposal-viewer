@@ -131,24 +131,6 @@ export default function SignatureCapture({
 
   return (
     <div className="space-y-3">
-      {onSignerNameChange && (
-        <div className="text-left">
-          <label
-            className="block text-2xs tracking-[0.18em] uppercase mb-1.5"
-            style={{ color: labelColor || '#9ca3af', fontFamily: labelFont }}
-          >
-            Your full name
-          </label>
-          <input
-            type="text"
-            value={signerName}
-            onChange={(e) => onSignerNameChange(e.target.value)}
-            placeholder="e.g. John Smith"
-            className="w-full px-3 py-2.5 rounded-lg text-base md:text-sm focus:outline-none transition-colors"
-            style={{ border: `1px solid ${hairlineColor}`, backgroundColor: inputBg, color: inputColor }}
-          />
-        </div>
-      )}
       <div className="flex items-center gap-1 p-1 bg-black/5 rounded-lg w-fit">
         <button
           type="button"
@@ -173,23 +155,44 @@ export default function SignatureCapture({
       </div>
 
       {mode === 'typed' ? (
-        <div
-          className="h-20 rounded-xl border-2 border-dashed flex items-center justify-center px-6"
-          style={{ borderColor: signerName.trim() ? accentColor : '#d1d5db' }}
-        >
-          {signerName.trim() ? (
-            <span
-              className="text-3xl italic select-none"
-              style={{ fontFamily: "'Dancing Script', 'Brush Script MT', cursive", color: '#1f2937' }}
-            >
-              {signerName}
-            </span>
-          ) : (
-            <span className="text-sm text-gray-400">Type your name above to preview your signature</span>
-          )}
+        <div className="space-y-2">
+          <input
+            type="text"
+            value={signerName}
+            onChange={(e) => onSignerNameChange?.(e.target.value)}
+            placeholder="Type your full name"
+            className="w-full px-3 py-2.5 rounded-lg text-base md:text-sm focus:outline-none transition-colors"
+            style={{ border: `1px solid ${hairlineColor}`, backgroundColor: inputBg, color: inputColor }}
+          />
+          <div
+            className="h-16 rounded-xl border-2 border-dashed flex items-center justify-center px-6"
+            style={{ borderColor: signerName.trim() ? accentColor : '#d1d5db' }}
+          >
+            {signerName.trim() ? (
+              <span
+                className="text-3xl italic select-none"
+                style={{ fontFamily: "'Dancing Script', 'Brush Script MT', cursive", color: inputColor }}
+              >
+                {signerName}
+              </span>
+            ) : (
+              <span className="text-sm" style={{ color: '#9ca3af' }}>Your signature will appear here</span>
+            )}
+          </div>
         </div>
       ) : (
-        <div className="relative">
+        <div className="space-y-2">
+          {onSignerNameChange && (
+            <input
+              type="text"
+              value={signerName}
+              onChange={(e) => onSignerNameChange(e.target.value)}
+              placeholder="Type your full name"
+              className="w-full px-3 py-2.5 rounded-lg text-base md:text-sm focus:outline-none transition-colors"
+              style={{ border: `1px solid ${hairlineColor}`, backgroundColor: inputBg, color: inputColor }}
+            />
+          )}
+          <div className="relative">
           <canvas
             ref={canvasRef}
             className="w-full h-28 rounded-xl border-2 border-dashed cursor-crosshair touch-none"
@@ -217,6 +220,7 @@ export default function SignatureCapture({
               <span className="text-sm text-gray-400">Draw your signature here</span>
             </div>
           )}
+          </div>
         </div>
       )}
 

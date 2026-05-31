@@ -342,7 +342,7 @@ export function DecisionDesignPreview({
     color: headingColor,
   };
 
-  const noopAccept = async (_name: string) => { void _name; };
+  const noopAccept = async (_name: string, _sig?: unknown) => { void _name; };
   const noopDecline = async (_name: string, _reason: string) => { void _name; void _reason; };
   const noopRevision = async (_name: string, _notes: string) => { void _name; void _notes; };
 
