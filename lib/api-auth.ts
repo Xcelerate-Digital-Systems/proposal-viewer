@@ -1,8 +1,9 @@
 // lib/api-auth.ts
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { createServiceClient } from '@/lib/supabase-server';
 import { createClient } from '@supabase/supabase-js';
+import { canRole, type PermissionKey } from '@/lib/permissions';
 
 /** API key prefix marking it as an Agency Viz personal access token. */
 export const API_KEY_PREFIX = 'av_live_';
@@ -202,4 +203,35 @@ export async function getAuthContext(req: NextRequest) {
     companyId: defaultMember.company_id as string,
     accountType: (ownCompany?.account_type ?? 'agency') as 'agency' | 'client',
   };
+}
+
+/**
+ * Verify the authenticated user holds a specific permission. Returns the auth
+ * context on success, or a 403 NextResponse on failure. Super admins bypass
+ * all permission checks.
+ *
+ * Usage:
+ *   const result = await requirePermission(req, 'manage_billing');
+ *   if (result instanceof NextResponse) return result;
+ *   const { member, companyId } = result;
+ */
+export async function requirePermission(
+  req: NextRequest,
+  permission: PermissionKey,
+): Promise<
+  | NextResponse
+  | { member: Record<string, unknown>; companyId: string; accountType: 'agency' | 'client' }
+> {
+  const auth = await getAuthContext(req);
+  if (!auth) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (auth.member.is_super_admin) return auth;
+  if (!canRole(auth.member.role as string, permission)) {
+    return NextResponse.json(
+      { error: `Forbidden: requires ${permission}` },
+      { status: 403 },
+    );
+  }
+  return auth;
 }

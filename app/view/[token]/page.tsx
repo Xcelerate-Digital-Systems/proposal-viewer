@@ -16,12 +16,22 @@ import ViewerPageContent from '@/components/viewer/ViewerPageContent';
 import QuoteSinglePageView from '@/components/viewer/QuoteSinglePageView';
 import { useViewerPage } from '@/components/viewer/useViewerPage';
 import { supabase, type ProposalPricing } from '@/lib/supabase';
+import { useViewerTracking } from '@/hooks/useViewerTracking';
 
 export default function ProposalViewerPage(props: { params: Promise<{ token: string }> }) {
   const params = use(props.params);
   const v = useViewerPage(params.token);
   const searchParams = useSearchParams();
   const autoPrint = searchParams?.get('print') === '1';
+
+  const { trackPageView } = useViewerTracking({
+    shareToken: params.token,
+    enabled: !!v.proposal && !autoPrint,
+  });
+
+  useEffect(() => {
+    if (v.proposal) trackPageView(v.currentPage);
+  }, [v.currentPage, v.proposal, trackPageView]);
 
   // Fetch company contact / ABN / quote-number format for the quote header
   // and footer. These fields aren't in CompanyBranding.

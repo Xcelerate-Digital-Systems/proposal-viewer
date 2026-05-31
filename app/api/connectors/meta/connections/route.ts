@@ -8,14 +8,20 @@
 // re-connection of the same Meta user later.
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthContext } from '@/lib/api-auth';
+import { requirePermission } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function DELETE(req: NextRequest) {
-  const auth = await getAuthContext(req);
-  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requirePermission(req, 'manage_integrations');
+  if (auth instanceof NextResponse) return auth;
+
+  const rl = await rateLimit({ key: `meta:disconnect:${auth.companyId}`, limit: 5, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: rateLimitHeaders(rl, 5) });
+  }
 
   let body: { connection_id?: string };
   try {

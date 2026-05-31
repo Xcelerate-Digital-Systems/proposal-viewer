@@ -11,6 +11,7 @@ import { FeedbackBoardProvider } from '@/components/admin/feedback/board/Feedbac
 import { FunnelBoardProvider } from '@/components/admin/funnels/board/FunnelBoardContext';
 import { TourProvider } from '@/components/tours/TourProvider';
 import { SetupChecklist } from '@/components/tours/SetupChecklist';
+import CommandPalette from '@/components/admin/CommandPalette';
 import { BillingGuard } from '@/components/auth/BillingGuard';
 import { AnalyticsIdentifier } from '@/components/analytics/AnalyticsIdentifier';
 import { CrispWidget } from '@/components/support/CrispWidget';
@@ -174,6 +175,7 @@ function AdminLayoutInner({
     <TourProvider>
       {guarded}
       <SetupChecklist />
+      <CommandPalette />
     </TourProvider>
   );
 }

@@ -145,7 +145,8 @@ export default function AdminSidebar({
       !activeSection ||
       pathname === '/dashboard' ||
       pathname === '/clients' ||
-      (accountType !== 'agency' && activeSection.key === 'campaigns')
+      (accountType !== 'agency' && activeSection.key === 'campaigns') ||
+      (activeSection && activeSection.items.length <= 1)
     );
 
   const isActive = (href: string) => {
@@ -263,7 +264,11 @@ export default function AdminSidebar({
       </div>
       <div className="space-y-0.5">
         {renderNavLink({ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard })}
-        {visibleSections.map(renderSectionEntry)}
+        {visibleSections.map((section) =>
+          section.items.length <= 1
+            ? renderNavLink({ href: section.defaultHref, label: section.label, icon: section.icon })
+            : renderSectionEntry(section)
+        )}
         {accountType !== 'client' && WORKSPACE_ITEMS.map((item) => renderNavLink(item))}
       </div>
 

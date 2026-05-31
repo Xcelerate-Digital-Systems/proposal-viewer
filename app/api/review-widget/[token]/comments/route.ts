@@ -308,7 +308,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ token: 
 
     /* ── Edit content (body mode) ──────────────────────── */
     const body = await req.json();
-    const { content } = body;
+    const { content, author_name, author_email } = body;
 
     if (!content || !content.trim()) {
       return corsJson({ error: 'Content is required' }, 400);
@@ -317,13 +317,23 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ token: 
     // Verify the comment exists and belongs to this item
     const { data: existing, error: fetchErr } = await supabase
       .from('review_comments')
-      .select('id, author_name, author_type')
+      .select('id, author_name, author_email, author_type')
       .eq('id', commentId)
       .eq('review_item_id', itemId)
       .single();
 
     if (fetchErr || !existing) {
       return corsJson({ error: 'Comment not found' }, 404);
+    }
+
+    // Widget callers must prove authorship — match author_name + author_email.
+    // Team members editing via the admin UI use authenticated routes, not this one.
+    if (
+      !author_name ||
+      existing.author_name?.trim().toLowerCase() !== author_name.trim().toLowerCase() ||
+      (existing.author_email || '').trim().toLowerCase() !== (author_email || '').trim().toLowerCase()
+    ) {
+      return corsJson({ error: 'You can only edit your own comments' }, 403);
     }
 
     const { data: updated, error: updateErr } = await supabase
@@ -365,16 +375,28 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ token:
       return corsJson({ error: 'Unauthorized' }, 403);
     }
 
+    const authorName = req.nextUrl.searchParams.get('author_name');
+    const authorEmail = req.nextUrl.searchParams.get('author_email');
+
     // Verify comment exists and belongs to this item
     const { data: existing, error: fetchErr } = await supabase
       .from('review_comments')
-      .select('id, author_name, author_type, parent_comment_id')
+      .select('id, author_name, author_email, author_type, parent_comment_id')
       .eq('id', commentId)
       .eq('review_item_id', itemId)
       .single();
 
     if (fetchErr || !existing) {
       return corsJson({ error: 'Comment not found' }, 404);
+    }
+
+    // Widget callers must prove authorship before deleting.
+    if (
+      !authorName ||
+      existing.author_name?.trim().toLowerCase() !== authorName.trim().toLowerCase() ||
+      (existing.author_email || '').trim().toLowerCase() !== (authorEmail || '').trim().toLowerCase()
+    ) {
+      return corsJson({ error: 'You can only delete your own comments' }, 403);
     }
 
     // If this is a top-level comment, delete its replies first

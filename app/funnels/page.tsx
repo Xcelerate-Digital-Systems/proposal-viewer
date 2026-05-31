@@ -188,7 +188,7 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
           <EmptyState
             icon={Workflow}
             title="No funnels yet"
-            description="Create a funnel to map out a client's journey visually."
+            description="Plan and visualise your client's customer journey on an interactive whiteboard. Create a funnel, add stages, then share it with your client for feedback."
             action={
               <Button size="sm" leftIcon={Plus} onClick={() => setShowCreate(true)}>
                 New Funnel

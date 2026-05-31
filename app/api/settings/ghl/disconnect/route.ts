@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,11 @@ export async function DELETE(req: NextRequest) {
   const auth = await getAuthContext(req);
   if (!auth || (auth.member?.role !== 'owner' && auth.member?.role !== 'admin' && !auth.member?.is_super_admin)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const rl = await rateLimit({ key: `ghl:disconnect:${auth.companyId}`, limit: 5, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: rateLimitHeaders(rl, 5) });
   }
 
   const supabase = createServiceClient();

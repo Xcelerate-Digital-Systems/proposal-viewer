@@ -13,14 +13,16 @@ import {
   type ProposalPricing,
   type PricingLineItem,
   type PricingOptionalItem,
-  formatAUD,
+  formatCurrency,
   pricingEffectiveSubtotal,
+  type CurrencyCode,
 } from '@/lib/supabase';
 import type { CompanyBranding } from '@/hooks/useProposal';
 import { parseQuoteExtras } from '@/lib/types/quote-extras';
 import { formatQuoteNumber } from '@/lib/quote-number';
 import { buildGradientCss, resolveStops } from '@/lib/gradient-stops';
 import ProposalDecisionPanel from '@/components/viewer/ProposalDecisionPanel';
+import { Clock, AlertTriangle } from 'lucide-react';
 
 interface QuoteSinglePageViewProps {
   proposal: Proposal;
@@ -118,6 +120,55 @@ function formatValidUntil(pricing: ProposalPricing | null): string | null {
 function parsePhotos(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter((p): p is string => typeof p === 'string');
+}
+
+/* ── Expiry urgency helpers ─────────────────────────────────────────────── */
+
+type ExpiryState =
+  | { kind: 'none' }
+  | { kind: 'expired' }
+  | { kind: 'today' }
+  | { kind: 'tomorrow' }
+  | { kind: 'soon'; days: number }   // 2–3 days
+  | { kind: 'valid'; label: string }; // >3 days — just show the date
+
+function computeExpiryState(
+  proposal: { valid_until: string | null },
+  pricing: { validity_days?: number | null; proposal_date?: string | null } | null,
+): ExpiryState {
+  let expiryDate: Date | null = null;
+
+  if (proposal.valid_until) {
+    expiryDate = new Date(proposal.valid_until);
+  } else if (pricing?.validity_days && pricing.proposal_date) {
+    expiryDate = new Date(pricing.proposal_date);
+    expiryDate.setDate(expiryDate.getDate() + pricing.validity_days);
+  }
+
+  if (!expiryDate || isNaN(expiryDate.getTime())) return { kind: 'none' };
+
+  // Compare at day granularity in local time
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const expiryStart = new Date(
+    expiryDate.getFullYear(),
+    expiryDate.getMonth(),
+    expiryDate.getDate(),
+  );
+  const diffMs = expiryStart.getTime() - todayStart.getTime();
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return { kind: 'expired' };
+  if (diffDays === 0) return { kind: 'today' };
+  if (diffDays === 1) return { kind: 'tomorrow' };
+  if (diffDays <= 3) return { kind: 'soon', days: diffDays };
+
+  const label = expiryDate.toLocaleDateString('en-AU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  return { kind: 'valid', label };
 }
 
 /* ── Layout primitives — hoisted out of the component so they don't get
@@ -256,6 +307,9 @@ export default function QuoteSinglePageView({
   // / valid_until on the proposal row) take precedence when non-null. Legacy
   // quotes fall back to the pricing-page payload so nothing regresses.
 
+  const proposalCurrency = ((proposal as Record<string, unknown>).currency as CurrencyCode) || 'AUD';
+  const fmt = (amount: number) => formatCurrency(amount, proposalCurrency);
+
   const items: PricingLineItem[] = pricing?.items ?? [];
   const optionalItems: PricingOptionalItem[] = pricing?.optional_items ?? [];
   const subtotal = pricingEffectiveSubtotal(items);
@@ -290,6 +344,8 @@ export default function QuoteSinglePageView({
         day: 'numeric', month: 'long', year: 'numeric',
       })
     : formatValidUntil(pricing);
+
+  const expiryState = computeExpiryState(proposal, pricing);
 
   // Prefer the new scope_of_works field; fall back to legacy description.
   const scopeOfWorks = proposal.scope_of_works || proposal.description || '';
@@ -452,7 +508,7 @@ export default function QuoteSinglePageView({
                 ...TABULAR,
               }}
             >
-              {formatAUD(total)}
+              {fmt(total)}
             </div>
             {validUntil && (
               <div
@@ -482,6 +538,57 @@ export default function QuoteSinglePageView({
               {i < extras.badges.length - 1 && <span className="mx-3 opacity-40">·</span>}
             </span>
           ))}
+        </div>
+      )}
+
+      {/* ── Expiry urgency banner ────────────────────────────── */}
+      {expiryState.kind === 'expired' && (
+        <div
+          className="mx-8 sm:mx-14 mt-6 rounded-lg px-5 py-3.5 flex items-center gap-3 text-sm print:hidden"
+          style={{
+            backgroundColor: 'rgba(220, 38, 38, 0.08)',
+            border: '1px solid rgba(220, 38, 38, 0.25)',
+            color: '#b91c1c',
+            fontFamily: headingFontFamily,
+          }}
+        >
+          <AlertTriangle size={18} className="shrink-0" />
+          <span className="font-medium">This quote has expired</span>
+        </div>
+      )}
+      {(expiryState.kind === 'today' ||
+        expiryState.kind === 'tomorrow' ||
+        expiryState.kind === 'soon') && (
+        <div
+          className="mx-8 sm:mx-14 mt-6 rounded-lg px-5 py-3.5 flex items-center gap-3 text-sm print:hidden"
+          style={{
+            backgroundColor: 'rgba(217, 119, 6, 0.08)',
+            border: '1px solid rgba(217, 119, 6, 0.25)',
+            color: '#92400e',
+            fontFamily: headingFontFamily,
+          }}
+        >
+          <Clock size={18} className="shrink-0" />
+          <span className="font-medium">
+            {expiryState.kind === 'today' && 'This quote expires today'}
+            {expiryState.kind === 'tomorrow' && 'This quote expires tomorrow'}
+            {expiryState.kind === 'soon' &&
+              `This quote expires in ${expiryState.days} days`}
+          </span>
+        </div>
+      )}
+      {expiryState.kind === 'valid' && (
+        <div
+          className="mx-8 sm:mx-14 mt-6 rounded-lg px-5 py-3.5 flex items-center gap-3 text-xs print:hidden"
+          style={{
+            backgroundColor: withAlpha(bodyText, 0.03),
+            border: `1px solid ${withAlpha(bodyText, 0.08)}`,
+            color: muted,
+            fontFamily: headingFontFamily,
+          }}
+        >
+          <Clock size={16} className="shrink-0" />
+          <span>Valid until {expiryState.label}</span>
         </div>
       )}
 
@@ -586,10 +693,10 @@ export default function QuoteSinglePageView({
                       {it.qty ?? 1}
                     </td>
                     <td className="py-4 text-right text-sm" style={{ color: muted }}>
-                      {it.unit_price != null ? formatAUD(it.unit_price) : '—'}
+                      {it.unit_price != null ? fmt(it.unit_price) : '—'}
                     </td>
                     <td className="py-4 text-right text-[15px]" style={{ color: bodyText }}>
-                      {formatAUD(it.amount)}
+                      {fmt(it.amount)}
                     </td>
                   </tr>
                 ))}
@@ -630,7 +737,7 @@ export default function QuoteSinglePageView({
                       )}
                     </div>
                     <div className="text-[15px] shrink-0" style={{ color: bodyText, ...TABULAR }}>
-                      {formatAUD(eff)}
+                      {fmt(eff)}
                     </div>
                   </div>
                 );
@@ -680,11 +787,11 @@ export default function QuoteSinglePageView({
                   ...TABULAR,
                 }}
               >
-                {formatAUD(total)}
+                {fmt(total)}
               </div>
               {gstEnabled && (
                 <div className="text-xs mt-2" style={{ color: withAlpha(headerText, 0.6) }}>
-                  Incl. GST ({formatAUD(taxAmount)})
+                  Incl. GST ({fmt(taxAmount)})
                 </div>
               )}
             </div>
@@ -717,7 +824,7 @@ export default function QuoteSinglePageView({
                   className="text-right text-xl font-semibold mt-1 tabular-nums"
                   style={{ color: headerText }}
                 >
-                  {formatAUD(deposit.amount)}
+                  {fmt(deposit.amount)}
                 </div>
               </div>
             )}

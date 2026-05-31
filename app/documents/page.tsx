@@ -10,6 +10,7 @@ import DocumentUploadModal from '@/components/admin/documents/DocumentUploadModa
 import DocumentListCard from '@/components/admin/documents/DocumentListCard';
 import DocumentListRow from '@/components/admin/documents/DocumentListRow';
 import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
+import EmptyState from '@/components/ui/EmptyState';
 import { useEntitlements } from '@/hooks/useEntitlements';
 
 export default function DocumentsPage() {
@@ -176,21 +177,16 @@ function DocumentsContent({ companyId }: { companyId: string }) {
             <p className="text-sm text-muted">No docs matching &ldquo;{searchQuery}&rdquo;</p>
           </div>
         ) : documents.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <FileText size={28} className="text-faint" />
-            </div>
-            <h3 className="text-lg font-semibold text-muted mb-1">No docs yet</h3>
-            <p className="text-sm text-faint">Upload a PDF to create a shareable document</p>
-            <Button
-              size="sm"
-              leftIcon={Plus}
-              onClick={() => setShowUpload(true)}
-              className="mt-4"
-            >
-              New Doc
-            </Button>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="No docs yet"
+            description="Upload a PDF to create a branded, shareable document. Your client gets a beautiful web viewer — no downloads needed."
+            action={
+              <Button size="sm" leftIcon={Plus} onClick={() => setShowUpload(true)}>
+                New Doc
+              </Button>
+            }
+          />
         ) : (
           <>
             {showRecent && (

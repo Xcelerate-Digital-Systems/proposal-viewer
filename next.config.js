@@ -15,12 +15,28 @@ const nextConfig = {
     return config;
   },
 
-  // Security headers for all routes. CSP is omitted for now — TipTap, React
-  // Flow, and the embed widget script require careful CSP configuration.
   async headers() {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://*.supabase.co';
+    const supabaseHost = supabaseUrl.replace(/^https?:\/\//, '');
+    const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
+
+    const csp = [
+      `default-src 'self'`,
+      `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com ${posthogHost}`,
+      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
+      `font-src 'self' https://fonts.gstatic.com data:`,
+      `img-src 'self' blob: data: https://${supabaseHost} https://*.supabase.co`,
+      `connect-src 'self' ${supabaseUrl} wss://${supabaseHost} ${posthogHost} https://api.stripe.com https://api.resend.com`,
+      `frame-src 'self' https://js.stripe.com`,
+      `object-src 'none'`,
+      `base-uri 'self'`,
+      `form-action 'self'`,
+    ].join('; ');
+
     return [{
       source: '/(.*)',
       headers: [
+        { key: 'Content-Security-Policy-Report-Only', value: csp },
         { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
         { key: 'X-Content-Type-Options', value: 'nosniff' },
         { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },

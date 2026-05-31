@@ -7,14 +7,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import { createServiceClient } from '@/lib/supabase-server';
-import { getAuthContext } from '@/lib/api-auth';
+import { requirePermission } from '@/lib/api-auth';
 import { API_KEY_PREFIX, hashApiKey } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  const auth = await getAuthContext(req);
-  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requirePermission(req, 'manage_api_keys');
+  if (auth instanceof NextResponse) return auth;
 
   const supabase = createServiceClient();
   // Only surface user-managed keys here. OAuth-issued tokens (Chrome extension,
@@ -36,8 +36,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await getAuthContext(req);
-  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requirePermission(req, 'manage_api_keys');
+  if (auth instanceof NextResponse) return auth;
 
   const body = await req.json().catch(() => ({}));
   const label = typeof body.label === 'string' ? body.label.trim() : '';
@@ -72,8 +72,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const auth = await getAuthContext(req);
-  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requirePermission(req, 'manage_api_keys');
+  if (auth instanceof NextResponse) return auth;
 
   const id = req.nextUrl.searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });

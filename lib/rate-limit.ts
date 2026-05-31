@@ -97,11 +97,14 @@ export function ipFromRequest(req: NextRequest | Request): string {
   return 'unknown';
 }
 
-/** Standard `X-RateLimit-*` headers to return alongside a response. */
+/** Standard `X-RateLimit-*` + `Retry-After` headers to return alongside a response. */
 export function rateLimitHeaders(rl: RateLimitResult, limit: number): Record<string, string> {
+  const resetEpoch = Math.ceil(rl.reset.getTime() / 1000);
+  const retryAfter = Math.max(1, resetEpoch - Math.ceil(Date.now() / 1000));
   return {
     'X-RateLimit-Limit': String(limit),
     'X-RateLimit-Remaining': String(rl.remaining),
-    'X-RateLimit-Reset': String(Math.ceil(rl.reset.getTime() / 1000)),
+    'X-RateLimit-Reset': String(resetEpoch),
+    'Retry-After': String(retryAfter),
   };
 }

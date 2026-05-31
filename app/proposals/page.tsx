@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, FileText, FilePlus2, LayoutGrid, List, Search, ChevronDown, Upload, LayoutTemplate, KanbanSquare } from 'lucide-react';
+import { Plus, FileText, FilePlus2, LayoutGrid, List, Search, ChevronDown, Upload, LayoutTemplate, KanbanSquare, Trash2, Send, X as XIcon, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import NoResults from '@/components/ui/NoResults';
@@ -51,6 +51,45 @@ function ProposalsContent({ companyId }: { companyId: string }) {
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('board');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const selectAll = () => setSelected(new Set(filtered.map((p) => p.id)));
+  const clearSelection = () => setSelected(new Set());
+
+  const bulkMarkSent = async () => {
+    if (selected.size === 0) return;
+    setBulkLoading(true);
+    const ids = Array.from(selected);
+    const patch = buildStatusPatch('sent' as ProposalStatus);
+    setProposals((prev) =>
+      prev.map((p) => (ids.includes(p.id) ? { ...p, ...(patch as Partial<Proposal>) } : p)),
+    );
+    await supabase.from('proposals').update(patch).in('id', ids);
+    clearSelection();
+    setBulkLoading(false);
+  };
+
+  const bulkDelete = async () => {
+    if (selected.size === 0) return;
+    const count = selected.size;
+    const ok = window.confirm(`Delete ${count} pitch${count !== 1 ? 'es' : ''}? This cannot be undone.`);
+    if (!ok) return;
+    setBulkLoading(true);
+    const ids = Array.from(selected);
+    setProposals((prev) => prev.filter((p) => !ids.includes(p.id)));
+    await supabase.from('proposals').delete().in('id', ids);
+    clearSelection();
+    setBulkLoading(false);
+  };
 
   // Restore view preference
   useEffect(() => {
@@ -279,7 +318,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
           <EmptyState
             icon={FileText}
             title="No pitches yet"
-            description="Upload your first pitch to get started."
+            description="Create a proposal from a template, upload a PDF, or start from scratch. Design it, add your pricing, then share the link with your client."
             action={
               <Button size="sm" leftIcon={Plus} onClick={() => openModal('upload')}>
                 New Pitch
@@ -302,6 +341,23 @@ function ProposalsContent({ companyId }: { companyId: string }) {
           />
         ) : (
           <>
+            {/* Bulk action bar */}
+            {selected.size > 0 && viewMode === 'list' && (
+              <div className="mb-4 flex items-center gap-3 px-4 py-2.5 bg-white rounded-2xl shadow-md border border-edge animate-in slide-in-from-bottom-2 duration-200">
+                <span className="text-sm font-medium text-ink">{selected.size} selected</span>
+                <button onClick={selectAll} className="text-xs text-teal hover:underline">Select all</button>
+                <div className="flex-1" />
+                <Button size="sm" variant="outline" leftIcon={Send} onClick={bulkMarkSent} disabled={bulkLoading}>
+                  Mark as Sent
+                </Button>
+                <Button size="sm" variant="danger" leftIcon={Trash2} onClick={bulkDelete} disabled={bulkLoading}>
+                  Delete
+                </Button>
+                <button onClick={clearSelection} className="p-1.5 rounded-lg text-faint hover:text-ink hover:bg-surface transition-colors" title="Clear selection">
+                  <XIcon size={16} />
+                </button>
+              </div>
+            )}
             {showRecent && (
               <section className="mb-8">
                 <h2 className="text-xs font-semibold text-faint uppercase tracking-wide mb-3">
@@ -354,6 +410,8 @@ function ProposalsContent({ companyId }: { companyId: string }) {
                     proposal={p}
                     onRefresh={fetchProposals}
                     customDomain={customDomain}
+                    selected={selected.has(p.id)}
+                    onToggleSelect={() => toggleSelect(p.id)}
                   />
                 ))}
               </div>

@@ -18,6 +18,8 @@ interface ProposalListRowProps {
   onRefresh: () => void;
   customDomain?: string | null;
   hrefOverride?: string;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -51,7 +53,7 @@ const getPageCount = (p: Proposal): number => {
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export default function ProposalListRow({ proposal: p, onRefresh, customDomain, hrefOverride }: ProposalListRowProps) {
+export default function ProposalListRow({ proposal: p, onRefresh, customDomain, hrefOverride, selected, onToggleSelect }: ProposalListRowProps) {
   const router = useRouter();
   const confirm = useConfirm();
   const toast = useToast();
@@ -91,8 +93,19 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain, 
   return (
     <div
       onClick={() => router.push(hrefOverride ?? (p.entity_type === 'quote' ? `/proposals/${p.id}/quote-pricing` : `/proposals/${p.id}/pages`))}
-      className="flex items-center gap-4 px-4 py-3 bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_8px_rgba(20,20,40,0.06)] cursor-pointer transition-shadow group"
+      className={`flex items-center gap-4 px-4 py-3 bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_8px_rgba(20,20,40,0.06)] cursor-pointer transition-shadow group ${selected ? 'ring-2 ring-teal/40' : ''}`}
     >
+      {/* Selection checkbox */}
+      {onToggleSelect && (
+        <input
+          type="checkbox"
+          checked={selected ?? false}
+          onChange={(e) => { e.stopPropagation(); onToggleSelect(); }}
+          onClick={(e) => e.stopPropagation()}
+          className="w-4 h-4 rounded border-edge-strong text-teal focus:ring-teal/30 shrink-0 cursor-pointer"
+        />
+      )}
+
       {/* Status badge */}
       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium shrink-0 ${sc.bg} ${sc.text}`}>
         {sc.icon}
@@ -127,11 +140,11 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain, 
       </span>
 
       {/* Actions */}
-      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={copyLink}
           className="p-1.5 rounded-lg text-faint hover:text-ink hover:bg-surface transition-colors"
-          title="Copy link"
+          title="Copy share link"
         >
           {copied ? <Check size={14} className="text-[#2E7D32]" /> : <Copy size={14} />}
         </button>

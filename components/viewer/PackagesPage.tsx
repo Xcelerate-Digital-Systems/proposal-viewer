@@ -1,7 +1,7 @@
 // components/viewer/PackagesPage.tsx
 'use client';
 
-import { ProposalPackages, PackageTier, PackageFeature, PackageFeatureIcon, PackageStyling, normalizePackageStyling, formatAUD } from '@/lib/supabase';
+import { ProposalPackages, PackageTier, PackageFeature, PackageFeatureIcon, PackageStyling, normalizePackageStyling, formatCurrency, type CurrencyCode } from '@/lib/supabase';
 import { CompanyBranding, deriveBorderColor, deriveSurfaceColor } from '@/hooks/useProposal';
 import { fontFamily } from '@/lib/google-fonts';
 import { Check, CheckCircle2, ArrowRight, Star, Minus } from 'lucide-react';
@@ -11,10 +11,11 @@ interface PackagesPageProps {
   branding: CompanyBranding;
   clientName?: string;
   orientation?: 'portrait' | 'landscape';
+  currency?: CurrencyCode;
 }
 
-function formatPrice(amount: number): string {
-  const formatted = formatAUD(amount);
+function formatPrice(amount: number, currency: CurrencyCode = 'AUD'): string {
+  const formatted = formatCurrency(amount, currency);
   return formatted.replace(/\.00$/, '');
 }
 

@@ -232,3 +232,109 @@ function clientEmailTemplate(headline: string, body: string, viewerUrl: string, 
 </body>
 </html>`;
 }
+
+/* ─── Client decision confirmation email ────────────────────────────────── */
+
+export type ClientDecisionAction = 'accepted' | 'declined' | 'revision_requested';
+
+interface ClientConfirmationParams {
+  action:        ClientDecisionAction;
+  proposalTitle: string;
+  companyName:   string;
+  companyLogo:   string | null;
+  viewerUrl:     string;
+  entityType?:   string;
+}
+
+export function buildClientConfirmationEmail(params: ClientConfirmationParams): { subject: string; html: string } {
+  const { action, proposalTitle, companyName, companyLogo, viewerUrl, entityType } = params;
+  const label = entityType === 'quote' ? 'quote' : 'proposal';
+
+  let subject = '';
+  let headline = '';
+  let body = '';
+  let accentBg = '';
+
+  switch (action) {
+    case 'accepted':
+      subject  = `Confirmation: You accepted "${proposalTitle}"`;
+      headline = `${label.charAt(0).toUpperCase() + label.slice(1)} Accepted`;
+      accentBg = '#ecfdf5';
+      body     = `
+        <div style="background:${accentBg};border-left:3px solid #10b981;padding:12px 16px;margin:0 0 16px;border-radius:4px;">
+          <p style="margin:0;color:#065f46;font-size:15px;">You accepted <strong>"${escapeHtml(proposalTitle)}"</strong>.</p>
+        </div>
+        <p>If you have any questions or need to discuss next steps, please reach out to <strong>${escapeHtml(companyName)}</strong> directly.</p>`;
+      break;
+
+    case 'declined':
+      subject  = `Confirmation: You declined "${proposalTitle}"`;
+      headline = `${label.charAt(0).toUpperCase() + label.slice(1)} Declined`;
+      accentBg = '#fef2f2';
+      body     = `
+        <div style="background:${accentBg};border-left:3px solid #ef4444;padding:12px 16px;margin:0 0 16px;border-radius:4px;">
+          <p style="margin:0;color:#991b1b;font-size:15px;">You declined <strong>"${escapeHtml(proposalTitle)}"</strong>.</p>
+        </div>
+        <p>If you change your mind or would like to discuss alternatives, you can still view the ${label} using the link below.</p>`;
+      break;
+
+    case 'revision_requested':
+      subject  = `Confirmation: You requested changes on "${proposalTitle}"`;
+      headline = 'Changes Requested';
+      accentBg = '#fffbeb';
+      body     = `
+        <div style="background:${accentBg};border-left:3px solid #f59e0b;padding:12px 16px;margin:0 0 16px;border-radius:4px;">
+          <p style="margin:0;color:#92400e;font-size:15px;">You requested changes on <strong>"${escapeHtml(proposalTitle)}"</strong>.</p>
+        </div>
+        <p><strong>${escapeHtml(companyName)}</strong> has been notified and will update the ${label}. You can check back any time using the link below.</p>`;
+      break;
+  }
+
+  const headerContent = companyLogo
+    ? `<img src="${escapeHtml(companyLogo)}" alt="${escapeHtml(companyName)}" style="display:block;max-height:32px;max-width:200px;height:auto;width:auto;border:0;outline:none;text-decoration:none;" />`
+    : `<span style="color:#ffffff;font-weight:700;font-size:16px;">${escapeHtml(companyName)}</span>`;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+          <tr>
+            <td style="background:#043946;padding:20px 32px;">
+              ${headerContent}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <h1 style="margin:0 0 16px;color:#111827;font-size:22px;font-weight:600;">${headline}</h1>
+              <div style="color:#6b7280;font-size:15px;line-height:1.6;">${body}</div>
+              <table cellpadding="0" cellspacing="0" style="margin-top:24px;">
+                <tr>
+                  <td>
+                    <a href="${viewerUrl}" style="display:inline-block;padding:10px 20px;background:#017C87;color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">View ${label.charAt(0).toUpperCase() + label.slice(1)}</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 32px;border-top:1px solid #f3f4f6;">
+              <p style="margin:0;color:#9ca3af;font-size:12px;">This is a confirmation of your response to a ${label} from ${escapeHtml(companyName)}.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  return { subject, html };
+}

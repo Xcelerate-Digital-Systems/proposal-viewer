@@ -227,7 +227,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
           <EmptyState
             icon={MessageSquareText}
             title="No campaigns yet"
-            description="Create a campaign to start collecting feedback on your creative work."
+            description="Campaigns let your clients review and approve creative assets — webpages, emails, ads, images, and more. Create one, upload your assets, then share the link."
             action={
               <Button size="sm" leftIcon={Plus} onClick={() => setShowCreate(true)}>
                 New Campaign

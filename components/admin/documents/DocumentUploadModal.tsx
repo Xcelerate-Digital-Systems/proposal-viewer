@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Upload, FileText, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { FormFields, fieldsByType } from '@/components/ui/FormField';
@@ -21,6 +22,7 @@ const formatSize = (bytes: number | null) => {
 
 export default function DocumentUploadModal({ companyId, onClose, onSuccess }: DocumentUploadModalProps) {
   const toast = useToast();
+  const router = useRouter();
   const [form, setForm] = useState({ title: '', description: '' });
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -89,21 +91,20 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
       });
 
       if (!splitRes.ok) {
-        // Non-fatal — page editor falls back gracefully, but warn the user
         toast.error('Doc created but page splitting failed. Try re-uploading.');
         setUploading(false);
         onSuccess();
         onClose();
+        router.push(`/documents/${insertedDocId}/pages`);
         return;
       }
 
       const splitData = await splitRes.json();
       toast.success(`Doc created with ${splitData.page_count} pages!`);
 
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-      }, 300);
+      onSuccess();
+      onClose();
+      router.push(`/documents/${insertedDocId}/pages`);
     } catch (err) {
       console.error(err);
       toast.error('Upload failed. Please try again.');

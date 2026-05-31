@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { supabase, type Proposal, formatAUD, pricingEffectiveSubtotal } from '@/lib/supabase';
+import { supabase, type Proposal, formatCurrency, pricingEffectiveSubtotal, SUPPORTED_CURRENCIES, type CurrencyCode } from '@/lib/supabase';
 import { authFetch } from '@/lib/auth-fetch';
 import { useToast } from '@/components/ui/Toast';
 import Toggle from '@/components/ui/Toggle';
@@ -38,12 +38,14 @@ function ToggleRow({
 
 export default function PricingSettingsSection({ proposal, onSaved }: Props) {
   const toast = useToast();
+  const [currency, setCurrency] = useState<CurrencyCode>((proposal as Record<string, unknown>).currency as CurrencyCode || 'AUD');
   const [includeGst, setIncludeGst] = useState(proposal.include_gst ?? true);
   const [gstRate, setGstRate] = useState(proposal.gst_rate ?? 0.10);
   const [requireDeposit, setRequireDeposit] = useState(proposal.require_deposit ?? true);
   const [depositPercent, setDepositPercent] = useState(proposal.deposit_percent ?? 30);
   const [subtotal, setSubtotal] = useState(0);
   const [saving, setSaving] = useState(false);
+  const fmt = (amount: number) => formatCurrency(amount, currency);
 
   // Load the current pricing page's line items to compute the live summary.
   useEffect(() => {
@@ -71,6 +73,7 @@ export default function PricingSettingsSection({ proposal, onSaved }: Props) {
     : 0;
 
   const dirty =
+    currency !== ((proposal as Record<string, unknown>).currency as CurrencyCode || 'AUD') ||
     includeGst !== (proposal.include_gst ?? true) ||
     gstRate !== (proposal.gst_rate ?? 0.10) ||
     requireDeposit !== (proposal.require_deposit ?? true) ||
@@ -81,6 +84,7 @@ export default function PricingSettingsSection({ proposal, onSaved }: Props) {
     const { error } = await supabase
       .from('proposals')
       .update({
+        currency,
         include_gst: includeGst,
         gst_rate: gstRate,
         require_deposit: requireDeposit,
@@ -100,6 +104,23 @@ export default function PricingSettingsSection({ proposal, onSaved }: Props) {
   return (
     <SectionCard title="Pricing">
       <div className="space-y-4">
+        {/* Currency */}
+        <div>
+          <label className="block text-xs font-medium text-prose mb-1">Currency</label>
+          <select
+            value={currency}
+            onChange={(e) => {
+              setCurrency(e.target.value as CurrencyCode);
+              setTimeout(() => save(), 0);
+            }}
+            className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 bg-white"
+          >
+            {SUPPORTED_CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>{c.symbol} — {c.label} ({c.code})</option>
+            ))}
+          </select>
+        </div>
+
         {/* GST */}
         <div>
           <ToggleRow
@@ -116,17 +137,17 @@ export default function PricingSettingsSection({ proposal, onSaved }: Props) {
           <div className="mt-3 rounded-lg bg-surface px-4 py-3 text-sm space-y-1.5">
             <div className="flex items-center justify-between text-dim">
               <span>Subtotal</span>
-              <span className="tabular-nums">{formatAUD(subtotal)}</span>
+              <span className="tabular-nums">{fmt(subtotal)}</span>
             </div>
             {includeGst && (
               <div className="flex items-center justify-between text-dim">
                 <span>GST ({gstPct}%)</span>
-                <span className="tabular-nums">{formatAUD(gstAmount)}</span>
+                <span className="tabular-nums">{fmt(gstAmount)}</span>
               </div>
             )}
             <div className="flex items-center justify-between pt-1.5 mt-1 border-t border-edge-strong font-semibold text-ink">
               <span>Total</span>
-              <span className="tabular-nums text-teal">{formatAUD(total)}</span>
+              <span className="tabular-nums text-teal">{fmt(total)}</span>
             </div>
           </div>
         </div>
@@ -159,7 +180,7 @@ export default function PricingSettingsSection({ proposal, onSaved }: Props) {
                 />
               </div>
               <div className="text-sm text-dim pt-6 tabular-nums">
-                = <span className="font-semibold text-ink">{formatAUD(depositAmount)}</span>
+                = <span className="font-semibold text-ink">{fmt(depositAmount)}</span>
               </div>
             </div>
           )}

@@ -11,6 +11,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit';
 import { enqueueGhlSync, buildProposalSyncPayload } from '@/lib/connectors/ghl/sync';
+import { getResend, FROM_EMAIL } from '@/lib/resend';
+import { buildProposalUrl } from '@/lib/proposal-url';
+import { buildClientConfirmationEmail, type ClientDecisionAction } from '@/lib/notification-emails';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +27,7 @@ interface Body {
   name?: string;
   reason?: string;
   notes?: string;
+  viewer_email?: string;
 }
 
 const VALID_ACTIONS: Action[] = ['accept', 'decline', 'request_revision', 'view'];
@@ -87,6 +91,43 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
     }
   };
 
+  // Fire-and-forget client confirmation email
+  const sendClientConfirmation = (decisionAction: ClientDecisionAction) => {
+    const clientEmail = (typeof body.viewer_email === 'string' && body.viewer_email.trim())
+      ? body.viewer_email.trim()
+      : proposal.client_email;
+    if (!clientEmail) return;
+
+    // Fetch company branding (name + logo) then send — non-blocking
+    (async () => {
+      try {
+        const { data: company } = await supabase
+          .from('companies')
+          .select('name, logo_url, custom_domain, domain_verified')
+          .eq('id', proposal.company_id)
+          .single();
+
+        const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
+        const verifiedDomain = company?.domain_verified ? company.custom_domain : null;
+        const viewerUrl = buildProposalUrl(params.token, verifiedDomain, appUrl);
+        const companyName = company?.name || 'Your agency';
+
+        const { subject, html } = buildClientConfirmationEmail({
+          action: decisionAction,
+          proposalTitle: proposal.title,
+          companyName,
+          companyLogo: company?.logo_url || null,
+          viewerUrl,
+          entityType: proposal.entity_type ?? undefined,
+        });
+
+        await getResend().emails.send({ from: FROM_EMAIL, to: clientEmail, subject, html });
+      } catch (err) {
+        console.error('[api/proposals/share/[token]/action] confirmation email error:', err);
+      }
+    })();
+  };
+
   if (action === 'accept') {
     const name = typeof body.name === 'string' ? body.name.slice(0, 200) : '';
     if (!name) return NextResponse.json({ error: 'name is required' }, { status: 400 });
@@ -99,6 +140,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
     triggerGhlSync(proposal.status, 'accepted');
+    sendClientConfirmation('accepted');
     return NextResponse.json({ success: true });
   }
 
@@ -120,6 +162,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
     triggerGhlSync(proposal.status, 'declined');
+    sendClientConfirmation('declined');
     return NextResponse.json({ success: true });
   }
 
@@ -141,6 +184,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
     triggerGhlSync(proposal.status, 'revision_requested');
+    sendClientConfirmation('revision_requested');
     return NextResponse.json({ success: true });
   }
 

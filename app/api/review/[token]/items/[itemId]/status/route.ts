@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 import type { FeedbackStatus } from '@/lib/types/feedback';
 
 const CLIENT_ALLOWED_STATUSES: FeedbackStatus[] = [
@@ -43,6 +44,12 @@ export async function POST(
   props: { params: Promise<{ token: string; itemId: string }> }
 ) {
   const params = await props.params;
+
+  const rl = await rateLimit({ key: `review:status:${params.token || ipFromRequest(req)}`, limit: 20, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: rateLimitHeaders(rl, 20) });
+  }
+
   try {
     const body = await req.json().catch(() => null);
     const status: FeedbackStatus | undefined = body?.status;

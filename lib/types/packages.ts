@@ -193,13 +193,45 @@ export function pricingTax(subtotal: number, rate: number): number {
   return Math.round(subtotal * (rate / 100) * 100) / 100;
 }
 
-/** Helper: format AUD currency */
-export function formatAUD(amount: number): string {
-  return new Intl.NumberFormat('en-AU', {
+export type CurrencyCode = 'AUD' | 'USD' | 'GBP' | 'EUR' | 'NZD' | 'CAD' | 'SGD' | 'HKD' | 'JPY' | 'CHF' | 'ZAR' | 'AED' | 'INR';
+
+export const SUPPORTED_CURRENCIES: { code: CurrencyCode; label: string; symbol: string }[] = [
+  { code: 'AUD', label: 'Australian Dollar', symbol: 'A$' },
+  { code: 'USD', label: 'US Dollar', symbol: '$' },
+  { code: 'GBP', label: 'British Pound', symbol: '£' },
+  { code: 'EUR', label: 'Euro', symbol: '€' },
+  { code: 'NZD', label: 'New Zealand Dollar', symbol: 'NZ$' },
+  { code: 'CAD', label: 'Canadian Dollar', symbol: 'C$' },
+  { code: 'SGD', label: 'Singapore Dollar', symbol: 'S$' },
+  { code: 'HKD', label: 'Hong Kong Dollar', symbol: 'HK$' },
+  { code: 'JPY', label: 'Japanese Yen', symbol: '¥' },
+  { code: 'CHF', label: 'Swiss Franc', symbol: 'CHF' },
+  { code: 'ZAR', label: 'South African Rand', symbol: 'R' },
+  { code: 'AED', label: 'UAE Dirham', symbol: 'AED' },
+  { code: 'INR', label: 'Indian Rupee', symbol: '₹' },
+];
+
+const CURRENCY_LOCALES: Partial<Record<CurrencyCode, string>> = {
+  AUD: 'en-AU', USD: 'en-US', GBP: 'en-GB', EUR: 'de-DE',
+  NZD: 'en-NZ', CAD: 'en-CA', SGD: 'en-SG', HKD: 'zh-HK',
+  JPY: 'ja-JP', CHF: 'de-CH', ZAR: 'en-ZA', AED: 'ar-AE', INR: 'en-IN',
+};
+
+/** Format an amount in any supported currency. */
+export function formatCurrency(amount: number, currency: CurrencyCode = 'AUD'): string {
+  const locale = CURRENCY_LOCALES[currency] || 'en-AU';
+  const fractionDigits = currency === 'JPY' ? 0 : 2;
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: 'AUD',
-    minimumFractionDigits: 2,
+    currency,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
   }).format(amount);
+}
+
+/** @deprecated Use formatCurrency(amount, currency) instead. */
+export function formatAUD(amount: number): string {
+  return formatCurrency(amount, 'AUD');
 }
 
 /** Helper: generate a short unique id for line items */

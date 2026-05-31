@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
@@ -21,6 +22,7 @@ export default function CreateFeedbackProjectModal({
   onSuccess,
 }: CreateReviewProjectModalProps) {
   const toast = useToast();
+  const router = useRouter();
   const { check } = useEntitlements(companyId);
   const reviewCheck = check('reviews');
   const [saving, setSaving] = useState(false);
@@ -82,6 +84,7 @@ export default function CreateFeedbackProjectModal({
     toast.success('Campaign created');
     onSuccess();
     onClose();
+    router.push(`/campaigns/${created.id}/setup`);
   };
 
   return (

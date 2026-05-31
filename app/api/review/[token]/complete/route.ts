@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 
 /**
  * POST /api/review/[token]/complete
@@ -12,6 +13,12 @@ import { createServiceClient } from '@/lib/supabase-server';
  */
 export async function POST(req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
+
+  const rl = await rateLimit({ key: `review:complete:${params.token || ipFromRequest(req)}`, limit: 5, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: rateLimitHeaders(rl, 5) });
+  }
+
   try {
     const supabase = createServiceClient();
     const body = await req.json().catch(() => ({}));

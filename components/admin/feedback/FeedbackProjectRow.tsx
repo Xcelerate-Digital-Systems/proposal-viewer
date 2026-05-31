@@ -134,11 +134,11 @@ export default function FeedbackProjectRow({ project, onRefresh, customDomain }:
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={copyLink}
           className="p-1.5 rounded-lg text-faint hover:text-teal hover:bg-teal-tint transition-colors"
-          title="Copy link"
+          title="Copy share link"
         >
           {copied ? <Check size={14} className="text-[#2E7D32]" /> : <Copy size={14} />}
         </button>
