@@ -35,6 +35,8 @@ interface DecisionPagePreviewProps {
   declineSubtitle: string;
   revisionHeading: string;
   revisionSubtitle: string;
+  /** Whether the signature capture is shown in the preview. */
+  requireSignature?: boolean;
 }
 
 /* ── Helper duplicated from DesignPreviews to keep the preview self-contained
@@ -111,6 +113,7 @@ export default function DecisionPagePreview({
   declineSubtitle,
   revisionHeading,
   revisionSubtitle,
+  requireSignature,
 }: DecisionPagePreviewProps) {
   const [loaded, setLoaded] = useState(false);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
@@ -248,6 +251,7 @@ export default function DecisionPagePreview({
             onAccept={noopAccept}
             onDecline={noopDecline}
             onRequestRevision={noopRevision}
+            requireSignature={requireSignature}
             tokens={{
               bodyBg,
               bodyText,

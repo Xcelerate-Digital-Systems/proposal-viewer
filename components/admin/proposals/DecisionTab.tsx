@@ -509,6 +509,7 @@ export default function DecisionTab({
           declineSubtitle={declineSubtitle}
           revisionHeading={revisionHeading}
           revisionSubtitle={revisionSubtitle}
+          requireSignature={requireSignature}
         />
       </StickyPreviewAside>
     </div>

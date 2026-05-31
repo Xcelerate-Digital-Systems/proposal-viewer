@@ -337,26 +337,29 @@ export default function ProposalDecisionPanel({
             </div>
           )}
 
-          <div className="text-left mb-6">
-            <label
-              className="block text-2xs tracking-[0.18em] uppercase mb-1.5"
-              style={{ color: faint, fontFamily: headingFontFamily }}
-            >
-              Type your full name to confirm
-            </label>
-            <input
-              type="text"
-              value={signerName}
-              onChange={(e) => setSignerName(e.target.value)}
-              placeholder="e.g. John Smith"
-              className="w-full px-3 py-2.5 rounded-lg text-base md:text-sm focus:outline-none transition-colors"
-              style={{
-                border: `1px solid ${hairline}`,
-                backgroundColor: bodyBg,
-                color: bodyText,
-              }}
-            />
-          </div>
+          {/* Name field — hidden when signature is required on accept tab (signature section includes its own name input) */}
+          {!(requireSignature && activeAction === 'accept') && (
+            <div className="text-left mb-6">
+              <label
+                className="block text-2xs tracking-[0.18em] uppercase mb-1.5"
+                style={{ color: faint, fontFamily: headingFontFamily }}
+              >
+                Type your full name to confirm
+              </label>
+              <input
+                type="text"
+                value={signerName}
+                onChange={(e) => setSignerName(e.target.value)}
+                placeholder="e.g. John Smith"
+                className="w-full px-3 py-2.5 rounded-lg text-base md:text-sm focus:outline-none transition-colors"
+                style={{
+                  border: `1px solid ${hairline}`,
+                  backgroundColor: bodyBg,
+                  color: bodyText,
+                }}
+              />
+            </div>
+          )}
 
           {requireSignature && activeAction === 'accept' && (
             <div className="mb-6">
@@ -369,7 +372,13 @@ export default function ProposalDecisionPanel({
               <Suspense fallback={<div className="h-28 rounded-xl border-2 border-dashed border-gray-200 animate-pulse" />}>
                 <SignatureCapture
                   signerName={signerName}
+                  onSignerNameChange={setSignerName}
                   accentColor={headingColor}
+                  hairlineColor={hairline}
+                  inputBg={bodyBg}
+                  inputColor={bodyText}
+                  labelColor={faint}
+                  labelFont={headingFontFamily}
                   onSignatureChange={handleSignatureChange}
                 />
               </Suspense>

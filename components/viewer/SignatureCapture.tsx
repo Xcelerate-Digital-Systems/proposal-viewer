@@ -11,13 +11,25 @@ export interface SignatureData {
 
 interface SignatureCaptureProps {
   signerName: string;
+  onSignerNameChange?: (name: string) => void;
   accentColor?: string;
+  hairlineColor?: string;
+  inputBg?: string;
+  inputColor?: string;
+  labelColor?: string;
+  labelFont?: string;
   onSignatureChange: (data: SignatureData | null) => void;
 }
 
 export default function SignatureCapture({
   signerName,
+  onSignerNameChange,
   accentColor = '#017C87',
+  hairlineColor = '#d1d5db',
+  inputBg = '#ffffff',
+  inputColor = '#1f2937',
+  labelColor,
+  labelFont,
   onSignatureChange,
 }: SignatureCaptureProps) {
   const [mode, setMode] = useState<'typed' | 'drawn'>('typed');
@@ -119,6 +131,24 @@ export default function SignatureCapture({
 
   return (
     <div className="space-y-3">
+      {onSignerNameChange && (
+        <div className="text-left">
+          <label
+            className="block text-2xs tracking-[0.18em] uppercase mb-1.5"
+            style={{ color: labelColor || '#9ca3af', fontFamily: labelFont }}
+          >
+            Your full name
+          </label>
+          <input
+            type="text"
+            value={signerName}
+            onChange={(e) => onSignerNameChange(e.target.value)}
+            placeholder="e.g. John Smith"
+            className="w-full px-3 py-2.5 rounded-lg text-base md:text-sm focus:outline-none transition-colors"
+            style={{ border: `1px solid ${hairlineColor}`, backgroundColor: inputBg, color: inputColor }}
+          />
+        </div>
+      )}
       <div className="flex items-center gap-1 p-1 bg-black/5 rounded-lg w-fit">
         <button
           type="button"

@@ -285,13 +285,17 @@ export function DecisionDesignPreview({
 }: PreviewProps & { live?: DecisionPreviewLive }) {
   const [loaded, setLoaded] = useState(false);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
+  const [requireSignature, setRequireSignature] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const b = await loadBranding(entityId, entityKey);
+      const table = entityKey === 'template_id' ? 'proposal_templates' : 'proposals';
+      const { data: row } = await supabase.from(table).select('require_signature').eq('id', entityId).maybeSingle();
       if (!cancelled) {
         setBranding(b);
+        setRequireSignature(!!(row as Record<string, unknown> | null)?.require_signature);
         setLoaded(true);
       }
     })();
@@ -384,6 +388,7 @@ export function DecisionDesignPreview({
             onAccept={noopAccept}
             onDecline={noopDecline}
             onRequestRevision={noopRevision}
+            requireSignature={requireSignature}
             tokens={{
               bodyBg,
               bodyText,
