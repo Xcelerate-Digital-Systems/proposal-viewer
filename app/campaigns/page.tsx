@@ -189,20 +189,22 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
             </div>
 
             {/* New project */}
-            <Button
-              size="sm"
-              leftIcon={Plus}
-              onClick={() => setShowCreate(true)}
-            >
-              New Campaign
-            </Button>
+            <div data-tour="campaigns-new">
+              <Button
+                size="sm"
+                leftIcon={Plus}
+                onClick={() => setShowCreate(true)}
+              >
+                New Campaign
+              </Button>
+            </div>
         </>}
       />
 
       {/* Content — board needs overflow-hidden so its column heights resolve
           and the horizontal scroll stays inside the board. List/grid keep
           the normal vertical scroll. */}
-      <div className={`flex-1 px-6 lg:px-10 ${viewMode === 'board' ? 'pt-4 pb-8 overflow-hidden' : 'py-8 overflow-y-auto'}`}>
+      <div data-tour="campaigns-list" className={`flex-1 px-6 lg:px-10 ${viewMode === 'board' ? 'pt-4 pb-8 overflow-hidden' : 'py-8 overflow-y-auto'}`}>
         {showCreate && (
           <CreateFeedbackProjectModal
             companyId={companyId}

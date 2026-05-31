@@ -10,6 +10,7 @@ import { SwipeFileProvider } from '@/components/admin/ads/swipe/SwipeFileContext
 import { FeedbackBoardProvider } from '@/components/admin/feedback/board/FeedbackBoardContext';
 import { FunnelBoardProvider } from '@/components/admin/funnels/board/FunnelBoardContext';
 import { TourProvider } from '@/components/tours/TourProvider';
+import { SetupChecklist } from '@/components/tours/SetupChecklist';
 import { BillingGuard } from '@/components/auth/BillingGuard';
 import { AnalyticsIdentifier } from '@/components/analytics/AnalyticsIdentifier';
 import { CrispWidget } from '@/components/support/CrispWidget';
@@ -169,5 +170,10 @@ function AdminLayoutInner({
     wrapped
   );
 
-  return <TourProvider>{guarded}</TourProvider>;
+  return (
+    <TourProvider>
+      {guarded}
+      <SetupChecklist />
+    </TourProvider>
+  );
 }

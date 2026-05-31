@@ -5,16 +5,30 @@
 
 import type { Step } from 'react-joyride';
 import { dashboardTour } from './tours/dashboard';
+import { proposalsTour } from './tours/proposals';
+import { quotesTour } from './tours/quotes';
+import { documentsTour } from './tours/documents';
+import { campaignsTour } from './tours/campaigns';
+import { funnelsTour } from './tours/funnels';
+import { swipeTour } from './tours/swipe';
+import { integrationsTour } from './tours/integrations';
 
-export type TourId = 'dashboard' | 'proposals' | 'reviews' | 'integrations';
+export type TourId =
+  | 'dashboard'
+  | 'proposals'
+  | 'quotes'
+  | 'documents'
+  | 'campaigns'
+  | 'funnels'
+  | 'swipe'
+  | 'integrations';
 
 type TourEntry = {
   id: TourId;
-  /** Steps Joyride walks the user through. */
   steps: Step[];
-  /** Predicate: should this tour fire on this pathname? */
   matchesPath: (pathname: string) => boolean;
-  /** Label shown next to the "?" replay button. */
+  /** The canonical path to navigate to before starting this tour. */
+  path: string;
   label: string;
 };
 
@@ -23,27 +37,56 @@ const REGISTRY: Record<TourId, TourEntry> = {
     id: 'dashboard',
     steps: dashboardTour,
     matchesPath: (p) => p === '/dashboard',
+    path: '/dashboard',
     label: 'Dashboard tour',
   },
-  // Stubs — flesh out the step arrays + add a tours/<name>.ts file when each
-  // surface is ready for guided onboarding. Until then they exist in the
-  // registry so the ReplayButton compile-time check passes.
   proposals: {
     id: 'proposals',
-    steps: [],
-    matchesPath: (p) => p === '/proposals' || p.startsWith('/proposals/'),
+    steps: proposalsTour,
+    matchesPath: (p) => p === '/proposals',
+    path: '/proposals',
     label: 'Proposals tour',
   },
-  reviews: {
-    id: 'reviews',
-    steps: [],
-    matchesPath: (p) => p === '/campaigns' || p.startsWith('/campaigns/'),
-    label: 'Reviews tour',
+  quotes: {
+    id: 'quotes',
+    steps: quotesTour,
+    matchesPath: (p) => p === '/quotes',
+    path: '/quotes',
+    label: 'Quotes tour',
+  },
+  documents: {
+    id: 'documents',
+    steps: documentsTour,
+    matchesPath: (p) => p === '/documents',
+    path: '/documents',
+    label: 'Documents tour',
+  },
+  campaigns: {
+    id: 'campaigns',
+    steps: campaignsTour,
+    matchesPath: (p) => p === '/campaigns',
+    path: '/campaigns',
+    label: 'Campaigns tour',
+  },
+  funnels: {
+    id: 'funnels',
+    steps: funnelsTour,
+    matchesPath: (p) => p === '/funnels',
+    path: '/funnels',
+    label: 'Funnels tour',
+  },
+  swipe: {
+    id: 'swipe',
+    steps: swipeTour,
+    matchesPath: (p) => p.startsWith('/ads/swipe'),
+    path: '/ads/swipe',
+    label: 'Swipe Vault tour',
   },
   integrations: {
     id: 'integrations',
-    steps: [],
+    steps: integrationsTour,
     matchesPath: (p) => p.startsWith('/integrations'),
+    path: '/integrations/looker-studio',
     label: 'Integrations tour',
   },
 };
@@ -52,10 +95,9 @@ export function getTour(id: TourId): TourEntry | null {
   return REGISTRY[id] ?? null;
 }
 
-/** Pick the tour matching the current pathname, or null if none. */
 export function resolveTourForPath(pathname: string): TourId | null {
   for (const tour of Object.values(REGISTRY)) {
-    if (tour.steps.length === 0) continue; // stub — don't try to auto-fire
+    if (tour.steps.length === 0) continue;
     if (tour.matchesPath(pathname)) return tour.id;
   }
   return null;

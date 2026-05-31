@@ -154,17 +154,19 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
               className="bg-transparent text-caption text-ink placeholder-faint outline-none w-full"
             />
           </div>
-          <Button
-            size="sm"
-            leftIcon={Plus}
-            onClick={() => setShowCreate(true)}
-          >
-            New Funnel
-          </Button>
+          <div data-tour="funnels-new">
+            <Button
+              size="sm"
+              leftIcon={Plus}
+              onClick={() => setShowCreate(true)}
+            >
+              New Funnel
+            </Button>
+          </div>
         </>}
       />
 
-      <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
+      <div data-tour="funnels-list" className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
         {showCreate && (
           <CreateFunnelModal
             onClose={() => setShowCreate(false)}

@@ -105,7 +105,7 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto bg-ivory p-6 lg:p-10">
+      <div data-tour="swipe-content" className="flex-1 overflow-y-auto bg-ivory p-6 lg:p-10">
         {!currentType ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-sm text-faint">Loading…</p>

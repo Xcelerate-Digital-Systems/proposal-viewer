@@ -155,7 +155,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
         description={`${proposals.length} proposal${proposals.length !== 1 ? 's' : ''}`}
         actions={<>
           {/* View toggle */}
-          <div className="flex items-center bg-surface rounded-full p-1 gap-0.5">
+          <div data-tour="proposals-view-toggle" className="flex items-center bg-surface rounded-full p-1 gap-0.5">
             <button
               onClick={() => toggleViewMode('grid')}
               className={`w-[34px] h-[30px] rounded-lg flex items-center justify-center transition-all ${
@@ -204,7 +204,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
           </div>
 
           {/* New — dropdown */}
-          <div className="relative" ref={newDropdownRef}>
+          <div data-tour="proposals-new" className="relative" ref={newDropdownRef}>
             <Button
               size="sm"
               leftIcon={Plus}
@@ -256,7 +256,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
 
       {/* Content — board uses overflow-hidden + tight padding so it can fill
           the available height; list/grid keep the standard vertical scroll. */}
-      <div className={`flex-1 px-6 lg:px-10 ${viewMode === 'board' ? 'pt-4 pb-8 overflow-hidden' : 'py-8 overflow-y-auto'}`}>
+      <div data-tour="proposals-list" className={`flex-1 px-6 lg:px-10 ${viewMode === 'board' ? 'pt-4 pb-8 overflow-hidden' : 'py-8 overflow-y-auto'}`}>
         {showUpload && (
           <UploadModal
             companyId={companyId}

@@ -140,20 +140,22 @@ function DocumentsContent({ companyId }: { companyId: string }) {
           </div>
 
           {/* New document */}
-          <Button
-            size="sm"
-            leftIcon={Plus}
-            onClick={() => setShowUpload(true)}
-            disabled={!documentCheck.allowed}
-            title={documentCheck.allowed ? undefined : documentCheck.message}
-          >
-            New Doc
-          </Button>
+          <div data-tour="documents-new">
+            <Button
+              size="sm"
+              leftIcon={Plus}
+              onClick={() => setShowUpload(true)}
+              disabled={!documentCheck.allowed}
+              title={documentCheck.allowed ? undefined : documentCheck.message}
+            >
+              New Doc
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
+      <div data-tour="documents-list" className="flex-1 overflow-y-auto px-6 lg:px-10 py-8">
         {showUpload && (
           <DocumentUploadModal
             companyId={companyId}

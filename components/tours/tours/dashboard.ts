@@ -1,7 +1,7 @@
 // components/tours/tours/dashboard.ts
-// Joyride steps for the /dashboard. Keep it short — 4 steps max. The
-// goal is orient-then-get-out-of-the-way, not a full feature tour.
-// Targets are `data-tour="..."` attributes on real DOM nodes.
+// Joyride steps for the /dashboard. The first step is a centered welcome
+// modal with the AgencyViz logo (rendered by TourTooltip). Keep the
+// tour short — orient-then-get-out-of-the-way.
 
 import type { Step } from 'react-joyride';
 
@@ -17,14 +17,14 @@ export const dashboardTour: Step[] = [
   {
     target: '[data-tour="dashboard-feedback"]',
     placement: 'bottom',
-    title: 'Feedback inbox + projects',
+    title: 'Campaigns inbox',
     content:
-      'Client comments awaiting your reply appear at the top. Underneath, every active feedback project — drag cards between columns to update status.',
+      'Client comments awaiting your reply appear at the top. Underneath, every active campaign — drag cards between columns to update status.',
     skipBeacon: true,
   },
   {
     target: '[data-tour="dashboard-proposals"]',
-    placement: 'top',
+    placement: 'bottom-start',
     title: 'Proposals & quotes pipeline',
     content:
       'Everything you have in flight, by stage. Drag a card to move it forward. Click any card to open the builder.',
@@ -35,7 +35,7 @@ export const dashboardTour: Step[] = [
     placement: 'right',
     title: 'Everything else',
     content:
-      "Jump between proposals, documents, feedback projects, and integrations from here. Settings and billing live at the bottom — that's also where you'll find the rest of the tours when you're ready.",
+      "Jump between proposals, documents, campaigns, and integrations from here. Settings and billing live at the bottom.",
     skipBeacon: true,
   },
 ];

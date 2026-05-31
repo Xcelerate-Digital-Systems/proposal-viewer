@@ -39,7 +39,7 @@ export default function SwipeTypesSidebarNav({ onNavigate }: { onNavigate?: () =
         </span>
       </div>
 
-      <div className="space-y-0.5">
+      <div data-tour="swipe-types" className="space-y-0.5">
         {swipe.loading ? (
           <p className="text-xs text-white/40 px-3 py-2">Loading…</p>
         ) : swipe.types.length === 0 ? (

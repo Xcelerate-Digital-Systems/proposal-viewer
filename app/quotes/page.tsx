@@ -176,7 +176,7 @@ function QuotesContent({ companyId }: { companyId: string }) {
             />
           </div>
 
-          <div className="relative" ref={newDropdownRef}>
+          <div data-tour="quotes-new" className="relative" ref={newDropdownRef}>
             <Button
               size="sm"
               leftIcon={Plus}
@@ -216,7 +216,7 @@ function QuotesContent({ companyId }: { companyId: string }) {
 
       {/* Content — board needs overflow-hidden so columns fill the viewport,
           horizontal scroll stays inside the board, etc. */}
-      <div className={`flex-1 px-6 lg:px-10 ${viewMode === 'board' ? 'pt-4 pb-8 overflow-hidden' : 'py-8 overflow-y-auto'}`}>
+      <div data-tour="quotes-list" className={`flex-1 px-6 lg:px-10 ${viewMode === 'board' ? 'pt-4 pb-8 overflow-hidden' : 'py-8 overflow-y-auto'}`}>
         {showUpload && (
           <UploadModal
             companyId={companyId}

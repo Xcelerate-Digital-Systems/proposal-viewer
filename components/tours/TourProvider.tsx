@@ -4,7 +4,10 @@
 // Responsibilities:
 //   • On pathname change, decide whether to auto-launch a tour the current
 //     user hasn't seen yet (driven by team_members.tours_completed).
-//   • Render Joyride when a tour is active.
+//   • Check for a "pending tour" in sessionStorage (written by the
+//     SetupChecklist when navigating to a tour's page).
+//   • Render Joyride when a tour is active — scrolls the page to each
+//     target element automatically.
 //   • On finish/skip, PATCH /api/team-members/me so the same tour never
 //     auto-fires for this user again, then refresh useAuth memberships so
 //     the cached state matches.
@@ -32,6 +35,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { authFetch } from '@/lib/auth-fetch';
 import { getTour, resolveTourForPath, type TourId } from './tour-config';
+import { TourTooltip } from './TourTooltip';
 
 /* ── Per-tab dismissed-set persistence ──────────────────────────────────
  * AdminLayout (and TourProvider with it) unmounts on every page
@@ -43,6 +47,7 @@ import { getTour, resolveTourForPath, type TourId } from './tour-config';
  * user id) doesn't leak between users who log in/out in the same tab. */
 
 const STORAGE_KEY_PREFIX = 'agencyviz_tours_dismissed:';
+const PENDING_TOUR_KEY = 'agencyviz_pending_tour';
 
 function storageKey(userId: string | null | undefined): string | null {
   if (!userId) return null;
@@ -67,7 +72,28 @@ function writeDismissed(userId: string | null | undefined, ids: Set<string>): vo
   try {
     window.sessionStorage.setItem(key, JSON.stringify(Array.from(ids)));
   } catch {
-    /* quota / privacy mode — harmless, just means we fall back to the DB-persisted gate */
+    /* quota / privacy mode — harmless */
+  }
+}
+
+/** Write a pending tour that TourProvider picks up after navigation. */
+export function setPendingTour(id: TourId): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(PENDING_TOUR_KEY, id);
+  } catch {
+    /* harmless */
+  }
+}
+
+function consumePendingTour(): TourId | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const id = window.sessionStorage.getItem(PENDING_TOUR_KEY) as TourId | null;
+    if (id) window.sessionStorage.removeItem(PENDING_TOUR_KEY);
+    return id;
+  } catch {
+    return null;
   }
 }
 
@@ -88,10 +114,8 @@ export function TourProvider({ children }: { children: ReactNode }) {
 
   const [activeId, setActiveId] = useState<TourId | null>(null);
   const [steps, setSteps] = useState<Step[]>([]);
-  // In-memory mirror of the sessionStorage dismissed set. Used so the
-  // auto-launch effect can check synchronously without touching
-  // sessionStorage on every render. Re-hydrated on mount.
   const dismissedRef = useRef<Set<string>>(new Set());
+  const pendingCheckedRef = useRef(false);
 
   const userId = auth.session?.user?.id ?? null;
 
@@ -102,10 +126,26 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const completed =
     (auth.teamMember?.tours_completed as Record<string, string> | undefined) ?? {};
 
+  // Check for a pending tour (written by SetupChecklist before navigating).
+  // Runs once after auth resolves. Takes priority over auto-launch.
+  useEffect(() => {
+    if (auth.loading || !auth.teamMember) return;
+    if (pendingCheckedRef.current) return;
+    pendingCheckedRef.current = true;
+
+    const pending = consumePendingTour();
+    if (!pending) return;
+    const tour = getTour(pending);
+    if (!tour || tour.steps.length === 0) return;
+    // Small delay to let the page render its data-tour targets
+    const timer = setTimeout(() => {
+      setActiveId(pending);
+      setSteps(tour.steps);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [auth.loading, auth.teamMember]);
+
   // Auto-launch when landing on a tracked path the user hasn't completed.
-  // Don't fire while auth or memberships are still resolving — otherwise
-  // we'd see the tour at the very moment the user is being kicked over
-  // to /login or /onboarding.
   useEffect(() => {
     if (auth.loading) return;
     if (!auth.teamMember) return;
@@ -139,16 +179,9 @@ export function TourProvider({ children }: { children: ReactNode }) {
 
   const handleEvent = useCallback(
     (data: EventData) => {
-      // TOUR_END fires once for a tour completing naturally OR being skipped /
-      // closed. That's the single terminal signal we care about.
       if (data.type !== EVENTS.TOUR_END) return;
 
       const finishedId = activeId;
-      // Add to per-tab dismissed set BEFORE clearing activeId so the
-      // auto-launch effect (which runs synchronously on the next render)
-      // doesn't re-fire while the async PATCH is in flight. sessionStorage
-      // backs the ref so a return-navigation to /dashboard (which unmounts
-      // and remounts TourProvider) still respects the dismissal.
       if (finishedId) {
         dismissedRef.current.add(finishedId);
         writeDismissed(userId, dismissedRef.current);
@@ -157,8 +190,6 @@ export function TourProvider({ children }: { children: ReactNode }) {
       setSteps([]);
 
       if (finishedId) {
-        // Persist completion. Fire-and-forget — failure here just means the
-        // user might see the tour again next visit, which is harmless.
         void markComplete(finishedId);
       }
     },
@@ -179,34 +210,28 @@ export function TourProvider({ children }: { children: ReactNode }) {
           steps={steps}
           run
           continuous
+          scrollToFirstStep
           onEvent={handleEvent}
+          tooltipComponent={TourTooltip as never}
+          floatingOptions={{
+            flipOptions: { fallbackPlacements: ['bottom', 'top', 'left', 'right'] },
+          }}
           options={{
             primaryColor: '#017C87',
             zIndex: 10000,
             arrowColor: '#ffffff',
             backgroundColor: '#ffffff',
             textColor: '#111827',
-            overlayColor: 'rgba(0, 0, 0, 0.4)',
-            showProgress: true,
+            overlayColor: 'rgba(4, 57, 70, 0.55)',
+            showProgress: false,
+            scrollOffset: 80,
+            spotlightRadius: 12,
+            spotlightPadding: 8,
             buttons: ['back', 'skip', 'primary'],
           }}
           styles={{
-            tooltip: {
-              borderRadius: 12,
-              padding: 16,
-            },
-            buttonPrimary: {
-              borderRadius: 8,
-              fontSize: 13,
-              padding: '8px 14px',
-            },
-            buttonBack: {
-              fontSize: 13,
-              color: '#6b7280',
-            },
-            buttonSkip: {
-              fontSize: 12,
-              color: '#9ca3af',
+            overlay: {
+              mixBlendMode: undefined as never,
             },
           }}
           locale={{
