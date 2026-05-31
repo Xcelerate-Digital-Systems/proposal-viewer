@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Pencil, DollarSign, Package, Settings, Paintbrush, List, FileText, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
+import { Pencil, DollarSign, Package, Settings, Paintbrush, List, FileText, Image as ImageIcon, CheckCircle2, BarChart3 } from 'lucide-react';
 
 interface ProposalTabsProps {
   proposalId: string;
@@ -24,6 +24,7 @@ const tabs: { key: string; label: string; icon: typeof Pencil; path: string; gro
   { key: 'design',     label: 'Design',   icon: Paintbrush, path: 'design',     group: 'setup' },
   { key: 'contents',   label: 'Contents', icon: List,       path: 'contents',   group: 'setup' },
   { key: 'details',    label: 'Details',  icon: Settings,   path: 'details',    group: 'setup' },
+  { key: 'analytics',  label: 'Analytics',icon: BarChart3,  path: 'analytics',  group: 'setup' },
 ];
 
 function activeKeyFromPath(pathname: string | null): string {
