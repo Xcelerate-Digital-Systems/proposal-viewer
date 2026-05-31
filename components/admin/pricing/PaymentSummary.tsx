@@ -1,15 +1,16 @@
 // components/admin/pricing/PaymentSummary.tsx
 'use client';
 
-import { PaymentSchedule, formatAUD, milestoneAmount } from '@/lib/supabase';
+import { PaymentSchedule, formatCurrency, type CurrencyCode, milestoneAmount } from '@/lib/supabase';
 import { TEAL, TEAL_TEXT, frequencyLabel } from './usePricingSchedule';
 
 interface PaymentSummaryProps {
   schedule: PaymentSchedule;
   projectTotal: number;
+  currency?: CurrencyCode;
 }
 
-export default function PaymentSummary({ schedule, projectTotal }: PaymentSummaryProps) {
+export default function PaymentSummary({ schedule, projectTotal, currency = 'AUD' }: PaymentSummaryProps) {
   const { one_off, milestones, recurring } = schedule;
 
   return (
@@ -29,7 +30,7 @@ export default function PaymentSummary({ schedule, projectTotal }: PaymentSummar
                 )}
               </div>
             </div>
-            <span className="font-semibold text-ink">{formatAUD(one_off.amount)}</span>
+            <span className="font-semibold text-ink">{formatCurrency(one_off.amount, currency)}</span>
           </div>
         )}
         {milestones.enabled && milestones.payments.map((payment, idx) => {
@@ -49,7 +50,7 @@ export default function PaymentSummary({ schedule, projectTotal }: PaymentSummar
                   )}
                 </div>
               </div>
-              <span className="font-semibold text-ink">{formatAUD(amt)}</span>
+              <span className="font-semibold text-ink">{formatCurrency(amt, currency)}</span>
             </div>
           );
         })}
@@ -65,7 +66,7 @@ export default function PaymentSummary({ schedule, projectTotal }: PaymentSummar
               </div>
             </div>
             <span className={`font-semibold ${TEAL_TEXT}`}>
-              {formatAUD(recurring.amount)}/{frequencyLabel(recurring.frequency).toLowerCase()}
+              {formatCurrency(recurring.amount, currency)}/{frequencyLabel(recurring.frequency).toLowerCase()}
             </span>
           </div>
         )}

@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
 import CurrencyInput from '@/components/ui/CurrencyInput';
-import { formatAUD } from '@/lib/supabase';
+import { formatCurrency, type CurrencyCode } from '@/lib/supabase';
 
 interface LineItem {
   id: string;
@@ -33,6 +33,7 @@ interface Props {
   onClose: () => void;
   template: LineItemTemplate | null;
   onSaved: (saved: LineItemTemplate) => void;
+  currency?: CurrencyCode;
 }
 
 async function authHeaders(): Promise<HeadersInit> {
@@ -47,7 +48,7 @@ function genId(): string {
     : `li_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export default function LineItemTemplateEditorModal({ open, onClose, template, onSaved }: Props) {
+export default function LineItemTemplateEditorModal({ open, onClose, template, onSaved, currency = 'AUD' }: Props) {
   const toast = useToast();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -216,7 +217,7 @@ export default function LineItemTemplateEditorModal({ open, onClose, template, o
                       className="w-full"
                     />
                     <div className="text-sm text-right font-medium tabular-nums text-ink px-1">
-                      {formatAUD(item.amount)}
+                      {formatCurrency(item.amount, currency)}
                     </div>
                     <button
                       type="button"
@@ -242,7 +243,7 @@ export default function LineItemTemplateEditorModal({ open, onClose, template, o
                   Add Line Item
                 </button>
                 <span className="text-xs text-faint tabular-nums">
-                  Subtotal · <span className="text-prose font-medium">{formatAUD(subtotal)}</span>
+                  Subtotal · <span className="text-prose font-medium">{formatCurrency(subtotal, currency)}</span>
                 </span>
               </div>
             </div>

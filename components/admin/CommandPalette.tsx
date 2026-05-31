@@ -8,6 +8,7 @@ import {
   LayoutDashboard, Palette, Plug,
 } from 'lucide-react';
 import { authFetch } from '@/lib/auth-fetch';
+import { supabase } from '@/lib/supabase';
 
 interface SearchResult {
   id: string;
@@ -79,14 +80,16 @@ export default function CommandPalette() {
     if (allItems.length > 0) return;
     setLoading(true);
     try {
-      const [proposals, documents, templates, campaigns, funnels, clients] = await Promise.all([
+      const [proposals, documents, templates, campaignsRes, funnelsRes, clients] = await Promise.all([
         authFetch('/api/proposals').then((r) => r.json()).catch(() => ({ data: [] })),
         authFetch('/api/documents').then((r) => r.json()).catch(() => ({ data: [] })),
         authFetch('/api/templates').then((r) => r.json()).catch(() => ({ data: [] })),
-        authFetch('/api/campaigns/list').then((r) => r.ok ? r.json() : { projects: [] }).catch(() => ({ projects: [] })),
-        authFetch('/api/funnel/list').then((r) => r.ok ? r.json() : { data: [] }).catch(() => ({ data: [] })),
+        supabase.from('review_projects').select('id, title, client_name').order('created_at', { ascending: false }).limit(100),
+        supabase.from('funnels').select('id, title, name').order('created_at', { ascending: false }).limit(100),
         authFetch('/api/clients').then((r) => r.json()).catch(() => ({ data: [] })),
       ]);
+      const campaigns = { projects: campaignsRes.data || [] };
+      const funnels = { data: funnelsRes.data || [] };
 
       const items: SearchResult[] = [];
 

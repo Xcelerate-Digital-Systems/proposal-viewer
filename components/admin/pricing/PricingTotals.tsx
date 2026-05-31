@@ -1,16 +1,17 @@
 // components/admin/pricing/PricingTotals.tsx
 'use client';
 
-import { PricingLineItem, formatAUD, pricingSubtotal, pricingEffectiveSubtotal, pricingTotalDiscount, pricingTax } from '@/lib/supabase';
+import { PricingLineItem, formatCurrency, pricingSubtotal, pricingEffectiveSubtotal, pricingTotalDiscount, pricingTax, type CurrencyCode } from '@/lib/supabase';
 
 interface PricingTotalsProps {
   items: PricingLineItem[];
   taxEnabled: boolean;
   taxRate: number;
   taxLabel: string;
+  currency?: CurrencyCode;
 }
 
-export default function PricingTotals({ items, taxEnabled, taxRate, taxLabel }: PricingTotalsProps) {
+export default function PricingTotals({ items, taxEnabled, taxRate, taxLabel, currency = 'AUD' }: PricingTotalsProps) {
   const baseSubtotal = pricingSubtotal(items);
   const discount = pricingTotalDiscount(items);
   const effectiveSubtotal = pricingEffectiveSubtotal(items);
@@ -24,32 +25,32 @@ export default function PricingTotals({ items, taxEnabled, taxRate, taxLabel }: 
           <>
             <div className="flex justify-between text-dim">
               <span>Subtotal</span>
-              <span className="font-medium text-prose">{formatAUD(baseSubtotal)}</span>
+              <span className="font-medium text-prose">{formatCurrency(baseSubtotal, currency)}</span>
             </div>
             <div className="flex justify-between text-teal">
               <span>Discount</span>
-              <span className="font-medium">−{formatAUD(discount)}</span>
+              <span className="font-medium">−{formatCurrency(discount, currency)}</span>
             </div>
             <div className="flex justify-between text-dim border-t border-edge pt-2">
               <span>After discount</span>
-              <span className="font-medium text-prose">{formatAUD(effectiveSubtotal)}</span>
+              <span className="font-medium text-prose">{formatCurrency(effectiveSubtotal, currency)}</span>
             </div>
           </>
         ) : (
           <div className="flex justify-between text-dim">
             <span>Subtotal</span>
-            <span className="font-medium text-prose">{formatAUD(effectiveSubtotal)}</span>
+            <span className="font-medium text-prose">{formatCurrency(effectiveSubtotal, currency)}</span>
           </div>
         )}
         {taxEnabled && (
           <div className="flex justify-between text-dim">
             <span>{taxLabel}</span>
-            <span className="font-medium text-prose">{formatAUD(tax)}</span>
+            <span className="font-medium text-prose">{formatCurrency(tax, currency)}</span>
           </div>
         )}
         <div className="border-t border-edge pt-2 flex justify-between font-semibold text-ink">
           <span>Total</span>
-          <span>{formatAUD(total)}</span>
+          <span>{formatCurrency(total, currency)}</span>
         </div>
       </div>
     </div>

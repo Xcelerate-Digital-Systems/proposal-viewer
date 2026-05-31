@@ -3,15 +3,16 @@
 
 import { useCallback } from 'react';
 import { Plus, Trash2, Tag } from 'lucide-react';
-import { PricingOptionalItem, generateItemId, effectiveItemAmount, formatAUD } from '@/lib/supabase';
+import { PricingOptionalItem, generateItemId, effectiveItemAmount, formatCurrency, type CurrencyCode } from '@/lib/supabase';
 import CurrencyInput from '@/components/ui/CurrencyInput';
 
 interface PricingOptionalItemsProps {
   items: PricingOptionalItem[];
   onChange: (items: PricingOptionalItem[]) => void;
+  currency?: CurrencyCode;
 }
 
-export default function PricingOptionalItems({ items, onChange }: PricingOptionalItemsProps) {
+export default function PricingOptionalItems({ items, onChange, currency = 'AUD' }: PricingOptionalItemsProps) {
   const addItem = useCallback(() => {
     onChange([
       ...items,
@@ -105,8 +106,8 @@ export default function PricingOptionalItems({ items, onChange }: PricingOptiona
                       <span className="text-xs text-faint">%</span>
                     </div>
                     <span className="text-xs text-faint">
-                      saves <span className="text-teal font-medium">{formatAUD(item.amount - effective)}</span>
-                      {' '}→ <span className="font-medium text-prose">{formatAUD(effective)}</span>
+                      saves <span className="text-teal font-medium">{formatCurrency(item.amount - effective, currency)}</span>
+                      {' '}→ <span className="font-medium text-prose">{formatCurrency(effective, currency)}</span>
                     </span>
                   </>
                 )}

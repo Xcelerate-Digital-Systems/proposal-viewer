@@ -2,7 +2,7 @@
 'use client';
 
 import { RotateCcw } from 'lucide-react';
-import { PaymentSchedule, formatAUD } from '@/lib/supabase';
+import { PaymentSchedule, formatCurrency, type CurrencyCode } from '@/lib/supabase';
 import Toggle from '@/components/ui/Toggle';
 import CurrencyInput from '@/components/ui/CurrencyInput';
 import {
@@ -13,9 +13,10 @@ import {
 interface RecurringSectionProps {
   recurring: PaymentSchedule['recurring'];
   onUpdate: (changes: Partial<PaymentSchedule['recurring']>) => void;
+  currency?: CurrencyCode;
 }
 
-export default function RecurringSection({ recurring, onUpdate }: RecurringSectionProps) {
+export default function RecurringSection({ recurring, onUpdate, currency = 'AUD' }: RecurringSectionProps) {
   return (
     <div className={`rounded-lg border p-4 transition-colors ${recurring.enabled ? `${TEAL_BORDER} ${TEAL_BG}` : 'border-edge-strong'}`}>
       <div className="flex items-center justify-between mb-1">
@@ -73,7 +74,7 @@ export default function RecurringSection({ recurring, onUpdate }: RecurringSecti
             <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-teal/5 text-sm">
               <span className="text-dim">Recurring</span>
               <span className={`font-semibold ${TEAL_TEXT}`}>
-                {formatAUD(recurring.amount)}/{frequencyLabel(recurring.frequency).toLowerCase()}
+                {formatCurrency(recurring.amount, currency)}/{frequencyLabel(recurring.frequency).toLowerCase()}
               </span>
             </div>
           )}

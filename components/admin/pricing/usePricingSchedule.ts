@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import {
   PaymentSchedule, MilestonePayment, PricingLineItem,
-  pricingEffectiveSubtotal, pricingTax, formatAUD,
+  pricingEffectiveSubtotal, pricingTax, formatCurrency, type CurrencyCode,
   generateItemId, milestoneAmount, milestoneTotalPercent, milestoneTotalFixed,
 } from '@/lib/supabase';
 
@@ -30,6 +30,7 @@ export function usePricingSchedule(
   taxEnabled: boolean,
   taxRate: number,
   onChange: (schedule: PaymentSchedule) => void,
+  currency: CurrencyCode = 'AUD',
 ) {
   // Defensive defaults
   const defaultOneOff = { enabled: false, amount: 0, label: 'One-off Payment', note: 'Due on signing' };
@@ -108,13 +109,13 @@ export function usePricingSchedule(
     if (hasAllPercentage && Math.abs(percentTotal - 100) > 0.01) {
       milestoneWarning = `Milestone percentages add up to ${percentTotal}% — should total 100%`;
     } else if (hasAllFixed && projectTotal > 0 && Math.abs(fixedTotal - projectTotal) > 0.01) {
-      milestoneWarning = `Fixed amounts total ${formatAUD(fixedTotal)} but project total is ${formatAUD(projectTotal)}`;
+      milestoneWarning = `Fixed amounts total ${formatCurrency(fixedTotal, currency)} but project total is ${formatCurrency(projectTotal, currency)}`;
     } else if (hasMixed) {
       const actualSum = s.milestones.payments.reduce(
         (sum, p) => sum + milestoneAmount(p, projectTotal), 0
       );
       if (projectTotal > 0 && Math.abs(actualSum - projectTotal) > 0.01) {
-        milestoneWarning = `Milestone payments total ${formatAUD(actualSum)} — project total is ${formatAUD(projectTotal)}`;
+        milestoneWarning = `Milestone payments total ${formatCurrency(actualSum, currency)} — project total is ${formatCurrency(projectTotal, currency)}`;
       }
     }
   }

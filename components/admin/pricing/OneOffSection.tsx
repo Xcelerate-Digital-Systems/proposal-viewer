@@ -2,7 +2,7 @@
 'use client';
 
 import { Receipt } from 'lucide-react';
-import { PaymentSchedule, formatAUD } from '@/lib/supabase';
+import { PaymentSchedule, formatCurrency, type CurrencyCode } from '@/lib/supabase';
 import Toggle from '@/components/ui/Toggle';
 import CurrencyInput from '@/components/ui/CurrencyInput';
 import { TEAL_BORDER, TEAL_BG, TEAL_TEXT, TEAL_FOCUS } from './usePricingSchedule';
@@ -10,9 +10,10 @@ import { TEAL_BORDER, TEAL_BG, TEAL_TEXT, TEAL_FOCUS } from './usePricingSchedul
 interface OneOffSectionProps {
   oneOff: PaymentSchedule['one_off'];
   onUpdate: (changes: Partial<PaymentSchedule['one_off']>) => void;
+  currency?: CurrencyCode;
 }
 
-export default function OneOffSection({ oneOff, onUpdate }: OneOffSectionProps) {
+export default function OneOffSection({ oneOff, onUpdate, currency = 'AUD' }: OneOffSectionProps) {
   return (
     <div className={`rounded-lg border p-4 transition-colors ${oneOff.enabled ? `${TEAL_BORDER} ${TEAL_BG}` : 'border-edge-strong'}`}>
       <div className="flex items-center justify-between mb-1">
@@ -55,7 +56,7 @@ export default function OneOffSection({ oneOff, onUpdate }: OneOffSectionProps) 
           {oneOff.amount > 0 && (
             <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-teal/5 text-sm">
               <span className="text-dim">{oneOff.label}</span>
-              <span className={`font-semibold ${TEAL_TEXT}`}>{formatAUD(oneOff.amount)}</span>
+              <span className={`font-semibold ${TEAL_TEXT}`}>{formatCurrency(oneOff.amount, currency)}</span>
             </div>
           )}
         </div>

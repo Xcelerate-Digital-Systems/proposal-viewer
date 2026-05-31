@@ -10,13 +10,14 @@ import { useCallback } from 'react';
 import { Plus, Trash2, Tag } from 'lucide-react';
 import {
   PricingLineItem, generateItemId, pricingEffectiveSubtotal,
-  effectiveItemAmount, formatAUD,
+  effectiveItemAmount, formatCurrency, type CurrencyCode,
 } from '@/lib/supabase';
 import CurrencyInput from '@/components/ui/CurrencyInput';
 
 interface PricingLineItemsProps {
   items: PricingLineItem[];
   onChange: (items: PricingLineItem[]) => void;
+  currency?: CurrencyCode;
   qtyEnabled?: boolean;
   qtyLabel?: string;
   stageLabel?: string;
@@ -34,6 +35,7 @@ const NUM_INPUT =
 
 export default function PricingLineItems({
   items, onChange,
+  currency = 'AUD',
   qtyEnabled = false, qtyLabel = 'Quantity',
   stageLabel = 'Item', descriptionLabel = 'Description', rateLabel,
   footerNote, onFooterNoteChange,
@@ -154,7 +156,7 @@ export default function PricingLineItems({
 
                 {qtyEnabled ? (
                   <div className="text-sm text-right font-medium tabular-nums text-ink px-2">
-                    {formatAUD(item.amount)}
+                    {formatCurrency(item.amount, currency)}
                   </div>
                 ) : (
                   <CurrencyInput
@@ -208,8 +210,8 @@ export default function PricingLineItems({
                       <span className="text-detail text-faint">%</span>
                     </div>
                     <span className="text-detail text-faint">
-                      saves <span className="text-teal font-medium">{formatAUD(item.amount - effective)}</span>
-                      {' '}→ <span className="font-medium text-prose">{formatAUD(effective)}</span>
+                      saves <span className="text-teal font-medium">{formatCurrency(item.amount - effective, currency)}</span>
+                      {' '}→ <span className="font-medium text-prose">{formatCurrency(effective, currency)}</span>
                     </span>
                   </>
                 )}
@@ -231,7 +233,7 @@ export default function PricingLineItems({
         </button>
 
         <div className="ml-auto text-xs text-faint tabular-nums">
-          Subtotal · <span className="text-prose font-medium">{formatAUD(subtotal)}</span>
+          Subtotal · <span className="text-prose font-medium">{formatCurrency(subtotal, currency)}</span>
         </div>
       </div>
 
