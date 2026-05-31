@@ -5,7 +5,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { encryptGhlToken } from '@/lib/connectors/ghl/token-crypto';
-import { testGhlConnection } from '@/lib/connectors/ghl/client';
 import { listPipelines } from '@/lib/connectors/ghl/opportunities';
 
 export const dynamic = 'force-dynamic';
@@ -29,22 +28,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'location_id is required' }, { status: 400 });
   }
 
-  // Validate token against the specific location
-  const validation = await testGhlConnection(body.api_token, body.location_id);
-  if (!validation.valid) {
-    return NextResponse.json(
-      { error: validation.error || 'Invalid token' },
-      { status: 422 },
-    );
-  }
-
-  // Fetch pipelines for the location to confirm access
+  // Validate token + location by fetching pipelines (location-scoped endpoint)
   const pipelinesResult = await listPipelines(body.api_token, body.location_id);
   if (!pipelinesResult.ok) {
-    return NextResponse.json(
-      { error: `Cannot access location: ${pipelinesResult.error}` },
-      { status: 422 },
-    );
+    const msg =
+      pipelinesResult.status === 401
+        ? 'Invalid API token. Make sure you copied the full token from your Private Integration.'
+        : pipelinesResult.status === 403
+          ? 'Token does not have access to this location. Check your scopes include Opportunities (Read/Write).'
+          : pipelinesResult.status === 422
+            ? 'Location ID not found. Double-check the ID in GHL → Settings → Business Profile.'
+            : `Connection failed: ${pipelinesResult.error}`;
+    return NextResponse.json({ error: msg }, { status: 422 });
   }
 
   const encrypted = encryptGhlToken(body.api_token);
