@@ -154,8 +154,9 @@ export default function ProposalViewerPage(props: { params: Promise<{ token: str
                 prefix: companyContact?.quoteNumberPrefix ?? null,
                 padWidth: companyContact?.quoteNumberPadWidth ?? null,
               }}
-              onAccept={async (name) => {
-                await v.acceptProposal(name);
+              requireSignature={(v.proposal as Record<string, unknown>)?.require_signature as boolean ?? false}
+              onAccept={async (name, sig) => {
+                await v.acceptProposal(name, sig);
               }}
               onDecline={async (name, reason) => {
                 await v.declineProposal(name, reason);
@@ -273,7 +274,8 @@ export default function ProposalViewerPage(props: { params: Promise<{ token: str
             accepted={v.accepted}
             declined={v.declined}
             revisionRequested={v.revisionRequested}
-            onAccept={async (name) => { await v.acceptProposal(name); }}
+            requireSignature={(v.proposal as Record<string, unknown>)?.require_signature as boolean ?? false}
+            onAccept={async (name, sig) => { await v.acceptProposal(name, sig); }}
             onDecline={async (name, reason) => { await v.declineProposal(name, reason); }}
             onRequestRevision={async (name, notes) => { await v.requestRevision(name, notes); }}
           />

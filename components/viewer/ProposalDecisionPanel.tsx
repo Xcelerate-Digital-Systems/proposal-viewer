@@ -7,7 +7,9 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, lazy, Suspense } from 'react';
+
+const SignatureCapture = lazy(() => import('./SignatureCapture'));
 import { Check, MessageSquare, X } from 'lucide-react';
 
 export interface DecisionPanelTokens {
@@ -33,8 +35,15 @@ export interface DecisionPanelTokens {
   mutedStyle: React.CSSProperties;
 }
 
+interface SignatureData {
+  mode: 'typed' | 'drawn';
+  typed_name?: string;
+  signature_image_base64?: string;
+}
+
 interface ProposalDecisionPanelProps {
-  onAccept?: (name: string) => Promise<void>;
+  onAccept?: (name: string, signatureData?: SignatureData | null) => Promise<void>;
+  requireSignature?: boolean;
   onDecline?: (name: string, reason: string) => Promise<void>;
   onRequestRevision?: (name: string, notes: string) => Promise<void>;
   accepted?: boolean;
@@ -100,6 +109,7 @@ export default function ProposalDecisionPanel({
   revisionRequested: initialRevisionRequested,
   tokens,
   acceptButtonText,
+  requireSignature,
   acceptHeading,
   acceptSubtitle,
   agreementText,
@@ -131,6 +141,8 @@ export default function ProposalDecisionPanel({
   const [signerName, setSignerName] = useState('');
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [signatureData, setSignatureData] = useState<SignatureData | null>(null);
+  const handleSignatureChange = useCallback((data: SignatureData | null) => setSignatureData(data), []);
 
   const { bodyBg, bodyText, headingColor, muted, faint, hairline, headingFontFamily, titleStyle, mutedStyle, bodyFontFamily, bodyFontWeight } = tokens;
   const showDecisionButtons = state === 'pending' && (onAccept || onDecline || onRequestRevision);
@@ -142,7 +154,8 @@ export default function ProposalDecisionPanel({
     try {
       if (activeAction === 'accept' && onAccept) {
         if (!agree) return;
-        await onAccept(signerName.trim());
+        if (requireSignature && !signatureData) return;
+        await onAccept(signerName.trim(), requireSignature ? signatureData : undefined);
         setState('accepted');
       } else if (activeAction === 'decline' && onDecline) {
         await onDecline(signerName.trim(), reason.trim());
@@ -345,6 +358,24 @@ export default function ProposalDecisionPanel({
             />
           </div>
 
+          {requireSignature && activeAction === 'accept' && (
+            <div className="mb-6">
+              <label
+                className="block text-2xs tracking-[0.18em] uppercase mb-2"
+                style={{ color: faint, fontFamily: headingFontFamily }}
+              >
+                Your Signature
+              </label>
+              <Suspense fallback={<div className="h-28 rounded-xl border-2 border-dashed border-gray-200 animate-pulse" />}>
+                <SignatureCapture
+                  signerName={signerName}
+                  accentColor={headingColor}
+                  onSignatureChange={handleSignatureChange}
+                />
+              </Suspense>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={submit}
@@ -352,6 +383,7 @@ export default function ProposalDecisionPanel({
               submitting ||
               !signerName.trim() ||
               (activeAction === 'accept' && !agree) ||
+              (activeAction === 'accept' && requireSignature && !signatureData) ||
               (activeAction === 'revision' && !reason.trim())
             }
             className="w-full px-6 py-3 rounded-lg text-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 tracking-wider uppercase"

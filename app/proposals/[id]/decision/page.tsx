@@ -14,6 +14,7 @@ export default function ProposalDecisionPage() {
         initialEnabled={proposal.decision_page_enabled}
         initialTitle={proposal.decision_page_title}
         initialExtras={proposal.decision_extras}
+        initialRequireSignature={(proposal as Record<string, unknown>).require_signature as boolean ?? false}
         onSaved={refetch}
       />
     </div>

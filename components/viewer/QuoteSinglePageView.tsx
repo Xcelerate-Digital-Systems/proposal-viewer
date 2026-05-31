@@ -28,12 +28,13 @@ interface QuoteSinglePageViewProps {
   proposal: Proposal;
   pricing: ProposalPricing | null;
   branding: CompanyBranding;
-  onAccept?: (name: string) => Promise<void>;
+  onAccept?: (name: string, signatureData?: { mode: string; typed_name?: string; signature_image_base64?: string } | null) => Promise<void>;
   onDecline?: (name: string, reason: string) => Promise<void>;
   onRequestRevision?: (name: string, notes: string) => Promise<void>;
   accepted?: boolean;
   declined?: boolean;
   revisionRequested?: boolean;
+  requireSignature?: boolean;
   resolvedBgUrl?: string | null;
   companyName?: string;
   companyPhone?: string | null;
@@ -253,6 +254,7 @@ export default function QuoteSinglePageView({
   accepted: initialAccepted,
   declined: initialDeclined,
   revisionRequested: initialRevisionRequested,
+  requireSignature,
   resolvedBgUrl,
   companyName,
   companyPhone,
@@ -908,6 +910,7 @@ export default function QuoteSinglePageView({
             onAccept={onAccept}
             onDecline={onDecline}
             onRequestRevision={onRequestRevision}
+            requireSignature={requireSignature}
             accepted={initialAccepted}
             declined={initialDeclined}
             revisionRequested={initialRevisionRequested}

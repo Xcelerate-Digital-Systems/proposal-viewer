@@ -48,9 +48,13 @@ export function createProposalActions({
     setComments(data || []);
   };
 
-  const acceptProposal = async (name: string) => {
+  const acceptProposal = async (name: string, signatureData?: { mode: string; typed_name?: string; signature_image_base64?: string } | null) => {
     if (!proposal) return;
-    await publicAction(token, { action: 'accept', name });
+    await publicAction(token, {
+      action: 'accept',
+      name,
+      ...(signatureData ? { signature_data: signatureData } : {}),
+    });
     setAccepted(true);
     notify({ event_type: 'proposal_accepted', share_token: token });
   };

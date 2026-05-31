@@ -7,10 +7,11 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ListOrdered, FileText, Plus, X, RotateCcw, MessageSquare } from 'lucide-react';
+import { ListOrdered, FileText, Plus, X, RotateCcw, MessageSquare, PenTool } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
+import Toggle from '@/components/ui/Toggle';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import DecisionPageCard from '@/components/admin/proposals/DecisionPageCard';
 import DecisionPagePreview from '@/components/admin/builder-sections/DecisionPagePreview';
@@ -39,6 +40,7 @@ interface DecisionTabProps {
   initialEnabled: boolean | null;
   initialTitle: string | null;
   initialExtras: unknown;
+  initialRequireSignature?: boolean;
   onSaved?: () => void;
 }
 
@@ -50,10 +52,12 @@ export default function DecisionTab({
   initialEnabled,
   initialTitle,
   initialExtras,
+  initialRequireSignature = false,
   onSaved,
 }: DecisionTabProps) {
   const toast = useToast();
   const parsed = parseDecisionExtras(initialExtras);
+  const [requireSignature, setRequireSignature] = useState(initialRequireSignature);
   const [steps, setSteps] = useState<string[]>(parsed.next_steps);
   const [terms, setTerms] = useState<string>(parsed.terms);
   const [acceptHeading, setAcceptHeading] = useState<string>(parsed.accept_heading);
@@ -194,6 +198,30 @@ export default function DecisionTab({
         onSaved={onSaved}
         onTitleLive={setPreviewTitle}
       />
+
+      {/* Signature requirement toggle */}
+      <SectionCard
+        title="E-Signature"
+        icon={<PenTool size={14} className="text-faint" />}
+        description="When enabled, clients must provide a signature (type or draw) before accepting. The signature, IP address, and timestamp are recorded as an audit trail."
+      >
+        <div className="flex items-center gap-3 text-sm font-medium text-prose">
+          <Toggle
+            enabled={requireSignature}
+            onChange={async (v) => {
+              setRequireSignature(v);
+              const { error } = await supabase
+                .from(table)
+                .update({ require_signature: v })
+                .eq('id', entityId);
+              if (error) toast.error('Failed to save signature setting');
+              else onSaved?.();
+            }}
+            size="sm"
+          />
+          <span>Require signature to accept</span>
+        </div>
+      </SectionCard>
 
       {/* Next Steps editor */}
       <SectionCard

@@ -46,9 +46,10 @@ interface ViewerPageContentProps {
   accepted?: boolean;
   declined?: boolean;
   revisionRequested?: boolean;
-  onAccept?: (name: string) => Promise<void>;
+  onAccept?: (name: string, signatureData?: { mode: string; typed_name?: string; signature_image_base64?: string } | null) => Promise<void>;
   onDecline?: (name: string, reason: string) => Promise<void>;
   onRequestRevision?: (name: string, notes: string) => Promise<void>;
+  requireSignature?: boolean;
 }
 
 /** Convert a CSS colour to rgba with explicit alpha. */
@@ -140,6 +141,7 @@ export default function ViewerPageContent({
   proposal, clientLogoUrl,
   accepted, declined, revisionRequested,
   onAccept, onDecline, onRequestRevision,
+  requireSignature,
 }: ViewerPageContentProps) {
   if (onDecisionPage) {
     const tokens = buildDecisionTokens(proposal, branding);
@@ -219,6 +221,7 @@ export default function ViewerPageContent({
                 onAccept={onAccept}
                 onDecline={onDecline}
                 onRequestRevision={onRequestRevision}
+                requireSignature={requireSignature}
                 accepted={accepted}
                 declined={declined}
                 revisionRequested={revisionRequested}

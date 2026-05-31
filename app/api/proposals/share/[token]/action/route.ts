@@ -131,9 +131,29 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
   if (action === 'accept') {
     const name = typeof body.name === 'string' ? body.name.slice(0, 200) : '';
     if (!name) return NextResponse.json({ error: 'name is required' }, { status: 400 });
+
+    const rawSig = (body as Record<string, unknown>).signature_data;
+    const signaturePayload = rawSig && typeof rawSig === 'object' ? {
+      ...(rawSig as Record<string, unknown>),
+      signer_name: name,
+      signer_email: (typeof body.viewer_email === 'string' ? body.viewer_email.trim() : null) || proposal.client_email || null,
+      signer_ip: req.headers.get('x-real-ip') || req.headers.get('x-forwarded-for')?.split(',').pop()?.trim() || null,
+      user_agent: (req.headers.get('user-agent') || '').slice(0, 500),
+      signed_at: now,
+    } : null;
+
+    const updatePayload: Record<string, unknown> = {
+      status: 'accepted',
+      accepted_at: now,
+      accepted_by_name: name,
+    };
+    if (signaturePayload) {
+      updatePayload.signature_data = signaturePayload;
+    }
+
     const { error } = await supabase
       .from('proposals')
-      .update({ status: 'accepted', accepted_at: now, accepted_by_name: name })
+      .update(updatePayload)
       .eq('id', proposal.id);
     if (error) {
       console.error('[api/proposals/share/[token]/action] accept:', error.message);
