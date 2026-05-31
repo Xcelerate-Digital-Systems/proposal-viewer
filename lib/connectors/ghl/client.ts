@@ -90,23 +90,31 @@ export async function ghlFetch<T>(
   };
 }
 
-export async function testGhlConnection(token: string): Promise<{
+export async function testGhlConnection(token: string, locationId?: string): Promise<{
   valid: boolean;
   error?: string;
 }> {
+  if (locationId) {
+    const result = await ghlFetch<{ location: { id: string; name: string } }>(
+      token,
+      `/locations/${locationId}`,
+      { method: 'GET' },
+    );
+
+    if (result.ok) return { valid: true };
+    if (result.status === 401) return { valid: false, error: 'Invalid API token' };
+    if (result.status === 403) return { valid: false, error: 'Token does not have access to this location. Check your scopes include Locations (Read).' };
+    if (result.status === 404) return { valid: false, error: 'Location ID not found. Double-check the ID in GHL → Settings → Business Profile.' };
+    return { valid: false, error: result.error || 'Connection failed' };
+  }
+
   const result = await ghlFetch<{ locations: Array<{ id: string; name: string }> }>(
     token,
     '/locations/search',
     { method: 'GET' },
   );
 
-  if (result.ok) {
-    return { valid: true };
-  }
-
-  if (result.status === 401) {
-    return { valid: false, error: 'Invalid API token' };
-  }
-
+  if (result.ok) return { valid: true };
+  if (result.status === 401) return { valid: false, error: 'Invalid API token' };
   return { valid: false, error: result.error || 'Connection failed' };
 }

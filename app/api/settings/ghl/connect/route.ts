@@ -29,8 +29,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'location_id is required' }, { status: 400 });
   }
 
-  // Validate token
-  const validation = await testGhlConnection(body.api_token);
+  // Validate token against the specific location
+  const validation = await testGhlConnection(body.api_token, body.location_id);
   if (!validation.valid) {
     return NextResponse.json(
       { error: validation.error || 'Invalid token' },
