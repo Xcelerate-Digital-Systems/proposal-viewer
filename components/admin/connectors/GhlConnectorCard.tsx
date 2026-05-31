@@ -91,9 +91,8 @@ const OPP_STATUS_OPTIONS = [
 
 function GhlLogo() {
   return (
-    <svg viewBox="0 0 24 24" width={20} height={20} aria-hidden="true">
-      <rect width="24" height="24" rx="4" fill="#0F9D58" />
-      <text x="12" y="17" textAnchor="middle" fill="white" fontSize="13" fontWeight="bold">G</text>
+    <svg width={16} height={23} viewBox="0 0 15 23" fill="none" aria-hidden="true">
+      <path d="M5.96784 21.8658C5.82514 22.095 5.57425 22.2343 5.30425 22.2343C4.82456 22.2343 4.45803 21.8063 4.53187 21.3323L5.4809 15.2405C5.6162 14.372 4.94458 13.5876 4.06561 13.5876H2.57606C1.45278 13.5876 0.764504 12.3569 1.35709 11.4026C3.01895 8.72652 5.89715 4.09055 8.20424 0.368261C8.34667 0.138456 8.59696 0 8.86733 0C9.34664 0 9.71288 0.427713 9.6391 0.90131L8.68996 6.99384C8.55466 7.86233 9.22628 8.64669 10.1053 8.64669H11.6188C12.7427 8.64669 13.4287 9.88197 12.8347 10.8361L5.96784 21.8658Z" fill="white"/>
     </svg>
   );
 }
@@ -365,9 +364,9 @@ export default function GhlConnectorCard() {
   return (
     <div className="bg-surface border border-edge rounded-2xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-[#0F9D58]/5 border-b border-edge">
+      <div className="flex items-center justify-between px-6 py-4 bg-[#00C8FF]/5 border-b border-edge">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#0F9D58] flex items-center justify-center">
+          <div className="w-9 h-9 rounded-xl bg-[#00C8FF] flex items-center justify-center">
             <GhlLogo />
           </div>
           <div>
