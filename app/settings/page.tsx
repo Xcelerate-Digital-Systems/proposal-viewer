@@ -12,6 +12,7 @@ import CompanyProfileCard from '@/components/admin/company/CompanyProfileCard';
 import WebhookManager from '@/components/admin/settings/WebhookManager';
 import ApiKeyManager from '@/components/admin/settings/ApiKeyManager';
 import ConnectedAppsManager from '@/components/admin/settings/ConnectedAppsManager';
+import GhlConnectorCard from '@/components/admin/connectors/GhlConnectorCard';
 import MembersTab from '@/components/admin/settings/MembersTab';
 import BillingTab from '@/components/admin/settings/BillingTab';
 import RolesTab from '@/components/admin/settings/RolesTab';
@@ -206,6 +207,14 @@ function SettingsContent({ auth }: {
                   description="Generate access tokens for external integrations. Each key is scoped to your workspace."
                 />
                 <ApiKeyManager />
+              </div>
+              <hr className="border-edge" />
+              <div>
+                <SectionHeader
+                  title="GoHighLevel"
+                  description="Sync proposal and quote stages to GoHighLevel pipelines automatically."
+                />
+                <GhlConnectorCard />
               </div>
             </section>
           )}

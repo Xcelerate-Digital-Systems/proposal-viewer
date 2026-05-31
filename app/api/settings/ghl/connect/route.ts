@@ -1,0 +1,84 @@
+// POST /api/settings/ghl/connect
+// Validate a GHL private integration token, encrypt and store it.
+
+import { NextRequest, NextResponse } from 'next/server';
+import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext } from '@/lib/api-auth';
+import { encryptGhlToken } from '@/lib/connectors/ghl/token-crypto';
+import { testGhlConnection } from '@/lib/connectors/ghl/client';
+import { listPipelines } from '@/lib/connectors/ghl/opportunities';
+
+export const dynamic = 'force-dynamic';
+
+interface ConnectBody {
+  api_token: string;
+  location_id: string;
+}
+
+export async function POST(req: NextRequest) {
+  const auth = await getAuthContext(req);
+  if (!auth || (auth.member?.role !== 'owner' && auth.member?.role !== 'admin' && !auth.member?.is_super_admin)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const body = (await req.json()) as ConnectBody;
+  if (!body.api_token || typeof body.api_token !== 'string') {
+    return NextResponse.json({ error: 'api_token is required' }, { status: 400 });
+  }
+  if (!body.location_id || typeof body.location_id !== 'string') {
+    return NextResponse.json({ error: 'location_id is required' }, { status: 400 });
+  }
+
+  // Validate token
+  const validation = await testGhlConnection(body.api_token);
+  if (!validation.valid) {
+    return NextResponse.json(
+      { error: validation.error || 'Invalid token' },
+      { status: 422 },
+    );
+  }
+
+  // Fetch pipelines for the location to confirm access
+  const pipelinesResult = await listPipelines(body.api_token, body.location_id);
+  if (!pipelinesResult.ok) {
+    return NextResponse.json(
+      { error: `Cannot access location: ${pipelinesResult.error}` },
+      { status: 422 },
+    );
+  }
+
+  const encrypted = encryptGhlToken(body.api_token);
+  const supabase = createServiceClient();
+
+  // Upsert connection (one per company)
+  const { data, error } = await supabase
+    .from('ghl_connections')
+    .upsert(
+      {
+        company_id: auth.companyId,
+        api_token_encrypted: encrypted,
+        location_id: body.location_id,
+        pipeline_id: pipelinesResult.data!.pipelines[0]?.id || '',
+        pipeline_name: pipelinesResult.data!.pipelines[0]?.name || null,
+        token_valid: true,
+        enabled: false,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'company_id' },
+    )
+    .select('id, location_id, pipeline_id, pipeline_name, enabled')
+    .single();
+
+  if (error) {
+    console.error('[api/settings/ghl/connect]', error.message);
+    return NextResponse.json({ error: 'Failed to save connection' }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      connection: data,
+      pipelines: pipelinesResult.data!.pipelines,
+    },
+  });
+}

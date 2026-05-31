@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { fireWebhooks } from '@/lib/notifications';
 import { buildProposalUrl } from '@/lib/proposal-url';
+import { enqueueGhlSync, buildProposalSyncPayload } from '@/lib/connectors/ghl/sync';
 
 export const dynamic = 'force-dynamic';
 
@@ -96,6 +97,20 @@ export async function POST(req: NextRequest) {
       });
     } catch (webhookErr) {
       console.error('proposal_sent webhook dispatch error:', webhookErr);
+    }
+
+    // Enqueue GHL sync (non-blocking)
+    const ghlPayload = buildProposalSyncPayload(proposal);
+    if (ghlPayload) {
+      const entityType = (proposal.entity_type === 'quote' ? 'quote' : 'proposal') as 'proposal' | 'quote';
+      enqueueGhlSync({
+        companyId: proposal.company_id,
+        entityType,
+        entityId: proposal.id,
+        fromStage: 'draft',
+        toStage: 'sent',
+        payload: ghlPayload,
+      });
     }
 
     return NextResponse.json({ success: true });

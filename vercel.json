@@ -17,6 +17,10 @@
     {
       "path": "/api/cron/flush-review-notifications",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/ghl-sync",
+      "schedule": "* * * * *"
     }
   ]
 }

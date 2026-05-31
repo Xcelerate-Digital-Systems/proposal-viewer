@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit';
+import { enqueueGhlSync, buildProposalSyncPayload } from '@/lib/connectors/ghl/sync';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
   // token doesn't match a real proposal, 404.
   const { data: proposal } = await supabase
     .from('proposals')
-    .select('id, status, first_viewed_at, company_id')
+    .select('id, status, first_viewed_at, company_id, title, client_name, client_email, client_organisation, entity_type')
     .eq('share_token', params.token)
     .maybeSingle();
 
@@ -69,6 +70,22 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
   }
 
   const now = new Date().toISOString();
+
+  // GHL sync helper — non-blocking, fire-and-forget
+  const triggerGhlSync = (fromStatus: string, toStatus: string) => {
+    const ghlPayload = buildProposalSyncPayload(proposal);
+    if (ghlPayload) {
+      const entityType = (proposal.entity_type === 'quote' ? 'quote' : 'proposal') as 'proposal' | 'quote';
+      enqueueGhlSync({
+        companyId: proposal.company_id,
+        entityType,
+        entityId: proposal.id,
+        fromStage: fromStatus,
+        toStage: toStatus,
+        payload: ghlPayload,
+      });
+    }
+  };
 
   if (action === 'accept') {
     const name = typeof body.name === 'string' ? body.name.slice(0, 200) : '';
@@ -81,6 +98,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       console.error('[api/proposals/share/[token]/action] accept:', error.message);
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
+    triggerGhlSync(proposal.status, 'accepted');
     return NextResponse.json({ success: true });
   }
 
@@ -101,6 +119,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       console.error('[api/proposals/share/[token]/action] decline:', error.message);
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
+    triggerGhlSync(proposal.status, 'declined');
     return NextResponse.json({ success: true });
   }
 
@@ -121,6 +140,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       console.error('[api/proposals/share/[token]/action] request_revision:', error.message);
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
+    triggerGhlSync(proposal.status, 'revision_requested');
     return NextResponse.json({ success: true });
   }
 
@@ -140,6 +160,11 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
     user_agent: req.headers.get('user-agent') ?? null,
     company_id: proposal.company_id,
   });
+
+  // GHL sync only on first status transition to 'viewed'
+  if (proposal.status === 'sent') {
+    triggerGhlSync('sent', 'viewed');
+  }
 
   return NextResponse.json({ success: true, first_view: isFirstView });
 }
