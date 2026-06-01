@@ -1,9 +1,9 @@
 // components/admin/proposals/CreateFromTemplate.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, Check, Loader2, CheckCircle2 } from 'lucide-react';
 import { supabase, ProposalTemplate } from '@/lib/supabase';
 import { authedFetch } from '@/lib/api-fetch';
 import { FormField } from '@/components/ui/FormField';
@@ -30,6 +30,38 @@ export default function CreateFromTemplate({
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [status, setStatus] = useState('');
+
+  type StepState = { label: string; status: 'pending' | 'active' | 'done' };
+  const [steps, setSteps] = useState<StepState[]>([]);
+  const stepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [activeProgress, setActiveProgress] = useState(0);
+
+  const clearStepTimer = useCallback(() => {
+    if (stepTimerRef.current) { clearInterval(stepTimerRef.current); stepTimerRef.current = null; }
+  }, []);
+
+  const startStepTimer = useCallback(() => {
+    clearStepTimer();
+    setActiveProgress(0);
+    let p = 0;
+    stepTimerRef.current = setInterval(() => {
+      p = Math.min(p + (100 - p) * 0.04, 95);
+      setActiveProgress(p);
+    }, 200);
+  }, [clearStepTimer]);
+
+  const markStepActive = useCallback((idx: number, label: string) => {
+    setSteps(prev => prev.map((s, i) =>
+      i === idx ? { ...s, label, status: 'active' } : i < idx ? { ...s, status: 'done' } : s
+    ));
+    startStepTimer();
+  }, [startStepTimer]);
+
+  const markStepDone = useCallback((idx: number) => {
+    clearStepTimer();
+    setActiveProgress(100);
+    setSteps(prev => prev.map((s, i) => i === idx ? { ...s, status: 'done' } : s));
+  }, [clearStepTimer]);
 
   // Form
   const [title, setTitle] = useState('');
@@ -77,17 +109,25 @@ export default function CreateFromTemplate({
 
     const pdfPages = pages.filter((p) => p.type === 'pdf');
     const hasNonPdfPages = pages.some((p) => p.type !== 'pdf');
+    const hasPdf = pdfPages.length > 0;
 
+    const stepDefs: StepState[] = [];
+    if (hasPdf) stepDefs.push({ label: `Merging ${pdfPages.length} PDF page${pdfPages.length !== 1 ? 's' : ''}`, status: 'pending' });
+    stepDefs.push({ label: 'Setting up pitch', status: 'pending' });
+    stepDefs.push({ label: 'Creating pitch', status: 'pending' });
+    if (hasNonPdfPages) stepDefs.push({ label: 'Copying template content', status: 'pending' });
+
+    setSteps(stepDefs);
+    setActiveProgress(0);
     setCreating(true);
+
+    let si = 0;
 
     try {
       // ── 0. Ensure merged PDF is current ─────────────────────────────
-      // The merged PDF is rebuilt fire-and-forget after page edits, which
-      // can be killed on Vercel before completing. Force a fresh rebuild
-      // here so the proposal is created from up-to-date pages.
       let freshFilePath: string | null = null;
-      if (pdfPages.length > 0) {
-        setStatus('Preparing template...');
+      if (hasPdf) {
+        markStepActive(si, stepDefs[si].label);
         const rebuildRes = await authedFetch('/api/templates/rebuild-merged', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -95,14 +135,18 @@ export default function CreateFromTemplate({
         });
         if (!rebuildRes.ok) {
           setStatus('Failed to prepare template. Please try again.');
+          clearStepTimer();
           setCreating(false);
           return;
         }
         const rebuildData = await rebuildRes.json();
         freshFilePath = rebuildData.file_path || null;
+        markStepDone(si);
+        si++;
       }
 
       // ── 1. Get creator name ─────────────────────────────────────────
+      markStepActive(si, stepDefs[si].label);
       const { data: sessionData } = await supabase.auth.getSession();
       let creatorName: string | null = null;
       if (sessionData?.session?.user?.id) {
@@ -115,10 +159,6 @@ export default function CreateFromTemplate({
       }
 
       // ── 2. Build page_names from template pages + section headers ───
-      // _v2 pages use `title` and `indent` (not `label`).
-      // Non-pdf rows (text, pricing, packages, section, toc) are handled
-      // separately by copy-data, so we only map pdf rows here.
-      setStatus('Preparing pages...');
 
       const pageNames: Array<{
         name: string;
@@ -160,7 +200,9 @@ export default function CreateFromTemplate({
       }
 
       // ── 3. Create proposal + split pages ───────────────────────────
-      setStatus('Creating proposal...');
+      markStepDone(si);
+      si++;
+      markStepActive(si, stepDefs[si].label);
 
       // Quote templates carry quote-only fields (scope, GST, attachments, …)
       // in an `extra` JSONB blob. Hydrate them on top of the create-proposal
@@ -259,12 +301,21 @@ export default function CreateFromTemplate({
           decision_page_enabled:          selectedTemplate.decision_page_enabled ?? null,
           decision_page_title:            selectedTemplate.decision_page_title ?? null,
           decision_extras:                selectedTemplate.decision_extras ?? null,
+          decision_action_bg_color:       selectedTemplate.decision_action_bg_color ?? null,
+          decision_action_text_color:     selectedTemplate.decision_action_text_color ?? null,
+          decision_action_heading_color:  selectedTemplate.decision_action_heading_color ?? null,
+          decision_action_accent_color:   selectedTemplate.decision_action_accent_color ?? null,
+          decision_decline_button_color:  selectedTemplate.decision_decline_button_color ?? null,
+          decision_revision_button_color: selectedTemplate.decision_revision_button_color ?? null,
+          decision_checkbox_color:        selectedTemplate.decision_checkbox_color ?? null,
           pricing_header_text_color:      selectedTemplate.pricing_header_text_color ?? null,
           pricing_text_color:             selectedTemplate.pricing_text_color ?? null,
           pricing_price_title_color:      selectedTemplate.pricing_price_title_color ?? null,
           pricing_price_color:            selectedTemplate.pricing_price_color ?? null,
           pricing_payment_schedule_name_color: selectedTemplate.pricing_payment_schedule_name_color ?? null,
           pricing_payment_schedule_price_color: selectedTemplate.pricing_payment_schedule_price_color ?? null,
+          pricing_accent_bar_color:       selectedTemplate.pricing_accent_bar_color ?? null,
+          pricing_dot_color:              selectedTemplate.pricing_dot_color ?? null,
           font_button_family:             selectedTemplate.font_button_family ?? null,
           font_button_weight:             selectedTemplate.font_button_weight ?? null,
         }),
@@ -277,9 +328,12 @@ export default function CreateFromTemplate({
 
       const newProposal = await res.json();
 
+      markStepDone(si);
+
       // ── 4. Copy template data (pricing, text pages, packages) ───────
       if (hasNonPdfPages) {
-        setStatus('Copying template data...');
+        si++;
+        markStepActive(si, stepDefs[si].label);
         try {
           const copyRes = await authedFetch('/api/templates/copy-data', {
             method: 'POST',
@@ -296,19 +350,23 @@ export default function CreateFromTemplate({
         } catch (err) {
           console.error('Copy template data warning (non-fatal):', err);
         }
+        markStepDone(si);
       }
 
-      setStatus('Done!');
-      // Navigate straight into the new entity so the user can keep working.
+      clearStepTimer();
+      setSteps(prev => prev.map(s => ({ ...s, status: 'done' as const })));
+      setActiveProgress(100);
+
       const dest = selectedTemplate.entity_type === 'quote'
         ? `/quotes/${newProposal.proposal_id}`
         : `/proposals/${newProposal.proposal_id}/pages`;
       onSuccess();
-      setTimeout(() => router.push(dest), 50);
+      setTimeout(() => router.push(dest), 300);
     } catch (err: any) {
       console.error('Create from template failed:', err);
       const msg = err?.message || 'Unknown error';
       setStatus(`Failed: ${msg}`);
+      clearStepTimer();
       setCreating(false);
     }
   };
@@ -408,17 +466,47 @@ export default function CreateFromTemplate({
           onChange={(v) => setDescription(v)}
         />
 
-        {status && (
-          <div className="space-y-1.5">
-            <p className={`text-xs ${status.startsWith('Failed') ? 'text-red-500' : 'text-dim'}`}>
-              {status}
-            </p>
-            {creating && !status.startsWith('Failed') && (
-              <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full w-1/3 bg-teal rounded-full animate-progress-indeterminate" />
+        {creating && steps.length > 0 && (
+          <div className="space-y-2.5 pt-1">
+            {steps.map((s, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="w-5 h-5 shrink-0 flex items-center justify-center">
+                  {s.status === 'done' ? (
+                    <CheckCircle2 size={16} className="text-teal" />
+                  ) : s.status === 'active' ? (
+                    <Loader2 size={16} className="text-teal animate-spin" />
+                  ) : (
+                    <div className="w-3.5 h-3.5 rounded-full border-2 border-gray-200" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-xs font-medium ${s.status === 'pending' ? 'text-faint' : s.status === 'done' ? 'text-teal' : 'text-ink'}`}>
+                      {s.label}
+                    </span>
+                    {s.status === 'active' && (
+                      <span className="text-[10px] text-faint tabular-nums">{Math.round(activeProgress)}%</span>
+                    )}
+                    {s.status === 'done' && (
+                      <span className="text-[10px] text-teal">Done</span>
+                    )}
+                  </div>
+                  <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ease-out ${
+                        s.status === 'done' ? 'bg-teal' : s.status === 'active' ? 'bg-teal' : 'bg-gray-100'
+                      }`}
+                      style={{ width: s.status === 'done' ? '100%' : s.status === 'active' ? `${activeProgress}%` : '0%' }}
+                    />
+                  </div>
+                </div>
               </div>
-            )}
+            ))}
           </div>
+        )}
+
+        {status.startsWith('Failed') && (
+          <p className="text-xs text-red-500">{status}</p>
         )}
 
         <Button
@@ -428,7 +516,7 @@ export default function CreateFromTemplate({
           loading={creating}
           disabled={!title.trim() || !clientName.trim()}
         >
-          Create Proposal
+          {entityType === 'quote' ? 'Create Quote' : 'Create Pitch'}
         </Button>
       </form>
     </div>
