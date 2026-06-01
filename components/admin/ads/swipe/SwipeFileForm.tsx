@@ -246,7 +246,7 @@ export default function SwipeFileForm({ file, knownTags = [], uploadMedia, onClo
             </button>
 
             {tagDropdownOpen && (
-              <div className="absolute left-0 right-0 top-full mt-1 z-10 bg-white border border-edge rounded-lg shadow-lg max-h-64 overflow-hidden flex flex-col">
+              <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-edge rounded-lg shadow-lg max-h-64 overflow-hidden flex flex-col">
                 <div className="p-2 border-b border-edge shrink-0">
                   <input
                     autoFocus

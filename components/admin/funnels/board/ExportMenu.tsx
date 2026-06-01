@@ -134,7 +134,7 @@ export default function ExportMenu({ containerRef, funnelName }: Props) {
         Export
       </button>
       {open && (
-        <div className="absolute top-full mt-1 right-0 w-44 bg-white border border-edge shadow-xl rounded-lg py-1 z-30">
+        <div className="absolute top-full mt-1 right-0 w-44 bg-white border border-edge shadow-xl rounded-lg py-1 z-50">
           <button
             type="button"
             onClick={exportPng}

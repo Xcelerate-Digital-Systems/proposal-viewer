@@ -117,9 +117,9 @@ export default function PreparedBySelector({
       {open && (
         <>
           {/* Backdrop */}
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
 
-          <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-edge-strong rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-edge-strong rounded-lg shadow-lg max-h-48 overflow-y-auto">
             {members.length === 0 ? (
               <div className="px-3 py-3 text-sm text-faint text-center">
                 No team members found

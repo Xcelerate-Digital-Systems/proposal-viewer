@@ -135,7 +135,7 @@ export default function LineItemsLibraryBar({ items, replaceItems }: LineItemsLi
           From Library
         </Button>
         {showLibrary && (
-          <div className="absolute z-20 mt-1 w-80 bg-white rounded-lg border border-edge-strong shadow-lg max-h-96 overflow-y-auto">
+          <div className="absolute z-50 mt-1 w-80 bg-white rounded-lg border border-edge-strong shadow-lg max-h-96 overflow-y-auto">
             {loading ? (
               <div className="px-3 py-6 text-center text-xs text-faint">
                 <Loader2 size={14} className="inline animate-spin" /> Loading…
@@ -190,7 +190,7 @@ export default function LineItemsLibraryBar({ items, replaceItems }: LineItemsLi
           Save as Template
         </Button>
         {showSave && (
-          <div className="absolute z-20 mt-1 w-72 bg-white rounded-lg border border-edge-strong shadow-lg p-3">
+          <div className="absolute z-50 mt-1 w-72 bg-white rounded-lg border border-edge-strong shadow-lg p-3">
             <label className="block text-xs font-medium text-prose mb-1.5">
               Template name
             </label>

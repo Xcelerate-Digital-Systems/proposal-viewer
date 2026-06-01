@@ -115,7 +115,7 @@ export default function InsertPageMenu({
 
       {/* Popover menu */}
       {open && (
-        <div className="absolute z-30 top-full mt-1 bg-white rounded-lg shadow-lg border border-edge-strong py-1 min-w-[180px] animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className="absolute z-50 top-full mt-1 bg-white rounded-lg shadow-lg border border-edge-strong py-1 min-w-[180px] animate-in fade-in slide-in-from-top-1 duration-150">
           {/* PDF upload option */}
           <button
             type="button"

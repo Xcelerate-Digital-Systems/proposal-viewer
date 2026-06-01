@@ -262,7 +262,7 @@ export default function KanbanColumnAssignees({
       {open && (
         <div
           ref={popoverRef}
-          className="absolute top-8 left-0 z-30 w-64 rounded-2xl border border-edge-strong bg-white shadow-lg p-2"
+          className="absolute top-8 left-0 z-50 w-64 rounded-2xl border border-edge-strong bg-white shadow-lg p-2"
         >
           <div className="text-detail font-semibold uppercase tracking-wider text-faint px-2 pb-1 pt-0.5">
             Team

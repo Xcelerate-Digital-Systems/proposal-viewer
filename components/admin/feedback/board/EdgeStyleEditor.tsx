@@ -354,7 +354,7 @@ function Divider() {
 function Pop({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 z-20 bg-white rounded-lg border border-edge shadow-lg p-2"
+      className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 z-50 bg-white rounded-lg border border-edge shadow-lg p-2"
       onClick={(e) => e.stopPropagation()}
     >
       {children}

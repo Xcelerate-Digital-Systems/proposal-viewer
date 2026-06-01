@@ -216,7 +216,7 @@ export default function ClientDetailsSection({
             <ChevronDown size={14} className="text-faint" />
           </button>
           {showDropdown && (
-            <div className="absolute z-20 mt-1 w-full bg-white rounded-lg border border-edge-strong shadow-lg max-h-72 overflow-y-auto">
+            <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-edge-strong shadow-lg max-h-72 overflow-y-auto">
               {savedCustomers.map((c, i) => (
                 <button
                   key={`${c.client_name}-${i}`}

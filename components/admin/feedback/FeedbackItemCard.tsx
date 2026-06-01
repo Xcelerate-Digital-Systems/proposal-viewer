@@ -309,8 +309,8 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
 
             {showMenu && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                <div className="absolute right-0 bottom-full mb-1 z-20 bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]">
+                <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+                <div className="absolute right-0 bottom-full mb-1 z-50 bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]">
                   <button
                     onClick={handleShare}
                     disabled={sharing}

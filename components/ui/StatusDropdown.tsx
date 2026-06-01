@@ -92,7 +92,7 @@ export default function StatusDropdown<T extends string = string>({
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 z-30 bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]">
+        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]">
           {options.map((opt) => (
             <button
               key={opt.value}

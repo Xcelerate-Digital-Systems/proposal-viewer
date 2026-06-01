@@ -357,7 +357,7 @@ export default function ProjectAssigneesPanel({
           </button>
 
           {pickerOpen && unassignedMembers.length > 0 && (
-            <div className="absolute z-10 mt-1 w-64 bg-white border border-edge rounded-2xl shadow-lg py-1 max-h-72 overflow-y-auto">
+            <div className="absolute z-50 mt-1 w-64 bg-white border border-edge rounded-2xl shadow-lg py-1 max-h-72 overflow-y-auto">
               {unassignedMembers.map((m) => (
                 <button
                   key={m.id}

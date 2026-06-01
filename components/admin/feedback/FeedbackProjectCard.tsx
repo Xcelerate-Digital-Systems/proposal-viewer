@@ -332,8 +332,8 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
 
               {showMenu && (
                 <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                  <div className="absolute right-0 bottom-full mb-1 z-20 bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[140px]">
+                  <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+                  <div className="absolute right-0 bottom-full mb-1 z-50 bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[140px]">
                     <button
                       onClick={openEditModal}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-surface"

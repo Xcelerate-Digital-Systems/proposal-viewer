@@ -97,7 +97,7 @@ export function PackageTemplatesLibraryBar({ onPick }: LibraryBarProps) {
         <ChevronDown size={11} className="opacity-60" />
       </button>
       {open && (
-        <div className="absolute z-20 right-0 mt-1 w-80 bg-white rounded-lg border border-edge-strong shadow-lg max-h-96 overflow-y-auto">
+        <div className="absolute z-50 right-0 mt-1 w-80 bg-white rounded-lg border border-edge-strong shadow-lg max-h-96 overflow-y-auto">
           {loading ? (
             <div className="px-3 py-6 text-center text-xs text-faint">
               <Loader2 size={14} className="inline animate-spin" /> Loading…

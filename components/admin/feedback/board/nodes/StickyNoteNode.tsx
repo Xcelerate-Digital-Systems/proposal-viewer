@@ -109,8 +109,8 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
               />
               {showColors && (
                 <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowColors(false)} />
-                  <div className="absolute top-full mt-1 right-0 z-20 bg-white rounded-lg shadow-lg border border-edge-strong p-1.5 flex gap-1">
+                  <div className="fixed inset-0 z-40" onClick={() => setShowColors(false)} />
+                  <div className="absolute top-full mt-1 right-0 z-50 bg-white rounded-lg shadow-lg border border-edge-strong p-1.5 flex gap-1">
                     {NOTE_COLORS.map((c) => (
                       <button
                         key={c.value}

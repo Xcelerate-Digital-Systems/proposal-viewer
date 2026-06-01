@@ -95,7 +95,7 @@ export default function ScenarioSwitcher({ funnel, companyId, userId }: Props) {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 w-[280px] bg-white border border-edge rounded-lg shadow-xl z-30 overflow-hidden">
+        <div className="absolute left-0 top-full mt-1.5 w-[280px] bg-white border border-edge rounded-lg shadow-xl z-50 overflow-hidden">
           <div className="px-3 py-2 border-b border-edge flex items-center justify-between">
             <span className="text-2xs uppercase tracking-wider font-semibold text-muted">
               {family.length > 0 ? `${family.length} scenarios` : 'Scenarios'}

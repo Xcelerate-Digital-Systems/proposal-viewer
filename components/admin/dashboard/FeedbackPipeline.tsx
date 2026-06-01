@@ -129,7 +129,7 @@ function FeedbackProjectCard({
           {menuOpen && (
             <div
               onPointerDown={(e) => e.stopPropagation()}
-              className="absolute right-0 top-full mt-1 w-40 bg-white rounded-2xl shadow-lg border border-edge-strong overflow-hidden z-20"
+              className="absolute right-0 top-full mt-1 w-40 bg-white rounded-2xl shadow-lg border border-edge-strong overflow-hidden z-50"
             >
               <button
                 onClick={(e) => {
