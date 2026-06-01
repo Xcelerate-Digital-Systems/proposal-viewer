@@ -46,15 +46,29 @@ export default function NotificationBell({
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications(userId, companyId);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node) &&
+          btnRef.current && !btnRef.current.contains(e.target as Node)) setOpen(false);
     };
     if (open) document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
+
+  useEffect(() => {
+    if (open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      if (variant === 'sidebar') {
+        setPos({ bottom: window.innerHeight - r.top + 8, left: r.left });
+      } else {
+        setPos({ top: r.bottom + 8, left: r.right - 340 });
+      }
+    }
+  }, [open, variant]);
 
   const handleClick = (n: InAppNotification) => {
     if (!n.read_at) markRead(n.id);
@@ -65,8 +79,9 @@ export default function NotificationBell({
   };
 
   return (
-    <div ref={ref} className="relative">
+    <div className="relative">
       <button
+        ref={btnRef}
         onClick={() => setOpen((v) => !v)}
         className={`relative p-1.5 rounded-full transition-colors ${
           variant === 'sidebar'
@@ -83,12 +98,16 @@ export default function NotificationBell({
         )}
       </button>
 
-      {open && (
-        <div className={`absolute w-[340px] max-h-[420px] bg-white rounded-2xl shadow-xl border border-edge overflow-hidden z-[9999] flex flex-col ${
-          variant === 'sidebar'
-            ? 'bottom-full left-0 mb-2'
-            : 'top-full right-0 mt-2'
-        }`}>
+      {open && pos && (
+        <div
+          ref={ref}
+          className="fixed w-[340px] max-h-[420px] bg-white rounded-2xl shadow-xl border border-edge overflow-hidden z-[9999] flex flex-col"
+          style={{
+            ...(pos.top != null ? { top: pos.top } : {}),
+            ...(pos.bottom != null ? { bottom: pos.bottom } : {}),
+            left: pos.left,
+          }}
+        >
           <div className="flex items-center justify-between px-4 py-3 border-b border-edge">
             <span className="text-sm font-semibold text-ink">Notifications</span>
             {unreadCount > 0 && (
