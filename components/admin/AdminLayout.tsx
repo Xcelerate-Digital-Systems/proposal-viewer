@@ -174,7 +174,7 @@ function AdminLayoutInner({
   return (
     <TourProvider>
       {guarded}
-      <SetupChecklist />
+      {/* <SetupChecklist /> — tours disabled, revisit later */}
       <CommandPalette />
     </TourProvider>
   );

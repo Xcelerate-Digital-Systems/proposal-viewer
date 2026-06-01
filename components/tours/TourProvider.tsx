@@ -109,6 +109,9 @@ export function useTour(): Ctx {
 }
 
 export function TourProvider({ children }: { children: ReactNode }) {
+  // Tours disabled globally — revisit later
+  return <TourCtx.Provider value={{ replay: () => {}, isActive: false }}>{children}</TourCtx.Provider>;
+
   const auth = useAuth();
   const pathname = usePathname();
 
