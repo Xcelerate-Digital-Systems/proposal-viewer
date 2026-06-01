@@ -26,6 +26,8 @@ export default function ProposalViewerPage(props: { params: Promise<{ token: str
 
   const { trackPageView } = useViewerTracking({
     shareToken: params.token,
+    viewerName: v.proposal?.client_name ?? null,
+    viewerEmail: v.proposal?.client_email ?? null,
     enabled: !!v.proposal && !autoPrint,
   });
 
