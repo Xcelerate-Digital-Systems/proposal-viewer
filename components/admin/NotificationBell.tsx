@@ -84,7 +84,7 @@ export default function NotificationBell({
       </button>
 
       {open && (
-        <div className={`absolute w-[340px] max-h-[420px] bg-white rounded-2xl shadow-xl border border-edge overflow-hidden z-50 flex flex-col ${
+        <div className={`absolute w-[340px] max-h-[420px] bg-white rounded-2xl shadow-xl border border-edge overflow-hidden z-[9999] flex flex-col ${
           variant === 'sidebar'
             ? 'bottom-full left-0 mb-2'
             : 'top-full right-0 mt-2'
