@@ -23,8 +23,8 @@ const nextConfig = {
     const csp = [
       `default-src 'self'`,
       `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com ${posthogHost}`,
-      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
-      `font-src 'self' https://fonts.gstatic.com data:`,
+      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com`,
+      `font-src 'self' https://fonts.gstatic.com https://cdn.fontshare.com data:`,
       `img-src 'self' blob: data: https://${supabaseHost} https://*.supabase.co`,
       `connect-src 'self' ${supabaseUrl} wss://${supabaseHost} ${posthogHost} https://api.stripe.com https://api.resend.com`,
       `frame-src 'self' https://js.stripe.com`,
