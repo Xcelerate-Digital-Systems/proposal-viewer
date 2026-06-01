@@ -9,6 +9,7 @@ import { FormFields, fieldsByType } from '@/components/ui/FormField';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { authedFetch } from '@/lib/api-fetch';
+import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 import CreateFromTemplate from './CreateFromTemplate';
 
 interface UploadModalProps {
@@ -242,10 +243,28 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
         <form onSubmit={handleUpload} className="flex flex-col min-h-0 flex-1">
           <Modal.Body className="space-y-4">
             <FormFields
-              fields={fieldsByType.proposal}
+              fields={fieldsByType.proposal.filter((f) => f.key !== 'client_email')}
               values={form}
               onChange={(key, value) => setForm({ ...form, [key]: value })}
             />
+            <div>
+              <label className="block text-sm font-medium text-prose mb-1">
+                Client Email <span className="text-faint font-normal">(optional)</span>
+              </label>
+              <ContactAutocomplete
+                value={form.client_email}
+                onChange={(v) => setForm({ ...form, client_email: v })}
+                onSelect={(c) => {
+                  setForm((prev) => ({
+                    ...prev,
+                    client_email: c.email,
+                    client_name: c.name && !prev.client_name ? c.name : prev.client_name,
+                  }));
+                }}
+                placeholder="john@example.com"
+                className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
+              />
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-prose mb-1">PDF File</label>
@@ -344,10 +363,16 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
               <label className="block text-sm font-medium text-prose mb-1">
                 Client Email <span className="text-faint font-normal">(optional)</span>
               </label>
-              <input
-                type="email"
+              <ContactAutocomplete
                 value={blankForm.client_email}
-                onChange={(e) => setBlankForm({ ...blankForm, client_email: e.target.value })}
+                onChange={(v) => setBlankForm({ ...blankForm, client_email: v })}
+                onSelect={(c) => {
+                  setBlankForm((prev) => ({
+                    ...prev,
+                    client_email: c.email,
+                    client_name: c.name && !prev.client_name ? c.name : prev.client_name,
+                  }));
+                }}
                 placeholder="client@example.com"
                 className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
               />
@@ -424,10 +449,16 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
               <label className="block text-sm font-medium text-prose mb-1">
                 Client Email <span className="text-faint font-normal">(optional)</span>
               </label>
-              <input
-                type="email"
+              <ContactAutocomplete
                 value={quoteForm.client_email}
-                onChange={(e) => setQuoteForm({ ...quoteForm, client_email: e.target.value })}
+                onChange={(v) => setQuoteForm({ ...quoteForm, client_email: v })}
+                onSelect={(c) => {
+                  setQuoteForm((prev) => ({
+                    ...prev,
+                    client_email: c.email,
+                    client_name: c.name && !prev.client_name ? c.name : prev.client_name,
+                  }));
+                }}
                 placeholder="client@example.com"
                 className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
               />

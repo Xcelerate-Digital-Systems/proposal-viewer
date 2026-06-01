@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useEntitlements } from '@/hooks/useEntitlements';
 import { authFetch } from '@/lib/auth-fetch';
+import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 
 interface CreateReviewProjectModalProps {
   companyId: string;
@@ -136,10 +137,14 @@ export default function CreateFeedbackProjectModal({
               <label className="block text-sm font-medium text-prose mb-1.5">
                 Contact Email
               </label>
-              <input
-                type="email"
+              <ContactAutocomplete
                 value={clientEmail}
-                onChange={(e) => setClientEmail(e.target.value)}
+                onChange={setClientEmail}
+                onSelect={(c) => {
+                  setClientEmail(c.email);
+                  if (c.name && !clientName) setClientName(c.name);
+                  if (c.organisation && !clientCompany) setClientCompany(c.organisation);
+                }}
                 placeholder="contact@example.com"
                 className="w-full px-3.5 py-2.5 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
               />

@@ -4,6 +4,7 @@ import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getCompanyMarkupDefaults } from '@/lib/markup-notification-defaults';
 import { sendGuestInviteEmail } from '@/lib/feedback/send-guest-invite';
+import { upsertContact } from '@/lib/contacts';
 
 type GuestPrefs = {
   notify_comment: boolean;
@@ -197,6 +198,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     console.error('[api/campaigns/[id]/guests]', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
+
+  upsertContact(supabase, auth.companyId, { email, name, source: 'campaign_guest' });
 
   let invited = false;
   if (sendInvite && auth.member?.user_id) {

@@ -6,6 +6,7 @@ import { splitProposalPages } from '@/lib/split-proposal-pages';
 import { addPage } from '@/lib/page-operations';
 import { getCompanyEntityDefaults } from '@/lib/company-defaults';
 import { checkResourceLimit, buildLimitErrorBody } from '@/lib/billing/entitlements';
+import { upsertContact } from '@/lib/contacts';
 
 export const dynamic = 'force-dynamic';
 
@@ -130,6 +131,11 @@ export async function POST(req: NextRequest) {
     }
 
     const proposalId = proposal.id;
+
+    if (client_email) {
+      const source = isQuote ? 'quote' : 'proposal';
+      upsertContact(supabase, companyId, { email: client_email, name: client_name, source });
+    }
 
     let pageCount = 0;
     if (!isQuote && !isBlank) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { checkResourceLimit, buildLimitErrorBody } from '@/lib/billing/entitlements';
+import { upsertContact } from '@/lib/contacts';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +45,16 @@ export async function POST(req: NextRequest) {
     if (error || !created) {
       console.error('[api/campaigns] POST:', error?.message);
       return NextResponse.json({ error: 'Failed to create campaign' }, { status: 500 });
+    }
+
+    const clientEmail = typeof body.client_email === 'string' ? body.client_email.trim() : '';
+    if (clientEmail) {
+      upsertContact(supabase, companyId, {
+        email: clientEmail,
+        name: typeof body.client_name === 'string' ? body.client_name.trim() : undefined,
+        organisation: typeof body.client_company === 'string' ? body.client_company.trim() : undefined,
+        source: 'campaign_guest',
+      });
     }
 
     if (auth.member.user_id) {

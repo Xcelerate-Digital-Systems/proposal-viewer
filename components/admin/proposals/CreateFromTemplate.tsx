@@ -8,6 +8,7 @@ import { supabase, ProposalTemplate } from '@/lib/supabase';
 import { authedFetch } from '@/lib/api-fetch';
 import { FormField } from '@/components/ui/FormField';
 import { Button } from '@/components/ui/Button';
+import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 
 interface CreateFromTemplateProps {
   companyId: string;
@@ -450,11 +451,21 @@ export default function CreateFromTemplate({
           value={clientName}
           onChange={(v) => setClientName(v)}
         />
-        <FormField
-          config={{ key: 'client_email', label: 'Client Email', type: 'email', placeholder: 'client@example.com', optional: true }}
-          value={clientEmail}
-          onChange={(v) => setClientEmail(v)}
-        />
+        <div>
+          <label htmlFor="client_email" className="block text-sm font-medium text-prose mb-1">
+            Client Email <span className="text-faint font-normal">(optional)</span>
+          </label>
+          <ContactAutocomplete
+            value={clientEmail}
+            onChange={setClientEmail}
+            onSelect={(c) => {
+              setClientEmail(c.email);
+              if (c.name && !clientName) setClientName(c.name);
+            }}
+            placeholder="client@example.com"
+            className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
+          />
+        </div>
         <FormField
           config={{ key: 'crm_identifier', label: 'CRM Identifier', placeholder: 'Optional deal ID or reference', optional: true }}
           value={crmIdentifier}

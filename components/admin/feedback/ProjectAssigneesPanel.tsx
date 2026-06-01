@@ -9,6 +9,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { REVIEW_STATUS_ORDER, getFeedbackStatusDef } from '@/lib/feedback/status';
 import type { FeedbackStatus } from '@/lib/types/feedback';
+import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
 
 type Member = { id: string; user_id: string | null; name: string | null; email: string; role: string | null };
 
@@ -76,7 +77,6 @@ export default function ProjectAssigneesPanel({
   const [guestName, setGuestName] = useState('');
   const [guestSendInvite, setGuestSendInvite] = useState(true);
   const [guestSaving, setGuestSaving] = useState(false);
-  const guestEmailRef = useRef<HTMLInputElement>(null);
 
   const buildUrl = useCallback(
     (suffix = '') =>
@@ -449,16 +449,16 @@ export default function ProjectAssigneesPanel({
                   <label className="block text-detail font-medium text-dim mb-1">
                     Email <span className="text-red-400">*</span>
                   </label>
-                  <input
-                    ref={guestEmailRef}
-                    type="email"
+                  <ContactAutocomplete
                     value={guestEmail}
-                    onChange={(e) => setGuestEmail(e.target.value)}
-                    placeholder="guest@example.com"
-                    className="w-full px-3 py-1.5 text-caption border border-edge-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') addGuest();
+                    onChange={setGuestEmail}
+                    onSelect={(c) => {
+                      setGuestEmail(c.email);
+                      if (c.name && !guestName) setGuestName(c.name);
                     }}
+                    placeholder="guest@example.com"
+                    autoFocus
+                    className="w-full px-3 py-1.5 text-caption border border-edge-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
                   />
                 </div>
                 <div>
@@ -519,7 +519,6 @@ export default function ProjectAssigneesPanel({
               type="button"
               onClick={() => {
                 setGuestFormOpen(true);
-                setTimeout(() => guestEmailRef.current?.focus(), 50);
               }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-caption font-medium border border-edge-strong rounded-full hover:border-gray-300 transition-colors"
             >
