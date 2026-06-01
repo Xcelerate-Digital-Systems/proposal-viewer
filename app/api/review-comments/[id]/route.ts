@@ -56,7 +56,7 @@ export async function PATCH(req: NextRequest, props: RouteContext) {
     const body = await req.json();
     const content = typeof body?.content === 'string' ? body.content.trim() : undefined;
     const priority = typeof body?.priority === 'string' ? body.priority : undefined;
-    const validPriorities = ['high', 'medium', 'low', 'none'];
+    const validPriorities = ['high', 'medium', 'normal', 'low', 'none'];
 
     if (!content && !priority) {
       return NextResponse.json({ error: 'Content or priority required' }, { status: 400 });
