@@ -9,7 +9,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Plus, FileText, Upload, LayoutGrid, List, Search, Trash2, Pencil,
-  Type, Image, DollarSign, Package, ListOrdered, Check, X,
+  Type, Image, DollarSign, Package, ListOrdered, Check, X, Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
@@ -57,6 +57,7 @@ interface PageLibraryRow {
   type: string;
   title: string;
   label: string | null;
+  payload: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }
@@ -176,21 +177,21 @@ function TemplatesContent({ companyId }: { companyId: string }) {
 
   const fetchLineItemTemplates = useCallback(async () => {
     const res = await fetch('/api/line-item-templates', { headers: await authHeaders() });
-    if (!res.ok) throw new Error(`Failed to load line-item templates (${res.status})`);
+    if (!res.ok) { console.error(`[templates] line-item-templates ${res.status}`); return; }
     const json = await res.json();
     setLineItemTemplates(json.templates ?? []);
   }, []);
 
   const fetchPackageTemplates = useCallback(async () => {
     const res = await fetch('/api/package-templates', { headers: await authHeaders() });
-    if (!res.ok) throw new Error(`Failed to load package templates (${res.status})`);
+    if (!res.ok) { console.error(`[templates] package-templates ${res.status}`); return; }
     const json = await res.json();
     setPackageTemplates(json.templates ?? []);
   }, []);
 
   const fetchLibraryPages = useCallback(async () => {
     const res = await fetch('/api/page-library', { headers: await authHeaders() });
-    if (!res.ok) throw new Error(`Failed to load page library (${res.status})`);
+    if (!res.ok) { console.error(`[templates] page-library ${res.status}`); return; }
     const json = await res.json();
     setLibraryPages(json ?? []);
   }, []);
@@ -199,7 +200,7 @@ function TemplatesContent({ companyId }: { companyId: string }) {
     setLoading(true);
     setFetchError(null);
     try {
-      await Promise.all([
+      await Promise.allSettled([
         fetchProposalTemplates(),
         fetchLineItemTemplates(),
         fetchPackageTemplates(),
@@ -524,6 +525,30 @@ function TemplatesContent({ companyId }: { companyId: string }) {
                 toast.error('Failed to rename');
               }
             }}
+            onReplacePdf={async (p, file) => {
+              const tempPath = `page-library/temp-${Date.now()}.pdf`;
+              const { error: uploadErr } = await supabase.storage
+                .from('proposals')
+                .upload(tempPath, file, { upsert: true, contentType: 'application/pdf' });
+              if (uploadErr) {
+                toast.error('Failed to upload file');
+                return;
+              }
+              const res = await fetch('/api/page-library', {
+                method: 'PATCH',
+                headers: await authHeaders(),
+                body: JSON.stringify({ id: p.id, replace_file_path: tempPath }),
+              });
+              if (res.ok) {
+                const updated = await res.json();
+                setLibraryPages((prev) =>
+                  prev.map((x) => (x.id === p.id ? { ...x, payload: updated.payload, updated_at: updated.updated_at } : x))
+                );
+                toast.success('PDF replaced');
+              } else {
+                toast.error('Failed to replace PDF');
+              }
+            }}
           />
         ) : filteredProposalTemplates.length === 0 && searchQuery ? (
           <NoResults message={`No templates matching “${searchQuery}”`} />
@@ -788,15 +813,18 @@ function PageLibraryView({
   searchQuery,
   onDelete,
   onRename,
+  onReplacePdf,
 }: {
   pages: PageLibraryRow[];
   allCount: number;
   searchQuery: string;
   onDelete: (p: PageLibraryRow) => void;
   onRename: (p: PageLibraryRow, newTitle: string) => void;
+  onReplacePdf: (p: PageLibraryRow, file: File) => Promise<void>;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [replacingId, setReplacingId] = useState<string | null>(null);
 
   if (pages.length === 0 && searchQuery) {
     return <NoResults message={`No saved pages matching "${searchQuery}"`} />;
@@ -811,21 +839,31 @@ function PageLibraryView({
     );
   }
 
+  const handleReplace = async (p: PageLibraryRow, file: File) => {
+    setReplacingId(p.id);
+    try {
+      await onReplacePdf(p, file);
+    } finally {
+      setReplacingId(null);
+    }
+  };
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 stagger-children">
       {pages.map((p) => {
         const Icon = PAGE_TYPE_ICONS[p.type] ?? FileText;
         const typeLabel = PAGE_TYPE_LABELS[p.type] ?? p.type;
         const isEditing = editingId === p.id;
+        const isReplacing = replacingId === p.id;
 
         return (
           <div
             key={p.id}
-            className="group relative bg-white rounded-2xl border border-edge-strong p-4 hover:shadow-md hover:border-teal/30 transition-all"
+            className="group relative bg-white rounded-xl border border-edge-strong p-3 hover:shadow-md hover:border-teal/30 transition-all"
           >
-            <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="flex items-start justify-between gap-1.5 mb-1">
               {isEditing ? (
-                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                <div className="flex items-center gap-1 flex-1 min-w-0">
                   <input
                     type="text"
                     value={editValue}
@@ -838,60 +876,49 @@ function PageLibraryView({
                       if (e.key === 'Escape') setEditingId(null);
                     }}
                     autoFocus
-                    className="flex-1 min-w-0 px-2 py-1 rounded-lg border border-edge bg-surface text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20"
+                    className="flex-1 min-w-0 px-1.5 py-0.5 rounded border border-edge bg-surface text-xs text-ink focus:outline-none focus:ring-1 focus:ring-teal/20"
                   />
-                  <button
-                    onClick={() => {
-                      if (editValue.trim()) {
-                        onRename(p, editValue.trim());
-                        setEditingId(null);
-                      }
-                    }}
-                    className="p-1 text-teal hover:text-teal-hover"
-                    title="Save"
-                  >
-                    <Check size={14} />
-                  </button>
-                  <button
-                    onClick={() => setEditingId(null)}
-                    className="p-1 text-faint hover:text-muted"
-                    title="Cancel"
-                  >
-                    <X size={14} />
-                  </button>
+                  <button onClick={() => { if (editValue.trim()) { onRename(p, editValue.trim()); setEditingId(null); } }} className="p-0.5 text-teal"><Check size={12} /></button>
+                  <button onClick={() => setEditingId(null)} className="p-0.5 text-faint"><X size={12} /></button>
                 </div>
               ) : (
                 <>
-                  <h3 className="text-sm font-semibold text-ink truncate flex-1 min-w-0">
-                    {p.label || p.title}
-                  </h3>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
-                    <button
-                      onClick={() => { setEditingId(p.id); setEditValue(p.label || p.title); }}
-                      className="p-1 text-faint hover:text-teal"
-                      title="Rename"
-                    >
-                      <Pencil size={13} />
-                    </button>
-                    <button
-                      onClick={() => onDelete(p)}
-                      className="p-1 text-faint hover:text-red-500"
-                      title="Delete"
-                    >
-                      <Trash2 size={13} />
-                    </button>
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <div className="shrink-0 w-6 h-6 rounded bg-gray-100 flex items-center justify-center">
+                      <Icon size={12} className="text-dim" />
+                    </div>
+                    <p className="text-xs font-semibold text-ink truncate">
+                      {p.label || p.title}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition shrink-0">
+                    {p.type === 'pdf' && (
+                      <label
+                        className={`p-0.5 text-faint hover:text-teal cursor-pointer ${isReplacing ? 'pointer-events-none' : ''}`}
+                        title="Replace PDF"
+                      >
+                        {isReplacing ? <Loader2 size={11} className="animate-spin text-teal" /> : <Upload size={11} />}
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          className="hidden"
+                          disabled={isReplacing}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleReplace(p, f);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    )}
+                    <button onClick={() => { setEditingId(p.id); setEditValue(p.label || p.title); }} className="p-0.5 text-faint hover:text-teal" title="Rename"><Pencil size={11} /></button>
+                    <button onClick={() => onDelete(p)} className="p-0.5 text-faint hover:text-red-500" title="Delete"><Trash2 size={11} /></button>
                   </div>
                 </>
               )}
             </div>
-            {p.label && p.label !== p.title && !isEditing && (
-              <p className="text-xs text-muted truncate mb-2">{p.title}</p>
-            )}
-            <div className="flex items-center justify-between text-detail text-faint mt-auto pt-1">
-              <span className="flex items-center gap-1.5">
-                <Icon size={12} />
-                {typeLabel}
-              </span>
+            <div className="flex items-center justify-between text-2xs text-faint">
+              <span>{typeLabel}</span>
               <span>{new Date(p.created_at).toLocaleDateString()}</span>
             </div>
           </div>

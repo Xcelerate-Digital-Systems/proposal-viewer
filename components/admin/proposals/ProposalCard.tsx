@@ -219,10 +219,6 @@ export default function ProposalCard({ proposal: p, onRefresh, customDomain }: P
       {activeTab === 'pages' && (
         <PageEditor
           proposalId={p.id}
-          filePath={p.file_path}
-          initialPageNames={p.page_names || []}
-          onSave={() => { setActiveTab(null); onRefresh(); }}
-          onCancel={() => setActiveTab(null)}
         />
       )}
 

@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PATCH — rename / update a page in the library
+// PATCH — rename / update a page in the library (also supports PDF replacement)
 export async function PATCH(req: NextRequest) {
   try {
     const auth = await getAuthContext(req);
@@ -144,18 +144,61 @@ export async function PATCH(req: NextRequest) {
 
     const body = await req.json().catch(() => null);
     if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-    const { id, title, label } = body;
+    const { id, title, label, replace_file_path } = body;
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+    const supabase = createServiceClient();
 
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (typeof title === 'string' && title.trim()) updates.title = title.trim();
     if (typeof label === 'string') updates.label = label.trim() || null;
 
+    // Replace the PDF file — swap file_path in payload, delete old file
+    if (typeof replace_file_path === 'string' && replace_file_path) {
+      const { data: existing } = await supabase
+        .from('page_library')
+        .select('type, payload')
+        .eq('id', id)
+        .eq('company_id', auth.companyId)
+        .maybeSingle();
+
+      if (!existing) {
+        return NextResponse.json({ error: 'Page not found' }, { status: 404 });
+      }
+      if (existing.type !== 'pdf') {
+        return NextResponse.json({ error: 'Only PDF pages can have files replaced' }, { status: 400 });
+      }
+
+      const oldPayload = (existing.payload ?? {}) as Record<string, unknown>;
+      const oldFilePath = oldPayload.file_path as string | undefined;
+
+      // Copy the uploaded temp file into the library namespace
+      const ext = replace_file_path.split('.').pop() || 'pdf';
+      const destPath = `page-library/${auth.companyId}/${Date.now()}.${ext}`;
+      const { error: copyErr } = await supabase.storage
+        .from('proposals')
+        .copy(replace_file_path, destPath);
+
+      if (copyErr) {
+        console.error('[page-library] storage copy failed:', copyErr.message);
+        return NextResponse.json({ error: 'Failed to copy replacement file' }, { status: 500 });
+      }
+
+      // Delete the temp upload
+      await supabase.storage.from('proposals').remove([replace_file_path]);
+
+      // Delete the old library file
+      if (oldFilePath) {
+        await supabase.storage.from('proposals').remove([oldFilePath]);
+      }
+
+      updates.payload = { ...oldPayload, file_path: destPath };
+    }
+
     if (Object.keys(updates).length === 1) {
       return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
     }
 
-    const supabase = createServiceClient();
     const { data, error } = await supabase
       .from('page_library')
       .update(updates)

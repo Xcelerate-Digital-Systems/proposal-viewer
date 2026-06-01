@@ -84,8 +84,13 @@ function LoginContent() {
     validateInvite();
   }, [inviteToken]);
 
+  useEffect(() => {
+    if (session && !authLoading) {
+      router.replace(postLoginTarget);
+    }
+  }, [session, authLoading, router, postLoginTarget]);
+
   if (session && !authLoading) {
-    router.replace(postLoginTarget);
     return null;
   }
 
