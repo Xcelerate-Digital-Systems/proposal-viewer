@@ -29,6 +29,7 @@ interface Props {
   onToggleTaskComplete?: (commentId: string, taskId: string, completed: boolean) => Promise<void>;
   onRemoveTask?: (commentId: string, taskId: string) => Promise<void>;
   onPriorityChange?: (comment: CommentWithItem, priority: FeedbackCommentPriority) => void;
+  onOpenTaskDetail?: (task: CommentTask) => void;
   teamMembers?: TeamMemberOption[];
   projectId?: string;
 }
@@ -47,6 +48,7 @@ export default function FeedbackModal({
   onToggleTaskComplete,
   onRemoveTask,
   onPriorityChange,
+  onOpenTaskDetail,
   teamMembers = [],
   projectId,
 }: Props) {
@@ -81,7 +83,7 @@ export default function FeedbackModal({
   const TypeIcon = TYPE_ICONS[comment.item_type] || MessageSquare;
 
   return (
-    <Modal open onClose={onClose} size="2xl">
+    <Modal open onClose={onClose} size="3xl">
       <Modal.Header>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
@@ -156,7 +158,8 @@ export default function FeedbackModal({
                     return (
                       <div
                         key={task.id}
-                        className={`rounded-lg border px-3 py-2 text-xs ${done ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}
+                        className={`rounded-lg border px-3 py-2 text-xs ${done ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'} ${onOpenTaskDetail ? 'cursor-pointer hover:shadow-sm transition-shadow' : ''}`}
+                        onClick={() => onOpenTaskDetail?.(task)}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5 min-w-0">
@@ -166,7 +169,7 @@ export default function FeedbackModal({
                           <div className="flex items-center gap-1 shrink-0">
                             {!done && (isAssignee || !!currentMemberId) && onToggleTaskComplete && (
                               <button
-                                onClick={() => onToggleTaskComplete(comment.id, task.id, true)}
+                                onClick={(e) => { e.stopPropagation(); onToggleTaskComplete(comment.id, task.id, true); }}
                                 className="text-2xs font-medium text-emerald-700 hover:text-emerald-900 bg-emerald-100 hover:bg-emerald-200 px-2 py-0.5 rounded-full transition-colors"
                               >
                                 Complete
@@ -174,7 +177,7 @@ export default function FeedbackModal({
                             )}
                             {done && onToggleTaskComplete && (
                               <button
-                                onClick={() => onToggleTaskComplete(comment.id, task.id, false)}
+                                onClick={(e) => { e.stopPropagation(); onToggleTaskComplete(comment.id, task.id, false); }}
                                 className="text-2xs font-medium text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 px-2 py-0.5 rounded-full transition-colors"
                               >
                                 Reopen
@@ -182,7 +185,7 @@ export default function FeedbackModal({
                             )}
                             {onRemoveTask && (
                               <button
-                                onClick={() => onRemoveTask(comment.id, task.id)}
+                                onClick={(e) => { e.stopPropagation(); onRemoveTask(comment.id, task.id); }}
                                 className="p-0.5 rounded text-faint hover:text-red-500 transition-colors"
                                 title="Remove task"
                               >
@@ -354,7 +357,7 @@ export default function FeedbackModal({
                           className="flex-1 text-xs bg-transparent text-ink placeholder:text-faint focus:outline-none"
                         />
                       </div>
-                      <div className="max-h-[140px] overflow-y-auto space-y-0.5">
+                      <div className="max-h-[140px] overflow-y-auto space-y-0.5 px-0.5">
                         {(() => {
                           const q = assignSearch.toLowerCase();
                           const matches = teamMembers.filter((m) =>
@@ -386,8 +389,8 @@ export default function FeedbackModal({
                             value={assignNote}
                             onChange={(e) => setAssignNote(e.target.value)}
                             placeholder="Instructions (optional)…"
-                            rows={2}
-                            className="w-full text-xs rounded-lg bg-warm-dark px-2.5 py-2 text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 resize-none"
+                            rows={4}
+                            className="w-full text-sm rounded-lg border border-edge-strong px-3 py-2.5 text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-none"
                           />
                           <Button
                             size="sm"

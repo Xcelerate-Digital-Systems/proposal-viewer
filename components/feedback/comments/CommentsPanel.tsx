@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapPin, X } from 'lucide-react';
 import type { FeedbackComment } from '@/lib/supabase';
+import type { CommentTask } from '@/lib/types/feedback';
 import GeneralCommentForm from './GeneralCommentForm';
 import CommentThread from './CommentThread';
 import ResolvedSection from './ResolvedSection';
@@ -77,6 +78,8 @@ interface CommentsPanelProps {
   onRemoveTask?: (commentId: string, taskId: string) => Promise<void>;
   /** Current user's team_member_id */
   currentMemberId?: string | null;
+  /** Open standalone task detail view */
+  onOpenTaskDetail?: (commentId: string, task: CommentTask) => void;
 }
 
 export default function CommentsPanel({
@@ -108,6 +111,7 @@ export default function CommentsPanel({
   onToggleTaskComplete,
   onRemoveTask,
   currentMemberId,
+  onOpenTaskDetail,
 }: CommentsPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   // Avatars are looked up by share_token so guests on the public review
@@ -212,6 +216,7 @@ export default function CommentsPanel({
             onRemoveTask={onRemoveTask ? (taskId) => onRemoveTask(c.id, taskId) : undefined}
             currentMemberId={currentMemberId}
             assigneeLookup={assigneeLookup}
+            onOpenTaskDetail={onOpenTaskDetail ? (task) => onOpenTaskDetail(c.id, task) : undefined}
           />
         ))}
 

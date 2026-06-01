@@ -11,6 +11,7 @@ import AddFeedbackItemModal from '@/components/admin/feedback/AddFeedbackItemMod
 import FeedbackRow from '@/components/admin/feedback/feedback-list/FeedbackRow';
 import FeedbackModal from '@/components/admin/feedback/feedback-list/FeedbackModal';
 import TaskModal from '@/components/admin/feedback/feedback-list/TaskModal';
+import TaskDetailModal from '@/components/admin/feedback/feedback-list/TaskDetailModal';
 import type { CommentWithItem } from '@/components/admin/feedback/feedback-list/types';
 import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackComment } from '@/lib/supabase';
 import type { CommentTask, CommentTaskAttachment, FeedbackCommentPriority } from '@/lib/types/feedback';
@@ -97,6 +98,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
   const [priorityFilter, setPriorityFilter] = useState<FeedbackCommentPriority | 'all'>('all');
   const [selectedComment, setSelectedComment] = useState<CommentWithItem | null>(null);
   const [taskingComment, setTaskingComment] = useState<CommentWithItem | null>(null);
+  const [selectedTaskDetail, setSelectedTaskDetail] = useState<{ task: CommentTask; comment: CommentWithItem } | null>(null);
   const [completions, setCompletions] = useState<ReviewCompletion[]>([]);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [showAddItem, setShowAddItem] = useState(false);
@@ -623,7 +625,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
                         onToggleComplete={() => toggleTaskComplete(task.comment_id, task.id, true)}
                         onViewComment={() => {
                           const c = enrichedComments.find((ec) => ec.id === task.comment_id);
-                          if (c) setSelectedComment(c);
+                          if (c) setSelectedTaskDetail({ task, comment: c });
                         }}
                       />
                     ))}
@@ -635,7 +637,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
                         onToggleComplete={() => toggleTaskComplete(task.comment_id, task.id, false)}
                         onViewComment={() => {
                           const c = enrichedComments.find((ec) => ec.id === task.comment_id);
-                          if (c) setSelectedComment(c);
+                          if (c) setSelectedTaskDetail({ task, comment: c });
                         }}
                       />
                     ))}
@@ -663,12 +665,13 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           onToggleTaskComplete={toggleTaskComplete}
           onRemoveTask={removeTask}
           onPriorityChange={changePriority}
+          onOpenTaskDetail={(task) => setSelectedTaskDetail({ task, comment: selectedComment })}
           teamMembers={teamMembers}
           projectId={projectId}
         />
       )}
 
-      {/* Task Modal */}
+      {/* Task Modal (create new) */}
       {taskingComment && (
         <TaskModal
           commentId={taskingComment.id}
@@ -682,6 +685,33 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           onToggleComplete={toggleTaskComplete}
           onRemoveTask={removeTask}
           onClose={() => setTaskingComment(null)}
+        />
+      )}
+
+      {/* Task Detail Modal (view existing) */}
+      {selectedTaskDetail && (
+        <TaskDetailModal
+          task={selectedTaskDetail.task}
+          commentContent={selectedTaskDetail.comment.content || ''}
+          commentAuthorName={selectedTaskDetail.comment.author_name}
+          commentCreatedAt={selectedTaskDetail.comment.created_at}
+          commentScreenshotUrl={selectedTaskDetail.comment.screenshot_url}
+          commentVideoUrl={selectedTaskDetail.comment.video_url}
+          commentThreadNumber={selectedTaskDetail.comment.thread_number}
+          itemTitle={selectedTaskDetail.comment.item_title}
+          itemType={selectedTaskDetail.comment.item_type}
+          itemUrl={selectedTaskDetail.comment.item_url}
+          projectId={projectId}
+          reviewItemId={selectedTaskDetail.comment.review_item_id}
+          companyId={companyId}
+          currentMemberId={currentMemberId}
+          memberNameMap={memberNameMap}
+          teamMembers={teamMembers}
+          existingTasks={selectedTaskDetail.comment.tasks ?? []}
+          onToggleComplete={toggleTaskComplete}
+          onRemoveTask={removeTask}
+          onCreateTask={createTask}
+          onClose={() => setSelectedTaskDetail(null)}
         />
       )}
     </div>

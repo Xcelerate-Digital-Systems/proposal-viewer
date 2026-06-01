@@ -34,7 +34,7 @@ const FOCUSABLE =
   'input:not([disabled]):not([type="hidden"]), select:not([disabled]), ' +
   '[tabindex]:not([tabindex="-1"])';
 
-type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
+type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'full';
 
 interface ModalProps {
   open: boolean;
@@ -60,6 +60,7 @@ const sizeWidth: Record<ModalSize, string> = {
   lg: 'max-w-lg',     // 512px
   xl: 'max-w-2xl',    // 672px
   '2xl': 'max-w-4xl', // 896px
+  '3xl': 'max-w-5xl', // 1024px
   full: 'max-w-[90vw]',
 };
 

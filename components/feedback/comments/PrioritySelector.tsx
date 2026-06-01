@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { AlertCircle, CircleMinus, CircleArrowDown, Check, Flag } from 'lucide-react';
+import { AlertCircle, CircleMinus, Circle, CircleArrowDown, Check, Flag } from 'lucide-react';
 import type { FeedbackCommentPriority } from '@/lib/types/feedback';
 
 interface PrioritySelectorProps {
@@ -22,12 +22,13 @@ interface PriorityOptionDef {
 export const PRIORITY_OPTIONS: PriorityOptionDef[] = [
   { value: 'high', label: 'High', icon: AlertCircle, iconClass: 'text-rose-500', badgeClass: 'bg-rose-100 text-rose-700' },
   { value: 'medium', label: 'Medium', icon: CircleMinus, iconClass: 'text-amber-500', badgeClass: 'bg-amber-100 text-amber-700' },
+  { value: 'normal', label: 'Normal', icon: Circle, iconClass: 'text-sky-500', badgeClass: 'bg-sky-100 text-sky-700' },
   { value: 'low', label: 'Low', icon: CircleArrowDown, iconClass: 'text-emerald-500', badgeClass: 'bg-emerald-100 text-emerald-700' },
   { value: 'none', label: 'None', icon: Check, iconClass: 'text-blue-500', badgeClass: 'bg-gray-100 text-dim' },
 ];
 
 export function getPriorityDef(priority: FeedbackCommentPriority): PriorityOptionDef {
-  return PRIORITY_OPTIONS.find((p) => p.value === priority) ?? PRIORITY_OPTIONS[3];
+  return PRIORITY_OPTIONS.find((p) => p.value === priority) ?? PRIORITY_OPTIONS[4];
 }
 
 export default function PrioritySelector({ value, onChange, compact = true }: PrioritySelectorProps) {

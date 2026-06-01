@@ -7,6 +7,7 @@ import CompleteFeedbackModal from './CompleteFeedbackModal';
 import FeedbackHeaderBar from './FeedbackHeaderBar';
 import type { FeedbackProject, FeedbackItem, FeedbackComment, FeedbackStatus } from '@/lib/supabase';
 import {
+  type CommentTask,
   type FeedbackCommentPriority,
   type FeedbackItemView,
   defaultViewForItem,
@@ -85,6 +86,8 @@ interface ReviewDetailViewProps {
   onRemoveTask?: (commentId: string, taskId: string) => Promise<void>;
   /** Current user's team_member_id (for "Mark Complete" gate) */
   currentMemberId?: string | null;
+  /** Open standalone task detail view */
+  onOpenTaskDetail?: (commentId: string, task: CommentTask) => void;
   /** Called when selected item changes — admin uses this for router.push */
   onItemChange?: (itemId: string, typeFilter: string | null) => void;
   /** Called when type filter changes — admin uses this for URL sync */
@@ -170,6 +173,7 @@ export default function FeedbackDetailView({
   onToggleTaskComplete,
   onRemoveTask,
   currentMemberId,
+  onOpenTaskDetail,
   onItemChange,
   onFilterChange,
   backAction,
@@ -657,6 +661,7 @@ export default function FeedbackDetailView({
               onToggleTaskComplete={isAdmin ? onToggleTaskComplete : undefined}
               onRemoveTask={isAdmin ? onRemoveTask : undefined}
               currentMemberId={isAdmin ? currentMemberId : undefined}
+              onOpenTaskDetail={isAdmin ? onOpenTaskDetail : undefined}
               className="w-[360px] shrink-0 bg-warm flex flex-col"
               commentPlaceholder={(() => {
                 if (selectedItem?.type !== 'google_search_ad') return undefined;

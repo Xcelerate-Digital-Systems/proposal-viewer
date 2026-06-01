@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { CornerDownRight, Send, CheckCircle2, RotateCcw, X, Check, Loader2, Type, AlignLeft, UserPlus } from 'lucide-react';
 import { timeAgo } from '@/lib/review-utils';
 import type { FeedbackComment } from '@/lib/supabase';
-import { getCommentView, parseGoogleAdAssetView } from '@/lib/types/feedback';
+import { getCommentView, parseGoogleAdAssetView, type CommentTask } from '@/lib/types/feedback';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import EmojiPicker from './EmojiPicker';
 import AttachmentList from './AttachmentList';
@@ -78,6 +78,8 @@ interface CommentThreadProps {
   currentMemberId?: string | null;
   /** team_member_id → {name, avatarUrl} for task badge display */
   assigneeLookup?: TeamMemberLookup;
+  /** Open the standalone task detail view */
+  onOpenTaskDetail?: (task: CommentTask) => void;
 }
 
 export default function CommentThread({
@@ -106,6 +108,7 @@ export default function CommentThread({
   onRemoveTask,
   currentMemberId,
   assigneeLookup,
+  onOpenTaskDetail,
 }: CommentThreadProps) {
   const confirm = useConfirm();
   const [showReply, setShowReply] = useState(false);
@@ -345,6 +348,7 @@ export default function CommentThread({
               isAdmin={isAdmin}
               onToggleComplete={onToggleTaskComplete}
               onRemove={onRemoveTask}
+              onTaskClick={onOpenTaskDetail}
             />
           )}
         </div>

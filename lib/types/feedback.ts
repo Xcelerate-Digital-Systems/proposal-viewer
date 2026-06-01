@@ -410,7 +410,7 @@ export type FeedbackItemVersion = {
 
 export type FeedbackCommentType = 'pin' | 'text_highlight' | 'general';
 
-export type FeedbackCommentPriority = 'high' | 'medium' | 'low' | 'none';
+export type FeedbackCommentPriority = 'high' | 'medium' | 'normal' | 'low' | 'none';
 
 export type FeedbackComment = {
   id: string;

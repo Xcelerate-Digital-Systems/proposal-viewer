@@ -11,6 +11,7 @@ interface AssignmentBadgeProps {
   isAdmin?: boolean;
   onToggleComplete?: (taskId: string, completed: boolean) => Promise<void>;
   onRemove?: (taskId: string) => Promise<void>;
+  onTaskClick?: (task: CommentTask) => void;
 }
 
 export default function AssignmentBadge({
@@ -20,6 +21,7 @@ export default function AssignmentBadge({
   isAdmin,
   onToggleComplete,
   onRemove,
+  onTaskClick,
 }: AssignmentBadgeProps) {
   if (tasks.length === 0) return null;
 
@@ -37,7 +39,8 @@ export default function AssignmentBadge({
               done
                 ? 'bg-emerald-50 border border-emerald-200'
                 : 'bg-amber-50 border border-amber-200'
-            }`}
+            } ${onTaskClick ? 'cursor-pointer hover:shadow-sm transition-shadow' : ''}`}
+            onClick={() => onTaskClick?.(task)}
           >
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 min-w-0">
@@ -53,7 +56,7 @@ export default function AssignmentBadge({
               <div className="flex items-center gap-1 shrink-0">
                 {!done && (isAssignee || isAdmin) && onToggleComplete && (
                   <button
-                    onClick={() => onToggleComplete(task.id, true)}
+                    onClick={(e) => { e.stopPropagation(); onToggleComplete(task.id, true); }}
                     className="text-2xs font-medium text-emerald-700 hover:text-emerald-900 bg-emerald-100 hover:bg-emerald-200 px-2 py-0.5 rounded-full transition-colors"
                   >
                     Complete
@@ -61,7 +64,7 @@ export default function AssignmentBadge({
                 )}
                 {done && isAdmin && onToggleComplete && (
                   <button
-                    onClick={() => onToggleComplete(task.id, false)}
+                    onClick={(e) => { e.stopPropagation(); onToggleComplete(task.id, false); }}
                     className="text-2xs font-medium text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 px-2 py-0.5 rounded-full transition-colors"
                   >
                     Reopen
@@ -69,7 +72,7 @@ export default function AssignmentBadge({
                 )}
                 {isAdmin && onRemove && (
                   <button
-                    onClick={() => onRemove(task.id)}
+                    onClick={(e) => { e.stopPropagation(); onRemove(task.id); }}
                     className="p-0.5 rounded text-faint hover:text-prose transition-colors"
                     title="Remove task"
                   >

@@ -203,7 +203,7 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
   }, [params.token, items, guestEmail, guestName]);
 
   // ── Submit comment via API ──
-  const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }, priority?: 'high' | 'medium' | 'low' | 'none', attachments?: import('@/lib/supabase').FeedbackCommentAttachment[], videoUrl?: string | null) => {
+  const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }, priority?: 'high' | 'medium' | 'normal' | 'low' | 'none', attachments?: import('@/lib/supabase').FeedbackCommentAttachment[], videoUrl?: string | null) => {
     if (!guestName.trim()) return;
     saveGuestIdentity(guestName, guestEmail);
 

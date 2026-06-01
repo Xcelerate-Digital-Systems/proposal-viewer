@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackCommentReaction, type FeedbackStatus } from '@/lib/supabase';
 import type { FeedbackCommentPriority, CommentTask, CommentTaskAttachment } from '@/lib/types/feedback';
 import TaskModal from '@/components/admin/feedback/feedback-list/TaskModal';
+import TaskDetailModal from '@/components/admin/feedback/feedback-list/TaskDetailModal';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
 import FeedbackDetailView from '@/components/feedback/FeedbackDetailView';
@@ -90,6 +91,7 @@ function ItemViewerContent({
   const [reviewMode, setReviewMode] = useState<'comment' | 'browse'>('comment');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
   const [taskingCommentId, setTaskingCommentId] = useState<string | null>(null);
+  const [selectedTaskDetail, setSelectedTaskDetail] = useState<{ task: CommentTask; comment: FeedbackComment } | null>(null);
   const [teamMembers, setTeamMembers] = useState<{ id: string; name: string; email: string }[]>([]);
   const [memberNameMap, setMemberNameMap] = useState<Record<string, string>>({});
 
@@ -586,6 +588,10 @@ function ItemViewerContent({
         onToggleTaskComplete={toggleTaskComplete}
         onRemoveTask={removeTask}
         currentMemberId={teamMember?.id ?? null}
+        onOpenTaskDetail={(commentId, task) => {
+          const c = comments.find((x) => x.id === commentId);
+          if (c) setSelectedTaskDetail({ task, comment: c });
+        }}
         onItemChange={handleItemChange}
         onFilterChange={handleFilterChange}
         shareToken={project.share_token || ''}
@@ -640,6 +646,34 @@ function ItemViewerContent({
             onToggleComplete={toggleTaskComplete}
             onRemoveTask={removeTask}
             onClose={() => setTaskingCommentId(null)}
+          />
+        );
+      })()}
+
+      {selectedTaskDetail && (() => {
+        const c = selectedTaskDetail.comment;
+        return (
+          <TaskDetailModal
+            task={selectedTaskDetail.task}
+            commentContent={c.content || ''}
+            commentAuthorName={c.author_name}
+            commentCreatedAt={c.created_at}
+            commentScreenshotUrl={c.screenshot_url}
+            commentVideoUrl={c.video_url}
+            commentThreadNumber={c.thread_number}
+            itemTitle={currentItem?.title}
+            itemType={currentItem?.type}
+            projectId={projectId}
+            reviewItemId={currentItem?.id}
+            companyId={companyId}
+            currentMemberId={teamMember?.id ?? null}
+            memberNameMap={memberNameMap}
+            teamMembers={teamMembers}
+            existingTasks={c.tasks ?? []}
+            onToggleComplete={toggleTaskComplete}
+            onRemoveTask={removeTask}
+            onCreateTask={createTask}
+            onClose={() => setSelectedTaskDetail(null)}
           />
         );
       })()}
