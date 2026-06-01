@@ -109,7 +109,8 @@ export async function POST(req: NextRequest, props: RouteContext) {
     if ('error' in ctx) return ctx.error;
     const { supabase } = ctx;
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
 
     const { emoji, author_name, author_user_id } = body;
     if (!emoji || !author_name) {

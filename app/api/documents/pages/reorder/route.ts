@@ -17,7 +17,9 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const supabase                     = createServiceClient();
-    const { document_id, ordered_ids } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    const { document_id, ordered_ids } = body;
 
     if (!document_id || !Array.isArray(ordered_ids)) {
       return NextResponse.json(

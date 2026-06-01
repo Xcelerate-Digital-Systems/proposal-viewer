@@ -16,7 +16,8 @@ export async function PATCH(
 
     const { member, companyId } = auth;
     const { id } = await params;
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
 
     const supabase = createServiceClient();
 

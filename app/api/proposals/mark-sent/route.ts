@@ -15,7 +15,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { proposal_id } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    const { proposal_id } = body;
     if (!proposal_id) {
       return NextResponse.json({ error: 'proposal_id required' }, { status: 400 });
     }

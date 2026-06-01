@@ -172,7 +172,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
     if (!rl.success) return corsJson({ error: 'Too many requests' }, 429);
 
     const supabase = createServiceClient();
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return corsJson({ error: 'Invalid request body' }, 400);
 
     const {
       review_item_id,
@@ -307,7 +308,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ token: 
     }
 
     /* ── Edit content (body mode) ──────────────────────── */
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return corsJson({ error: 'Invalid request body' }, 400);
     const { content, author_name, author_email } = body;
 
     if (!content || !content.trim()) {

@@ -91,7 +91,8 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Only owners can update company settings' }, { status: 403 });
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     const allowedFields = [
       'name', 'slug', 
       'accent_color', 

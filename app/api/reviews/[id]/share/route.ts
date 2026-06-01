@@ -33,7 +33,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     const incoming = (body?.shared_views ?? {}) as Partial<FeedbackSharedViews>;
     const next: FeedbackSharedViews = {
       board: typeof incoming.board === 'boolean' ? incoming.board : DEFAULT_SHARED_VIEWS.board,
@@ -100,8 +101,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     }
 
     // Parse body
-    const body = await req.json();
-    const { view, action, itemId } = body as {
+    const rawBody = await req.json().catch(() => null);
+    if (!rawBody) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    const { view, action, itemId } = rawBody as {
       view: 'items' | 'board' | 'item';
       action: 'generate' | 'revoke';
       itemId?: string;

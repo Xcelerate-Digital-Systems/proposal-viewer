@@ -19,7 +19,9 @@ export async function POST(req: NextRequest) {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { template_id } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    const { template_id } = body;
 
     if (!template_id) {
       return NextResponse.json({ error: 'template_id is required' }, { status: 400 });

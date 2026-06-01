@@ -10,6 +10,7 @@
 // through to `getAuthContext` for manual triggering during local dev).
 
 import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getResend, FROM_EMAIL } from '@/lib/resend';
 import { buildReviewUrl } from '@/lib/proposal-url';
@@ -45,9 +46,12 @@ type PendingRow = {
 
 function authorized(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (!secret) return false; // fail closed — require CRON_SECRET in all environments
+  if (!secret) return false;
   const header = req.headers.get('authorization');
-  return header === `Bearer ${secret}`;
+  if (!header) return false;
+  const expected = `Bearer ${secret}`;
+  if (header.length !== expected.length) return false;
+  return timingSafeEqual(Buffer.from(header), Buffer.from(expected));
 }
 
 async function handle(req: NextRequest) {

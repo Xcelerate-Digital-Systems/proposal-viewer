@@ -21,7 +21,8 @@ const NOTIFY_WINDOW_SECONDS = 60;
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     const {
       event_type, share_token, comment_id, comment_author, comment_content,
       resolved_by, author_type, feedback_text, feedback_by,

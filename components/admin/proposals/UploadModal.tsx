@@ -352,6 +352,17 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                 className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
               />
             </div>
+
+            {uploading && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-dim">{status || 'Creating...'}</span>
+                </div>
+                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full w-1/3 bg-teal rounded-full animate-progress-indeterminate" />
+                </div>
+              </div>
+            )}
           </Modal.Body>
           <Modal.Footer>
             <Button
@@ -393,7 +404,7 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                 onChange={(e) => setQuoteForm({ ...quoteForm, title: e.target.value })}
                 placeholder="e.g. Website Redesign Quote"
                 required
-                className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 "
+                className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
               />
             </div>
             <div>
@@ -406,7 +417,7 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                 onChange={(e) => setQuoteForm({ ...quoteForm, client_name: e.target.value })}
                 placeholder="e.g. Acme Corp"
                 required
-                className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 "
+                className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
               />
             </div>
             <div>
@@ -418,9 +429,20 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                 value={quoteForm.client_email}
                 onChange={(e) => setQuoteForm({ ...quoteForm, client_email: e.target.value })}
                 placeholder="client@example.com"
-                className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30 "
+                className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
               />
             </div>
+
+            {uploading && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-dim">{status || 'Creating...'}</span>
+                </div>
+                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full w-1/3 bg-teal rounded-full animate-progress-indeterminate" />
+                </div>
+              </div>
+            )}
           </Modal.Body>
           <Modal.Footer>
             <Button

@@ -67,7 +67,8 @@ export async function POST(req: NextRequest) {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     const {
       type_id, title, notes, headline, primary_text, description, cta, tags,
       media_type, media_url, media_source, thumbnail_url, source_url, brand,

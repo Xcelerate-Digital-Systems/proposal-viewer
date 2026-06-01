@@ -11,7 +11,9 @@ export async function POST(req: NextRequest) {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { pages, proposal_file_path } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    const { pages, proposal_file_path } = body;
 
     if (!pages || !Array.isArray(pages) || pages.length === 0 || !proposal_file_path) {
       return NextResponse.json({ error: 'Missing pages or proposal_file_path' }, { status: 400 });

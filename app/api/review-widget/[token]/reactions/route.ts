@@ -101,8 +101,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
     if (!rl.success) return corsJson({ error: 'Too many requests' }, 429);
 
     const supabase = createServiceClient();
-    const body = await req.json();
-    const { comment_id, emoji, author_name } = body || {};
+    const body = await req.json().catch(() => null);
+    if (!body) return corsJson({ error: 'Invalid request body' }, 400);
+    const { comment_id, emoji, author_name } = body;
     if (!comment_id || !emoji || !author_name) {
       return corsJson({ error: 'Missing comment_id, emoji or author_name' }, 400);
     }

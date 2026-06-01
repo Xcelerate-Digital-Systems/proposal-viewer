@@ -70,7 +70,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
     if (!rl.success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
     const supabase = createServiceClient();
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
 
     const {
       review_item_id,
@@ -293,8 +294,9 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ token: 
   const params = await props.params;
   try {
     const supabase = createServiceClient();
-    const body = await req.json();
-    const { comment_id, content, author_email, author_name } = body ?? {};
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    const { comment_id, content, author_email, author_name } = body;
 
     if (!comment_id || typeof content !== 'string' || !content.trim()) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });

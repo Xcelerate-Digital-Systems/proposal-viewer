@@ -53,7 +53,8 @@ export async function PATCH(req: NextRequest, props: RouteContext) {
     if ('error' in ctx) return ctx.error;
     const { supabase } = ctx;
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     const content = typeof body?.content === 'string' ? body.content.trim() : undefined;
     const priority = typeof body?.priority === 'string' ? body.priority : undefined;
     const validPriorities = ['high', 'medium', 'normal', 'low', 'none'];

@@ -22,7 +22,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: CORS_HEADERS });
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400, headers: CORS_HEADERS });
+    }
     const { item: itemId, image } = body as { item?: string; image?: string };
 
     if (!itemId || !image) {

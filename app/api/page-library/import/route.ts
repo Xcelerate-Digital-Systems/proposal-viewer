@@ -12,7 +12,9 @@ export async function POST(req: NextRequest) {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { library_page_ids, target_entity_id, target_entity_type } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    const { library_page_ids, target_entity_id, target_entity_type } = body;
 
     if (!Array.isArray(library_page_ids) || library_page_ids.length === 0) {
       return NextResponse.json({ error: 'library_page_ids required' }, { status: 400 });

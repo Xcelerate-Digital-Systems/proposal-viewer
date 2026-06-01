@@ -409,9 +409,16 @@ export default function CreateFromTemplate({
         />
 
         {status && (
-          <p className={`text-xs ${status.startsWith('Failed') ? 'text-red-500' : 'text-faint'}`}>
-            {status}
-          </p>
+          <div className="space-y-1.5">
+            <p className={`text-xs ${status.startsWith('Failed') ? 'text-red-500' : 'text-dim'}`}>
+              {status}
+            </p>
+            {creating && !status.startsWith('Failed') && (
+              <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full w-1/3 bg-teal rounded-full animate-progress-indeterminate" />
+              </div>
+            )}
+          </div>
         )}
 
         <Button

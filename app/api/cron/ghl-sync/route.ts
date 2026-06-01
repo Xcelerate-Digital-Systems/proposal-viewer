@@ -8,6 +8,7 @@
 // Authenticated via CRON_SECRET Bearer token.
 
 import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 import { createServiceClient } from '@/lib/supabase-server';
 import { decryptGhlToken } from '@/lib/connectors/ghl/token-crypto';
 import { upsertContact, addContactToWorkflow } from '@/lib/connectors/ghl/contacts';
@@ -25,7 +26,10 @@ function authorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
   if (!secret) return false;
   const header = req.headers.get('authorization');
-  return header === `Bearer ${secret}`;
+  if (!header) return false;
+  const expected = `Bearer ${secret}`;
+  if (header.length !== expected.length) return false;
+  return timingSafeEqual(Buffer.from(header), Buffer.from(expected));
 }
 
 function jitter(baseSeconds: number): number {

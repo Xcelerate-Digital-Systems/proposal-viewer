@@ -183,7 +183,8 @@ export async function POST(req: NextRequest, props: RouteContext) {
     if ('error' in ctx) return ctx.error;
     const { auth, comment, supabase } = ctx;
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     const assignedTo = typeof body?.assigned_to === 'string' ? body.assigned_to.trim() : '';
     const instructions = typeof body?.instructions === 'string' ? body.instructions.trim() : null;
     const attachments = Array.isArray(body?.attachments) ? body.attachments : [];
@@ -252,7 +253,8 @@ export async function PATCH(req: NextRequest, props: RouteContext) {
     if ('error' in ctx) return ctx.error;
     const { supabase } = ctx;
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     const taskId = typeof body?.task_id === 'string' ? body.task_id.trim() : '';
     if (!taskId) {
       return NextResponse.json({ error: 'task_id required' }, { status: 400 });
@@ -301,7 +303,8 @@ export async function DELETE(req: NextRequest, props: RouteContext) {
     if ('error' in ctx) return ctx.error;
     const { supabase } = ctx;
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     const taskId = typeof body?.task_id === 'string' ? body.task_id.trim() : '';
     if (!taskId) {
       return NextResponse.json({ error: 'task_id required' }, { status: 400 });

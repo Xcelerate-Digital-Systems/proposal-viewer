@@ -25,7 +25,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { email } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    const { email } = body;
 
     if (!email || !isValidEmail(email)) {
       return NextResponse.json({ error: 'Valid email is required' }, { status: 400 });

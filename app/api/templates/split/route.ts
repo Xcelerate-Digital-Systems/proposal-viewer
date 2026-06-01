@@ -12,7 +12,9 @@ export async function POST(req: NextRequest) {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { template_name, template_description, file_path, entity_type } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    const { template_name, template_description, file_path, entity_type } = body;
 
     if (!template_name || !file_path) {
       return NextResponse.json({ error: 'Missing template_name or file_path' }, { status: 400 });

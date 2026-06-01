@@ -101,7 +101,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Peek at op before routing. All paths require a verified template_id.
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   const templateId = body.template_id as string | undefined;
   if (!templateId) {
     return NextResponse.json({ error: 'template_id is required' }, { status: 400 });
@@ -347,7 +348,8 @@ export async function PUT(req: NextRequest) {
     const ownership = await ownsPage(req, pageId);
     if (!ownership) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     const {
       title, indent, enabled, link_url, link_label,
       orientation, show_title, show_member_badge, show_client_logo, prepared_by_member_id,
@@ -389,7 +391,9 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const supabase = createServiceClient();
-    const { template_id, page_id } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    const { template_id, page_id } = body;
 
     if (!template_id || !page_id) {
       return NextResponse.json({ error: 'template_id and page_id are required' }, { status: 400 });

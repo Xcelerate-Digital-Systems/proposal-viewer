@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useEntitlements } from '@/hooks/useEntitlements';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface CreateReviewProjectModalProps {
   companyId: string;
@@ -17,7 +17,7 @@ interface CreateReviewProjectModalProps {
 
 export default function CreateFeedbackProjectModal({
   companyId,
-  userId,
+  userId: _userId,
   onClose,
   onSuccess,
 }: CreateReviewProjectModalProps) {
@@ -42,49 +42,30 @@ export default function CreateFeedbackProjectModal({
     }
 
     setSaving(true);
-    const { data: created, error } = await supabase
-      .from('review_projects')
-      .insert({
-        company_id: companyId,
+    const res = await authFetch('/api/campaigns', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         title: title.trim(),
         description: description.trim() || null,
         client_company: clientCompany.trim() || null,
         client_name: clientName.trim() || null,
         client_email: clientEmail.trim() || null,
-        created_by: userId,
-      })
-      .select('id')
-      .single();
+      }),
+    });
 
-    if (error || !created) {
-      toast.error('Failed to create campaign');
+    const json = await res.json().catch(() => null);
+
+    if (!res.ok || !json?.id) {
+      toast.error(json?.error || 'Failed to create campaign');
       setSaving(false);
       return;
-    }
-
-    // Add the creator as the first project assignee so they receive
-    // notifications by default.
-    if (userId) {
-      const { data: tm } = await supabase
-        .from('team_members')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('company_id', companyId)
-        .maybeSingle();
-      if (tm?.id) {
-        await supabase
-          .from('review_project_assignees')
-          .upsert(
-            { review_project_id: created.id, team_member_id: tm.id },
-            { onConflict: 'review_project_id,team_member_id' }
-          );
-      }
     }
 
     toast.success('Campaign created');
     onSuccess();
     onClose();
-    router.push(`/campaigns/${created.id}/setup`);
+    router.push(`/campaigns/${json.id}/setup`);
   };
 
   return (
@@ -164,9 +145,20 @@ export default function CreateFeedbackProjectModal({
               />
             </div>
           </div>
+
+          {saving && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-dim">Creating campaign...</span>
+              </div>
+              <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full w-1/3 bg-teal rounded-full animate-progress-indeterminate" />
+              </div>
+            </div>
+          )}
         </Modal.Body>
         <Modal.Footer>
-          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+          <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
           <Button

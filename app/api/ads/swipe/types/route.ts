@@ -72,7 +72,8 @@ export async function POST(req: NextRequest) {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     const { name, description, shared_with_company_ids } = body;
 
     if (!name?.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 });

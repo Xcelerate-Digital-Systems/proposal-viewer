@@ -46,7 +46,8 @@ export async function POST(req: NextRequest) {
     const auth = await getAuthContext(req);
     if (!auth) return withCors(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }));
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return withCors(NextResponse.json({ error: 'Invalid request body' }, { status: 400 }));
     const {
       type_id,
       type_name,

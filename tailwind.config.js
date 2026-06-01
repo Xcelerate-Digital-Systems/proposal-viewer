@@ -114,6 +114,15 @@ module.exports = {
           packages: { DEFAULT: '#A855F7', tint: '#FAF5FF' },// purple-500 / purple-50
         },
       },
+      keyframes: {
+        'progress-indeterminate': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(250%)' },
+        },
+      },
+      animation: {
+        'progress-indeterminate': 'progress-indeterminate 1.4s ease-in-out infinite',
+      },
       boxShadow: {
         sketch: '2px 3px 0 0 rgba(0,0,0,0.08)',
         'sketch-lg': '3px 5px 0 0 rgba(0,0,0,0.1)',

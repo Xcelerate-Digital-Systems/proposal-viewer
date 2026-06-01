@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     const { entity_id, entity_type = 'proposal', force = false } = body;
 
     if (!entity_id || typeof entity_id !== 'string') {

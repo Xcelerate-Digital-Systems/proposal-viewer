@@ -108,7 +108,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(result);
 }
 
-// POST: Create a new agency account
+// POST: Create a new agency account (optionally with lifetime subscription)
 export async function POST(req: NextRequest) {
   const admin = await verifySuperAdmin(req);
   if (!admin) {
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { name, slug } = body;
+  const { name, slug, grant_lifetime } = body;
 
   if (!name || !slug) {
     return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
@@ -140,6 +140,33 @@ export async function POST(req: NextRequest) {
     }
     console.error('[api/admin/accounts] POST:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+
+  if (grant_lifetime) {
+    const { data: lifetimePlan } = await supabaseAdmin
+      .from('plans')
+      .select('id')
+      .eq('slug', 'lifetime')
+      .maybeSingle();
+
+    if (lifetimePlan) {
+      await supabaseAdmin.from('subscriptions').upsert(
+        {
+          company_id: company.id,
+          plan_id: lifetimePlan.id,
+          stripe_customer_id: null,
+          stripe_subscription_id: null,
+          status: 'active',
+          billing_cycle: null,
+          trial_ends_at: null,
+          current_period_end: null,
+          cancel_at_period_end: false,
+          canceled_at: null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'company_id' },
+      );
+    }
   }
 
   return NextResponse.json(company);

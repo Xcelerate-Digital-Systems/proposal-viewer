@@ -157,7 +157,9 @@ export async function POST(req: NextRequest) {
     const rl = await rateLimit({ key: `webhook-test:${auth.companyId}`, limit: 5, windowSeconds: 60 });
     if (!rl.success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
-    const { endpoint_id } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    const { endpoint_id } = body;
 
     if (!endpoint_id) {
       return NextResponse.json({ error: 'endpoint_id required' }, { status: 400 });
@@ -185,7 +187,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Webhook URL is invalid or points to a private address' }, { status: 400 });
     }
 
-    const body = JSON.stringify(payload);
+    const requestBody = JSON.stringify(payload);
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -196,7 +198,7 @@ export async function POST(req: NextRequest) {
     if (endpoint.secret) {
       const signature = crypto
         .createHmac('sha256', endpoint.secret)
-        .update(body)
+        .update(requestBody)
         .digest('hex');
       headers['X-Webhook-Signature'] = `sha256=${signature}`;
     }
@@ -204,7 +206,7 @@ export async function POST(req: NextRequest) {
     const response = await fetch(endpoint.url, {
       method: 'POST',
       headers,
-      body,
+      body: requestBody,
       redirect: 'manual',
       signal: AbortSignal.timeout(10000),
     });

@@ -32,7 +32,9 @@ export async function POST(req: NextRequest) {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { source_page_id, source_entity_type, label } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    const { source_page_id, source_entity_type, label } = body;
 
     if (!source_page_id || !source_entity_type) {
       return NextResponse.json(
@@ -140,7 +142,9 @@ export async function PATCH(req: NextRequest) {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { id, title, label } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    const { id, title, label } = body;
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -177,7 +181,9 @@ export async function DELETE(req: NextRequest) {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { id } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    const { id } = body;
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
     const supabase = createServiceClient();

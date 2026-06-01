@@ -14,7 +14,9 @@ export async function POST(req: NextRequest) {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { source_page_ids, target_template_id } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    const { source_page_ids, target_template_id } = body;
 
     if (!Array.isArray(source_page_ids) || source_page_ids.length === 0 || !target_template_id) {
       return NextResponse.json(

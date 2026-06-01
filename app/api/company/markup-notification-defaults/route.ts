@@ -16,52 +16,62 @@ import {
 } from '@/lib/markup-notification-defaults';
 
 export async function GET(req: NextRequest) {
-  const auth = await getAuthContext(req);
-  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const auth = await getAuthContext(req);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const supabase = createServiceClient();
-  const prefs = await getCompanyMarkupDefaults(supabase, auth.companyId);
-  return NextResponse.json({ defaults: prefs });
+    const supabase = createServiceClient();
+    const prefs = await getCompanyMarkupDefaults(supabase, auth.companyId);
+    return NextResponse.json({ defaults: prefs });
+  } catch (err) {
+    console.error('[api/company/markup-notification-defaults] GET:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
 
 export async function PATCH(req: NextRequest) {
-  const auth = await getAuthContext(req);
-  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const auth = await getAuthContext(req);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { member } = auth;
-  const allowed =
-    member.is_super_admin || member.role === 'owner' || member.role === 'admin';
-  if (!allowed) {
-    return NextResponse.json(
-      { error: 'Only owners and admins can change agency notification defaults' },
-      { status: 403 },
-    );
-  }
-
-  const body = await req.json().catch(() => ({}));
-  const incoming = (body?.defaults ?? body) as Partial<MarkupNotifyPrefs>;
-
-  const update: Record<string, boolean> = {};
-  for (const key of MARKUP_NOTIFY_KEYS) {
-    if (typeof incoming?.[key] === 'boolean') {
-      update[`markup_${key}`] = incoming[key] as boolean;
+    const { member } = auth;
+    const allowed =
+      member.is_super_admin || member.role === 'owner' || member.role === 'admin';
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Only owners and admins can change agency notification defaults' },
+        { status: 403 },
+      );
     }
-  }
-  if (Object.keys(update).length === 0) {
-    return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
-  }
 
-  const supabase = createServiceClient();
-  const { error } = await supabase
-    .from('companies')
-    .update(update)
-    .eq('id', auth.companyId);
+    const body = await req.json().catch(() => ({}));
+    const incoming = (body?.defaults ?? body) as Partial<MarkupNotifyPrefs>;
 
-  if (error) {
-    console.error('[api/company/markup-notification-defaults] PATCH:', error.message);
+    const update: Record<string, boolean> = {};
+    for (const key of MARKUP_NOTIFY_KEYS) {
+      if (typeof incoming?.[key] === 'boolean') {
+        update[`markup_${key}`] = incoming[key] as boolean;
+      }
+    }
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+    }
+
+    const supabase = createServiceClient();
+    const { error } = await supabase
+      .from('companies')
+      .update(update)
+      .eq('id', auth.companyId);
+
+    if (error) {
+      console.error('[api/company/markup-notification-defaults] PATCH:', error.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+
+    const next = await getCompanyMarkupDefaults(supabase, auth.companyId);
+    return NextResponse.json({ defaults: next ?? ALL_ON_PREFS });
+  } catch (err) {
+    console.error('[api/company/markup-notification-defaults] PATCH:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-
-  const next = await getCompanyMarkupDefaults(supabase, auth.companyId);
-  return NextResponse.json({ defaults: next ?? ALL_ON_PREFS });
 }
