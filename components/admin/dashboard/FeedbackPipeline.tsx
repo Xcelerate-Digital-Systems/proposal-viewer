@@ -12,7 +12,8 @@
  * see its per-item kanban at /feedback/[id]/kanban.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import {
   MessageSquareText, ExternalLink, Layers, Calendar, MoreHorizontal, Trash2,
@@ -57,19 +58,8 @@ function FeedbackProjectCard({
   const toast = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  // Close menu when clicking outside.
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [menuOpen]);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
 
   const handleDelete = async () => {
     setMenuOpen(false);
@@ -113,11 +103,16 @@ function FeedbackProjectCard({
         </div>
 
         {/* Three-dot menu — stops drag propagation so menu/click work. */}
-        <div className="relative" ref={menuRef}>
+        <div className="relative">
           <button
+            ref={menuBtnRef}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
+              if (!menuOpen && menuBtnRef.current) {
+                const r = menuBtnRef.current.getBoundingClientRect();
+                setMenuPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+              }
               setMenuOpen((v) => !v);
             }}
             className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-surface"
@@ -126,22 +121,27 @@ function FeedbackProjectCard({
           >
             <MoreHorizontal size={14} />
           </button>
-          {menuOpen && (
-            <div
-              onPointerDown={(e) => e.stopPropagation()}
-              className="absolute right-0 top-full mt-1 w-40 bg-white rounded-2xl shadow-lg border border-edge-strong overflow-hidden z-50"
-            >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete();
-                }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors text-left"
+          {menuOpen && menuPos && createPortal(
+            <>
+              <div className="fixed inset-0 z-[9998]" onClick={() => setMenuOpen(false)} />
+              <div
+                onPointerDown={(e) => e.stopPropagation()}
+                className="fixed z-[9999] w-40 bg-white rounded-2xl shadow-lg border border-edge-strong overflow-hidden"
+                style={{ top: menuPos.top, right: menuPos.right }}
               >
-                <Trash2 size={13} />
-                Delete project
-              </button>
-            </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete();
+                  }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors text-left"
+                >
+                  <Trash2 size={13} />
+                  Delete project
+                </button>
+              </div>
+            </>,
+            document.body,
           )}
         </div>
       </div>

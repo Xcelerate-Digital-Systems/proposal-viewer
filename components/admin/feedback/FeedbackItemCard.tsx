@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Trash2, MessageSquareText, Pencil, MoreHorizontal, Eye, Check,
   Share2, Loader2, ExternalLink, Link as LinkIcon,
@@ -34,6 +35,8 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
   const confirm = useConfirm();
   const toast = useToast();
   const [showMenu, setShowMenu] = useState(false);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState<{ bottom: number; right: number } | null>(null);
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(item.title);
   const [editingUrl, setEditingUrl] = useState(false);
@@ -311,16 +314,26 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
 
           <div className="relative">
             <button
-              onClick={() => setShowMenu(!showMenu)}
+              ref={menuBtnRef}
+              onClick={() => {
+                if (!showMenu && menuBtnRef.current) {
+                  const r = menuBtnRef.current.getBoundingClientRect();
+                  setMenuPos({ bottom: window.innerHeight - r.top + 4, right: window.innerWidth - r.right });
+                }
+                setShowMenu(!showMenu);
+              }}
               className="p-1.5 rounded-lg text-faint hover:text-prose hover:bg-gray-100 transition-colors"
             >
               <MoreHorizontal size={14} />
             </button>
 
-            {showMenu && (
+            {showMenu && menuPos && createPortal(
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-                <div className="absolute right-0 bottom-full mb-1 z-50 bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]">
+                <div className="fixed inset-0 z-[9998]" onClick={() => setShowMenu(false)} />
+                <div
+                  className="fixed z-[9999] bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]"
+                  style={{ bottom: menuPos.bottom, right: menuPos.right }}
+                >
                   <button
                     onClick={handleShare}
                     disabled={sharing}
@@ -362,7 +375,8 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
                     Delete Item
                   </button>
                 </div>
-              </>
+              </>,
+              document.body,
             )}
           </div>
         </div>

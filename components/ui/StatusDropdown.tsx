@@ -1,7 +1,8 @@
 // components/ui/StatusDropdown.tsx
 'use client';
 
-import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, CheckCircle2 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -46,19 +47,32 @@ export default function StatusDropdown<T extends string = string>({
 }: StatusDropdownProps<T>) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
 
-  // Close on outside click
+  const updatePos = useCallback(() => {
+    if (!triggerRef.current) return;
+    const r = triggerRef.current.getBoundingClientRect();
+    setPos({ top: r.bottom + 4, left: r.left, width: r.width });
+  }, []);
+
   useEffect(() => {
+    if (!open) return;
+    updatePos();
     const handleClickOutside = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
-    if (open) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [open]);
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('scroll', () => setOpen(false), true);
+    window.addEventListener('resize', () => setOpen(false));
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', () => setOpen(false), true);
+      window.removeEventListener('resize', () => setOpen(false));
+    };
+  }, [open, updatePos]);
 
   const current = options.find((o) => o.value === value);
   if (!current) return null;
@@ -69,6 +83,7 @@ export default function StatusDropdown<T extends string = string>({
     <div className={`relative ${fullWidth ? 'w-full' : 'inline-block'}`} ref={ref}>
       {/* Trigger */}
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => !disabled && setOpen(!open)}
         disabled={disabled}
@@ -90,29 +105,36 @@ export default function StatusDropdown<T extends string = string>({
         />
       </button>
 
-      {/* Dropdown */}
-      {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]">
-          {options.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => {
-                onChange(opt.value);
-                setOpen(false);
-              }}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-surface transition-colors ${
-                value === opt.value ? 'text-teal font-medium' : 'text-prose'
-              }`}
-            >
-              {opt.icon}
-              {opt.label}
-              {value === opt.value && (
-                <CheckCircle2 size={11} className="ml-auto text-teal" />
-              )}
-            </button>
-          ))}
-        </div>
+      {/* Dropdown — rendered as a portal with fixed positioning to escape card stacking contexts */}
+      {open && pos && createPortal(
+        <>
+          <div className="fixed inset-0 z-[9998]" onClick={() => setOpen(false)} />
+          <div
+            className="fixed z-[9999] bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]"
+            style={{ top: pos.top, left: pos.left, width: Math.max(pos.width, 160) }}
+          >
+            {options.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-surface transition-colors ${
+                  value === opt.value ? 'text-teal font-medium' : 'text-prose'
+                }`}
+              >
+                {opt.icon}
+                {opt.label}
+                {value === opt.value && (
+                  <CheckCircle2 size={11} className="ml-auto text-teal" />
+                )}
+              </button>
+            ))}
+          </div>
+        </>,
+        document.body,
       )}
     </div>
   );

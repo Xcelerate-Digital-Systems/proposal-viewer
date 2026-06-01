@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Loader2, FlaskConical, User } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
@@ -57,6 +58,8 @@ export default function ClientDetailsSection({
   const [savedCustomers, setSavedCustomers] = useState<SavedCustomer[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [saving, setSaving] = useState(false);
+  const dropdownBtnRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
   // Snapshot of "real" form values so toggling back from Test restores them.
   const realSnapshot = useRef<Record<FieldKey, string>>({ ...form });
 
@@ -204,8 +207,15 @@ export default function ClientDetailsSection({
       {mode === 'real' && savedCustomers.length > 0 && (
         <div className="relative mb-4">
           <button
+            ref={dropdownBtnRef}
             type="button"
-            onClick={() => setShowDropdown((v) => !v)}
+            onClick={() => {
+              if (!showDropdown && dropdownBtnRef.current) {
+                const r = dropdownBtnRef.current.getBoundingClientRect();
+                setDropdownPos({ top: r.bottom + 4, left: r.left, width: r.width });
+              }
+              setShowDropdown((v) => !v);
+            }}
             className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-edge-strong bg-white text-sm text-prose hover:border-gray-300 transition-colors"
           >
             <span className="truncate">
@@ -215,22 +225,29 @@ export default function ClientDetailsSection({
             </span>
             <ChevronDown size={14} className="text-faint" />
           </button>
-          {showDropdown && (
-            <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-edge-strong shadow-lg max-h-72 overflow-y-auto">
-              {savedCustomers.map((c, i) => (
-                <button
-                  key={`${c.client_name}-${i}`}
-                  type="button"
-                  onClick={() => pickCustomer(c)}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-surface"
-                >
-                  <div className="font-medium text-ink truncate">{c.client_name}</div>
-                  <div className="text-xs text-faint truncate">
-                    {[c.crm_identifier, c.client_email].filter(Boolean).join(' · ') || '—'}
-                  </div>
-                </button>
-              ))}
-            </div>
+          {showDropdown && dropdownPos && createPortal(
+            <>
+              <div className="fixed inset-0 z-[9998]" onClick={() => setShowDropdown(false)} />
+              <div
+                className="fixed z-[9999] bg-white rounded-lg border border-edge-strong shadow-lg max-h-72 overflow-y-auto"
+                style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
+              >
+                {savedCustomers.map((c, i) => (
+                  <button
+                    key={`${c.client_name}-${i}`}
+                    type="button"
+                    onClick={() => pickCustomer(c)}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-surface"
+                  >
+                    <div className="font-medium text-ink truncate">{c.client_name}</div>
+                    <div className="text-xs text-faint truncate">
+                      {[c.crm_identifier, c.client_email].filter(Boolean).join(' · ') || '—'}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>,
+            document.body,
           )}
         </div>
       )}

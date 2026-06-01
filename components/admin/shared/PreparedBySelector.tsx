@@ -1,7 +1,8 @@
 // components/admin/shared/PreparedBySelector.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { User, ChevronDown, X, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -35,6 +36,8 @@ export default function PreparedBySelector({
   const [members, setMembers] = useState<TeamMemberOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const triggerBtnRef = useRef<HTMLButtonElement>(null);
+  const [ddPos, setDdPos] = useState<{ top: number; left: number; width: number } | null>(null);
 
   /* ── Fetch team members for this company ───────────────── */
   useEffect(() => {
@@ -73,8 +76,15 @@ export default function PreparedBySelector({
     <div className="relative">
       {/* Trigger button */}
       <button
+        ref={triggerBtnRef}
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          if (!open && triggerBtnRef.current) {
+            const r = triggerBtnRef.current.getBoundingClientRect();
+            setDdPos({ top: r.bottom + 4, left: r.left, width: r.width });
+          }
+          setOpen(!open);
+        }}
         className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-edge-strong bg-white text-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 transition-colors"
       >
         {loading ? (
@@ -113,13 +123,14 @@ export default function PreparedBySelector({
         <ChevronDown size={14} className={`text-faint shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown */}
-      {open && (
+      {/* Dropdown — portal to escape parent stacking context */}
+      {open && ddPos && createPortal(
         <>
-          {/* Backdrop */}
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-
-          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-edge-strong rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          <div className="fixed inset-0 z-[9998]" onClick={() => setOpen(false)} />
+          <div
+            className="fixed z-[9999] bg-white border border-edge-strong rounded-lg shadow-lg max-h-48 overflow-y-auto"
+            style={{ top: ddPos.top, left: ddPos.left, width: ddPos.width }}
+          >
             {members.length === 0 ? (
               <div className="px-3 py-3 text-sm text-faint text-center">
                 No team members found
@@ -159,7 +170,8 @@ export default function PreparedBySelector({
               ))
             )}
           </div>
-        </>
+        </>,
+        document.body,
       )}
     </div>
   );

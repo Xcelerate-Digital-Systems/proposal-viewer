@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Check, ChevronDown, X, MessageSquare, CornerDownRight,
   CheckCheck, Layers, Package, RotateCcw, UserPlus, Users, Bell, Send,
@@ -67,6 +68,8 @@ export default function ProjectAssigneesPanel({
   const [loading, setLoading] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [savingFor, setSavingFor] = useState<string | null>(null);
+  const pickerBtnRef = useRef<HTMLButtonElement>(null);
+  const [pickerPos, setPickerPos] = useState<{ top: number; left: number } | null>(null);
 
   const [guestFormOpen, setGuestFormOpen] = useState(false);
   const [guestEmail, setGuestEmail] = useState('');
@@ -347,8 +350,15 @@ export default function ProjectAssigneesPanel({
 
         <div className="relative mt-3">
           <button
+            ref={pickerBtnRef}
             type="button"
-            onClick={() => setPickerOpen((v) => !v)}
+            onClick={() => {
+              if (!pickerOpen && pickerBtnRef.current) {
+                const r = pickerBtnRef.current.getBoundingClientRect();
+                setPickerPos({ top: r.bottom + 4, left: r.left });
+              }
+              setPickerOpen((v) => !v);
+            }}
             disabled={unassignedMembers.length === 0}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-caption font-medium border border-edge-strong rounded-full hover:border-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -356,26 +366,33 @@ export default function ProjectAssigneesPanel({
             <ChevronDown size={14} />
           </button>
 
-          {pickerOpen && unassignedMembers.length > 0 && (
-            <div className="absolute z-50 mt-1 w-64 bg-white border border-edge rounded-2xl shadow-lg py-1 max-h-72 overflow-y-auto">
-              {unassignedMembers.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => add(m.id)}
-                  disabled={savingFor === m.id}
-                  className="w-full text-left px-3 py-2 hover:bg-surface flex items-center justify-between gap-2"
-                >
-                  <div className="min-w-0">
-                    <p className="text-caption text-ink truncate">{m.name || m.email}</p>
-                    <p className="text-xs text-faint truncate">{m.email}</p>
-                  </div>
-                  {savingFor === m.id && (
-                    <Check size={14} className="text-teal shrink-0" />
-                  )}
-                </button>
-              ))}
-            </div>
+          {pickerOpen && unassignedMembers.length > 0 && pickerPos && createPortal(
+            <>
+              <div className="fixed inset-0 z-[9998]" onClick={() => setPickerOpen(false)} />
+              <div
+                className="fixed z-[9999] w-64 bg-white border border-edge rounded-2xl shadow-lg py-1 max-h-72 overflow-y-auto"
+                style={{ top: pickerPos.top, left: pickerPos.left }}
+              >
+                {unassignedMembers.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => add(m.id)}
+                    disabled={savingFor === m.id}
+                    className="w-full text-left px-3 py-2 hover:bg-surface flex items-center justify-between gap-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-caption text-ink truncate">{m.name || m.email}</p>
+                      <p className="text-xs text-faint truncate">{m.email}</p>
+                    </div>
+                    {savingFor === m.id && (
+                      <Check size={14} className="text-teal shrink-0" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </>,
+            document.body,
           )}
         </div>
       </section>

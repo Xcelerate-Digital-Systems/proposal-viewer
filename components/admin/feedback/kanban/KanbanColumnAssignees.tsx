@@ -6,6 +6,7 @@
 // KanbanBoard so all columns share a single fetch and one source of truth.
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, Check, Mail, X } from 'lucide-react';
 import { authFetch } from '@/lib/auth-fetch';
 import { useToast } from '@/components/ui/Toast';
@@ -122,6 +123,7 @@ export default function KanbanColumnAssignees({
   const [guestSendInvite, setGuestSendInvite] = useState(true);
   const popoverRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [pickerPos, setPickerPos] = useState<{ top: number; left: number } | null>(null);
 
   // Click-outside / Escape dismissal.
   useEffect(() => {
@@ -251,18 +253,25 @@ export default function KanbanColumnAssignees({
       <button
         ref={buttonRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (!open && buttonRef.current) {
+            const r = buttonRef.current.getBoundingClientRect();
+            setPickerPos({ top: r.bottom + 4, left: r.left });
+          }
+          setOpen((v) => !v);
+        }}
         className="w-6 h-6 rounded-full border border-dashed border-gray-300 text-faint hover:text-prose hover:border-gray-500 transition-colors flex items-center justify-center"
         aria-label={`Add reviewer to ${stage}`}
       >
         <Plus size={13} />
       </button>
 
-      {/* Picker popover */}
-      {open && (
+      {/* Picker popover — portal to escape kanban column stacking context */}
+      {open && pickerPos && createPortal(
         <div
           ref={popoverRef}
-          className="absolute top-8 left-0 z-50 w-64 rounded-2xl border border-edge-strong bg-white shadow-lg p-2"
+          className="fixed z-[9999] w-64 rounded-2xl border border-edge-strong bg-white shadow-lg p-2"
+          style={{ top: pickerPos.top, left: pickerPos.left }}
         >
           <div className="text-detail font-semibold uppercase tracking-wider text-faint px-2 pb-1 pt-0.5">
             Team
@@ -370,7 +379,8 @@ export default function KanbanColumnAssignees({
               </label>
             </>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

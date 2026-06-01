@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import {
   Copy, Check, Trash2, ExternalLink, MessageSquareText,
@@ -63,6 +64,8 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
   const toast = useToast();
   const [copied, setCopied] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState<{ bottom: number; right: number } | null>(null);
   const [showEdit, setShowEdit] = useState(false);
   const [editTitle, setEditTitle] = useState(project.title);
   const [editDescription, setEditDescription] = useState(project.description || '');
@@ -324,16 +327,26 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
 
             <div className="relative">
               <button
-                onClick={() => setShowMenu(!showMenu)}
+                ref={menuBtnRef}
+                onClick={() => {
+                  if (!showMenu && menuBtnRef.current) {
+                    const r = menuBtnRef.current.getBoundingClientRect();
+                    setMenuPos({ bottom: window.innerHeight - r.top + 4, right: window.innerWidth - r.right });
+                  }
+                  setShowMenu(!showMenu);
+                }}
                 className="p-1.5 rounded-lg text-faint hover:text-ink hover:bg-surface transition-colors"
               >
                 <MoreHorizontal size={14} />
               </button>
 
-              {showMenu && (
+              {showMenu && menuPos && createPortal(
                 <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-                  <div className="absolute right-0 bottom-full mb-1 z-50 bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[140px]">
+                  <div className="fixed inset-0 z-[9998]" onClick={() => setShowMenu(false)} />
+                  <div
+                    className="fixed z-[9999] bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[140px]"
+                    style={{ bottom: menuPos.bottom, right: menuPos.right }}
+                  >
                     <button
                       onClick={openEditModal}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-surface"
@@ -358,7 +371,8 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
                       Delete
                     </button>
                   </div>
-                </>
+                </>,
+                document.body,
               )}
             </div>
           </div>
