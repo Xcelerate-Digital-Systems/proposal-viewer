@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import {
   Bell, Eye, CheckCircle2, XCircle, PenLine, MessageSquare,
@@ -98,7 +99,7 @@ export default function NotificationBell({
         )}
       </button>
 
-      {open && pos && (
+      {open && pos && createPortal(
         <div
           ref={ref}
           className="fixed w-[340px] max-h-[420px] bg-white rounded-2xl shadow-xl border border-edge overflow-hidden z-[9999] flex flex-col"
@@ -159,7 +160,8 @@ export default function NotificationBell({
               })
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
