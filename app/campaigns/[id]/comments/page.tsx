@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, use } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  MessageSquare, CheckCircle2, Circle, CircleDashed, ChevronDown, ChevronUp,
+  MessageSquare, CheckCircle2, Circle, CircleDashed,
   ListTodo, Paperclip,
 } from 'lucide-react';
 import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHeader';
@@ -18,7 +18,7 @@ import { PRIORITY_OPTIONS } from '@/components/feedback/comments/PrioritySelecto
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
-import { formatTimeAgo } from '@/lib/review-utils';
+
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -98,7 +98,6 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
   const [selectedComment, setSelectedComment] = useState<CommentWithItem | null>(null);
   const [taskingComment, setTaskingComment] = useState<CommentWithItem | null>(null);
   const [completions, setCompletions] = useState<ReviewCompletion[]>([]);
-  const [completionsOpen, setCompletionsOpen] = useState(false);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [showAddItem, setShowAddItem] = useState(false);
   const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([]);
@@ -503,56 +502,9 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
             </p>
           </div>
         ) : (
-          <div className="flex gap-6 h-full">
+          <div className="flex gap-6 h-full -mx-1">
             {/* Left column — comments */}
-            <div className="w-[55%] min-w-0 overflow-y-auto space-y-4">
-              {completions.length > 0 && (
-                <div className="bg-white rounded-2xl shadow-card overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setCompletionsOpen((o) => !o)}
-                    className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-surface transition-colors"
-                  >
-                    <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-ink">
-                        {completions.length} reviewer{completions.length !== 1 ? 's' : ''} finished reviewing
-                      </p>
-                      <p className="text-xs text-faint">
-                        Most recent: {formatTimeAgo(completions[0].completed_at)}
-                      </p>
-                    </div>
-                    {completionsOpen ? <ChevronUp size={16} className="text-faint" /> : <ChevronDown size={16} className="text-faint" />}
-                  </button>
-
-                  {completionsOpen && (
-                    <div className="divide-y divide-gray-100 border-t border-edge">
-                      {completions.map((c) => (
-                        <div key={c.id} className="flex items-start gap-3 px-5 py-3">
-                          <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 text-detail font-semibold text-emerald-700">
-                            {(c.reviewer_name?.trim()[0] ?? '?').toUpperCase()}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="font-medium text-ink truncate">
-                                {c.reviewer_name || 'Anonymous reviewer'}
-                              </span>
-                              {c.reviewer_email && (
-                                <span className="text-faint truncate">· {c.reviewer_email}</span>
-                              )}
-                              <span className="text-faint shrink-0 ml-auto">{formatTimeAgo(c.completed_at)}</span>
-                            </div>
-                            {c.message && (
-                              <p className="text-sm text-prose mt-1 whitespace-pre-wrap">{c.message}</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
+            <div className="w-[55%] min-w-0 overflow-y-auto space-y-4 px-1">
               {/* Open / Resolved toggle + comment list */}
               <div className="bg-white rounded-2xl shadow-card overflow-hidden">
                 {/* Filter bar */}
@@ -641,7 +593,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
             </div>
 
             {/* Right column — tasks panel */}
-            <div className="w-[45%] min-w-0 overflow-y-auto hidden lg:block">
+            <div className="w-[45%] min-w-0 overflow-y-auto hidden lg:block px-1">
               <div className="bg-white rounded-2xl shadow-card overflow-hidden">
                 <div className="px-5 py-3 border-b border-edge">
                   <div className="flex items-center gap-2">
