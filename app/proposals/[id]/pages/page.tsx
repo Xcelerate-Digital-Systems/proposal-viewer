@@ -17,9 +17,6 @@ export default function ProposalPagesPage() {
       <PageEditor
         proposalId={proposal.id}
         filePath={proposal.file_path}
-        initialPageNames={proposal.page_names || []}
-        onSave={() => refetch()}
-        onCancel={() => {}}
         bottomContent={
           <DecisionPageCard
             entityId={proposal.id}

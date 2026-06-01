@@ -12,7 +12,7 @@ import {
   SortableContext, verticalListSortingStrategy, arrayMove,
 } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { Check, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 import type { PageEditorProps } from './pageEditorTypes';
 import { usePageEditor } from './usePageEditor';
@@ -46,8 +46,6 @@ function tableName2EntityType(t: PageEditorProps['tableName']): EntityType {
 export default function PageEditor({
   proposalId,
   filePath = '',
-  onSave,
-  onCancel,
   tableName = 'proposals',
   bottomContent,
 }: PageEditorProps) {
@@ -60,7 +58,7 @@ export default function PageEditor({
   const editor = usePageEditor(proposalId, entityType);
   const {
     pages, pagesLoaded, saveStatuses, processing,
-    pdfPages, updatePage, reorderPages, replacePdfPage, flushSaves,
+    pdfPages, updatePage, reorderPages, replacePdfPage,
   } = editor;
 
   // Aggregate per-page save status into a single tab-level status for the
@@ -112,13 +110,6 @@ export default function PageEditor({
     }
   }, [pages, processing, isReordering, reorderPages, setIsReordering]);
 
-  /* ── Done ──────────────────────────────────────────────────────────────── */
-
-  const handleDone = async () => {
-    await flushSaves();
-    onSave();
-  };
-
   /* ── Render ────────────────────────────────────────────────────────────── */
 
   // pricingExists kept for backward compat but no longer gates the add button
@@ -129,38 +120,17 @@ export default function PageEditor({
           No outer card; the sub-nav already labels this view and the parent
           page wrapper supplies padding + scroll. Mirrors the Quote tab shell. */}
       {pagesLoaded && (
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <AddPageButtons
-              isDocuments={isDocuments}
-              canAddPricing={!isDocuments}
-              canAddToc={!isDocuments && !tocExists}
-              onAddPricing={handleInsertPricing}
-              onAddPackages={handleAddPackages}
-              onAddText={() => handleInsertText(null)}
-              onAddSection={handleAddSection}
-              onAddToc={handleAddToc}
-              onImportFromTemplate={!isDocuments ? () => setImportModalOpen(true) : undefined}
-            />
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {onCancel && (
-              <button
-                onClick={onCancel}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-dim hover:bg-gray-100 transition-colors"
-              >
-                Cancel
-              </button>
-            )}
-            <button
-              onClick={handleDone}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-teal text-white hover:bg-teal/90 transition-colors"
-            >
-              <Check size={12} />
-              Done
-            </button>
-          </div>
-        </div>
+        <AddPageButtons
+          isDocuments={isDocuments}
+          canAddPricing={!isDocuments}
+          canAddToc={!isDocuments && !tocExists}
+          onAddPricing={handleInsertPricing}
+          onAddPackages={handleAddPackages}
+          onAddText={() => handleInsertText(null)}
+          onAddSection={handleAddSection}
+          onAddToc={handleAddToc}
+          onImportFromTemplate={!isDocuments ? () => setImportModalOpen(true) : undefined}
+        />
       )}
 
       {/* ── Two-column: only the left column scrolls; the preview aside is

@@ -61,8 +61,6 @@ export interface PageEditorProps {
   proposalId:        string;
   filePath?:         string;       // kept for compat; ignored
   initialPageNames?: unknown[];    // kept for compat; ignored
-  onSave:            () => void;
-  onCancel?:         () => void;
   tableName?:        'proposals' | 'documents' | 'templates';
   /** Extra content appended below the page list inside the scrollable left
    *  column. Use for things like the Decision page control card so the
