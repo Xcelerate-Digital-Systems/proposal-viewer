@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AlertCircle, CircleMinus, Circle, CircleArrowDown, Check, Flag } from 'lucide-react';
 import type { FeedbackCommentPriority } from '@/lib/types/feedback';
 
@@ -33,12 +33,44 @@ export function getPriorityDef(priority: FeedbackCommentPriority): PriorityOptio
 
 export default function PrioritySelector({ value, onChange, compact = true }: PrioritySelectorProps) {
   const [open, setOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const compute = () => {
+      const rect = triggerRef.current!.getBoundingClientRect();
+      const popup = popupRef.current;
+      const popupHeight = popup?.offsetHeight ?? 200;
+      const popupWidth = popup?.offsetWidth ?? 176;
+      const margin = 4;
+
+      let top = rect.top - margin - popupHeight;
+      if (top < 8) {
+        top = rect.bottom + margin;
+      }
+
+      let left = rect.right - popupWidth;
+      left = Math.min(Math.max(8, left), window.innerWidth - popupWidth - 8);
+
+      setPos({ top, left });
+    };
+    compute();
+    window.addEventListener('scroll', compute, true);
+    window.addEventListener('resize', compute);
+    return () => {
+      window.removeEventListener('scroll', compute, true);
+      window.removeEventListener('resize', compute);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const handle = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || popupRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', handle);
     return () => document.removeEventListener('mousedown', handle);
@@ -48,8 +80,9 @@ export default function PrioritySelector({ value, onChange, compact = true }: Pr
   const CurrentIcon = current.icon;
 
   return (
-    <div ref={wrapperRef} className="relative">
+    <div className="relative inline-flex">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         className={
@@ -77,7 +110,16 @@ export default function PrioritySelector({ value, onChange, compact = true }: Pr
       </button>
 
       {open && (
-        <div className="absolute right-0 bottom-full mb-1 w-44 bg-white rounded-2xl border border-edge-strong shadow-lg py-1 z-50">
+        <div
+          ref={popupRef}
+          style={{
+            position: 'fixed',
+            top: pos?.top ?? -9999,
+            left: pos?.left ?? -9999,
+            visibility: pos ? 'visible' : 'hidden',
+          }}
+          className="z-[70] w-44 bg-white rounded-2xl border border-edge-strong shadow-lg py-1"
+        >
           <p className="px-3 py-1.5 text-2xs font-semibold uppercase tracking-wider text-faint">
             Set priority
           </p>
