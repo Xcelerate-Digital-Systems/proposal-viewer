@@ -29,6 +29,7 @@ export default function FeedbackProjectRow({ project, onRefresh, customDomain }:
   const [copied, setCopied] = useState(false);
   const [itemCount, setItemCount] = useState(0);
   const [commentCount, setCommentCount] = useState(0);
+  const [unresolvedCount, setUnresolvedCount] = useState(0);
 
   const fetchStats = useCallback(async () => {
     const { data: items } = await supabase
@@ -39,12 +40,15 @@ export default function FeedbackProjectRow({ project, onRefresh, customDomain }:
     if (items) {
       setItemCount(items.length);
       if (items.length > 0) {
-        const { count } = await supabase
+        const { data: comments } = await supabase
           .from('review_comments')
-          .select('id', { count: 'exact', head: true })
+          .select('resolved')
           .in('review_item_id', items.map(i => i.id))
           .is('parent_comment_id', null);
-        setCommentCount(count || 0);
+        if (comments) {
+          setCommentCount(comments.length);
+          setUnresolvedCount(comments.filter(c => !c.resolved).length);
+        }
       }
     }
   }, [project.id]);
@@ -110,9 +114,21 @@ export default function FeedbackProjectRow({ project, onRefresh, customDomain }:
 
       {/* Comment count */}
       {commentCount > 0 && (
-        <span className="text-xs text-faint shrink-0 hidden md:flex items-center gap-1 w-20 justify-end">
-          <MessageSquareText size={11} />
-          {commentCount}
+        <span className="text-xs shrink-0 hidden md:flex items-center gap-1 w-auto justify-end">
+          <MessageSquareText size={11} className={unresolvedCount === 0 ? 'text-emerald-600' : 'text-faint'} />
+          {unresolvedCount > 0 ? (
+            <span className="flex items-center gap-1">
+              <span className="text-amber-600 font-medium">{unresolvedCount} open</span>
+              {commentCount - unresolvedCount > 0 && (
+                <>
+                  <span className="text-faint">·</span>
+                  <span className="text-emerald-600">{commentCount - unresolvedCount} resolved</span>
+                </>
+              )}
+            </span>
+          ) : (
+            <span className="text-emerald-600 font-medium">{commentCount} resolved</span>
+          )}
         </span>
       )}
 

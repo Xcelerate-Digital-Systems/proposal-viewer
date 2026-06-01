@@ -172,7 +172,7 @@ export function CommentBadge({ count, unresolved }: { count: number; unresolved:
   return (
     <div
       className={`absolute -top-1 -right-2 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-2xs font-bold border-2 border-white ${
-        unresolved > 0 ? 'bg-amber-500 text-white' : 'bg-gray-200 text-prose'
+        unresolved > 0 ? 'bg-amber-500 text-white' : 'bg-emerald-500 text-white'
       }`}
     >
       {count}
@@ -387,11 +387,22 @@ export function CardShell({
           {/* Footer */}
           <div className="flex items-center justify-between pt-2 border-t border-edge">
             <div className="flex items-center gap-1 text-detail text-ink/60">
-              <MessageSquareText size={11} />
-              <span>
-                {commentCount}
-                {unresolvedCount > 0 && <span className="text-amber-600 ml-0.5 font-semibold">({unresolvedCount})</span>}
-              </span>
+              <MessageSquareText size={11} className={commentCount > 0 && unresolvedCount === 0 ? 'text-emerald-600' : ''} />
+              {commentCount === 0 ? (
+                <span>0</span>
+              ) : unresolvedCount > 0 ? (
+                <span className="flex items-center gap-1">
+                  <span className="text-amber-600 font-semibold">{unresolvedCount} open</span>
+                  {commentCount - unresolvedCount > 0 && (
+                    <>
+                      <span className="text-gray-300">·</span>
+                      <span className="text-emerald-600">{commentCount - unresolvedCount} resolved</span>
+                    </>
+                  )}
+                </span>
+              ) : (
+                <span className="text-emerald-600 font-semibold">{commentCount} resolved</span>
+              )}
             </div>
             <ViewButton id={item.id} onNavigate={onNavigate} />
           </div>

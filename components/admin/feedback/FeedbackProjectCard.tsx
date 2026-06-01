@@ -234,13 +234,20 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
               {/* Comment count */}
               {commentStats.total > 0 && (
                 <div className="flex items-center gap-1.5 text-detail text-faint mt-1">
-                  <MessageSquareText size={11} />
-                  <span>
-                    {commentStats.total} comment{commentStats.total !== 1 ? 's' : ''}
-                    {commentStats.unresolved > 0 && (
-                      <span className="text-amber-600"> ({commentStats.unresolved} open)</span>
-                    )}
-                  </span>
+                  <MessageSquareText size={11} className={commentStats.unresolved === 0 ? 'text-emerald-600' : ''} />
+                  {commentStats.unresolved > 0 ? (
+                    <span className="flex items-center gap-1">
+                      <span className="text-amber-600 font-medium">{commentStats.unresolved} open</span>
+                      {commentStats.resolved > 0 && (
+                        <>
+                          <span className="text-faint">·</span>
+                          <span className="text-emerald-600">{commentStats.resolved} resolved</span>
+                        </>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="text-emerald-600 font-medium">{commentStats.total} resolved</span>
+                  )}
                 </div>
               )}
             </div>

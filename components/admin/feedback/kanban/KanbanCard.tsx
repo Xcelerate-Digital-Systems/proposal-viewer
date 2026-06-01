@@ -87,13 +87,22 @@ export default function KanbanCard({
       <div className="mt-3 pt-3 border-t border-edge flex items-center justify-between">
         <div className="flex items-center gap-2 text-detail text-dim">
           <div className="flex items-center gap-1">
-            <MessageSquareText size={11} />
-            <span>
-              {commentCount}
-              {unresolvedCount > 0 && (
-                <span className="text-amber-600 ml-0.5 font-semibold">({unresolvedCount})</span>
-              )}
-            </span>
+            <MessageSquareText size={11} className={commentCount > 0 && unresolvedCount === 0 ? 'text-emerald-600' : ''} />
+            {commentCount === 0 ? (
+              <span>0</span>
+            ) : unresolvedCount > 0 ? (
+              <span className="flex items-center gap-1">
+                <span className="text-amber-600 font-semibold">{unresolvedCount} open</span>
+                {commentCount - unresolvedCount > 0 && (
+                  <>
+                    <span className="text-gray-300">·</span>
+                    <span className="text-emerald-600">{commentCount - unresolvedCount} resolved</span>
+                  </>
+                )}
+              </span>
+            ) : (
+              <span className="text-emerald-600 font-semibold">{commentCount} resolved</span>
+            )}
           </div>
           {decisionTally && (decisionTally.approved > 0 || decisionTally.changesRequested > 0) && (
             <>
