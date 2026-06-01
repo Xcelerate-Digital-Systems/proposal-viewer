@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Upload, Plus, Trash2, Type, AlignLeft, Copy, ChevronDown, Megaphone } from 'lucide-react';
+import { X, Upload, Plus, Trash2, Type, AlignLeft, Copy, ChevronDown, Megaphone, Check } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import type { FeedbackItem, FeedbackItemVersion } from '@/lib/supabase';
 import type { VersionView } from '@/lib/feedback/versions';
@@ -26,6 +26,12 @@ type ImportableAd = {
   title: string;
   variants: MetaAdVariant[];
 };
+
+const CTA_OPTIONS = [
+  'Learn More', 'Shop Now', 'Sign Up', 'Book Now', 'Contact Us',
+  'Download', 'Get Offer', 'Get Quote', 'Subscribe', 'Apply Now',
+  'Watch More', 'See Menu', 'Order Now', 'Get Directions',
+];
 
 const MAX_GAD_HEADLINES = 15;
 const MAX_GAD_DESCRIPTIONS = 4;
@@ -369,7 +375,7 @@ export default function AddVersionModal({
   };
 
   return (
-    <Modal open onClose={onClose} size="lg">
+    <Modal open onClose={onClose} size={kind === 'ad' ? 'xl' : 'lg'}>
       <Modal.Header>
         <div className="flex items-center justify-between">
           <div>
@@ -551,8 +557,8 @@ export default function AddVersionModal({
                           <textarea
                             value={v.primary_text}
                             onChange={(e) => patchAdVariant(v.id, { primary_text: e.target.value })}
-                            rows={2}
-                            className={`${inputCls} min-h-[52px]`}
+                            rows={4}
+                            className={`${inputCls} min-h-[96px]`}
                           />
                         </div>
                         <div>
@@ -571,9 +577,7 @@ export default function AddVersionModal({
                   ))}
                 </ol>
               </div>
-              <Field label="Call to action">
-                <input className={inputCls} value={adCta} onChange={(e) => setAdCta(e.target.value)} />
-              </Field>
+              <CtaDropdown value={adCta} onChange={setAdCta} />
             </>
           )}
 
@@ -777,5 +781,53 @@ function FileInput({
         {file && <span className="text-detail text-dim truncate max-w-[120px]">{file.name}</span>}
       </div>
     </Field>
+  );
+}
+
+function CtaDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <span className="text-detail font-medium uppercase tracking-wider text-dim mb-1 block">Call to action</span>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={`w-full flex items-center justify-between gap-2 px-3 py-2 bg-surface rounded-2xl text-caption hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-teal/30`}
+      >
+        <span className="truncate">{value || 'Select CTA'}</span>
+        <ChevronDown size={14} className={`text-faint shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-2xl border border-edge-strong shadow-lg overflow-hidden z-50">
+          <div className="max-h-60 overflow-y-auto py-1">
+            {CTA_OPTIONS.map((cta) => (
+              <button
+                key={cta}
+                type="button"
+                onClick={() => { onChange(cta); setOpen(false); }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
+                  cta === value ? 'bg-teal/5 text-teal font-medium' : 'text-ink hover:bg-surface'
+                }`}
+              >
+                {cta === value && <Check size={13} className="shrink-0" />}
+                {cta !== value && <span className="w-[13px] shrink-0" />}
+                {cta}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

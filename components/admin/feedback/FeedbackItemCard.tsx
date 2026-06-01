@@ -42,6 +42,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
   const [commentCount, setCommentCount] = useState(0);
   const [unresolvedCount, setUnresolvedCount] = useState(0);
   const [sharing, setSharing] = useState(false);
+  const resolvedCount = commentCount - unresolvedCount;
 
   const fetchCommentStats = useCallback(async () => {
     const { data } = await supabase
@@ -277,12 +278,21 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
         {/* Comments stat */}
         <div className="flex items-center gap-1.5 text-xs text-faint mb-2">
           <MessageSquareText size={12} />
-          <span>
-            {commentCount} comment{commentCount !== 1 ? 's' : ''}
-            {unresolvedCount > 0 && (
-              <span className="text-amber-600 ml-1">({unresolvedCount} open)</span>
-            )}
-          </span>
+          {commentCount === 0 ? (
+            <span>No comments</span>
+          ) : (
+            <span className="flex items-center gap-1.5">
+              {unresolvedCount > 0 && (
+                <span className="text-amber-600 font-medium">{unresolvedCount} open</span>
+              )}
+              {unresolvedCount > 0 && resolvedCount > 0 && (
+                <span className="text-faint">·</span>
+              )}
+              {resolvedCount > 0 && (
+                <span className="text-emerald-600">{resolvedCount} resolved</span>
+              )}
+            </span>
+          )}
         </div>
 
         {/* Spacer to push actions to bottom */}
