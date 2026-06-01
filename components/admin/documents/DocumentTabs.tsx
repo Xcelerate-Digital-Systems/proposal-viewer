@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Pencil, Settings, Paintbrush, List, FileText } from 'lucide-react';
+import { Pencil, Settings, Paintbrush, FileText } from 'lucide-react';
 
 interface DocumentTabsProps {
   documentId: string;
@@ -18,7 +18,6 @@ const tabs: { key: string; label: string; icon: typeof Pencil; path: string; gro
 
   // Setup
   { key: 'design',     label: 'Design',   icon: Paintbrush, path: 'design',     group: 'setup' },
-  { key: 'contents',   label: 'Contents', icon: List,       path: 'contents',   group: 'setup' },
   { key: 'details',    label: 'Details',  icon: Settings,   path: 'details',    group: 'setup' },
 ];
 

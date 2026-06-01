@@ -1,15 +1,16 @@
 // components/admin/page-editor/PreviewRouter.tsx
 'use client';
 
-import { List, FolderOpen } from 'lucide-react';
+import { FolderOpen } from 'lucide-react';
 import type { UnifiedPage } from './pageEditorTypes';
 import type { SaveStatus } from './usePageEditor';
-import type { PageNameEntry } from '@/lib/supabase';
+import type { PageNameEntry, TocSettings } from '@/lib/supabase';
 import type { PageUrlEntry } from '@/hooks/useProposal';
 import PdfPreviewPanel      from './PdfPreviewPanel';
 import PricingPreviewPanel  from './PricingPreviewPanel';
 import PackagesPreviewPanel from './PackagesPreviewPanel';
 import TextPagePreviewPanel from './TextPagePreviewPanel';
+import TocPreviewPanel      from './TocPreviewPanel';
 
 interface PreviewRouterProps {
   proposalId: string;
@@ -25,6 +26,8 @@ interface PreviewRouterProps {
   onGoNext: () => void;
   canGoPrev: boolean;
   canGoNext: boolean;
+  tocSettings?: TocSettings;
+  allPages?: UnifiedPage[];
 }
 
 export default function PreviewRouter({
@@ -41,6 +44,8 @@ export default function PreviewRouter({
   onGoNext,
   canGoPrev,
   canGoNext,
+  tocSettings,
+  allPages,
 }: PreviewRouterProps) {
   if (!selectedPage) {
     return (
@@ -91,15 +96,16 @@ export default function PreviewRouter({
     );
   }
 
-  if (selectedPage.type === 'toc') {
+  if (selectedPage.type === 'toc' && tocSettings && allPages) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-amber-50/50 rounded-2xl border border-dashed border-amber-200">
-        <List size={32} className="text-amber-400 mb-3" />
-        <p className="text-sm font-medium text-amber-700">Table of Contents</p>
-        <p className="text-xs text-amber-500 mt-1 max-w-[240px]">
-          Drag to reposition. Configure content and styling in the Contents tab.
-        </p>
-      </div>
+      <TocPreviewPanel
+        tocSettings={tocSettings}
+        pages={allPages}
+        onGoPrev={onGoPrev}
+        onGoNext={onGoNext}
+        canGoPrev={canGoPrev}
+        canGoNext={canGoNext}
+      />
     );
   }
 

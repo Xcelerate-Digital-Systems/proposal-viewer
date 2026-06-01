@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, FolderOpen, Trash2, Pencil, ArrowLeft, CornerDownRight } from 'lucide-react';
+import { GripVertical, FolderOpen, Trash2, Pencil, ArrowLeft, CornerDownRight, List } from 'lucide-react';
 
 interface SortableGroupRowProps {
   id: string;
@@ -16,9 +16,11 @@ interface SortableGroupRowProps {
   onRename: (name: string) => void;
   onToggleIndent: () => void;
   onRemove: () => void;
+  tocIncluded?: boolean;
+  onToggleTocInclude?: () => void;
 }
 
-export default function SortableGroupRow({ id, name, indent, isFirst, isSelected, onSelect, onRename, onToggleIndent, onRemove }: SortableGroupRowProps) {
+export default function SortableGroupRow({ id, name, indent, isFirst, isSelected, onSelect, onRename, onToggleIndent, onRemove, tocIncluded, onToggleTocInclude }: SortableGroupRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(name);
@@ -118,6 +120,20 @@ export default function SortableGroupRow({ id, name, indent, isFirst, isSelected
 
         {/* Spacer to align with save-status column */}
         <span className="w-5 shrink-0" />
+
+        {onToggleTocInclude && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleTocInclude(); }}
+            className={`shrink-0 w-7 h-7 flex items-center justify-center rounded border transition-colors ${
+              tocIncluded
+                ? 'text-teal border-teal/25 bg-teal/5 hover:bg-teal/10'
+                : 'text-gray-300 border-edge hover:text-gray-400 hover:bg-gray-50'
+            }`}
+            title={tocIncluded ? 'Included in contents' : 'Excluded from contents'}
+          >
+            <List size={12} />
+          </button>
+        )}
 
         <button
           onClick={(e) => {

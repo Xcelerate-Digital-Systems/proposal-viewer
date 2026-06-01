@@ -3,7 +3,7 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, ArrowLeft, CornerDownRight, Trash2, FileText, BookOpen } from 'lucide-react';
+import { GripVertical, ArrowLeft, CornerDownRight, Trash2, FileText, BookOpen, List } from 'lucide-react';
 import PageLinkInput from './PageLinkInput';
 
 interface SortableTextRowProps {
@@ -17,10 +17,11 @@ interface SortableTextRowProps {
   onToggleIndent: () => void;
   onRemove: () => void;
   onSaveToLibrary?: () => void;
+  tocIncluded?: boolean;
+  onToggleTocInclude?: () => void;
   linkUrl?: string;
   linkLabel?: string;
   onLinkChange?: (url: string, label: string) => void;
-  /** Slot for rendering insert menu after this row */
   renderInsertAfter?: React.ReactNode;
 }
 
@@ -34,6 +35,8 @@ export default function SortableTextRow({
   onToggleIndent,
   onRemove,
   onSaveToLibrary,
+  tocIncluded,
+  onToggleTocInclude,
   linkUrl,
   linkLabel,
   onLinkChange,
@@ -104,6 +107,19 @@ export default function SortableTextRow({
 
         {/* Actions */}
         <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+          {onToggleTocInclude && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleTocInclude(); }}
+              className={`shrink-0 w-7 h-7 flex items-center justify-center rounded border transition-colors ${
+                tocIncluded
+                  ? 'text-teal border-teal/25 bg-teal/5 hover:bg-teal/10'
+                  : 'text-gray-300 border-edge hover:text-gray-400 hover:bg-gray-50'
+              }`}
+              title={tocIncluded ? 'Included in contents' : 'Excluded from contents'}
+            >
+              <List size={12} />
+            </button>
+          )}
           {onLinkChange && (
             <PageLinkInput
               linkUrl={linkUrl || ''}

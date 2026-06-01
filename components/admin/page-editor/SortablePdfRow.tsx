@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
   Check, CornerDownRight, ArrowLeft,
-  Upload, Loader2, Trash2, GripVertical, BookOpen,
+  Upload, Loader2, Trash2, GripVertical, BookOpen, List,
 } from 'lucide-react';
 import { UnifiedPage } from '@/lib/page-operations';
 import PageLinkInput from './PageLinkInput';
@@ -30,7 +30,8 @@ interface SortablePdfRowProps {
   onReplacePage: (file: File) => void;
   onDeletePage: () => void;
   onSaveToLibrary?: () => void;
-  /** Slot for rendering insert menu after this row */
+  tocIncluded?: boolean;
+  onToggleTocInclude?: () => void;
   renderInsertAfter?: React.ReactNode;
 }
 
@@ -38,7 +39,8 @@ export default function SortablePdfRow({
   id, page, visualNum, isSelected,
   status, processing, pageCount, index,
   onSelect, onToggleIndent, onUpdate,
-  onReplacePage, onDeletePage, onSaveToLibrary, renderInsertAfter,
+  onReplacePage, onDeletePage, onSaveToLibrary,
+  tocIncluded, onToggleTocInclude, renderInsertAfter,
 }: SortablePdfRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
@@ -107,6 +109,19 @@ export default function SortablePdfRow({
 
         {/* Actions */}
         <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+          {onToggleTocInclude && (
+            <button
+              onClick={onToggleTocInclude}
+              className={`p-1.5 rounded-lg flex items-center justify-center border transition-colors ${
+                tocIncluded
+                  ? 'text-teal border-teal/25 bg-teal/5 hover:bg-teal/10'
+                  : 'text-gray-300 border-edge hover:text-gray-400 hover:bg-gray-50'
+              }`}
+              title={tocIncluded ? 'Included in contents' : 'Excluded from contents'}
+            >
+              <List size={13} />
+            </button>
+          )}
           <PageLinkInput
             linkUrl={page.link_url || ''}
             linkLabel={page.link_label || ''}

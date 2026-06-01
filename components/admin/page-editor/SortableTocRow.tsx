@@ -3,14 +3,15 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, List } from 'lucide-react';
+import { GripVertical, List, Trash2 } from 'lucide-react';
 
 interface SortableTocRowProps {
   id: string;
   title: string;
   isSelected: boolean;
   onSelect: () => void;
-  /** Slot for rendering insert menu after this row */
+  onRename?: (title: string) => void;
+  onRemove?: () => void;
   renderInsertAfter?: React.ReactNode;
 }
 
@@ -19,6 +20,8 @@ export default function SortableTocRow({
   title,
   isSelected,
   onSelect,
+  onRename,
+  onRemove,
   renderInsertAfter,
 }: SortableTocRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -41,7 +44,6 @@ export default function SortableTocRow({
         }`}
         onClick={onSelect}
       >
-        {/* Drag handle */}
         <button
           {...attributes}
           {...listeners}
@@ -50,22 +52,44 @@ export default function SortableTocRow({
           <GripVertical size={14} />
         </button>
 
-        {/* Spacer to align with page number + indent button columns */}
         <span className="w-5 shrink-0" />
         <span className="w-7 shrink-0" />
 
         <List size={14} className="text-amber-500 shrink-0" />
-        <span className="text-sm font-medium text-amber-700 flex-1 truncate">
-          {title || 'Table of Contents'}
-        </span>
 
-        {/* Read-only badge — managed in TOC tab */}
-        <span className="text-2xs text-amber-500/60 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded shrink-0">
-          TOC
-        </span>
+        {onRename ? (
+          <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+            <input
+              type="text"
+              value={title || ''}
+              onChange={(e) => onRename(e.target.value)}
+              onFocus={onSelect}
+              className="w-full px-2.5 py-1 rounded-lg border border-amber-200/60 bg-white text-amber-700 text-sm font-medium focus:outline-none focus:border-amber-400/60 placeholder:text-amber-300"
+              placeholder="Table of Contents"
+            />
+          </div>
+        ) : (
+          <span className="text-sm font-medium text-amber-700 flex-1 truncate">
+            {title || 'Table of Contents'}
+          </span>
+        )}
+
+        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+          <span className="text-2xs text-amber-500/60 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded shrink-0">
+            TOC
+          </span>
+          {onRemove && (
+            <button
+              onClick={onRemove}
+              className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+              title="Remove table of contents"
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Insert-after slot */}
       {renderInsertAfter}
     </div>
   );

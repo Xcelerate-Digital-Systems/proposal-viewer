@@ -31,6 +31,7 @@ import ImportPagesModal     from './ImportPagesModal';
 import SavePageToLibraryModal from './SavePageToLibraryModal';
 import PreviewRouter        from './PreviewRouter';
 import StickyPreviewAside   from '@/components/admin/shared/StickyPreviewAside';
+import { useTocSettings }   from './useTocSettings';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -83,6 +84,8 @@ export default function PageEditor({
     pageUrlEntries, pdfEntries,
     pricingExists, tocExists,
   } = actions;
+
+  const { tocSettings, tocExists: tocExistsFromHook, isTocIncluded, toggleTocInclude, updateTocSettings } = useTocSettings(proposalId, entityType, editor.pages);
 
   const isDocuments = entityType === 'document';
 
@@ -164,7 +167,7 @@ export default function PageEditor({
           stationary so the page-area header doesn't get scrolled past and
           we avoid nested scroll containers under <main>. */}
       <div className="flex-1 min-h-0 flex gap-6">
-        <div className="flex-1 min-w-0 relative overflow-y-auto pr-2 -mr-2 space-y-5">
+        <div className="flex-1 min-w-0 relative overflow-y-auto px-2 -mx-2 space-y-5">
           {(processing || isReordering) && (
             <div className="absolute inset-0 z-20 bg-white/60 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-sm border border-edge-strong">
@@ -219,6 +222,8 @@ export default function PageEditor({
                           onRename={(name) => updatePage(page.id, { title: name })}
                           onToggleIndent={() => updatePage(page.id, { indent: page.indent ? 0 : 1 })}
                           onRemove={() => handleDeletePage(page.id)}
+                          tocIncluded={tocExistsFromHook ? isTocIncluded(page.id) : undefined}
+                          onToggleTocInclude={tocExistsFromHook ? () => toggleTocInclude(page.id) : undefined}
                         />
                       );
                     }
@@ -231,6 +236,8 @@ export default function PageEditor({
                           title={page.title || 'Table of Contents'}
                           isSelected={selectedId === page.id}
                           onSelect={() => setSelectedId(page.id)}
+                          onRename={(title) => { updatePage(page.id, { title }); updateTocSettings({ title }); }}
+                          onRemove={() => handleDeletePage(page.id)}
                           renderInsertAfter={insertAfterMenu}
                         />
                       );
@@ -249,6 +256,8 @@ export default function PageEditor({
                           onToggleIndent={() => updatePage(page.id, { indent: page.indent ? 0 : 1 })}
                           onRemove={() => handleDeletePage(page.id)}
                           onSaveToLibrary={() => setLibraryTarget({ id: page.id, title: page.title, type: page.type })}
+                          tocIncluded={tocExistsFromHook ? isTocIncluded(page.id) : undefined}
+                          onToggleTocInclude={tocExistsFromHook ? () => toggleTocInclude(page.id) : undefined}
                           linkUrl={page.link_url ?? ''}
                           linkLabel={page.link_label ?? ''}
                           onLinkChange={(url, label) => updatePage(page.id, { link_url: url, link_label: label })}
@@ -270,6 +279,8 @@ export default function PageEditor({
                           onToggleIndent={() => updatePage(page.id, { indent: page.indent ? 0 : 1 })}
                           onRemove={() => handleDeletePage(page.id)}
                           onSaveToLibrary={() => setLibraryTarget({ id: page.id, title: page.title, type: page.type })}
+                          tocIncluded={tocExistsFromHook ? isTocIncluded(page.id) : undefined}
+                          onToggleTocInclude={tocExistsFromHook ? () => toggleTocInclude(page.id) : undefined}
                           linkUrl={page.link_url ?? ''}
                           linkLabel={page.link_label ?? ''}
                           onLinkChange={(url, label) => updatePage(page.id, { link_url: url, link_label: label })}
@@ -292,6 +303,8 @@ export default function PageEditor({
                           onToggleIndent={() => updatePage(page.id, { indent: page.indent ? 0 : 1 })}
                           onRemove={() => handleDeletePage(page.id)}
                           onSaveToLibrary={() => setLibraryTarget({ id: page.id, title: page.title, type: page.type })}
+                          tocIncluded={tocExistsFromHook ? isTocIncluded(page.id) : undefined}
+                          onToggleTocInclude={tocExistsFromHook ? () => toggleTocInclude(page.id) : undefined}
                           renderInsertAfter={insertAfterMenu}
                         />
                       );
@@ -319,6 +332,8 @@ export default function PageEditor({
                         onReplacePage={(file) => replacePdfPage(page.id, file)}
                         onDeletePage={() => handleDeletePage(page.id)}
                         onSaveToLibrary={() => setLibraryTarget({ id: page.id, title: page.title, type: page.type })}
+                        tocIncluded={tocExistsFromHook ? isTocIncluded(page.id) : undefined}
+                        onToggleTocInclude={tocExistsFromHook ? () => toggleTocInclude(page.id) : undefined}
                         renderInsertAfter={insertAfterMenu}
                       />
                     );
@@ -348,6 +363,8 @@ export default function PageEditor({
             onGoNext={goNext}
             canGoPrev={canGoPrev}
             canGoNext={canGoNext}
+            tocSettings={tocSettings}
+            allPages={pages}
           />
         </StickyPreviewAside>
       </div>
