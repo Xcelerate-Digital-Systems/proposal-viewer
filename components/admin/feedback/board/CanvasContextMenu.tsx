@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Copy, Trash2, Edit3 } from 'lucide-react';
+import { Copy, Trash2, Edit3, ClipboardPaste, Lock, Unlock } from 'lucide-react';
 
 export type ContextTarget =
   | { kind: 'pane'; clientX: number; clientY: number; flowX: number; flowY: number }
@@ -14,6 +14,12 @@ interface Props {
   onDuplicate?: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
+  onLockToggle?: () => void;
+  isLocked?: boolean;
+  /** Pane-context actions */
+  onPaste?: () => void;
+  canPaste?: boolean;
+  onAddStep?: () => void;
   /** Optional: tell the user how many nodes the action will apply to */
   selectionCount?: number;
 }
@@ -27,7 +33,8 @@ interface Props {
  */
 export default function CanvasContextMenu({
   target, onClose,
-  onDuplicate, onDelete, onEdit,
+  onDuplicate, onDelete, onEdit, onLockToggle, isLocked,
+  onPaste, canPaste, onAddStep,
   selectionCount = 0,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
@@ -47,14 +54,43 @@ export default function CanvasContextMenu({
 
   const run = (fn?: () => void) => () => { fn?.(); onClose(); };
 
+  type MenuItem = { icon: React.ReactNode; label: string; shortcut?: string; onClick?: () => void; danger?: boolean; disabled?: boolean };
+
   if (target.kind === 'pane') {
-    // No pane actions wired yet for feedback boards; suppress the menu.
-    return null;
+    const paneItems: MenuItem[] = [];
+    if (onPaste) paneItems.push({ icon: <ClipboardPaste size={13} />, label: 'Paste', shortcut: '⌘V', onClick: run(onPaste), disabled: !canPaste });
+    if (onAddStep) paneItems.push({ icon: <Copy size={13} />, label: 'Add step here', onClick: run(onAddStep) });
+    if (paneItems.length === 0) return null;
+    return (
+      <div
+        ref={ref}
+        className="fixed z-50 min-w-[180px] bg-white rounded-lg border border-edge shadow-xl py-1"
+        style={{ left: target.clientX, top: target.clientY }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {paneItems.map((it, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={it.onClick}
+            disabled={it.disabled}
+            className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left transition-colors ${
+              it.disabled ? 'text-faint cursor-not-allowed' : 'text-ink hover:bg-surface'
+            }`}
+          >
+            <span className="shrink-0 text-muted">{it.icon}</span>
+            <span className="flex-1">{it.label}</span>
+            {it.shortcut && <span className="text-2xs text-faint">{it.shortcut}</span>}
+          </button>
+        ))}
+      </div>
+    );
   }
 
-  const items: { icon: React.ReactNode; label: string; shortcut?: string; onClick?: () => void; danger?: boolean; disabled?: boolean }[] = [
+  const items: MenuItem[] = [
     { icon: <Edit3 size={13} />,  label: 'Edit',         onClick: run(onEdit),     disabled: !onEdit },
     { icon: <Copy size={13} />,   label: selectionCount > 1 ? `Duplicate ${selectionCount}` : 'Duplicate', shortcut: '⌘D', onClick: run(onDuplicate) },
+    ...(onLockToggle ? [{ icon: isLocked ? <Unlock size={13} /> : <Lock size={13} />, label: isLocked ? 'Unlock' : 'Lock', onClick: run(onLockToggle) }] : []),
     { icon: <Trash2 size={13} />, label: selectionCount > 1 ? `Delete ${selectionCount}` : 'Delete',    shortcut: '⌫',  onClick: run(onDelete), danger: true },
   ];
 

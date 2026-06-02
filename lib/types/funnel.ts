@@ -449,7 +449,8 @@ export const FUNNEL_STEP_TYPE_ORDER: { category: FunnelStepCategory; label: stri
  *  shapes (decision / wait / events / notifications), and sticky notes into
  *  one categorised list so the user has a single place to add anything to
  *  the canvas. */
-export type FunnelShapePaletteId = BoardActionShapeId;
+export type FunnelPrimitiveShapeId = 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'text';
+export type FunnelShapePaletteId = BoardActionShapeId | FunnelPrimitiveShapeId;
 
 export type PaletteItem =
   | { kind: 'step'; stepType: FunnelStepType }
@@ -464,7 +465,7 @@ export interface PaletteGroup {
   items: PaletteItem[];
 }
 
-export type FunnelPaletteTabId = 'sources' | 'pages' | 'actions';
+export type FunnelPaletteTabId = 'sources' | 'pages' | 'actions' | 'drawing';
 
 export interface PaletteTab {
   id: FunnelPaletteTabId;
@@ -585,6 +586,28 @@ export const FUNNEL_PALETTE_TABS: PaletteTab[] = [
         items: stepItems(['traffic_email', 'traffic_sms']),
       },
       { key: 'custom_act', label: 'Custom', items: [{ kind: 'upload', scope: 'action' }] },
+    ],
+  },
+  {
+    id: 'drawing',
+    label: 'Drawing',
+    groups: [
+      {
+        key: 'primitives',
+        label: 'Shapes',
+        items: [
+          { kind: 'shape', shapeType: 'rectangle', label: 'Rectangle', iconName: 'square' },
+          { kind: 'shape', shapeType: 'ellipse', label: 'Ellipse', iconName: 'circle' },
+          { kind: 'shape', shapeType: 'arrow', label: 'Arrow', iconName: 'move-right' },
+          { kind: 'shape', shapeType: 'line', label: 'Line', iconName: 'minus' },
+          { kind: 'shape', shapeType: 'text', label: 'Text', iconName: 'type' },
+        ],
+      },
+      {
+        key: 'notes',
+        label: 'Notes',
+        items: [{ kind: 'sticky' }],
+      },
     ],
   },
 ];

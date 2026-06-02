@@ -1,8 +1,8 @@
 'use client';
 
-import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import {
-  ReactFlow, ReactFlowProvider, Controls, MiniMap, useReactFlow,
+  ReactFlow, ReactFlowProvider, Controls, MiniMap, Background, BackgroundVariant, useReactFlow,
   ConnectionMode, type NodeTypes, type EdgeTypes, type Node, MarkerType, Panel,
   SelectionMode,
 } from '@xyflow/react';
@@ -24,8 +24,9 @@ import CanvasContextMenu, { type ContextTarget } from './CanvasContextMenu';
 import AlignmentGuides from './AlignmentGuides';
 import { useFunnelBoard } from './useFunnelBoard';
 import { useFunnelBoardContextOrThrow } from './FunnelBoardContext';
-import type { FunnelStepType, FunnelShapeType } from '@/lib/supabase';
+import type { FunnelStep, FunnelStepType, FunnelShapeType } from '@/lib/supabase';
 import type { PaletteItem } from '@/lib/types/funnel';
+import type { NewShape } from './FunnelBoardContext';
 
 const nodeTypes: NodeTypes = {
   funnelStep: FunnelStepNode,
@@ -70,6 +71,13 @@ function FunnelBoardInner() {
   const rf = useReactFlow();
 
   const board = useFunnelBoard();
+
+  type ClipboardEntry =
+    | { kind: 'step'; stepType: FunnelStepType; label: string; icon: string | null; url: string | null; color: string | null; metrics: unknown }
+    | { kind: 'shape'; data: Omit<NewShape, never> }
+    | { kind: 'note'; content: string; color: string; width: number; height: number; font_size: number | null };
+  const clipboardRef = useRef<ClipboardEntry[]>([]);
+  const [lockedNodes, setLockedNodes] = useState<Set<string>>(new Set());
 
   const [contextMenu, setContextMenu] = useState<ContextTarget | null>(null);
   const [guides, setGuides] = useState<{ horizontals: number[]; verticals: number[] }>(
@@ -235,6 +243,91 @@ function FunnelBoardInner() {
     }
   }, [rf, ctx]);
 
+  /* ─── Lock / unlock ─── */
+
+  const toggleLockSelected = useCallback(() => {
+    const selected = rf.getNodes().filter((n) => n.selected);
+    if (selected.length === 0) return;
+    const allLocked = selected.every((n) => lockedNodes.has(n.id));
+    setLockedNodes((prev) => {
+      const next = new Set(prev);
+      for (const n of selected) {
+        if (allLocked) next.delete(n.id); else next.add(n.id);
+      }
+      return next;
+    });
+  }, [rf, lockedNodes]);
+
+  useEffect(() => {
+    rf.setNodes((nds) => nds.map((n) => ({
+      ...n,
+      draggable: !lockedNodes.has(n.id),
+      className: lockedNodes.has(n.id) ? 'opacity-80' : undefined,
+    })));
+  }, [lockedNodes, rf]);
+
+  /* ─── Copy / paste ─── */
+
+  const copySelected = useCallback(() => {
+    const selected = rf.getNodes().filter((n) => n.selected);
+    if (selected.length === 0) return;
+    const entries: ClipboardEntry[] = [];
+    for (const node of selected) {
+      if (node.id.startsWith('step-')) {
+        const orig = ctx.steps.find((s) => s.id === node.id.slice(5));
+        if (!orig) continue;
+        entries.push({
+          kind: 'step', stepType: orig.step_type,
+          label: orig.label, icon: orig.icon, url: orig.url,
+          color: orig.color, metrics: orig.metrics,
+        });
+      } else if (node.id.startsWith('shape-')) {
+        const orig = ctx.shapes.find((s) => s.id === node.id.slice(6));
+        if (!orig) continue;
+        entries.push({
+          kind: 'shape',
+          data: {
+            shape_type: orig.shape_type, x: orig.x, y: orig.y,
+            width: orig.width, height: orig.height,
+            end_x: orig.end_x, end_y: orig.end_y,
+            content: orig.content, color: orig.color,
+            stroke_width: orig.stroke_width, dashed: orig.dashed, font_size: orig.font_size,
+          },
+        });
+      } else if (node.id.startsWith('note-')) {
+        const orig = ctx.boardNotes.find((n) => n.id === node.id.slice(5));
+        if (!orig) continue;
+        entries.push({
+          kind: 'note',
+          content: orig.content || '', color: orig.color || '#FFF4B8',
+          width: orig.width || 200, height: orig.height || 150,
+          font_size: orig.font_size,
+        });
+      }
+    }
+    clipboardRef.current = entries;
+  }, [rf, ctx]);
+
+  const pasteAtViewport = useCallback(async () => {
+    if (clipboardRef.current.length === 0) return;
+    const c = viewportCentre();
+    let offsetIdx = 0;
+    for (const entry of clipboardRef.current) {
+      const ox = 40 * offsetIdx;
+      const oy = 40 * offsetIdx;
+      if (entry.kind === 'step') {
+        const next = await ctx.createStep(entry.stepType, { x: c.x + ox - 120, y: c.y + oy - 100 });
+        if (next) await ctx.updateStep(next.id, { label: entry.label, icon: entry.icon, url: entry.url, color: entry.color, metrics: entry.metrics as FunnelStep['metrics'] });
+      } else if (entry.kind === 'shape') {
+        await ctx.createShape({ ...entry.data, x: c.x + ox - 120, y: c.y + oy - 120 });
+      } else {
+        const note = await ctx.addNote({ x: c.x + ox - 100, y: c.y + oy - 75 });
+        if (note) await ctx.updateNote(note.id, { content: entry.content, color: entry.color, width: entry.width, height: entry.height, font_size: entry.font_size });
+      }
+      offsetIdx++;
+    }
+  }, [ctx, viewportCentre]);
+
   /* ─── Smart alignment guides while dragging ─── */
 
   const onNodeDrag = useCallback((_e: React.MouseEvent, node: Node) => {
@@ -242,12 +335,29 @@ function FunnelBoardInner() {
     const drag = visualCentre(node);
     const hSet = new Set<number>();
     const vSet = new Set<number>();
+    let snapDY = 0;
+    let snapDX = 0;
     for (const o of others) {
       const oc = visualCentre(o);
-      if (Math.abs(oc.cy - drag.cy) <= ALIGNMENT_TOLERANCE) hSet.add(Math.round(oc.cy));
-      if (Math.abs(oc.cx - drag.cx) <= ALIGNMENT_TOLERANCE) vSet.add(Math.round(oc.cx));
+      const dy = oc.cy - drag.cy;
+      const dx = oc.cx - drag.cx;
+      if (Math.abs(dy) <= ALIGNMENT_TOLERANCE) {
+        hSet.add(Math.round(oc.cy));
+        if (Math.abs(dy) < Math.abs(snapDY) || snapDY === 0) snapDY = dy;
+      }
+      if (Math.abs(dx) <= ALIGNMENT_TOLERANCE) {
+        vSet.add(Math.round(oc.cx));
+        if (Math.abs(dx) < Math.abs(snapDX) || snapDX === 0) snapDX = dx;
+      }
     }
     setGuides({ horizontals: Array.from(hSet), verticals: Array.from(vSet) });
+    if (snapDX !== 0 || snapDY !== 0) {
+      rf.setNodes((nds) => nds.map((n) =>
+        n.id === node.id
+          ? { ...n, position: { x: n.position.x + snapDX, y: n.position.y + snapDY } }
+          : n
+      ));
+    }
   }, [rf]);
 
   const onNodeDragStop = useCallback(() => {
@@ -270,7 +380,13 @@ function FunnelBoardInner() {
       if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable)) return;
       const mod = e.metaKey || e.ctrlKey;
       if (!mod) return;
-      if (e.key === 'z' || e.key === 'Z') {
+      if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault();
+        copySelected();
+      } else if (e.key === 'v' || e.key === 'V') {
+        e.preventDefault();
+        void pasteAtViewport();
+      } else if (e.key === 'z' || e.key === 'Z') {
         e.preventDefault();
         if (e.shiftKey) void ctx.redo(); else void ctx.undo();
       } else if (e.key === 'y' || e.key === 'Y') {
@@ -283,7 +399,7 @@ function FunnelBoardInner() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [ctx, duplicateSelected]);
+  }, [ctx, duplicateSelected, copySelected, pasteAtViewport]);
 
   if (ctx.loading) {
     return (
@@ -327,7 +443,7 @@ function FunnelBoardInner() {
         onPickSticky={handlePickSticky}
       />
       <div
-        className="flex-1 relative bg-notebook"
+        className="flex-1 relative"
         ref={containerRef}
         onDragOver={onDragOver}
         onDrop={onDrop}
@@ -377,6 +493,7 @@ function FunnelBoardInner() {
             });
           }}
         >
+          <Background variant={BackgroundVariant.Dots} gap={22} size={1.2} color="rgba(43,43,43,0.15)" />
           <Controls
             showInteractive={false}
             className="!bg-white !border !border-edge !shadow-sm !rounded-lg"
@@ -481,11 +598,15 @@ function FunnelBoardInner() {
             target={contextMenu}
             onClose={() => setContextMenu(null)}
             selectionCount={selectionCount}
+            onPasteAt={contextMenu.kind === 'pane' ? pasteAtViewport : undefined}
+            canPaste={clipboardRef.current.length > 0}
             onAddStep={contextMenu.kind === 'pane' ? () => {
               if (contextMenu.kind === 'pane') addStepAt('generic', contextMenu.flowX, contextMenu.flowY);
             } : undefined}
             onDuplicate={contextMenu.kind === 'node' ? duplicateSelected : undefined}
             onDelete={contextMenu.kind === 'node' ? deleteSelected : undefined}
+            onLockToggle={contextMenu.kind === 'node' ? toggleLockSelected : undefined}
+            isLocked={contextMenu.kind === 'node' ? lockedNodes.has(contextMenu.nodeId) : false}
             onEdit={contextMenu.kind === 'node' ? () => {
               if (contextMenu.kind !== 'node') return;
               if (contextMenu.nodeId.startsWith('step-')) {

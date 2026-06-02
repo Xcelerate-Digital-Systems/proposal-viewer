@@ -181,6 +181,32 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
       arrowHeadD = `M ${p1x} ${p1y} L ${x2} ${y2} L ${p2x} ${p2y}`;
     }
 
+    const handleSize = 8;
+    const onEndpointDrag = (which: 'start' | 'end') => (e: React.MouseEvent) => {
+      if (readOnly) return;
+      e.stopPropagation();
+      e.preventDefault();
+      const startMouse = { x: e.clientX, y: e.clientY };
+      const origEndX = endX;
+      const origEndY = endY;
+
+      const onMove = (ev: MouseEvent) => {
+        const deltaX = ev.clientX - startMouse.x;
+        const deltaY = ev.clientY - startMouse.y;
+        if (which === 'end') {
+          onUpdateContent?.(shape.id, JSON.stringify({ __resize: true, end_x: origEndX + deltaX, end_y: origEndY + deltaY }));
+        } else {
+          onUpdateContent?.(shape.id, JSON.stringify({ __resize: true, end_x: origEndX - deltaX, end_y: origEndY - deltaY, move_x: deltaX, move_y: deltaY }));
+        }
+      };
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    };
+
     return (
       <div
         style={{
@@ -212,6 +238,22 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
               strokeLinecap="round"
               strokeLinejoin="round"
             />
+          )}
+          {selected && !readOnly && (
+            <>
+              <circle
+                cx={x1} cy={y1} r={handleSize / 2}
+                fill="white" stroke="#017C87" strokeWidth={1.5}
+                className="cursor-move"
+                onMouseDown={onEndpointDrag('start')}
+              />
+              <circle
+                cx={x2} cy={y2} r={handleSize / 2}
+                fill="white" stroke="#017C87" strokeWidth={1.5}
+                className="cursor-move"
+                onMouseDown={onEndpointDrag('end')}
+              />
+            </>
           )}
         </svg>
       </div>

@@ -74,8 +74,8 @@ export function NodeHandles({ readOnly }: { readOnly?: boolean }) {
  */
 export function CardHandles({ readOnly }: { readOnly?: boolean }) {
   const outset = 14;
-  const leftStyle  = { top: '50%' as const, left: -outset, transform: 'translateY(-50%)' };
-  const rightStyle = { top: '50%' as const, right: -outset, transform: 'translateY(-50%)' };
+  const leftStyle  = { top: SHARED_SIDE_HANDLE_Y, left: -outset };
+  const rightStyle = { top: SHARED_SIDE_HANDLE_Y, right: -outset };
   const topStyle    = { top: -outset };
   const bottomStyle = { top: 'auto' as const, bottom: -outset };
   return (

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { X, Trash2 } from 'lucide-react';
-import type { FunnelBoardShape, FunnelShapeType } from '@/lib/supabase';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import type { FunnelBoardShape, FunnelShapeType, FeedbackWaitUnit } from '@/lib/supabase';
 import { FUNNEL_COLOR_PRESETS } from '@/lib/types/funnel';
 import {
   parseDecisionContent, serializeDecisionContent,
@@ -37,6 +38,12 @@ const SHAPE_TYPE_LABELS: Partial<Record<FunnelShapeType, string>> = {
 };
 
 const STROKE_WIDTHS = [1, 2, 3, 4, 6];
+const WAIT_UNITS: { value: string; label: string }[] = [
+  { value: 'minutes', label: 'Minutes' },
+  { value: 'hours', label: 'Hours' },
+  { value: 'days', label: 'Days' },
+  { value: 'weeks', label: 'Weeks' },
+];
 
 /** Most "diamond" shapes store their editable text inside a JSON content
  *  blob — decision questions, wait labels, and the per-action label all
@@ -69,6 +76,7 @@ function setEditableLabel(shape: FunnelBoardShape, next: string): string | null 
 }
 
 export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: Props) {
+  const confirm = useConfirm();
   const [content, setContent] = useState(() => getEditableLabel(shape));
   useEffect(() => { setContent(getEditableLabel(shape)); }, [shape.id, shape.content]);
 
@@ -78,12 +86,11 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
   };
 
   const typeLabel = SHAPE_TYPE_LABELS[shape.shape_type] || 'Shape';
-  // Shapes whose primary editable text is a "label" rather than a body of content.
   const isLabelLike = shape.shape_type !== 'text' && shape.shape_type !== 'rectangle' && shape.shape_type !== 'ellipse';
-  // Stroke width + dashed only affect outlined primitives — diamonds and text
-  // are filled / unstroked, so the controls would be no-ops there.
   const hasStroke = shape.shape_type === 'rectangle' || shape.shape_type === 'ellipse'
     || shape.shape_type === 'arrow' || shape.shape_type === 'line';
+  const isWait = shape.shape_type === 'wait';
+  const waitData = isWait ? parseWaitContent(shape.content) : null;
 
   return (
     <aside className="absolute top-0 right-0 h-full w-[340px] bg-white border-l border-edge shadow-xl flex flex-col z-30">
@@ -127,6 +134,36 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
             />
           )}
         </Field>
+
+        {isWait && waitData && (
+          <div className="space-y-2">
+            <h4 className="text-2xs uppercase tracking-wider font-semibold text-muted">Wait duration</h4>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                max={9999}
+                value={waitData.duration}
+                onChange={(e) => {
+                  const n = Math.max(1, Math.min(9999, Number(e.target.value) || 1));
+                  onUpdate({ content: serializeWaitContent({ ...waitData, duration: n }) });
+                }}
+                className="w-20 px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal"
+              />
+              <select
+                value={waitData.unit}
+                onChange={(e) => {
+                  onUpdate({ content: serializeWaitContent({ ...waitData, unit: e.target.value as FeedbackWaitUnit }) });
+                }}
+                className="flex-1 px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal bg-white"
+              >
+                {WAIT_UNITS.map((u) => (
+                  <option key={u.value} value={u.value}>{u.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
 
         <div>
           <h4 className="text-2xs uppercase tracking-wider font-semibold text-muted mb-2">Color</h4>
@@ -206,7 +243,10 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
 
       <div className="px-4 py-3 border-t border-edge">
         <button
-          onClick={onDelete}
+          onClick={async () => {
+            const ok = await confirm({ message: `Delete this ${typeLabel.toLowerCase()}?`, destructive: true, confirmLabel: 'Delete' });
+            if (ok) onDelete();
+          }}
           className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-rose-200 text-xs text-rose-600 hover:bg-rose-50 transition-colors"
         >
           <Trash2 size={13} /> Delete {typeLabel.toLowerCase()}

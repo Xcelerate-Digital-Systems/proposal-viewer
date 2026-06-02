@@ -6,7 +6,7 @@ import {
   MousePointerClick, FileText, PlayCircle, ChevronsDown, ShoppingBag, ShoppingCart,
   BellRing, Sparkles, MessageSquare, Mail, Bell, Sheet, StickyNote, PanelLeftOpen,
   Eye, Timer, LogOut, LogIn, Undo2, Download, Share2, Webhook, Plus, Upload,
-  Workflow, FileBox, MousePointer2,
+  Workflow, FileBox, MousePointer2, Pencil, Square, Circle, MoveRight, Minus, Type,
   ClipboardCheck, CalendarCheck, Trophy, Target, Crown, MapPin, Send,
   Star, Gift,
   type LucideIcon,
@@ -39,6 +39,7 @@ const SHAPE_ICONS: Record<string, LucideIcon> = {
   trophy: Trophy, target: Target, crown: Crown,
   'map-pin': MapPin, send: Send,
   star: Star, gift: Gift,
+  square: Square, circle: Circle, 'move-right': MoveRight, minus: Minus, type: Type,
 };
 
 /** Tint per shape type — kept in lockstep with `DIAMOND_CONFIG` in
@@ -62,12 +63,23 @@ const SHAPE_TINTS: Record<string, string> = {
   // Custom Actions
   decision: '#B45309', wait: '#8B5CF6', refund: '#DC2626',
   download: '#10B981', share: '#A855F7', login: '#0F766E', custom_event: '#64748B',
+  // Primitive drawing shapes
+  rectangle: '#64748B', ellipse: '#64748B', arrow: '#64748B', line: '#64748B', text: '#64748B',
 };
 
 const TAB_ICONS: Record<FunnelPaletteTabId, LucideIcon> = {
   sources: MousePointer2,
   pages: FileBox,
   actions: Workflow,
+  drawing: Pencil,
+};
+
+const PRIMITIVE_ICONS: Record<string, LucideIcon> = {
+  rectangle: Square,
+  ellipse: Circle,
+  arrow: MoveRight,
+  line: Minus,
+  text: Type,
 };
 
 /** Open-by-default subgroups per tab — keeps the palette compact on first
@@ -77,6 +89,7 @@ const DEFAULT_OPEN: Record<string, boolean> = {
   crm_src: true, messaging_src: true,
   offline: false, othersites: false, custom_src: false,
   pages: true, offers: false, custom_pages: false,
+  primitives: true, notes: true,
   conversion: true, engagement: true, integration: false,
   gohighlevel: true, messaging: true,
   custom_actions: false, custom_act: false,

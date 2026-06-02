@@ -6,6 +6,8 @@ import {
   ReactFlowProvider,
   Controls,
   MiniMap,
+  Background,
+  BackgroundVariant,
   useReactFlow,
   ConnectionMode,
   type NodeTypes,
@@ -16,7 +18,7 @@ import {
   SelectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Loader2, MousePointer } from 'lucide-react';
+import { Loader2, MousePointer, Undo2, Redo2 } from 'lucide-react';
 import FeedbackItemNode from './nodes/FeedbackItemNode';
 import StickyNoteNode from './nodes/StickyNoteNode';
 import ShapeNode from './nodes/ShapeNode';
@@ -85,6 +87,12 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
   const [contextMenu, setContextMenu] = useState<ContextTarget | null>(null);
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+
+  type ClipboardEntry =
+    | { kind: 'shape'; data: Omit<NewShape, never> }
+    | { kind: 'note'; content: string; color: string; width: number; height: number; font_size: number | null };
+  const clipboardRef = useRef<ClipboardEntry[]>([]);
+  const [lockedNodes, setLockedNodes] = useState<Set<string>>(new Set());
   const [guides, setGuides] = useState<{ horizontals: number[]; verticals: number[] }>(
     { horizontals: [], verticals: [] }
   );
@@ -378,6 +386,87 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
     }
   }, [rf, ctx]);
 
+  /* ── Lock / unlock ────────────────────────────────────── */
+
+  const toggleLockSelected = useCallback(() => {
+    const selected = rf.getNodes().filter((n) => n.selected);
+    if (selected.length === 0) return;
+    const allLocked = selected.every((n) => lockedNodes.has(n.id));
+    setLockedNodes((prev) => {
+      const next = new Set(prev);
+      for (const n of selected) {
+        if (allLocked) next.delete(n.id); else next.add(n.id);
+      }
+      return next;
+    });
+  }, [rf, lockedNodes]);
+
+  // Apply lock state to nodes
+  useEffect(() => {
+    rf.setNodes((nds) => nds.map((n) => ({
+      ...n,
+      draggable: !lockedNodes.has(n.id),
+      className: lockedNodes.has(n.id) ? 'opacity-80' : undefined,
+    })));
+  }, [lockedNodes, rf]);
+
+  /* ── Copy / paste ─────────────────────────────────────── */
+
+  const copySelected = useCallback(() => {
+    const selected = rf.getNodes().filter((n) => n.selected);
+    if (selected.length === 0) return;
+    const entries: ClipboardEntry[] = [];
+    for (const node of selected) {
+      if (node.id.startsWith('shape-')) {
+        const orig = ctx.shapes.find((s) => s.id === node.id.slice(6));
+        if (!orig) continue;
+        entries.push({
+          kind: 'shape',
+          data: {
+            shape_type: orig.shape_type, x: orig.x, y: orig.y,
+            width: orig.width, height: orig.height,
+            end_x: orig.end_x, end_y: orig.end_y,
+            content: orig.content, color: orig.color,
+            stroke_width: orig.stroke_width, dashed: orig.dashed, font_size: orig.font_size,
+          },
+        });
+      } else if (node.id.startsWith('note-')) {
+        const orig = ctx.boardNotes.find((n) => n.id === node.id.slice(5));
+        if (!orig) continue;
+        entries.push({
+          kind: 'note',
+          content: orig.content || '', color: orig.color || '#FFF4B8',
+          width: orig.width || 200, height: orig.height || 150,
+          font_size: orig.font_size,
+        });
+      }
+    }
+    clipboardRef.current = entries;
+  }, [rf, ctx]);
+
+  const pasteAtViewport = useCallback(async () => {
+    if (clipboardRef.current.length === 0) return;
+    const c = viewportCentre();
+    let offsetIdx = 0;
+    for (const entry of clipboardRef.current) {
+      const ox = 40 * offsetIdx;
+      const oy = 40 * offsetIdx;
+      if (entry.kind === 'shape') {
+        await ctx.createShape({ ...entry.data, x: c.x + ox - 120, y: c.y + oy - 120 });
+      } else {
+        const note = await ctx.addNote();
+        if (note) {
+          await ctx.updateNote(note.id, {
+            content: entry.content, color: entry.color,
+            width: entry.width, height: entry.height, font_size: entry.font_size,
+            board_x: Math.round(c.x + ox - 100), board_y: Math.round(c.y + oy - 75),
+          });
+        }
+      }
+      offsetIdx++;
+    }
+  }, [ctx, viewportCentre]);
+
   /* ── Smart alignment guides while dragging ─────────────── */
 
   const onNodeDrag = useCallback((_e: React.MouseEvent, node: Node) => {
@@ -385,12 +474,29 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
     const drag = visualCentre(node);
     const hSet = new Set<number>();
     const vSet = new Set<number>();
+    let snapDY = 0;
+    let snapDX = 0;
     for (const o of others) {
       const oc = visualCentre(o);
-      if (Math.abs(oc.cy - drag.cy) <= ALIGNMENT_TOLERANCE) hSet.add(Math.round(oc.cy));
-      if (Math.abs(oc.cx - drag.cx) <= ALIGNMENT_TOLERANCE) vSet.add(Math.round(oc.cx));
+      const dy = oc.cy - drag.cy;
+      const dx = oc.cx - drag.cx;
+      if (Math.abs(dy) <= ALIGNMENT_TOLERANCE) {
+        hSet.add(Math.round(oc.cy));
+        if (Math.abs(dy) < Math.abs(snapDY) || snapDY === 0) snapDY = dy;
+      }
+      if (Math.abs(dx) <= ALIGNMENT_TOLERANCE) {
+        vSet.add(Math.round(oc.cx));
+        if (Math.abs(dx) < Math.abs(snapDX) || snapDX === 0) snapDX = dx;
+      }
     }
     setGuides({ horizontals: Array.from(hSet), verticals: Array.from(vSet) });
+    if (snapDX !== 0 || snapDY !== 0) {
+      rf.setNodes((nds) => nds.map((n) =>
+        n.id === node.id
+          ? { ...n, position: { x: n.position.x + snapDX, y: n.position.y + snapDY } }
+          : n
+      ));
+    }
   }, [rf]);
 
   const onNodeDragStop = useCallback(() => {
@@ -419,22 +525,56 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
     setSelectedNoteId(null);
   }, []);
 
-  /* ── Keyboard: Cmd+D duplicate ─────────────────────────── */
+  /* ── Keyboard shortcuts ────────────────────────────────── */
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tgt = e.target as HTMLElement | null;
       if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable)) return;
       const mod = e.metaKey || e.ctrlKey;
-      if (!mod) return;
-      if (e.key === 'd' || e.key === 'D') {
+
+      if (mod) {
+        if (e.key === 'c' || e.key === 'C') {
+          e.preventDefault();
+          copySelected();
+        } else if (e.key === 'v' || e.key === 'V') {
+          e.preventDefault();
+          void pasteAtViewport();
+        } else if (e.key === 'd' || e.key === 'D') {
+          e.preventDefault();
+          void duplicateSelected();
+        } else if (e.key === 'z' || e.key === 'Z') {
+          e.preventDefault();
+          if (e.shiftKey) void ctx.redo?.(); else void ctx.undo?.();
+        } else if (e.key === 'y' || e.key === 'Y') {
+          e.preventDefault();
+          void ctx.redo?.();
+        }
+        return;
+      }
+
+      // Single-key tool shortcuts (matching toolbar labels)
+      const toolMap: Record<string, BoardTool> = {
+        v: 'select', r: 'rectangle', o: 'ellipse', a: 'arrow',
+        l: 'line', t: 'text', n: 'sticky',
+        d: 'decision', w: 'wait', g: 'goal', c: 'call',
+        m: 'meeting', z: 'automation',
+      };
+      const tool = toolMap[e.key.toLowerCase()];
+      if (tool) {
         e.preventDefault();
-        void duplicateSelected();
+        if (tool === 'sticky') {
+          handlePickSticky();
+        } else if (tool === 'decision' || tool === 'wait' || tool === 'goal' || tool === 'call' || tool === 'meeting' || tool === 'automation') {
+          handlePickShape(tool);
+        } else {
+          setActiveTool(tool);
+        }
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [duplicateSelected]);
+  }, [duplicateSelected, copySelected, pasteAtViewport, ctx, handlePickShape, handlePickSticky]);
 
   if (ctx.loading) {
     return (
@@ -459,9 +599,10 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
         onPickShape={handlePickShape}
         onPickTool={handlePickTool}
         onPickSticky={handlePickSticky}
+        getViewportCentre={viewportCentre}
       />
       <div
-        className={`flex-1 relative bg-notebook ${cursorClass}`}
+        className={`flex-1 relative ${cursorClass}`}
         ref={reactFlowRef}
         onMouseDown={onContainerMouseDown}
         onMouseMove={onContainerMouseMove}
@@ -539,8 +680,32 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
             pannable
           />
 
+          <Background variant={BackgroundVariant.Dots} gap={22} size={1.2} color="rgba(43,43,43,0.15)" />
+
           <Panel position="top-left">
-            <ExportMenu containerRef={reactFlowRef} boardName={ctx.project?.title || 'whiteboard'} />
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-white border border-edge shadow-sm rounded-lg px-1.5 py-1">
+                <button
+                  type="button"
+                  onClick={() => void ctx.undo()}
+                  disabled={!ctx.canUndo}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-ink/70 hover:text-ink hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  title="Undo (⌘Z)"
+                >
+                  <Undo2 size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void ctx.redo()}
+                  disabled={!ctx.canRedo}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-ink/70 hover:text-ink hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  title="Redo (⌘⇧Z)"
+                >
+                  <Redo2 size={14} />
+                </button>
+              </div>
+              <ExportMenu containerRef={reactFlowRef} boardName={ctx.project?.title || 'whiteboard'} />
+            </div>
           </Panel>
 
           {board.selectedEdge && (
@@ -576,8 +741,12 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
             target={contextMenu}
             onClose={() => setContextMenu(null)}
             selectionCount={selectionCount}
+            onPaste={contextMenu.kind === 'pane' ? pasteAtViewport : undefined}
+            canPaste={clipboardRef.current.length > 0}
             onDuplicate={contextMenu.kind === 'node' ? duplicateSelected : undefined}
             onDelete={contextMenu.kind === 'node' ? deleteSelected : undefined}
+            onLockToggle={contextMenu.kind === 'node' ? toggleLockSelected : undefined}
+            isLocked={contextMenu.kind === 'node' ? lockedNodes.has(contextMenu.nodeId) : false}
             onEdit={contextMenu.kind === 'node' ? () => {
               if (contextMenu.kind !== 'node') return;
               if (contextMenu.nodeId.startsWith('shape-')) {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Trash2 } from 'lucide-react';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import type { FeedbackBoardNote } from '@/lib/supabase';
 import { NOTE_COLORS } from './nodes/StickyNoteNode';
 
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Props) {
+  const confirm = useConfirm();
   const [content, setContent] = useState(note.content || '');
   useEffect(() => { setContent(note.content || ''); }, [note.id]);
 
@@ -86,7 +88,10 @@ export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Pr
 
       <div className="px-4 py-3 border-t border-edge">
         <button
-          onClick={onDelete}
+          onClick={async () => {
+            const ok = await confirm({ message: 'Delete this note?', destructive: true, confirmLabel: 'Delete' });
+            if (ok) onDelete();
+          }}
           className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-rose-200 text-xs text-rose-600 hover:bg-rose-50 transition-colors"
         >
           <Trash2 size={13} /> Delete note

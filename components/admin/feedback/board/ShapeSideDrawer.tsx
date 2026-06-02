@@ -1,9 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, Trash2 } from 'lucide-react';
-import type { FeedbackBoardShape } from '@/lib/supabase';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import type { FeedbackBoardShape, FeedbackWaitUnit } from '@/lib/supabase';
 import { FUNNEL_COLOR_PRESETS } from '@/lib/types/funnel';
+import {
+  parseWaitContent, serializeWaitContent,
+  parseDecisionContent, serializeDecisionContent,
+  parseActionContent, serializeActionContent,
+} from './nodes/ShapeNode';
 
 interface Props {
   shape: FeedbackBoardShape;
@@ -24,18 +30,54 @@ const SHAPE_TYPE_LABELS: Record<string, string> = {
 };
 
 const STROKE_WIDTHS = [1, 2, 3, 4, 6];
+const WAIT_UNITS: { value: string; label: string }[] = [
+  { value: 'minutes', label: 'Minutes' },
+  { value: 'hours', label: 'Hours' },
+  { value: 'days', label: 'Days' },
+  { value: 'weeks', label: 'Weeks' },
+];
+
+function getEditableLabel(shape: FeedbackBoardShape): string {
+  if (shape.shape_type === 'decision') return parseDecisionContent(shape.content).question;
+  if (shape.shape_type === 'wait') return parseWaitContent(shape.content).label ?? '';
+  if (shape.shape_type === 'text' || shape.shape_type === 'rectangle' || shape.shape_type === 'ellipse') {
+    return shape.content || '';
+  }
+  return parseActionContent(shape.content).label ?? '';
+}
+
+function setEditableLabel(shape: FeedbackBoardShape, next: string): string | null {
+  const trimmed = next.trim();
+  if (shape.shape_type === 'decision') {
+    const cur = parseDecisionContent(shape.content);
+    return serializeDecisionContent({ ...cur, question: trimmed || 'Decision?' });
+  }
+  if (shape.shape_type === 'wait') {
+    const cur = parseWaitContent(shape.content);
+    return serializeWaitContent({ ...cur, label: trimmed || null });
+  }
+  if (shape.shape_type === 'text' || shape.shape_type === 'rectangle' || shape.shape_type === 'ellipse') {
+    return trimmed || null;
+  }
+  return serializeActionContent({ label: trimmed || null });
+}
 
 export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: Props) {
-  const [content, setContent] = useState(shape.content || '');
-  useEffect(() => { setContent(shape.content || ''); }, [shape.id]);
+  const confirm = useConfirm();
+  const [content, setContent] = useState(() => getEditableLabel(shape));
+  useEffect(() => { setContent(getEditableLabel(shape)); }, [shape.id, shape.content]);
 
   const commitContent = () => {
-    const next = content.trim() || null;
+    const next = setEditableLabel(shape, content);
     if (next !== (shape.content || null)) onUpdate({ content: next });
   };
 
   const typeLabel = SHAPE_TYPE_LABELS[shape.shape_type] || 'Shape';
   const isLabelLike = shape.shape_type !== 'text' && shape.shape_type !== 'rectangle' && shape.shape_type !== 'ellipse';
+  const hasStroke = shape.shape_type === 'rectangle' || shape.shape_type === 'ellipse'
+    || shape.shape_type === 'arrow' || shape.shape_type === 'line';
+  const isWait = shape.shape_type === 'wait';
+  const waitData = isWait ? parseWaitContent(shape.content) : null;
 
   return (
     <aside className="absolute top-0 right-0 h-full w-[340px] bg-white border-l border-edge shadow-xl flex flex-col z-30">
@@ -106,6 +148,37 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
           </div>
         </div>
 
+        {isWait && waitData && (
+          <div className="space-y-2">
+            <h4 className="text-2xs uppercase tracking-wider font-semibold text-muted">Wait duration</h4>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                max={9999}
+                value={waitData.duration}
+                onChange={(e) => {
+                  const n = Math.max(1, Math.min(9999, Number(e.target.value) || 1));
+                  onUpdate({ content: serializeWaitContent({ ...waitData, duration: n }) });
+                }}
+                className="w-20 px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal"
+              />
+              <select
+                value={waitData.unit}
+                onChange={(e) => {
+                  onUpdate({ content: serializeWaitContent({ ...waitData, unit: e.target.value as FeedbackWaitUnit }) });
+                }}
+                className="flex-1 px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal bg-white"
+              >
+                {WAIT_UNITS.map((u) => (
+                  <option key={u.value} value={u.value}>{u.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
+        {hasStroke && (
         <div>
           <h4 className="text-2xs uppercase tracking-wider font-semibold text-muted mb-2">Stroke</h4>
           <div className="flex items-center gap-1.5">
@@ -136,6 +209,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
             </button>
           </div>
         </div>
+        )}
 
         {(shape.shape_type === 'text' || shape.shape_type === 'rectangle' || shape.shape_type === 'ellipse') && (
           <Field label="Font size">
@@ -156,7 +230,10 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
 
       <div className="px-4 py-3 border-t border-edge">
         <button
-          onClick={onDelete}
+          onClick={async () => {
+            const ok = await confirm({ message: `Delete this ${typeLabel.toLowerCase()}?`, destructive: true, confirmLabel: 'Delete' });
+            if (ok) onDelete();
+          }}
           className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-rose-200 text-xs text-rose-600 hover:bg-rose-50 transition-colors"
         >
           <Trash2 size={13} /> Delete {typeLabel.toLowerCase()}

@@ -344,9 +344,22 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
   }, []);
 
   const deleteNote = useCallback(async (id: string) => {
+    const before = boardNotes.find((n) => n.id === id);
     setBoardNotes((prev) => prev.filter((n) => n.id !== id));
     await supabase.from('funnel_board_notes').delete().eq('id', id);
-  }, []);
+    if (before) {
+      recordHistory({
+        undo: async () => {
+          setBoardNotes((prev) => prev.some((n) => n.id === before.id) ? prev : [...prev, before]);
+          await supabase.from('funnel_board_notes').insert(before);
+        },
+        redo: async () => {
+          setBoardNotes((prev) => prev.filter((n) => n.id !== id));
+          await supabase.from('funnel_board_notes').delete().eq('id', id);
+        },
+      });
+    }
+  }, [boardNotes, recordHistory]);
 
   /* ─── Edges ─────────────────────────────────────────────────── */
 
@@ -428,9 +441,22 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
       .insert({ ...shape, funnel_id: funnelId, company_id: companyId })
       .select().single();
     if (error) { toast.error('Failed to create shape'); return null; }
-    if (data) setShapes((prev) => [...prev, data]);
+    if (data) {
+      setShapes((prev) => [...prev, data]);
+      const created = data;
+      recordHistory({
+        undo: async () => {
+          setShapes((prev) => prev.filter((s) => s.id !== created.id));
+          await supabase.from('funnel_board_shapes').delete().eq('id', created.id);
+        },
+        redo: async () => {
+          setShapes((prev) => prev.some((s) => s.id === created.id) ? prev : [...prev, created]);
+          await supabase.from('funnel_board_shapes').insert(created);
+        },
+      });
+    }
     return data;
-  }, [funnelId, companyId, toast]);
+  }, [funnelId, companyId, toast, recordHistory]);
 
   const updateShape = useCallback(async (id: string, patch: Partial<FunnelBoardShape>) => {
     setShapes((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
@@ -442,10 +468,32 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
   }, [toast, loadShapes]);
 
   const deleteShape = useCallback(async (id: string) => {
+    const before = shapes.find((s) => s.id === id);
+    const incidentEdges = boardEdges.filter((e) => e.source_shape_id === id || e.target_shape_id === id);
     setShapes((prev) => prev.filter((s) => s.id !== id));
     setBoardEdges((prev) => prev.filter((e) => e.source_shape_id !== id && e.target_shape_id !== id));
     await supabase.from('funnel_board_shapes').delete().eq('id', id);
-  }, []);
+    if (before) {
+      recordHistory({
+        undo: async () => {
+          setShapes((prev) => prev.some((s) => s.id === before.id) ? prev : [...prev, before]);
+          await supabase.from('funnel_board_shapes').insert(before);
+          if (incidentEdges.length > 0) {
+            setBoardEdges((prev) => {
+              const known = new Set(prev.map((e) => e.id));
+              return [...prev, ...incidentEdges.filter((e) => !known.has(e.id))];
+            });
+            await supabase.from('funnel_board_edges').insert(incidentEdges);
+          }
+        },
+        redo: async () => {
+          setShapes((prev) => prev.filter((s) => s.id !== id));
+          setBoardEdges((prev) => prev.filter((e) => e.source_shape_id !== id && e.target_shape_id !== id));
+          await supabase.from('funnel_board_shapes').delete().eq('id', id);
+        },
+      });
+    }
+  }, [shapes, boardEdges, recordHistory]);
 
   const setFunnel = useCallback(
     (updater: (prev: Funnel | null) => Funnel | null) => setFunnelState((prev) => updater(prev)),

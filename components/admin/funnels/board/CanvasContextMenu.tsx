@@ -19,6 +19,8 @@ interface Props {
   onDelete?: () => void;
   onEdit?: () => void;
   onCopyStyle?: () => void;
+  onLockToggle?: () => void;
+  isLocked?: boolean;
   /** Optional: tell the user how many nodes the action will apply to */
   selectionCount?: number;
 }
@@ -33,7 +35,7 @@ interface Props {
 export default function CanvasContextMenu({
   target, onClose,
   onAddStep, onPasteAt, canPaste,
-  onDuplicate, onDelete, onEdit, onCopyStyle,
+  onDuplicate, onDelete, onEdit, onCopyStyle, onLockToggle, isLocked,
   selectionCount = 0,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
@@ -59,6 +61,7 @@ export default function CanvasContextMenu({
           { icon: <Edit3 size={13} />,    label: 'Edit',         onClick: run(onEdit) },
           { icon: <Copy size={13} />,     label: selectionCount > 1 ? `Duplicate ${selectionCount}` : 'Duplicate', shortcut: '⌘D', onClick: run(onDuplicate) },
           { icon: <Layers size={13} />,   label: 'Copy style',   onClick: run(onCopyStyle), disabled: !onCopyStyle },
+          ...(onLockToggle ? [{ icon: isLocked ? <Unlock size={13} /> : <Lock size={13} />, label: isLocked ? 'Unlock' : 'Lock', onClick: run(onLockToggle) }] : []),
           { icon: <Trash2 size={13} />,   label: selectionCount > 1 ? `Delete ${selectionCount}` : 'Delete',    shortcut: '⌫',  onClick: run(onDelete), danger: true },
         ]
       : [

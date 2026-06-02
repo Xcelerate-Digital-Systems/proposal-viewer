@@ -27,6 +27,9 @@ interface Props {
   onPickTool: (tool: BoardTool) => void;
   /** Sticky note: click adds at default position. */
   onPickSticky: () => void;
+  /** Returns the current viewport centre in flow coordinates. Used to place
+   *  feedback items at the visible area instead of the flow origin. */
+  getViewportCentre?: () => { x: number; y: number };
 }
 
 type PaletteTabId = 'items' | 'actions' | 'drawing';
@@ -159,7 +162,7 @@ export type PaletteDragPayload =
   | { kind: 'shape'; shapeType: FeedbackShapeType }
   | { kind: 'sticky' };
 
-export default function FeedbackPalette({ activeTool, onPickShape, onPickTool, onPickSticky }: Props) {
+export default function FeedbackPalette({ activeTool, onPickShape, onPickTool, onPickSticky, getViewportCentre }: Props) {
   const [collapsed, setCollapsed] = useState(false);
   // Default to Items — adding feedback items is the most common board action
   // and was previously the default surface in the admin sidebar.
@@ -229,7 +232,7 @@ export default function FeedbackPalette({ activeTool, onPickShape, onPickTool, o
       </div>
 
       {activeTab === 'items' ? (
-        <ItemsTabContent />
+        <ItemsTabContent getViewportCentre={getViewportCentre} />
       ) : (
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
           {active.groups.map((group) => (
@@ -254,7 +257,7 @@ export default function FeedbackPalette({ activeTool, onPickShape, onPickTool, o
    FeedbackItemsSidebarNav UX that lived in the admin sidebar before this
    page switched to `collapseSidebar`). */
 
-function ItemsTabContent() {
+function ItemsTabContent({ getViewportCentre }: { getViewportCentre?: () => { x: number; y: number } }) {
   const ctx = useFeedbackBoardContext();
   const [showPlaced, setShowPlaced] = useState(true);
 
@@ -305,7 +308,10 @@ function ItemsTabContent() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => placeItem(item.id)}
+                  onClick={() => {
+                    const pos = getViewportCentre?.();
+                    placeItem(item.id, pos ? { x: pos.x - 120, y: pos.y - 120 } : undefined);
+                  }}
                   className="group w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-ink/80 hover:text-ink hover:bg-surface transition-colors"
                 >
                   <span className="w-5 flex justify-center text-muted group-hover:text-teal">

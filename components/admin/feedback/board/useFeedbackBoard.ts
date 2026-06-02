@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   useNodesState,
   useEdgesState,
-  addEdge,
   applyNodeChanges,
   applyEdgeChanges,
   type Node,
@@ -53,8 +52,24 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
   /* ─── Build RF nodes from context data ─────────────────────── */
 
   const handleShapeContentUpdate = useCallback(
-    (id: string, content: string) => { void updateShape(id, { content }); },
-    [updateShape]
+    (id: string, content: string) => {
+      try {
+        const parsed = JSON.parse(content);
+        if (parsed?.__resize) {
+          const patch: Record<string, number> = {};
+          if (parsed.end_x !== undefined) patch.end_x = parsed.end_x;
+          if (parsed.end_y !== undefined) patch.end_y = parsed.end_y;
+          void updateShape(id, patch);
+          if (parsed.move_x || parsed.move_y) {
+            const shape = ctx.shapes.find((s) => s.id === id);
+            if (shape) void updateShape(id, { ...patch, x: shape.x + parsed.move_x, y: shape.y + parsed.move_y });
+          }
+          return;
+        }
+      } catch { /* not JSON — normal content update */ }
+      void updateShape(id, { content });
+    },
+    [updateShape, ctx.shapes]
   );
 
   useEffect(() => {
@@ -107,6 +122,12 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
   }, [setEdges]);
 
   useEffect(() => {
+    const noteIds = new Set(boardNotes.map((n) => n.id));
+    const resolveEndpoint = (shapeId: string | null, itemId: string | null) => {
+      if (shapeId && noteIds.has(shapeId)) return `note-${shapeId}`;
+      if (shapeId) return `shape-${shapeId}`;
+      return itemId;
+    };
     const flowEdges: Edge[] = boardEdges
       .map((e) => {
         const strokeColor = (e.style as Record<string, string>)?.stroke || '#2B2B2B';
@@ -117,8 +138,8 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
           rawArrow === 'none' || rawArrow === 'source' || rawArrow === 'both' ? rawArrow : 'target';
         const labelFontSize = Number((e.style as Record<string, number> | null | undefined)?.labelFontSize) || 16;
         const labelColor = (e.style as Record<string, string> | null | undefined)?.labelColor || '#2B2B2B';
-        const source = e.source_shape_id ? `shape-${e.source_shape_id}` : e.source_item_id;
-        const target = e.target_shape_id ? `shape-${e.target_shape_id}` : e.target_item_id;
+        const source = resolveEndpoint(e.source_shape_id, e.source_item_id);
+        const target = resolveEndpoint(e.target_shape_id, e.target_item_id);
         if (!source || !target) return null;
         return {
           id: e.id,
@@ -150,7 +171,7 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
       })
       .filter((e): e is Edge => e !== null);
     setEdges(flowEdges);
-  }, [boardEdges, handleEdgeClickFromData, setEdges]);
+  }, [boardEdges, boardNotes, handleEdgeClickFromData, setEdges]);
 
   /* ─── Drag position save ──────────────────────────────────── */
 
@@ -192,42 +213,34 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
       const isNoteEdge =
         connection.source.startsWith('note-') || connection.target.startsWith('note-');
 
-      if (!isNoteEdge) {
-        // RF node ids: items use the raw item id, shapes use `shape-{uuid}`. Split
-        // into item vs shape columns so FK cascades behave correctly.
-        const sourceIsShape = connection.source.startsWith('shape-');
-        const targetIsShape = connection.target.startsWith('shape-');
-        const sourceId = sourceIsShape ? connection.source.slice(6) : connection.source;
-        const targetId = targetIsShape ? connection.target.slice(6) : connection.target;
-        await createEdge({
-          review_project_id: ctx.projectId,
-          company_id: ctx.companyId,
-          source_item_id: sourceIsShape ? null : sourceId,
-          source_shape_id: sourceIsShape ? sourceId : null,
-          target_item_id: targetIsShape ? null : targetId,
-          target_shape_id: targetIsShape ? targetId : null,
-          source_handle: connection.sourceHandle || 'right',
-          target_handle: connection.targetHandle || 'left',
-          edge_type: 'labeled',
-          animated: false,
-          label: null,
-          style: { stroke: '#2B2B2B', strokeWidth: 2 },
-        });
-      } else {
-        // Sticky-note edges are purely visual; render in RF state only
-        const newEdge: Edge = {
-          id: `temp-${Date.now()}`,
-          source: connection.source,
-          target: connection.target,
-          sourceHandle: connection.sourceHandle || undefined,
-          targetHandle: connection.targetHandle || undefined,
-          type: 'labeled',
-          style: { stroke: '#2B2B2B', strokeWidth: 2 },
-          markerEnd: { type: MarkerType.ArrowClosed, color: '#2B2B2B', width: 16, height: 16 },
-          data: { color: '#2B2B2B', strokeWidth: 2, onEdgeClick: handleEdgeClickFromData },
-        };
-        setEdges((eds) => addEdge(newEdge, eds));
-      }
+      // RF node ids: items use the raw item id, shapes use `shape-{uuid}`,
+      // notes use `note-{uuid}`. Split into item vs shape columns so FK
+      // cascades behave correctly. Note edges are now persisted as shape edges
+      // (source_shape_id / target_shape_id) — the edge table doesn't have
+      // dedicated note FK columns, but notes are board objects like shapes.
+      const resolveId = (rfId: string) => {
+        if (rfId.startsWith('shape-')) return { itemId: null, shapeId: rfId.slice(6), noteId: null };
+        if (rfId.startsWith('note-'))  return { itemId: null, shapeId: null, noteId: rfId.slice(5) };
+        return { itemId: rfId, shapeId: null, noteId: null };
+      };
+      const src = resolveId(connection.source);
+      const tgt = resolveId(connection.target);
+
+      // Note edges: store note IDs in the shape FK columns so they persist.
+      await createEdge({
+        review_project_id: ctx.projectId,
+        company_id: ctx.companyId,
+        source_item_id: src.itemId,
+        source_shape_id: src.shapeId || src.noteId,
+        target_item_id: tgt.itemId,
+        target_shape_id: tgt.shapeId || tgt.noteId,
+        source_handle: connection.sourceHandle || 'right',
+        target_handle: connection.targetHandle || 'left',
+        edge_type: 'labeled',
+        animated: false,
+        label: null,
+        style: { stroke: '#2B2B2B', strokeWidth: 2 },
+      });
     },
     [ctx.projectId, ctx.companyId, createEdge, handleEdgeClickFromData, setEdges]
   );
@@ -236,9 +249,7 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
 
   const handleDeleteEdge = useCallback(
     async (edgeId: string) => {
-      if (!edgeId.startsWith('temp-')) {
-        await ctx.deleteEdge(edgeId);
-      }
+      await ctx.deleteEdge(edgeId);
       setEdges((eds) => eds.filter((e) => e.id !== edgeId));
       setSelectedEdge(null);
     },

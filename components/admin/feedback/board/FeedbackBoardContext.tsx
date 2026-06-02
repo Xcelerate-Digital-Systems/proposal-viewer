@@ -7,6 +7,7 @@ import {
   useCallback,
   useState,
   useEffect,
+  useRef,
   type ReactNode,
 } from 'react';
 import { useRouter } from 'next/navigation';
@@ -44,7 +45,7 @@ interface ContextValue {
   openAddItem: () => void;
 
   // Items
-  placeItem: (itemId: string) => Promise<void>;
+  placeItem: (itemId: string, position?: { x: number; y: number }) => Promise<void>;
   removeItemFromBoard: (itemId: string) => Promise<void>;
   updateItemStatus: (itemId: string, status: FeedbackStatus) => Promise<void>;
   updateItemBoardPosition: (itemId: string, x: number, y: number) => Promise<void>;
@@ -66,6 +67,12 @@ interface ContextValue {
   createShape: (shape: NewShape) => Promise<FeedbackBoardShape | null>;
   updateShape: (id: string, patch: Partial<FeedbackBoardShape>) => Promise<void>;
   deleteShape: (id: string) => Promise<void>;
+
+  // Undo/redo
+  undo: () => Promise<void>;
+  redo: () => Promise<void>;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 const Ctx = createContext<ContextValue | null>(null);
@@ -192,6 +199,41 @@ export function FeedbackBoardProvider({
     ]).finally(() => setLoading(false));
   }, [fetchProject, refreshItems, loadBoardEdges, loadBoardNotes, loadShapes, fetchCustomDomain]);
 
+  /* ─── Undo/redo ─────────────────────────────────────────── */
+
+  type HistoryOp = { undo: () => Promise<void>; redo: () => Promise<void> };
+  const historyRef = useRef<{ undo: HistoryOp[]; redo: HistoryOp[]; suppress: boolean }>({
+    undo: [], redo: [], suppress: false,
+  });
+  const [, forceRender] = useState(0);
+  const bumpHistoryUI = useCallback(() => forceRender((n) => n + 1), []);
+
+  const recordHistory = useCallback((op: HistoryOp) => {
+    if (historyRef.current.suppress) return;
+    historyRef.current.undo.push(op);
+    if (historyRef.current.undo.length > 30) historyRef.current.undo.shift();
+    historyRef.current.redo.length = 0;
+    bumpHistoryUI();
+  }, [bumpHistoryUI]);
+
+  const undo = useCallback(async () => {
+    const op = historyRef.current.undo.pop();
+    if (!op) return;
+    historyRef.current.suppress = true;
+    try { await op.undo(); } finally { historyRef.current.suppress = false; }
+    historyRef.current.redo.push(op);
+    bumpHistoryUI();
+  }, [bumpHistoryUI]);
+
+  const redo = useCallback(async () => {
+    const op = historyRef.current.redo.pop();
+    if (!op) return;
+    historyRef.current.suppress = true;
+    try { await op.redo(); } finally { historyRef.current.suppress = false; }
+    historyRef.current.undo.push(op);
+    bumpHistoryUI();
+  }, [bumpHistoryUI]);
+
   /* ─── Items ────────────────────────────────────────────────── */
 
   const placedItems = useMemo(
@@ -204,10 +246,9 @@ export function FeedbackBoardProvider({
   );
 
   const placeItem = useCallback(
-    async (itemId: string) => {
-      const existingCount = placedItems.length;
-      const x = 100 + (existingCount % 4) * 280;
-      const y = 100 + Math.floor(existingCount / 4) * 220;
+    async (itemId: string, position?: { x: number; y: number }) => {
+      const x = position ? Math.round(position.x) : 100 + (placedItems.length % 4) * 280;
+      const y = position ? Math.round(position.y) : 100 + Math.floor(placedItems.length / 4) * 220;
       const { error } = await supabase
         .from('review_items')
         .update({ board_x: x, board_y: y, updated_at: new Date().toISOString() })
@@ -316,9 +357,22 @@ export function FeedbackBoardProvider({
   );
 
   const deleteNote = useCallback(async (noteId: string) => {
+    const before = boardNotes.find((n) => n.id === noteId);
     setBoardNotes((prev) => prev.filter((n) => n.id !== noteId));
     await supabase.from('review_board_notes').delete().eq('id', noteId);
-  }, []);
+    if (before) {
+      recordHistory({
+        undo: async () => {
+          setBoardNotes((prev) => prev.some((n) => n.id === before.id) ? prev : [...prev, before]);
+          await supabase.from('review_board_notes').insert(before);
+        },
+        redo: async () => {
+          setBoardNotes((prev) => prev.filter((n) => n.id !== noteId));
+          await supabase.from('review_board_notes').delete().eq('id', noteId);
+        },
+      });
+    }
+  }, [boardNotes, recordHistory]);
 
   /* ─── Board edges ──────────────────────────────────────────── */
 
@@ -375,10 +429,23 @@ export function FeedbackBoardProvider({
         toast.error('Failed to create shape');
         return null;
       }
-      if (data) setShapes((prev) => [...prev, data]);
+      if (data) {
+        setShapes((prev) => [...prev, data]);
+        const created = data;
+        recordHistory({
+          undo: async () => {
+            setShapes((prev) => prev.filter((s) => s.id !== created.id));
+            await supabase.from('review_board_shapes').delete().eq('id', created.id);
+          },
+          redo: async () => {
+            setShapes((prev) => prev.some((s) => s.id === created.id) ? prev : [...prev, created]);
+            await supabase.from('review_board_shapes').insert(created);
+          },
+        });
+      }
       return data;
     },
-    [projectId, companyId, toast]
+    [projectId, companyId, toast, recordHistory]
   );
 
   const updateShape = useCallback(
@@ -398,13 +465,33 @@ export function FeedbackBoardProvider({
 
   const deleteShape = useCallback(
     async (id: string) => {
+      const before = shapes.find((s) => s.id === id);
+      const incidentEdges = boardEdges.filter((e) => e.source_shape_id === id || e.target_shape_id === id);
       setShapes((prev) => prev.filter((s) => s.id !== id));
-      // Optimistically drop any edges touching this shape so the canvas stays
-      // in sync; the DB cascade handles the server-side cleanup.
       setBoardEdges((prev) => prev.filter((e) => e.source_shape_id !== id && e.target_shape_id !== id));
       await supabase.from('review_board_shapes').delete().eq('id', id);
+      if (before) {
+        recordHistory({
+          undo: async () => {
+            setShapes((prev) => prev.some((s) => s.id === before.id) ? prev : [...prev, before]);
+            await supabase.from('review_board_shapes').insert(before);
+            if (incidentEdges.length > 0) {
+              setBoardEdges((prev) => {
+                const known = new Set(prev.map((e) => e.id));
+                return [...prev, ...incidentEdges.filter((e) => !known.has(e.id))];
+              });
+              await supabase.from('review_board_edges').insert(incidentEdges);
+            }
+          },
+          redo: async () => {
+            setShapes((prev) => prev.filter((s) => s.id !== id));
+            setBoardEdges((prev) => prev.filter((e) => e.source_shape_id !== id && e.target_shape_id !== id));
+            await supabase.from('review_board_shapes').delete().eq('id', id);
+          },
+        });
+      }
     },
-    []
+    [shapes, boardEdges, recordHistory]
   );
 
   const setProject = useCallback(
@@ -444,6 +531,9 @@ export function FeedbackBoardProvider({
       createShape,
       updateShape,
       deleteShape,
+      undo, redo,
+      canUndo: historyRef.current.undo.length > 0,
+      canRedo: historyRef.current.redo.length > 0,
     }),
     [
       projectId, companyId, userId,
@@ -455,6 +545,7 @@ export function FeedbackBoardProvider({
       boardNotes, addNote, updateNote, deleteNote,
       boardEdges, createEdge, updateEdge, deleteEdge,
       shapes, createShape, updateShape, deleteShape,
+      undo, redo,
     ]
   );
 
