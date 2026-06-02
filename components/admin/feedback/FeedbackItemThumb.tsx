@@ -14,7 +14,7 @@ interface Props {
  * presentation — no callbacks, no menus, no body content.
  */
 export default function FeedbackItemThumb({ item }: Props) {
-  const thumbnailUrl = item.image_url || item.ad_creative_url;
+  const thumbnailUrl = item.ad_creative_url || item.image_url;
 
   return (
     <>

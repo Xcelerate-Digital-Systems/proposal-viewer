@@ -47,6 +47,7 @@ export default function StatusDropdown<T extends string = string>({
 }: StatusDropdownProps<T>) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const portalRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
 
@@ -60,17 +61,25 @@ export default function StatusDropdown<T extends string = string>({
     if (!open) return;
     updatePos();
     const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const target = e.target as Node;
+      if (ref.current?.contains(target)) return;
+      if (portalRef.current?.contains(target)) return;
+      setOpen(false);
     };
+    const handleDismiss = () => setOpen(false);
     document.addEventListener('mousedown', handleClickOutside);
-    window.addEventListener('scroll', () => setOpen(false), true);
-    window.addEventListener('resize', () => setOpen(false));
+    // Delay scroll/resize dismiss so residual scroll momentum from the
+    // scrollable <main> container doesn't close the dropdown immediately.
+    let armed = false;
+    const armTimer = setTimeout(() => { armed = true; }, 150);
+    const guardedDismiss = () => { if (armed) handleDismiss(); };
+    window.addEventListener('scroll', guardedDismiss, true);
+    window.addEventListener('resize', handleDismiss);
     return () => {
+      clearTimeout(armTimer);
       document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', () => setOpen(false), true);
-      window.removeEventListener('resize', () => setOpen(false));
+      window.removeEventListener('scroll', guardedDismiss, true);
+      window.removeEventListener('resize', handleDismiss);
     };
   }, [open, updatePos]);
 
@@ -110,6 +119,7 @@ export default function StatusDropdown<T extends string = string>({
         <>
           <div className="fixed inset-0 z-[9998]" onClick={() => setOpen(false)} />
           <div
+            ref={portalRef}
             className="fixed z-[9999] bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]"
             style={{ top: pos.top, left: pos.left, width: Math.max(pos.width, 160) }}
           >

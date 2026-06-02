@@ -120,21 +120,40 @@ export function useItemVersions({ item, companyId, userId }: UseItemVersionsOpti
       }
       const row = data as FeedbackItemVersion;
       setRows((prev) => [...prev, row]);
-      await persistActiveVersion(row.id);
 
-      // Reset the parent item's stage if the caller asked us to. We do this
-      // BEFORE firing notify so the route picks up the new stage when
-      // resolving assignees.
-      if (input.resetToStage && item && input.resetToStage !== item.status) {
-        const { error: stageErr } = await supabase
-          .from('review_items')
-          .update({ status: input.resetToStage, updated_at: new Date().toISOString() })
-          .eq('id', itemId);
-        if (stageErr) {
-          // Non-fatal: the version saved fine. Just leave the item's stage
-          // alone and let the user move it manually.
-          toast.error('Version saved, but failed to move the item to the new stage');
+      // Build a single combined update: set the active version, mirror
+      // asset fields so list-view thumbnails reflect the new version,
+      // bump the version counter, and optionally reset the stage.
+      const itemUpdate: Record<string, unknown> = {
+        active_version_id: row.id,
+        version: nextVersionNumber,
+        updated_at: new Date().toISOString(),
+      };
+
+      const MIRROR_FIELDS: (keyof FeedbackItemVersion)[] = [
+        'image_url', 'ad_creative_url', 'video_url', 'pdf_url',
+        'email_subject', 'email_preheader', 'email_body', 'sms_body',
+        'ad_headline', 'ad_copy', 'ad_cta', 'ad_platform', 'meta_ad_variants',
+        'google_ad_data', 'meta_lead_form_data',
+      ];
+      for (const key of MIRROR_FIELDS) {
+        const val = input.assets[key as keyof typeof input.assets];
+        if (val !== null && val !== undefined) {
+          itemUpdate[key] = val;
         }
+      }
+
+      if (input.resetToStage && item && input.resetToStage !== item.status) {
+        itemUpdate.status = input.resetToStage;
+      }
+
+      setActiveVersionId(row.id);
+      const { error: updateErr } = await supabase
+        .from('review_items')
+        .update(itemUpdate)
+        .eq('id', itemId);
+      if (updateErr) {
+        toast.error('Version saved, but failed to update the item preview');
       }
 
       setCreating(false);

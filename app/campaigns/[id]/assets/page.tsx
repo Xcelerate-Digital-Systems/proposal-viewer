@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback, useMemo, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Image } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { supabase, type FeedbackProject, type FeedbackItem } from '@/lib/supabase';
+import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackItemVersion } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AddFeedbackItemModal from '@/components/admin/feedback/AddFeedbackItemModal';
 import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHeader';
 import FeedbackItemCard from '@/components/admin/feedback/FeedbackItemCard';
 import TypeFilterTabs from '@/components/feedback/TypeFilterTabs';
+import { applyVersion, buildVersionList } from '@/lib/feedback/versions';
 /* ------------------------------------------------------------------ */
 /*  Entry point                                                        */
 /* ------------------------------------------------------------------ */
@@ -105,7 +106,40 @@ function ItemsContent({
       .eq('review_project_id', projectId)
       .order('sort_order', { ascending: true });
 
-    setItems(data || []);
+    const rawItems = (data || []) as FeedbackItem[];
+
+    // For items with an active version other than v1, merge the version's
+    // asset fields so card thumbnails reflect the latest version.
+    const versionIds = rawItems
+      .map((i) => i.active_version_id)
+      .filter((id): id is string => !!id);
+
+    if (versionIds.length > 0) {
+      const { data: versions } = await supabase
+        .from('review_item_versions')
+        .select('*')
+        .in('id', versionIds);
+
+      if (versions?.length) {
+        const versionMap = new Map(
+          (versions as FeedbackItemVersion[]).map((v) => [v.id, v]),
+        );
+        const merged = rawItems.map((item) => {
+          const ver = item.active_version_id
+            ? versionMap.get(item.active_version_id)
+            : null;
+          if (!ver) return item;
+          const versionList = buildVersionList(item, [ver]);
+          const activeView = versionList.find((v) => v.id === item.active_version_id);
+          return activeView ? applyVersion(item, activeView) : item;
+        });
+        setItems(merged);
+        setLoading(false);
+        return;
+      }
+    }
+
+    setItems(rawItems);
     setLoading(false);
   }, [projectId]);
 
