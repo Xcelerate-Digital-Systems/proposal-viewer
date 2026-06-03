@@ -41,8 +41,8 @@ function ClientCard({ proposal }: { proposal: Proposal }) {
   return (
     <div className="bg-white rounded-2xl shadow-card p-3.5 transition-all hover:shadow-card-hover">
       <div className="flex items-start gap-2.5">
-        <div className="shrink-0 w-9 h-9 rounded-2xl bg-surface flex items-center justify-center">
-          <Icon size={15} className="text-muted" />
+        <div className="shrink-0 w-9 h-9 rounded-lg bg-surface flex items-center justify-center">
+          <Icon size={15} className="text-muted" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
           <h4 className="text-caption font-medium text-ink truncate leading-tight">

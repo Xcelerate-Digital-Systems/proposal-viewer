@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Image as ImageIcon, FileText } from 'lucide-react';
+import { Image as ImageIcon, FileText, Video, Film } from 'lucide-react';
 import AdMockupPreview, { type AdPlatform } from '@/components/admin/feedback/AdMockupPreview';
 import EmailMockupPreview, { type EmailClient } from '@/components/admin/feedback/EmailMockupPreview';
 import SmsMockupPreview, { type SmsClient } from '@/components/admin/feedback/SmsMockupPreview';
@@ -124,9 +124,10 @@ export default function ItemContentView({
 
   if (!item) {
     return (
-      <div className="text-center">
-        <ImageIcon size={40} className="text-gray-300 mx-auto mb-3" />
-        <p className="text-sm text-faint">{emptyText}</p>
+      <div className="max-w-3xl mx-auto bg-surface rounded-2xl shadow-card-soft flex flex-col items-center justify-center py-20">
+        <ImageIcon size={32} className="text-faint mb-3" />
+        <p className="text-caption font-medium text-ink">No item selected</p>
+        <p className="text-detail text-muted mt-1">{emptyText}</p>
       </div>
     );
   }
@@ -221,34 +222,48 @@ export default function ItemContentView({
         style={{ cursor: cursorStyle }}
         onClick={onImageClick}
       >
-        {isYouTube && youtubeId ? (
-          <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-            <iframe
-              src={`https://www.youtube.com/embed/${youtubeId}`}
-              className="absolute inset-0 w-full h-full rounded-lg"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+        {videoSrc ? (
+          <div className="bg-surface rounded-2xl shadow-card-soft overflow-hidden">
+            <div className="flex items-center gap-2.5 px-4 py-3 border-b border-edge">
+              <div className="w-6 h-6 rounded-md bg-white shadow-card-soft flex items-center justify-center">
+                <Film size={12} className="text-muted" />
+              </div>
+              <span className="text-caption font-medium text-ink truncate">{item.title || 'Video'}</span>
+              <span className="text-detail text-faint ml-auto shrink-0">Video</span>
+            </div>
+            <div className="bg-ink/95">
+              {isYouTube && youtubeId ? (
+                <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                  <iframe
+                    src={`https://www.youtube.com/embed/${youtubeId}`}
+                    className="absolute inset-0 w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              ) : isVimeo && vimeoId ? (
+                <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                  <iframe
+                    src={`https://player.vimeo.com/video/${vimeoId}`}
+                    className="absolute inset-0 w-full h-full"
+                    allow="autoplay; fullscreen; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <video
+                  src={videoSrc}
+                  controls
+                  className="w-full max-h-[calc(100dvh-200px)]"
+                />
+              )}
+            </div>
           </div>
-        ) : isVimeo && vimeoId ? (
-          <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-            <iframe
-              src={`https://player.vimeo.com/video/${vimeoId}`}
-              className="absolute inset-0 w-full h-full rounded-lg"
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
-            />
-          </div>
-        ) : videoSrc ? (
-          <video
-            src={videoSrc}
-            controls
-            className="w-full max-h-[calc(100dvh-120px)] rounded-lg"
-          />
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-faint">
-            <FileText size={40} className="mb-3" />
-            <p className="text-sm">No video source available</p>
+          <div className="bg-surface rounded-2xl shadow-card-soft flex flex-col items-center justify-center py-20">
+            <Video size={32} className="text-faint mb-3" />
+            <p className="text-caption font-medium text-ink">No video source</p>
+            <p className="text-detail text-muted mt-1">Upload a video or paste a YouTube/Vimeo link to start reviewing.</p>
           </div>
         )}
         <PinOverlay
@@ -272,16 +287,26 @@ export default function ItemContentView({
         onClick={onImageClick}
       >
         {pdfSrc ? (
-          <iframe
-            src={pdfSrc}
-            className="w-full rounded-lg border border-edge-strong"
-            style={{ height: 'calc(100dvh - 120px)' }}
-            title={item.title}
-          />
+          <div className="bg-surface rounded-2xl shadow-card-soft overflow-hidden">
+            <div className="flex items-center gap-2.5 px-4 py-3 border-b border-edge">
+              <div className="w-6 h-6 rounded-md bg-white shadow-card-soft flex items-center justify-center">
+                <FileText size={12} className="text-red-500" />
+              </div>
+              <span className="text-caption font-medium text-ink truncate">{item.title || 'Document'}</span>
+              <span className="text-detail text-faint ml-auto shrink-0">PDF</span>
+            </div>
+            <iframe
+              src={pdfSrc}
+              className="w-full border-0"
+              style={{ height: 'calc(100dvh - 200px)' }}
+              title={item.title}
+            />
+          </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-faint">
-            <FileText size={40} className="mb-3" />
-            <p className="text-sm">No PDF available</p>
+          <div className="bg-surface rounded-2xl shadow-card-soft flex flex-col items-center justify-center py-20">
+            <FileText size={32} className="text-faint mb-3" />
+            <p className="text-caption font-medium text-ink">No PDF uploaded</p>
+            <p className="text-detail text-muted mt-1">Upload a PDF to start reviewing.</p>
           </div>
         )}
         <PinOverlay
@@ -298,9 +323,10 @@ export default function ItemContentView({
     const data = item.meta_lead_form_data;
     if (!data) {
       return (
-        <div className="text-center">
-          <ImageIcon size={40} className="text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-faint">Lead form not configured</p>
+        <div className="max-w-md mx-auto bg-surface rounded-2xl shadow-card-soft flex flex-col items-center justify-center py-20">
+          <FileText size={32} className="text-faint mb-3" />
+          <p className="text-caption font-medium text-ink">Lead form not configured</p>
+          <p className="text-detail text-muted mt-1">Set up the form fields to start reviewing.</p>
         </div>
       );
     }
@@ -380,9 +406,10 @@ export default function ItemContentView({
     if (renderWebpage) return <>{renderWebpage(item)}</>;
     if (!item.url) {
       return (
-        <div className="text-center">
-          <ImageIcon size={40} className="text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-faint">No page URL set</p>
+        <div className="max-w-3xl mx-auto bg-surface rounded-2xl shadow-card-soft flex flex-col items-center justify-center py-20">
+          <ImageIcon size={32} className="text-faint mb-3" />
+          <p className="text-caption font-medium text-ink">No page URL set</p>
+          <p className="text-detail text-muted mt-1">Add a URL to start reviewing this page.</p>
         </div>
       );
     }
@@ -412,7 +439,7 @@ export default function ItemContentView({
     return (
       <div
         ref={containerRef}
-        className="relative max-w-full max-h-full"
+        className="relative max-w-3xl mx-auto"
         style={{ cursor: cursorStyle }}
         onClick={onImageClick}
       >
@@ -468,18 +495,27 @@ export default function ItemContentView({
             </div>
           );
         })()}
-        {/* Image (non-ad).
-            crossOrigin="anonymous" lets html2canvas (used by the pin
-            screenshot capture) read the pixels — without it Supabase
-            CDN-hosted images taint the canvas and we capture a blank. */}
+        {/* Image (non-ad) — wrapped in a subtle card container with title caption.
+            crossOrigin="anonymous" lets html2canvas read the pixels for pin screenshots. */}
         {!isAd && imageUrl && (
-          <img
-            src={imageUrl}
-            alt={item.title}
-            crossOrigin="anonymous"
-            className="max-w-full max-h-[calc(100dvh-120px)] object-contain rounded-lg select-none"
-            draggable={false}
-          />
+          <div className="bg-surface rounded-2xl shadow-card-soft overflow-hidden">
+            <div className="flex items-center gap-2.5 px-4 py-3 border-b border-edge">
+              <div className="w-6 h-6 rounded-md bg-white shadow-card-soft flex items-center justify-center">
+                <ImageIcon size={12} className="text-primary" />
+              </div>
+              <span className="text-caption font-medium text-ink truncate">{item.title || 'Image'}</span>
+              <span className="text-detail text-faint ml-auto shrink-0">Image</span>
+            </div>
+            <div className="flex items-center justify-center bg-white p-2">
+              <img
+                src={imageUrl}
+                alt={item.title}
+                crossOrigin="anonymous"
+                className="max-w-full max-h-[calc(100dvh-200px)] object-contain select-none"
+                draggable={false}
+              />
+            </div>
+          </div>
         )}
         {/* Pin overlay */}
         <PinOverlay
@@ -500,9 +536,10 @@ export default function ItemContentView({
 
   // Fallback
   return (
-    <div className="text-center">
-      <ImageIcon size={40} className="text-gray-300 mx-auto mb-3" />
-      <p className="text-sm text-faint">{emptyText}</p>
+    <div className="max-w-3xl mx-auto bg-surface rounded-2xl shadow-card-soft flex flex-col items-center justify-center py-20">
+      <ImageIcon size={32} className="text-faint mb-3" />
+      <p className="text-caption font-medium text-ink">No preview available</p>
+      <p className="text-detail text-muted mt-1">{emptyText}</p>
     </div>
   );
 }

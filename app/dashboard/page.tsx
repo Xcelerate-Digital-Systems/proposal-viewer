@@ -7,16 +7,15 @@ import {
   FileText, CheckCircle2, Timer, Reply, ArrowRight, MessageSquareText,
 } from 'lucide-react';
 import { supabase, type Proposal, type FeedbackProject } from '@/lib/supabase';
-import type { FeedbackStatus } from '@/lib/types/feedback';
 import AdminLayout from '@/components/admin/AdminLayout';
 import InboxItem, { type InboxComment } from '@/components/admin/dashboard/InboxItem';
-import DashboardPipeline from '@/components/admin/dashboard/DashboardPipeline';
-import ClientPipeline from '@/components/admin/dashboard/ClientPipeline';
-import FeedbackPipeline from '@/components/admin/dashboard/FeedbackPipeline';
 import FeedbackActionWidgets from '@/components/admin/dashboard/FeedbackActionWidgets';
+import PipelineSummary from '@/components/admin/dashboard/PipelineSummary';
+import ClientPipeline from '@/components/admin/dashboard/ClientPipeline';
 import ErrorState from '@/components/ui/ErrorState';
 import PageHeader from '@/components/ui/PageHeader';
-import { buildStatusPatch, type ProposalStatus } from '@/lib/proposals/status';
+import { PROPOSAL_STATUS_ORDER, PROPOSAL_STATUS_CONFIG } from '@/lib/proposals/status';
+import { REVIEW_STATUS_ORDER, REVIEW_STATUS_CONFIG } from '@/lib/feedback/status';
 import { ReplayButton } from '@/components/tours/ReplayButton';
 
 export default function DashboardPage() {
@@ -47,7 +46,6 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
   const [pipeline, setPipeline] = useState<Proposal[]>([]);
   const [inbox, setInbox] = useState<InboxComment[]>([]);
   const [feedbackProjects, setFeedbackProjects] = useState<FeedbackProject[]>([]);
-  const [feedbackItemCounts, setFeedbackItemCounts] = useState<Record<string, number>>({});
 
   const firstName = memberName.split(' ')[0] || 'there';
   const isClient = accountType === 'client';
@@ -56,7 +54,7 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
     if (!companyId) return;
     setFetchError(null);
     try {
-      const [pipelineRes, reviewCommentsRes, feedbackProjectsRes, feedbackItemsRes] = await Promise.all([
+      const [pipelineRes, reviewCommentsRes, feedbackProjectsRes] = await Promise.all([
         supabase
           .from('proposals')
           .select('*')
@@ -76,16 +74,10 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
           .select('*')
           .eq('company_id', companyId)
           .order('updated_at', { ascending: false }),
-        supabase
-          .from('review_items')
-          .select('id, review_project_id')
-          .eq('company_id', companyId),
       ]);
 
       setPipeline((pipelineRes.data || []) as Proposal[]);
 
-      // Resolve review_project names in one bulk query so each inbox row can
-      // show its "Project → Item" breadcrumb.
       type RawReviewComment = {
         id: string;
         content: string;
@@ -127,12 +119,6 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
       setInbox(inboxItems);
 
       setFeedbackProjects((feedbackProjectsRes.data || []) as FeedbackProject[]);
-
-      const counts: Record<string, number> = {};
-      for (const it of (feedbackItemsRes.data || []) as { review_project_id: string }[]) {
-        counts[it.review_project_id] = (counts[it.review_project_id] ?? 0) + 1;
-      }
-      setFeedbackItemCounts(counts);
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
       setFetchError(err instanceof Error ? err.message : 'Failed to load your dashboard');
@@ -145,33 +131,6 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
     fetchData();
   }, [fetchData]);
 
-  // Optimistic pipeline mutation — mirrors /proposals page behaviour. Throws
-  // on failure so the kanban can roll back.
-  const movePipelineCard = async (id: string, next: ProposalStatus) => {
-    const patch = buildStatusPatch(next);
-    setPipeline((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...(patch as Partial<Proposal>) } : p)),
-    );
-    const { error } = await supabase.from('proposals').update(patch).eq('id', id);
-    if (error) throw error;
-  };
-
-  const moveFeedbackCard = async (id: string, next: FeedbackStatus) => {
-    setFeedbackProjects((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: next } : p)),
-    );
-    const { error } = await supabase
-      .from('review_projects')
-      .update({ status: next, updated_at: new Date().toISOString() })
-      .eq('id', id);
-    if (error) throw error;
-  };
-
-  const handleFeedbackDeleted = (id: string) => {
-    setFeedbackProjects((prev) => prev.filter((p) => p.id !== id));
-    setInbox((prev) => prev.filter((c) => c.projectId !== id));
-  };
-
   const dismissInboxItem = (commentId: string) =>
     setInbox((prev) => prev.filter((c) => c.commentId !== commentId));
 
@@ -182,7 +141,6 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
     return 'Good evening';
   };
 
-  /* ── Fetch error — render once for both client and agency views ─ */
   if (fetchError) {
     return (
       <div className="flex flex-col h-full">
@@ -205,7 +163,6 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
     const sentCount = nonDraft.filter((p) => p.status === 'sent').length;
     const viewedCount = nonDraft.filter((p) => p.status === 'viewed').length;
     const acceptedCount = nonDraft.filter((p) => p.status === 'accepted').length;
-    const declinedCount = nonDraft.filter((p) => p.status === 'declined').length;
     const awaitingAction = sentCount + viewedCount;
 
     return (
@@ -219,48 +176,21 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
                 ? `You have ${awaitingAction} ${awaitingAction === 1 ? 'item' : 'items'} awaiting your review.`
                 : nonDraft.length === 0
                   ? 'No proposals or quotes yet.'
-                  : 'All caught up — nothing awaiting your review.'
+                  : 'All caught up.'
           }
         />
         <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-6">
           <div className="flex flex-col gap-5">
             {/* Summary stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-enter-up" style={{ animationDelay: '0ms' }}>
-              <div className="bg-white rounded-2xl shadow-card p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Timer size={14} className="text-amber-500" />
-                  <span className="text-caption font-medium text-muted">Awaiting Review</span>
-                </div>
-                <p className="text-[28px] font-bold text-ink leading-none">{awaitingAction}</p>
-              </div>
-              <div className="bg-white rounded-2xl shadow-card p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle2 size={14} className="text-emerald-600" />
-                  <span className="text-caption font-medium text-muted">Accepted</span>
-                </div>
-                <p className="text-[28px] font-bold text-ink leading-none">{acceptedCount}</p>
-              </div>
-              <div className="bg-white rounded-2xl shadow-card p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <FileText size={14} className="text-muted" />
-                  <span className="text-caption font-medium text-muted">Proposals</span>
-                </div>
-                <p className="text-[28px] font-bold text-ink leading-none">{proposals.length}</p>
-              </div>
-              <div className="bg-white rounded-2xl shadow-card p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Reply size={14} className="text-muted" />
-                  <span className="text-caption font-medium text-muted">Quotes</span>
-                </div>
-                <p className="text-[28px] font-bold text-ink leading-none">{quotes.length}</p>
-              </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard icon={Timer} iconClass="text-amber-500" label="Awaiting Review" value={awaitingAction} />
+              <StatCard icon={CheckCircle2} iconClass="text-emerald-600" label="Accepted" value={acceptedCount} />
+              <StatCard icon={FileText} iconClass="text-muted" label="Proposals" value={proposals.length} />
+              <StatCard icon={FileText} iconClass="text-muted" label="Quotes" value={quotes.length} />
             </div>
 
-            {/* Pipeline kanban (read-only) */}
-            <section
-              className="bg-white rounded-2xl shadow-card overflow-hidden flex flex-col animate-enter-up"
-              style={{ animationDelay: '50ms' }}
-            >
+            {/* Pipeline (read-only) */}
+            <section className="bg-white rounded-2xl shadow-card overflow-hidden flex flex-col">
               <header className="flex items-center justify-between px-5 py-4 border-b border-edge">
                 <div className="flex items-center gap-2.5">
                   <div className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center">
@@ -274,7 +204,11 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
               </header>
 
               {loading ? (
-                <div className="px-5 py-12 text-center text-caption text-muted">Loading pipeline…</div>
+                <div className="px-5 py-6 space-y-3 animate-pulse">
+                  <div className="h-3 bg-edge rounded w-1/4" />
+                  <div className="h-16 bg-edge rounded-xl" />
+                  <div className="h-16 bg-edge rounded-xl" />
+                </div>
               ) : nonDraft.length === 0 ? (
                 <div className="px-5 py-12 flex flex-col items-center text-center">
                   <FileText size={24} className="text-faint mb-2" />
@@ -298,6 +232,20 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
   const proposalCount = pipeline.filter((p) => p.entity_type === 'proposal').length;
   const quoteCount = pipeline.length - proposalCount;
 
+  const proposalSegments = PROPOSAL_STATUS_ORDER.map((s) => ({
+    key: s,
+    label: PROPOSAL_STATUS_CONFIG[s].label,
+    hex: PROPOSAL_STATUS_CONFIG[s].hex,
+    count: pipeline.filter((p) => p.status === s).length,
+  }));
+
+  const feedbackSegments = REVIEW_STATUS_ORDER.map((s) => ({
+    key: s,
+    label: REVIEW_STATUS_CONFIG[s].label,
+    hex: REVIEW_STATUS_CONFIG[s].hex,
+    count: feedbackProjects.filter((p) => p.status === s).length,
+  }));
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader
@@ -306,172 +254,134 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
           loading
             ? 'Loading…'
             : inbox.length === 0
-              ? 'Inbox zero — your pipelines are below.'
-              : `${inbox.length} campaign ${inbox.length === 1 ? 'comment needs' : 'comments need'} your reply.`
+              ? 'Nothing needs your attention right now.'
+              : `${inbox.length} client ${inbox.length === 1 ? 'comment needs' : 'comments need'} your reply.`
         }
         actions={<ReplayButton tourId="dashboard" />}
       />
 
       <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-6">
         <div className="flex flex-col gap-5">
-          {/* ── Action widgets: Awaiting my review / Needs new version ─ */}
+          {/* ── Row 1: Action widgets ────────────────────── */}
           <FeedbackActionWidgets companyId={companyId} teamMemberId={teamMemberId} />
 
-          {/* ── Section 1: Feedback (inbox + kanban) ───────── */}
+          {/* ── Row 2: Inbox (standalone, primary triage surface) ── */}
           <section
             data-tour="dashboard-feedback"
-            className="bg-white rounded-2xl shadow-card overflow-hidden flex flex-col animate-enter-up"
-            style={{ animationDelay: '50ms' }}
+            className="bg-white rounded-2xl shadow-card overflow-hidden"
           >
             <header className="flex items-center justify-between px-5 py-4 border-b border-edge">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center">
-                  <MessageSquareText size={14} className="text-muted" />
+                  <Reply size={14} className="text-amber-600" />
                 </div>
-                <h2 className="text-base font-semibold text-ink">Campaigns</h2>
-                <span className="text-detail text-muted">
-                  {feedbackProjects.length} {feedbackProjects.length === 1 ? 'project' : 'projects'}
-                  {inbox.length > 0 && ` · ${inbox.length} awaiting reply`}
-                </span>
-              </div>
-              <Link href="/campaigns" className="text-xs font-medium text-teal hover:underline inline-flex items-center gap-1">
-                All projects <ArrowRight size={12} />
-              </Link>
-            </header>
-
-            {/* Inbox sub-area */}
-            <div>
-              <div className="flex items-center gap-2 px-5 pt-4 pb-2">
-                <Reply size={13} className="text-[#92500F]" />
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">
-                  Needs your reply
-                </h3>
+                <h2 className="text-sm font-semibold text-ink">Client comments</h2>
                 {inbox.length > 0 && (
-                  <span className="text-2xs font-semibold text-muted bg-surface rounded-full px-1.5 py-0.5">
+                  <span className="text-2xs font-semibold text-white bg-amber-500 rounded-full px-1.5 py-0.5 leading-none">
                     {inbox.length}
                   </span>
                 )}
               </div>
-
-              {loading ? (
-                <div className="px-5 py-8 text-center text-caption text-muted">Loading…</div>
-              ) : inbox.length === 0 ? (
-                <div className="px-5 py-8 flex flex-col items-center text-center">
-                  <CheckCircle2 size={20} className="text-emerald-500/70 mb-1.5" />
-                  <p className="text-caption font-medium text-ink">All caught up</p>
-                  <p className="text-detail text-muted mt-0.5">No unresolved client comments.</p>
-                </div>
-              ) : (
-                <div className="border-t border-edge">
-                  {inbox.slice(0, 8).map((c, i, arr) => (
-                    <InboxItem
-                      key={c.commentId}
-                      item={c}
-                      memberName={memberName}
-                      isLast={i === Math.min(arr.length, 8) - 1}
-                      onDismiss={() => dismissInboxItem(c.commentId)}
-                    />
-                  ))}
-                  {inbox.length > 8 && (
-                    <div className="px-5 py-3 border-t border-edge text-center">
-                      <span className="text-xs text-muted">
-                        Plus {inbox.length - 8} more — open them from their campaign project.
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Kanban sub-area */}
-            <div className="border-t border-edge">
-              <div className="flex items-center gap-2 px-5 pt-4 pb-2">
-                <MessageSquareText size={13} className="text-muted" />
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">
-                  Projects
-                </h3>
-                <span className="text-detail text-faint">Drag to update status</span>
-              </div>
-
-              {loading ? (
-                <div className="px-5 py-12 text-center text-caption text-muted">Loading…</div>
-              ) : feedbackProjects.length === 0 ? (
-                <div className="px-5 py-12 flex flex-col items-center text-center">
-                  <MessageSquareText size={24} className="text-faint mb-2" />
-                  <p className="text-sm font-medium text-ink">No campaign projects yet</p>
-                  <p className="text-xs text-muted mt-1">Spin one up to start collecting client comments on creative.</p>
-                  <Link href="/campaigns" className="inline-flex items-center gap-1.5 bg-teal hover:bg-teal-hover text-white text-xs font-semibold rounded-full px-3.5 py-1.5 mt-4">
-                    New project
-                  </Link>
-                </div>
-              ) : (
-                <div className="pb-5 h-[520px]">
-                  <FeedbackPipeline
-                    projects={feedbackProjects}
-                    itemCounts={feedbackItemCounts}
-                    onMove={moveFeedbackCard}
-                    onDeleted={handleFeedbackDeleted}
-                    contained
-                  />
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* ── Section 2: Proposals & Quotes pipeline ──────── */}
-          <section
-            data-tour="dashboard-proposals"
-            className="bg-white rounded-2xl shadow-card overflow-hidden flex flex-col animate-enter-up"
-            style={{ animationDelay: '100ms' }}
-          >
-            <header className="flex items-center justify-between px-5 py-4 border-b border-edge">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center">
-                  <FileText size={14} className="text-muted" />
-                </div>
-                <h2 className="text-base font-semibold text-ink">Proposals &amp; Quotes</h2>
-                <span className="text-detail text-muted">
-                  {proposalCount} {proposalCount === 1 ? 'proposal' : 'proposals'} · {quoteCount} {quoteCount === 1 ? 'quote' : 'quotes'}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Link href="/proposals" className="text-xs font-medium text-teal hover:underline inline-flex items-center gap-1">
-                  Proposals <ArrowRight size={12} />
-                </Link>
-                <Link href="/quotes" className="text-xs font-medium text-teal hover:underline inline-flex items-center gap-1">
-                  Quotes <ArrowRight size={12} />
-                </Link>
-              </div>
+              <Link
+                href="/campaigns"
+                className="text-xs font-medium text-primary hover:text-primary-hover inline-flex items-center gap-1"
+              >
+                All campaigns <ArrowRight size={12} />
+              </Link>
             </header>
 
-            <div className="px-5 pt-4 pb-2">
-              <p className="text-xs text-muted">Drag a card between columns to update its status.</p>
-            </div>
-
             {loading ? (
-              <div className="px-5 py-12 text-center text-caption text-muted">Loading pipeline…</div>
-            ) : pipeline.length === 0 ? (
-              <div className="px-5 py-12 flex flex-col items-center text-center">
-                <FileText size={24} className="text-faint mb-2" />
-                <p className="text-sm font-medium text-ink">No proposals or quotes yet</p>
-                <p className="text-xs text-muted mt-1">Create your first one to see it on the board.</p>
-                <div className="flex items-center gap-2 mt-4">
-                  <Link href="/proposals" className="inline-flex items-center gap-1.5 bg-teal hover:bg-teal-hover text-white text-xs font-semibold rounded-full px-3.5 py-1.5">
-                    New proposal
-                  </Link>
-                  <Link href="/quotes" className="inline-flex items-center gap-1.5 bg-surface hover:bg-gray-100 text-ink text-xs font-semibold rounded-full px-3.5 py-1.5">
-                    New quote
-                  </Link>
-                </div>
+              <div className="px-5 py-4 space-y-4">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="flex gap-3 animate-pulse">
+                    <div className="w-9 h-9 rounded-full bg-edge shrink-0" />
+                    <div className="flex-1 space-y-2 py-1">
+                      <div className="h-3 bg-edge rounded w-1/3" />
+                      <div className="h-3 bg-edge rounded w-2/3" />
+                      <div className="h-3 bg-edge rounded w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : inbox.length === 0 ? (
+              <div className="px-5 py-8 flex flex-col items-center text-center">
+                <CheckCircle2 size={20} className="text-emerald-500/70 mb-1.5" />
+                <p className="text-caption font-medium text-ink">All caught up</p>
+                <p className="text-detail text-muted mt-0.5">No unresolved client comments.</p>
               </div>
             ) : (
-              <div className="pb-5 h-[520px]">
-                <DashboardPipeline items={pipeline} onMove={movePipelineCard} contained />
+              <div>
+                {inbox.slice(0, 10).map((c, i, arr) => (
+                  <InboxItem
+                    key={c.commentId}
+                    item={c}
+                    memberName={memberName}
+                    isLast={i === Math.min(arr.length, 10) - 1}
+                    onDismiss={() => dismissInboxItem(c.commentId)}
+                  />
+                ))}
+                {inbox.length > 10 && (
+                  <div className="px-5 py-3 border-t border-edge">
+                    <Link
+                      href="/campaigns"
+                      className="text-xs font-medium text-primary hover:text-primary-hover inline-flex items-center gap-1"
+                    >
+                      View all {inbox.length} comments <ArrowRight size={12} />
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
           </section>
+
+          {/* ── Row 3: Pipeline summaries (compact, no kanbans) ── */}
+          <div
+            data-tour="dashboard-proposals"
+            className="grid grid-cols-1 md:grid-cols-2 gap-5"
+          >
+            <PipelineSummary
+              icon={MessageSquareText}
+              title="Campaigns"
+              href="/campaigns"
+              linkLabel="View pipeline"
+              segments={feedbackSegments}
+              total={feedbackProjects.length}
+            />
+            <PipelineSummary
+              icon={FileText}
+              title={`Proposals & Quotes`}
+              href="/proposals"
+              linkLabel="View pipeline"
+              segments={proposalSegments}
+              total={pipeline.length}
+            />
+          </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Shared client stat card ─────────────────────────────── */
+
+function StatCard({
+  icon: Icon,
+  iconClass,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  iconClass: string;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="bg-white rounded-2xl shadow-card p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <Icon size={14} className={iconClass} />
+        <span className="text-caption font-medium text-muted">{label}</span>
+      </div>
+      <p className="text-2xl font-bold text-ink leading-none">{value}</p>
     </div>
   );
 }

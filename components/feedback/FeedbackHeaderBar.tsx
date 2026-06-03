@@ -130,7 +130,12 @@ export default function FeedbackHeaderBar({
 
         {hasBranding && branding?.logo_url && (
           <>
-            {backAction && <span style={{ color: `${sidebarText}40` }}>·</span>}
+            {backAction && (
+              <span
+                className={`h-4 w-px shrink-0 ${headerBranded ? '' : 'bg-gray-100'}`}
+                style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
+              />
+            )}
             <img
               src={branding.logo_url}
               alt={branding.name}
@@ -140,7 +145,12 @@ export default function FeedbackHeaderBar({
         )}
         {hasBranding && !branding?.logo_url && branding?.name && (
           <>
-            {backAction && <span style={{ color: `${sidebarText}40` }}>·</span>}
+            {backAction && (
+              <span
+                className={`h-4 w-px shrink-0 ${headerBranded ? '' : 'bg-gray-100'}`}
+                style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
+              />
+            )}
             <span
               className="text-sm font-semibold"
               style={{ color: sidebarText, fontFamily: fontFamily(branding.font_heading) }}
@@ -249,7 +259,7 @@ export default function FeedbackHeaderBar({
       {/* Trailing controls */}
       <div className="flex items-center gap-2 shrink-0">
         {versions && versions.length > 0 && onVersionChange && (
-          <div className="shrink-0 flex items-center gap-1">
+          <div className="shrink-0 flex items-center gap-0.5 bg-surface rounded-full p-0.5">
             <VersionPicker
               versions={versions}
               activeVersionId={activeVersionId}
@@ -263,7 +273,7 @@ export default function FeedbackHeaderBar({
               <button
                 type="button"
                 onClick={() => onEditVersion(activeVersionId)}
-                className="inline-flex items-center gap-1 rounded-full bg-surface px-2 py-1 text-detail font-medium text-prose hover:bg-gray-100 hover:text-ink transition-colors"
+                className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-detail font-medium text-prose hover:bg-gray-100 hover:text-ink transition-colors"
                 title="Edit this version's content"
               >
                 <Pencil size={11} />

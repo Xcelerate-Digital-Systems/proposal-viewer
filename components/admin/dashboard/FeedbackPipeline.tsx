@@ -90,8 +90,8 @@ function FeedbackProjectCard({
       }`}
     >
       <div className="flex items-start gap-2.5">
-        <div className="shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center bg-surface">
-          <MessageSquareText size={15} className="text-muted" />
+        <div className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center bg-surface">
+          <MessageSquareText size={15} className="text-muted" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
           <h4 className="text-caption font-medium text-ink truncate leading-tight">
@@ -115,7 +115,7 @@ function FeedbackProjectCard({
               }
               setMenuOpen((v) => !v);
             }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-surface"
+            className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-surface"
             title="More"
             aria-label="More actions"
           >
@@ -149,11 +149,11 @@ function FeedbackProjectCard({
       <div className="mt-3 pt-3 border-t border-edge flex items-center justify-between">
         <div className="flex items-center gap-2 text-detail text-dim">
           <span className="inline-flex items-center gap-1">
-            <Layers size={11} /> {itemCount}
+            <Layers size={11} aria-hidden="true" /> {itemCount}
           </span>
-          <span className="inline-flex items-center gap-1">
-            <Calendar size={11} /> {relativeShort(updated)}
-          </span>
+          <time dateTime={updated} className="inline-flex items-center gap-1">
+            <Calendar size={11} aria-hidden="true" /> {relativeShort(updated)}
+          </time>
         </div>
         <Link
           href={`/campaigns/${project.id}/comments`}

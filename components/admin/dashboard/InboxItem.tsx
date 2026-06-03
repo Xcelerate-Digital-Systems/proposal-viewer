@@ -1,20 +1,16 @@
 'use client';
 
 /**
- * Dashboard inbox row — a single unresolved client comment on a feedback
- * item. Shows the project → item breadcrumb, comment body (3 lines,
+ * Dashboard inbox row — a single unresolved client comment on a campaign
+ * asset. Shows the project > item breadcrumb, comment body (3 lines,
  * expandable), the screenshot the client captured (if any, with a
  * full-size lightbox), and inline reply / resolve / open actions.
  *
- * Used by the dashboard's "Needs your reply" panel so the agency can
- * triage feedback without leaving the page. Reply and resolve mutate
- * review_comments via direct supabase calls — RLS scopes by company_id.
- *
- * Proposals don't expose commenting in the viewer anymore, so this is
- * feedback-only.
+ * Used by the dashboard's "Client comments" panel so the agency can
+ * triage feedback without leaving the page.
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Reply, Check, ExternalLink, Send, X, MessageSquareText, FileImage, ChevronRight,
@@ -38,7 +34,6 @@ interface Props {
   item: InboxComment;
   memberName: string;
   isLast?: boolean;
-  /** Called when the row should disappear (reply sent or resolved). */
   onDismiss: () => void;
 }
 
@@ -71,9 +66,11 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
   const [error, setError] = useState<string | null>(null);
   const [shotPreviewOpen, setShotPreviewOpen] = useState(false);
 
+  const lightboxCloseRef = useRef<HTMLButtonElement>(null);
+
   const openHref = `/campaigns/${item.projectId}/assets/${item.itemId}`;
 
-  const sendReply = async () => {
+  const sendReply = async (andResolve: boolean) => {
     const trimmed = replyText.trim();
     if (!trimmed) return;
     setSending(true);
@@ -89,13 +86,17 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
         company_id: item.companyId,
       });
       if (insertErr) throw insertErr;
-      // Mark the parent resolved — we replied, ball's back in the client's
-      // court. They can comment again to reopen.
-      await markResolved(false);
-      onDismiss();
+      if (andResolve) {
+        await markResolved(false);
+        onDismiss();
+      } else {
+        setReplyText('');
+        setReplyOpen(false);
+      }
     } catch (e) {
       console.error('Reply failed:', e);
       setError(e instanceof Error ? e.message : 'Failed to send reply');
+    } finally {
       setSending(false);
     }
   };
@@ -117,6 +118,18 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
     }
   };
 
+  const closeLightbox = useCallback(() => setShotPreviewOpen(false), []);
+
+  useEffect(() => {
+    if (!shotPreviewOpen) return;
+    lightboxCloseRef.current?.focus();
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeLightbox();
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [shotPreviewOpen, closeLightbox]);
+
   return (
     <div className={`px-5 py-4 ${!isLast ? 'border-b border-edge' : ''}`}>
       <div className="flex gap-3">
@@ -130,18 +143,21 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-caption font-semibold text-ink">{item.clientName}</span>
             <span className="inline-flex items-center gap-1 text-2xs font-semibold px-1.5 py-0.5 rounded-full bg-surface text-muted">
-              <MessageSquareText size={10} />
-              Feedback
+              <MessageSquareText size={10} aria-hidden="true" />
+              Campaign
             </span>
-            <span className="text-detail text-faint ml-auto shrink-0">
+            <time
+              dateTime={item.createdAt}
+              className="text-detail text-faint ml-auto shrink-0"
+            >
               {formatRelative(item.createdAt)}
-            </span>
+            </time>
           </div>
 
-          {/* Breadcrumb: Project → Item */}
+          {/* Breadcrumb: Project > Item */}
           <div className="flex items-center gap-1.5 text-xs mt-1 min-w-0">
             <span className="font-medium text-ink truncate">{item.projectName}</span>
-            <ChevronRight size={11} className="text-faint shrink-0" />
+            <ChevronRight size={11} className="text-faint shrink-0" aria-hidden="true" />
             <span className="text-muted truncate">{item.itemTitle}</span>
           </div>
 
@@ -158,7 +174,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
               {item.content.length > 220 && (
                 <button
                   onClick={() => setExpanded((v) => !v)}
-                  className="text-detail text-teal hover:underline mt-1"
+                  className="text-detail text-primary hover:underline mt-1"
                 >
                   {expanded ? 'Show less' : 'Show more'}
                 </button>
@@ -169,8 +185,8 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
               <button
                 type="button"
                 onClick={() => setShotPreviewOpen(true)}
-                className="relative shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-surface ring-1 ring-gray-200 hover:ring-teal/40 transition-all group"
-                title="View screenshot"
+                className="relative shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-surface ring-1 ring-gray-200 hover:ring-primary/40 transition-all group"
+                aria-label="View screenshot"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -179,7 +195,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
                   className="w-full h-full object-cover"
                 />
                 <span className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
-                  <FileImage size={16} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <FileImage size={16} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
                 </span>
               </button>
             )}
@@ -194,7 +210,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
                 onChange={(e) => setReplyText(e.target.value)}
                 placeholder={`Reply to ${item.clientName}...`}
                 rows={3}
-                className="w-full bg-white border border-edge-strong rounded-lg px-3 py-2 text-caption text-ink placeholder-faint outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 resize-none"
+                className="w-full bg-white border border-edge-strong rounded-lg px-3 py-2 text-caption text-ink placeholder-faint outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-none"
                 disabled={sending}
               />
               {error && <p className="text-detail text-red-600 mt-1.5">{error}</p>}
@@ -211,11 +227,19 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
                   Cancel
                 </button>
                 <button
-                  onClick={sendReply}
+                  onClick={() => sendReply(false)}
                   disabled={sending || !replyText.trim()}
-                  className="inline-flex items-center gap-1.5 bg-teal hover:bg-teal-hover disabled:bg-teal/50 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-full px-3 py-1.5 transition-colors"
+                  className="inline-flex items-center gap-1.5 bg-white border border-edge-strong hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed text-ink text-xs font-semibold rounded-full px-3 py-1.5 transition-colors"
                 >
                   <Send size={12} />
+                  {sending ? 'Sending…' : 'Send reply'}
+                </button>
+                <button
+                  onClick={() => sendReply(true)}
+                  disabled={sending || !replyText.trim()}
+                  className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary-hover disabled:bg-primary/50 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-full px-3 py-1.5 transition-colors"
+                >
+                  <Check size={12} />
                   {sending ? 'Sending…' : 'Reply & resolve'}
                 </button>
               </div>
@@ -242,7 +266,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
               </button>
               <Link
                 href={openHref}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-teal hover:text-teal-hover rounded-full px-3 py-1.5 transition-colors ml-auto"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-hover rounded-full px-3 py-1.5 transition-colors ml-auto"
               >
                 <ExternalLink size={12} />
                 Open
@@ -258,13 +282,17 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
       {/* Screenshot lightbox */}
       {shotPreviewOpen && item.screenshotUrl && (
         <div
-          onClick={() => setShotPreviewOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Screenshot preview"
+          onClick={closeLightbox}
           className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-6 cursor-zoom-out"
         >
           <button
-            onClick={(e) => { e.stopPropagation(); setShotPreviewOpen(false); }}
+            ref={lightboxCloseRef}
+            onClick={(e) => { e.stopPropagation(); closeLightbox(); }}
             className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur text-white flex items-center justify-center"
-            title="Close"
+            aria-label="Close screenshot"
           >
             <X size={18} />
           </button>

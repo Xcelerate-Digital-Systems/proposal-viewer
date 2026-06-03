@@ -157,7 +157,14 @@ function WidgetCard({
       </header>
 
       {loading ? (
-        <div className="px-5 py-8 text-center text-caption text-muted">Loading…</div>
+        <div className="px-5 py-4 space-y-3 animate-pulse">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex items-center gap-3 py-1">
+              <div className="h-3 bg-edge rounded flex-1" />
+              <div className="h-5 w-16 bg-edge rounded-full shrink-0" />
+            </div>
+          ))}
+        </div>
       ) : rows.length === 0 ? (
         <div className="px-5 py-8 text-center">
           <p className="text-caption text-muted">{emptyHint}</p>

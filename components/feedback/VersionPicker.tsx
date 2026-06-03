@@ -48,7 +48,7 @@ export default function VersionPicker({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`inline-flex items-center gap-1 rounded-full bg-surface ${padding} font-semibold text-ink hover:bg-gray-100 transition-colors`}
+        className={`inline-flex items-center gap-1 rounded-full bg-white ${padding} font-semibold text-ink hover:bg-gray-100 transition-colors`}
         title="Select version"
       >
         <History size={compact ? 12 : 13} className="text-faint" />
@@ -57,7 +57,7 @@ export default function VersionPicker({
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-1 z-30 w-72 bg-white border border-edge rounded-2xl shadow-lg py-1 max-h-72 overflow-y-auto">
+        <div className="absolute top-full right-0 mt-1 z-50 w-72 bg-white border border-edge rounded-2xl shadow-lg py-1 max-h-72 overflow-y-auto">
           {ordered.map((v) => {
             const isActive = (v.id ?? null) === (active.id ?? null);
             return (
@@ -113,7 +113,7 @@ export default function VersionPicker({
       {onAddVersion && (
         <button
           onClick={onAddVersion}
-          className={`${compact ? 'px-2.5 py-1 text-detail' : 'px-3 py-1.5 text-xs'} inline-flex items-center gap-1 rounded-full bg-surface text-dim hover:bg-gray-100 hover:text-prose font-medium transition-colors`}
+          className={`${compact ? 'px-2.5 py-1 text-detail' : 'px-3 py-1.5 text-xs'} inline-flex items-center gap-1 rounded-full text-dim hover:bg-gray-100 hover:text-prose font-medium transition-colors`}
           title="Upload a new version"
         >
           <Plus size={compact ? 11 : 12} />
