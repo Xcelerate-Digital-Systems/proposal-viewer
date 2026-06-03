@@ -133,14 +133,25 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    // Determine thread_number for new top-level annotated comments
+    // Determine thread_number for new top-level annotated comments (campaign-wide)
     const NUMBERED_TYPES = ['pin', 'box', 'text', 'screenshot', 'text_highlight'];
     let thread_number: number | null = null;
     if (!parent_comment_id && NUMBERED_TYPES.includes(comment_type)) {
-      const { data: nextNum } = await supabase.rpc('claim_next_thread_number', {
-        p_review_item_id: review_item_id,
-      });
-      thread_number = nextNum ?? 1;
+      // Get all item IDs in the same project for campaign-wide numbering
+      const { data: projectItems } = await supabase
+        .from('review_items')
+        .select('id')
+        .eq('review_project_id', item.review_project_id);
+      const projectItemIds = projectItems?.map((i) => i.id) ?? [review_item_id];
+      const { data: maxRow } = await supabase
+        .from('review_comments')
+        .select('thread_number')
+        .in('review_item_id', projectItemIds)
+        .not('thread_number', 'is', null)
+        .order('thread_number', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      thread_number = (maxRow?.thread_number ?? 0) + 1;
     }
 
     // Validate URL fields — reject anything that isn't http(s).

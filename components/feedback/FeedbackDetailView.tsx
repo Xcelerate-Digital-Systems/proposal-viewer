@@ -458,33 +458,31 @@ export default function FeedbackDetailView({
 
   // ── Pin click → always open comments when pin is placed ──
   const handleImageClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    // Browse mode: reviewer wants to interact with the underlying content, not
-    // drop a pin. Bail before anything fires.
     if (browseMode) return;
     if (commentsLocked) return;
-
-    // Compute click position as % within the container BEFORE forwarding the
-    // event — so we can hand the same coords to the screenshot crop and end
-    // up with a 16:9 frame centred on the pin marker.
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pctX = ((e.clientX - rect.left) / rect.width) * 100;
-    const pctY = ((e.clientY - rect.top) / rect.height) * 100;
 
     baseHandleImageClick(e);
     if (pinActive) {
       setShowComments(true);
-      // Wait two animation frames so React has flushed the pending pin into
-      // the DOM before html2canvas snapshots it — otherwise the screenshot
-      // captures the image without the pin marker.
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          captureScreenshot(imageContainerRef.current, { cropAroundPct: { x: pctX, y: pctY } }).then((url) => {
-            if (url) setPendingScreenshotUrl(url);
-          });
-        });
-      });
     }
-  }, [browseMode, commentsLocked, baseHandleImageClick, pinActive, captureScreenshot, imageContainerRef]);
+  }, [browseMode, commentsLocked, baseHandleImageClick, pinActive]);
+
+  // ── Screenshot capture — fires after React commits the pending pin ──
+  // This useEffect runs after the pending-pin marker is in the DOM.  A short
+  // timeout lets the browser paint the marker before html2canvas walks the
+  // tree, so the screenshot includes the pin in its correct position.
+  useEffect(() => {
+    if (!pendingPin) return;
+    const id = setTimeout(() => {
+      captureScreenshot(imageContainerRef.current, {
+        cropAroundPct: { x: pendingPin.x, y: pendingPin.y },
+      }).then((url) => {
+        if (url) setPendingScreenshotUrl(url);
+      });
+    }, 150);
+    return () => clearTimeout(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPin]);
 
   // ── Existing pin clicked → switch to its view (if scoped), then show popover ──
   const handlePinClick = useCallback((commentId?: string) => {
@@ -496,9 +494,9 @@ export default function FeedbackDetailView({
   }, [comments]);
 
   // ── Reply via popover ──
-  const handlePopoverReply = useCallback(async (content: string, parentId: string) => {
+  const handlePopoverReply = useCallback(async (content: string, parentId: string, attachments?: import('@/lib/supabase').FeedbackCommentAttachment[]) => {
     if (!selectedItemId) return;
-    await onSubmitComment(selectedItemId, content, undefined, undefined, parentId);
+    await onSubmitComment(selectedItemId, content, undefined, undefined, parentId, undefined, undefined, undefined, undefined, attachments);
   }, [selectedItemId, onSubmitComment]);
 
   // Find the comment for the popover
@@ -749,6 +747,7 @@ export default function FeedbackDetailView({
                 guestName={isClient ? guestName : undefined}
                 onNameChange={isClient ? onGuestNameChange : undefined}
                 memberLookup={memberLookup}
+                shareToken={shareToken}
               />,
               imageContainerRef.current,
             )}

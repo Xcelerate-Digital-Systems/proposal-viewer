@@ -153,7 +153,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
                   expanded ? '' : 'line-clamp-3'
                 }`}
               >
-                {item.content}
+                {item.content.replace(/<[^>]+>/g, '')}
               </p>
               {item.content.length > 220 && (
                 <button

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapPin, X } from 'lucide-react';
-import type { FeedbackComment } from '@/lib/supabase';
+import type { FeedbackComment, FeedbackCommentAttachment } from '@/lib/supabase';
 import type { CommentTask } from '@/lib/types/feedback';
 import GeneralCommentForm from './GeneralCommentForm';
 import CommentThread from './CommentThread';
@@ -21,7 +21,7 @@ interface CommentsPanelProps {
   /** Comment ID to scroll to and highlight (set when a pin marker is clicked) */
   highlightCommentId?: string | null;
   /** Callback to submit a (general, non-pin) comment */
-  onSubmitComment: (content: string, pinX?: number, pinY?: number, parentId?: string) => Promise<void>;
+  onSubmitComment: (content: string, pinX?: number, pinY?: number, parentId?: string, priority?: undefined, attachments?: FeedbackCommentAttachment[]) => Promise<void>;
   /** Callback to close the panel */
   onClose: () => void;
 
@@ -194,8 +194,8 @@ export default function CommentsPanel({
             authorName={authorName}
             guestName={guestName}
             onNameChange={onNameChange}
-            onReply={async (content) => {
-              await onSubmitComment(content, undefined, undefined, c.id);
+            onReply={async (content, attachments) => {
+              await onSubmitComment(content, undefined, undefined, c.id, undefined, attachments);
             }}
             onResolve={onResolve ? () => onResolve(c.id) : undefined}
             onUnresolve={onUnresolve ? () => onUnresolve(c.id) : undefined}

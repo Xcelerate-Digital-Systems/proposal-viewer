@@ -38,6 +38,11 @@ export function useScreenshotCapture({
           scale: 1,
           logging: false,
           backgroundColor: '#f9fafb',
+          ignoreElements: (el) => {
+            // Exclude popovers / fixed overlays — keep pin markers.
+            if (el.classList?.contains('z-40') || el.classList?.contains('z-50')) return true;
+            return false;
+          },
         });
 
         let outCanvas: HTMLCanvasElement = canvas;

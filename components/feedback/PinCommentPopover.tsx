@@ -4,8 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import { X, CornerDownRight, Send, CheckCircle2, RotateCcw, Trash2 } from 'lucide-react';
 import { timeAgo } from '@/lib/review-utils';
 import { POPOVER_STYLE, POPOVER_INLINE_STYLE } from '@/lib/feedback/popover-style';
-import type { FeedbackComment } from '@/lib/supabase';
+import type { FeedbackComment, FeedbackCommentAttachment } from '@/lib/supabase';
 import AttachmentList from './comments/AttachmentList';
+import AttachmentPicker, { type PendingAttachment } from './comments/AttachmentPicker';
 import ReactionBar from './comments/ReactionBar';
 import CommentAvatar from './comments/CommentAvatar';
 import { usePopoverPosition } from '@/hooks/usePopoverPosition';
@@ -28,7 +29,9 @@ interface PinCommentPopoverProps {
   /** Close the popover */
   onClose: () => void;
   /** Submit a reply */
-  onReply: (content: string, parentId: string) => Promise<void>;
+  onReply: (content: string, parentId: string, attachments?: FeedbackCommentAttachment[]) => Promise<void>;
+  /** Share token for attachment uploads */
+  shareToken?: string;
   /** Resolve callback */
   onResolve?: (commentId: string) => Promise<void>;
   /** Unresolve callback */
@@ -73,10 +76,12 @@ export default function PinCommentPopover({
   onNameChange,
   memberLookup,
   participantsUrl,
+  shareToken,
 }: PinCommentPopoverProps) {
   const [showReply, setShowReply] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [replyFiles, setReplyFiles] = useState<PendingAttachment[]>([]);
   const popoverRef = useRef<HTMLDivElement>(null);
 
   const isGuest = !authorName;
@@ -106,11 +111,26 @@ export default function PinCommentPopover({
     e.preventDefault();
     if (replyDisabled) return;
     setSubmitting(true);
-    await onReply(replyText, comment.id);
-    setReplyText('');
-    setShowReply(false);
-    setSubmitting(false);
-    onClose();
+    try {
+      let uploadedAttachments: FeedbackCommentAttachment[] | undefined;
+      if (replyFiles.length > 0 && shareToken) {
+        uploadedAttachments = [];
+        for (const pa of replyFiles) {
+          const formData = new FormData();
+          formData.append('file', pa.file);
+          formData.append('share_token', shareToken);
+          const res = await fetch('/api/review-comments/attachments', { method: 'POST', body: formData });
+          if (res.ok) uploadedAttachments.push(await res.json());
+        }
+      }
+      await onReply(replyText, comment.id, uploadedAttachments);
+      setReplyText('');
+      setReplyFiles([]);
+      setShowReply(false);
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Close on Escape
@@ -294,6 +314,9 @@ export default function PinCommentPopover({
                   aria-label="Send reply"
                 />
               </div>
+              {shareToken && (
+                <AttachmentPicker attachments={replyFiles} onChange={setReplyFiles} />
+              )}
             </form>
           )}
         </div>

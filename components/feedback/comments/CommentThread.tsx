@@ -3,11 +3,12 @@
 import { useRef, useState } from 'react';
 import { CornerDownRight, Send, CheckCircle2, RotateCcw, X, Check, Loader2, Type, AlignLeft, UserPlus } from 'lucide-react';
 import { timeAgo } from '@/lib/review-utils';
-import type { FeedbackComment } from '@/lib/supabase';
+import type { FeedbackComment, FeedbackCommentAttachment } from '@/lib/supabase';
 import { getCommentView, parseGoogleAdAssetView, type CommentTask } from '@/lib/types/feedback';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import EmojiPicker from './EmojiPicker';
 import AttachmentList from './AttachmentList';
+import AttachmentPicker, { type PendingAttachment } from './AttachmentPicker';
 import ReactionBar from './ReactionBar';
 import ReplyItem from './ReplyItem';
 import ThreadMenu from './ThreadMenu';
@@ -23,7 +24,7 @@ import AssignmentBadge from './AssignmentBadge';
 interface CommentThreadProps {
   comment: FeedbackComment;
   replies: FeedbackComment[];
-  onReply: (content: string) => Promise<void>;
+  onReply: (content: string, attachments?: FeedbackCommentAttachment[]) => Promise<void>;
 
   // Identity — provide authorName for team members, or guestName+onNameChange for guests
   /** Team: fixed author name (skips name input in reply form) */
@@ -114,6 +115,7 @@ export default function CommentThread({
   const [showReply, setShowReply] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [replyFiles, setReplyFiles] = useState<PendingAttachment[]>([]);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(comment.content);
   const [savingEdit, setSavingEdit] = useState(false);
@@ -144,10 +146,25 @@ export default function CommentThread({
     e.preventDefault();
     if (replyDisabled) return;
     setSubmitting(true);
-    await onReply(replyText);
-    setReplyText('');
-    setShowReply(false);
-    setSubmitting(false);
+    try {
+      let uploadedAttachments: FeedbackCommentAttachment[] | undefined;
+      if (replyFiles.length > 0 && shareToken) {
+        uploadedAttachments = [];
+        for (const pa of replyFiles) {
+          const formData = new FormData();
+          formData.append('file', pa.file);
+          formData.append('share_token', shareToken);
+          const res = await fetch('/api/review-comments/attachments', { method: 'POST', body: formData });
+          if (res.ok) uploadedAttachments.push(await res.json());
+        }
+      }
+      await onReply(replyText, uploadedAttachments);
+      setReplyText('');
+      setReplyFiles([]);
+      setShowReply(false);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -470,6 +487,9 @@ export default function CommentThread({
               aria-label="Send reply"
             />
           </div>
+          {shareToken && (
+            <AttachmentPicker attachments={replyFiles} onChange={setReplyFiles} />
+          )}
         </form>
       )}
     </div>

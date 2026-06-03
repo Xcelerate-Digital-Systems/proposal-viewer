@@ -83,7 +83,7 @@ function ItemViewerContent({
   const [comments, setComments] = useState<FeedbackComment[]>([]);
   const [showAddVersion, setShowAddVersion] = useState(false);
   const [editingVersionId, setEditingVersionId] = useState<string | null | undefined>(undefined);
-  const [allProjectComments, setAllProjectComments] = useState<Pick<FeedbackComment, 'id' | 'review_item_id' | 'parent_comment_id' | 'resolved'>[]>([]);
+  const [allProjectComments, setAllProjectComments] = useState<Pick<FeedbackComment, 'id' | 'review_item_id' | 'parent_comment_id' | 'resolved' | 'thread_number'>[]>([]);
   const [reactions, setReactions] = useState<FeedbackCommentReaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
@@ -159,7 +159,7 @@ function ItemViewerContent({
     const itemIds = projectItems.map((i) => i.id);
     const { data } = await supabase
       .from('review_comments')
-      .select('id, review_item_id, parent_comment_id, resolved')
+      .select('id, review_item_id, parent_comment_id, resolved, thread_number')
       .in('review_item_id', itemIds);
 
     setAllProjectComments(data || []);
@@ -294,10 +294,12 @@ function ItemViewerContent({
     let thread_number: number | null = null;
     const isNumberedAnnotation = pinX != null || highlightData != null;
     if (!parentId && isNumberedAnnotation) {
-      const { data: nextNum } = await supabase.rpc('claim_next_thread_number', {
-        p_review_item_id: reviewItemId,
-      });
-      thread_number = nextNum ?? 1;
+      // Compute next thread number from all project comments (campaign-wide)
+      const allNums = [...allProjectComments, ...comments]
+        .filter((c) => c.thread_number != null)
+        .map((c) => c.thread_number as number);
+      const uniqueMax = allNums.length > 0 ? Math.max(...allNums) : 0;
+      thread_number = uniqueMax + 1;
     }
 
     const insertData: Record<string, unknown> = {

@@ -12,6 +12,7 @@ import type { CommentTask, FeedbackCommentPriority } from '@/lib/types/feedback'
 import { TYPE_ICONS, type CommentWithItem } from './types';
 import { Button } from '@/components/ui/Button';
 import PrioritySelector from '@/components/feedback/comments/PrioritySelector';
+import CommentContent from '@/components/feedback/mentions/CommentContent';
 
 type TeamMemberOption = { id: string; name: string; email: string };
 
@@ -144,7 +145,7 @@ export default function FeedbackModal({
               )}
 
               <div>
-                <p className="text-ink leading-relaxed">{comment.content}</p>
+                <CommentContent content={comment.content} className="text-ink leading-relaxed" />
               </div>
 
               {/* Inline task list */}
@@ -234,7 +235,7 @@ export default function FeedbackModal({
                             <span className="font-medium text-prose">{reply.author_name}</span>
                             <span className="text-xs text-faint">{formatTimeAgo(reply.created_at)}</span>
                           </div>
-                          <p className="text-prose leading-relaxed">{reply.content}</p>
+                          <CommentContent content={reply.content} className="text-prose leading-relaxed" />
                         </div>
                       ))}
                     </div>
