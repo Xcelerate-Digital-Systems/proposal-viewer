@@ -32,6 +32,33 @@ export function useScreenshotCapture({
 
       capturingRef.current = true;
       try {
+        // Scroll the nearest scrollable ancestor so the pin area is in view.
+        // html2canvas uses viewport-relative positioning, so elements scrolled
+        // out of the parent's visible area can be misrendered or clipped.
+        let scrollParent: HTMLElement | null = null;
+        let savedScrollTop = 0;
+        let savedScrollLeft = 0;
+        if (opts?.cropAroundPct) {
+          scrollParent = containerEl.parentElement;
+          while (scrollParent && scrollParent.scrollHeight <= scrollParent.clientHeight) {
+            scrollParent = scrollParent.parentElement;
+          }
+          if (scrollParent) {
+            savedScrollTop = scrollParent.scrollTop;
+            savedScrollLeft = scrollParent.scrollLeft;
+            const pinY = (opts.cropAroundPct.y / 100) * containerEl.offsetHeight;
+            const pinX = (opts.cropAroundPct.x / 100) * containerEl.offsetWidth;
+            const containerRect = containerEl.getBoundingClientRect();
+            const parentRect = scrollParent.getBoundingClientRect();
+            const offsetTop = containerRect.top - parentRect.top + scrollParent.scrollTop;
+            const offsetLeft = containerRect.left - parentRect.left + scrollParent.scrollLeft;
+            scrollParent.scrollTop = offsetTop + pinY - scrollParent.clientHeight / 2;
+            scrollParent.scrollLeft = offsetLeft + pinX - scrollParent.clientWidth / 2;
+          }
+        }
+
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
         const canvas = await html2canvas(containerEl, {
           useCORS: true,
           allowTaint: true,
@@ -39,11 +66,15 @@ export function useScreenshotCapture({
           logging: false,
           backgroundColor: '#f9fafb',
           ignoreElements: (el) => {
-            // Exclude popovers / fixed overlays — keep pin markers.
             if (el.classList?.contains('z-40') || el.classList?.contains('z-50')) return true;
             return false;
           },
         });
+
+        if (scrollParent) {
+          scrollParent.scrollTop = savedScrollTop;
+          scrollParent.scrollLeft = savedScrollLeft;
+        }
 
         let outCanvas: HTMLCanvasElement = canvas;
         if (opts?.cropAroundPct) {

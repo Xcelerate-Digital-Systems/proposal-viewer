@@ -187,23 +187,31 @@ function loadH2C(cb){
   document.head.appendChild(s);
 }
 
-/* ── Auto-screenshot (captures the current viewport — what's in view) ──
-   The pending pin/box marker is appended to <body> directly so it remains
-   visible in the capture. We hide only the widget toolbar/panel and the
-   open comment form. opts.cropAround is accepted for backwards compatibility
-   but is intentionally ignored — cropping at a fixed 16:9 around the pin
-   on multi-DPR displays misaligned the crop and often cut the pin out of
-   frame. The full viewport is always more useful context for a reviewer. */
+/* ── Auto-screenshot ──────────────────────────────────────
+   Captures a viewport-sized region centred on the pin/box anchor so
+   the screenshot always shows the annotation in context — even if the
+   user scrolled while typing their comment. The pending pin/box marker
+   is appended to <body> directly so it remains visible in the capture.
+   We hide only the widget toolbar/panel and the open comment form. */
 function captureAutoScreenshot(cb,opts){
   root.style.display="none";
   var form=document.querySelector(".aviz-pin-form");if(form)form.style.display="none";
+
+  /* Scroll so the pin/box anchor is centred in the viewport. This fixes
+     screenshots landing on the wrong page section when the user scrolls
+     between placing the pin and submitting the comment. */
+  var savedScrollX=window.scrollX;var savedScrollY=window.scrollY;
+  if(opts&&opts.cropAround){
+    var vw=document.documentElement.clientWidth;
+    var vh=document.documentElement.clientHeight;
+    var targetX=Math.max(0,opts.cropAround.x-vw/2);
+    var targetY=Math.max(0,opts.cropAround.y-vh/2);
+    window.scrollTo(targetX,targetY);
+  }
+
   loadH2C(function(){
-    /* The caller has just toggled display:none on the form + existing
-       annotations and (often) just appended the pending pin marker.
-       html2canvas snapshots the current computed DOM, so without waiting a
-       paint frame we sometimes capture before the browser has actually
-       repainted — the pin is missing or shows in its pre-layout spot.
-       Double-rAF guarantees one full paint has completed before we snap. */
+    /* Double-rAF guarantees one full paint has completed (scroll
+       position + pending pin marker layout) before we snap. */
     requestAnimationFrame(function(){
       requestAnimationFrame(function(){
         html2canvas(document.body,{
@@ -217,9 +225,11 @@ function captureAutoScreenshot(cb,opts){
           x:window.scrollX,y:window.scrollY
         }).then(function(canvas){
           root.style.display="";if(form)form.style.display="";
+          window.scrollTo(savedScrollX,savedScrollY);
           cb(canvas.toDataURL("image/jpeg",0.85));
         }).catch(function(err){
           root.style.display="";if(form)form.style.display="";
+          window.scrollTo(savedScrollX,savedScrollY);
           console.error("Auto-screenshot failed:",err);cb(null);
         });
       });
