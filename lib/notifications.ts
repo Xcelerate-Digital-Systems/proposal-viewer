@@ -2,11 +2,11 @@
 // Orchestrator — routes events to team/client emails and webhooks.
 
 import { createServiceClient } from './supabase-server';
-import { getResend, FROM_EMAIL } from './resend';
+import { getResend, fromEmail } from './resend';
 import { buildProposalUrl } from './proposal-url';
 import type { EventType, NotifyPayload } from './notification-types';
 import { PREF_MAP } from './notification-types';
-import { buildTeamEmail, buildClientEmail } from './notification-emails';
+import { buildTeamEmail, buildClientEmail, type ProposalEmailBranding } from './notification-emails';
 import { fireWebhooks } from './notification-webhooks';
 import {
   insertInAppNotifications,
@@ -38,10 +38,10 @@ export async function sendNotifications(payload: NotifyPayload) {
     return { error: 'Proposal not found' };
   }
 
-  // 2. Look up company info
+  // 2. Look up company info + branding
   const { data: company } = await supabase
     .from('companies')
-    .select('name, custom_domain, domain_verified')
+    .select('name, custom_domain, domain_verified, accent_color, logo_path')
     .eq('id', proposal.company_id)
     .single();
 
@@ -51,18 +51,27 @@ export async function sendNotifications(payload: NotifyPayload) {
   const dashboardUrl = appUrl;
   const companyName = company?.name || 'Your agency';
 
+  const logoUrl = company?.logo_path
+    ? supabase.storage.from('company-assets').getPublicUrl(company.logo_path).data.publicUrl
+    : null;
+  const branding: ProposalEmailBranding = {
+    companyName,
+    accentColor: company?.accent_color || '#017C87',
+    logoUrl,
+  };
+
   // 3. Route notifications
   let teamSent = 0;
   let clientSent = 0;
 
   if (author_type === 'team' && (event_type === 'comment_added' || event_type === 'comment_resolved')) {
     clientSent = await notifyClient({
-      supabase, proposal, companyName, viewerUrl, event_type,
+      supabase, proposal, companyName, branding, viewerUrl, event_type,
       comment_author, comment_content, resolved_by,
     });
   } else {
     teamSent = await notifyTeamMembers({
-      supabase, proposal, viewerUrl, dashboardUrl, event_type,
+      supabase, proposal, branding, viewerUrl, dashboardUrl, event_type,
       comment_id, comment_author, comment_content, resolved_by,
       feedback_text, feedback_by,
     });
@@ -119,6 +128,7 @@ export async function sendNotifications(payload: NotifyPayload) {
 interface TeamNotifyParams {
   supabase:         ReturnType<typeof createServiceClient>;
   proposal:         { id: string; title: string; client_name: string; share_token: string; company_id: string };
+  branding:         ProposalEmailBranding;
   viewerUrl:        string;
   dashboardUrl:     string;
   event_type:       EventType;
@@ -132,7 +142,7 @@ interface TeamNotifyParams {
 
 async function notifyTeamMembers(params: TeamNotifyParams): Promise<number> {
   const {
-    supabase, proposal, viewerUrl, dashboardUrl, event_type,
+    supabase, proposal, branding, viewerUrl, dashboardUrl, event_type,
     comment_id, comment_author, comment_content, resolved_by,
     feedback_text, feedback_by,
   } = params;
@@ -178,13 +188,14 @@ async function notifyTeamMembers(params: TeamNotifyParams): Promise<number> {
     commentContent: comment_content,
     resolvedBy:     resolved_by,
     feedbackText:   feedback_text,
+    branding,
     feedbackBy:     feedback_by,
   });
 
   let sent = 0;
   for (const member of toNotify) {
     try {
-      await getResend().emails.send({ from: FROM_EMAIL, to: member.email, subject, html });
+      await getResend().emails.send({ from: fromEmail(branding.companyName), to: member.email, subject, html });
 
       await supabase.from('notification_log').insert({
         proposal_id:    proposal.id,
@@ -237,6 +248,7 @@ interface ClientNotifyParams {
   supabase:         ReturnType<typeof createServiceClient>;
   proposal:         { id: string; title: string; client_name: string; client_email: string | null; share_token: string; company_id: string };
   companyName:      string;
+  branding:         ProposalEmailBranding;
   viewerUrl:        string;
   event_type:       EventType;
   comment_author?:  string;
@@ -245,13 +257,14 @@ interface ClientNotifyParams {
 }
 
 async function notifyClient(params: ClientNotifyParams): Promise<number> {
-  const { supabase, proposal, companyName, viewerUrl, event_type, comment_author, comment_content, resolved_by } = params;
+  const { supabase, proposal, companyName, branding, viewerUrl, event_type, comment_author, comment_content, resolved_by } = params;
 
   if (!proposal.client_email) return 0;
 
   const { subject, html } = buildClientEmail({
     event_type, proposalTitle: proposal.title, companyName, viewerUrl,
     commentAuthor: comment_author, commentContent: comment_content, resolvedBy: resolved_by,
+    branding,
   });
 
   // Dedup client emails using a stable event_ref so retries don't double-send.
@@ -272,7 +285,7 @@ async function notifyClient(params: ClientNotifyParams): Promise<number> {
   if (existingClientLog && existingClientLog.length > 0) return 0;
 
   try {
-    await getResend().emails.send({ from: FROM_EMAIL, to: proposal.client_email, subject, html });
+    await getResend().emails.send({ from: fromEmail(companyName), to: proposal.client_email, subject, html });
 
     try {
       await supabase.from('notification_log').insert({

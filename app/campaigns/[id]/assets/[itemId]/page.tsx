@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, use } from 'react';
+import { useState, useEffect, useCallback, useMemo, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackComment, type FeedbackCommentReaction, type FeedbackStatus } from '@/lib/supabase';
 import type { FeedbackCommentPriority, CommentTask, CommentTaskAttachment } from '@/lib/types/feedback';
@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/Toast';
 import FeedbackDetailView from '@/components/feedback/FeedbackDetailView';
 import AddVersionModal from '@/components/admin/feedback/AddVersionModal';
 import { useItemVersions } from '@/hooks/useItemVersions';
+import { applyVersion, getActiveVersion } from '@/lib/feedback/versions';
 import { type CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/review-defaults';
 
@@ -284,6 +285,14 @@ function ItemViewerContent({
     companyId,
     userId: session?.user?.id ?? null,
   });
+
+  // Version-merged item: overlays the active version's assets onto the raw
+  // item so AddVersionModal seeds from the CURRENT version's copy, not v1.
+  const mergedItem = useMemo(() => {
+    if (!currentItem || versions.length === 0) return currentItem;
+    const active = getActiveVersion(versions, activeVersionId);
+    return applyVersion(currentItem, active);
+  }, [currentItem, versions, activeVersionId]);
 
   // ── Submit comment ──
   const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }, priority?: FeedbackCommentPriority, attachments?: import('@/lib/supabase').FeedbackCommentAttachment[], videoUrl?: string | null) => {
@@ -621,9 +630,9 @@ function ItemViewerContent({
         onReviewSubmitted={() => setReviewSubmitted(true)}
       />
 
-      {showAddVersion && currentItem && (
+      {showAddVersion && mergedItem && (
         <AddVersionModal
-          item={currentItem}
+          item={mergedItem}
           nextVersionNumber={versions.reduce((max, v) => Math.max(max, v.versionNumber), 0) + 1}
           creating={creatingVersion}
           onClose={() => setShowAddVersion(false)}

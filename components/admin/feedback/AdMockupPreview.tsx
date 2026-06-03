@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   ThumbsUp, MessageCircle, Share2, MoreHorizontal, Heart, Bookmark, Send, Globe,
-  ChevronRight, MessageSquare, Plus,
+  ChevronRight, MessageSquare, Plus, Copy, Check,
 } from 'lucide-react';
 import type { MetaAdVariant } from '@/lib/types/feedback';
 
@@ -303,10 +303,13 @@ function FacebookFeedAd({
 
       {/* Primary text */}
       {primaryText && (
-        <div className="px-4 pb-2.5">
-          <p className="text-[15px] leading-[20px] whitespace-pre-wrap" style={{ color: text }}>
+        <div className="px-4 pb-2.5 flex items-start gap-1.5 group/copy">
+          <p className="flex-1 min-w-0 text-[15px] leading-[20px] whitespace-pre-wrap" style={{ color: text }}>
             {primaryText}
           </p>
+          <span className="opacity-0 group-hover/copy:opacity-100 transition-opacity mt-0.5">
+            <CopyTextButton text={primaryText} dark={dark} />
+          </span>
         </div>
       )}
 
@@ -324,7 +327,7 @@ function FacebookFeedAd({
       </div>
 
       {/* Link preview bar + CTA */}
-      <div className="flex items-center justify-between px-4 py-3"
+      <div className="flex items-center justify-between px-4 py-3 group/headline"
         style={{ backgroundColor: dark ? '#3a3b3c' : '#f0f2f5' }}>
         <div className="flex-1 min-w-0 mr-3">
           {displayUrl && (
@@ -332,9 +335,14 @@ function FacebookFeedAd({
               {displayUrl}
             </p>
           )}
-          <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: text }}>
-            {headline}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className="flex-1 min-w-0 text-[15px] font-semibold leading-tight truncate" style={{ color: text }}>
+              {headline}
+            </p>
+            <span className="opacity-0 group-hover/headline:opacity-100 transition-opacity">
+              <CopyTextButton text={headline} dark={dark} />
+            </span>
+          </div>
         </div>
         <button
           className="shrink-0 px-4 py-2 rounded-lg text-caption font-semibold"
@@ -443,18 +451,60 @@ function InstagramFeedAd({
       {/* Caption */}
       <div className="px-4 pb-3">
         {headline && (
-          <p className="text-caption leading-[18px]" style={{ color: text }}>
-            <span className="font-semibold">{pageName.toLowerCase().replace(/\s+/g, '')}</span>{' '}
-            {headline}
-          </p>
+          <div className="flex items-start gap-1.5 group/ighl">
+            <p className="flex-1 min-w-0 text-caption leading-[18px]" style={{ color: text }}>
+              <span className="font-semibold">{pageName.toLowerCase().replace(/\s+/g, '')}</span>{' '}
+              {headline}
+            </p>
+            <span className="opacity-0 group-hover/ighl:opacity-100 transition-opacity mt-0.5">
+              <CopyTextButton text={headline} dark={dark} />
+            </span>
+          </div>
         )}
         {primaryText && primaryText !== headline && (
-          <p className="text-caption leading-[18px] mt-0.5 whitespace-pre-wrap" style={{ color: text }}>
-            {primaryText}
-          </p>
+          <div className="flex items-start gap-1.5 group/igpt mt-0.5">
+            <p className="flex-1 min-w-0 text-caption leading-[18px] whitespace-pre-wrap" style={{ color: text }}>
+              {primaryText}
+            </p>
+            <span className="opacity-0 group-hover/igpt:opacity-100 transition-opacity mt-0.5">
+              <CopyTextButton text={primaryText} dark={dark} />
+            </span>
+          </div>
         )}
       </div>
     </div>
+  );
+}
+
+/* ================================================================== */
+/*  Shared: Copy Text Button                                           */
+/* ================================================================== */
+
+function CopyTextButton({ text, dark }: { text: string; dark?: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }, [text]);
+
+  if (!text.trim()) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="inline-flex items-center justify-center shrink-0 rounded p-1 transition-colors"
+      style={{
+        color: copied ? '#10b981' : (dark ? '#b0b3b8' : '#9ca3af'),
+        backgroundColor: copied ? (dark ? '#10b98118' : '#10b98112') : 'transparent',
+      }}
+      title={copied ? 'Copied!' : 'Copy text'}
+    >
+      {copied ? <Check size={13} /> : <Copy size={13} />}
+    </button>
   );
 }
 

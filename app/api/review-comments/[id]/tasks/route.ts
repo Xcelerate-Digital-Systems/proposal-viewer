@@ -102,7 +102,7 @@ async function notifyTaskAssignee(params: {
 
     // Email
     try {
-      const { getResend, FROM_EMAIL } = await import('@/lib/resend');
+      const { getResend, fromEmail } = await import('@/lib/resend');
       const { buildTaskEmail } = await import('@/lib/review-notification-emails');
       const { subject, html } = buildTaskEmail({
         branding: { companyName, accentColor, logoUrl },
@@ -114,7 +114,7 @@ async function notifyTaskAssignee(params: {
         commentContent: plainComment,
         instructions: params.instructions,
       });
-      await getResend().emails.send({ from: FROM_EMAIL, to: assignee.email, subject, html });
+      await getResend().emails.send({ from: fromEmail(companyName), to: assignee.email, subject, html });
     } catch (err) {
       console.error('Task email failed:', err);
     }

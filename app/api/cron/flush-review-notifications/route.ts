@@ -12,7 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
 import { createServiceClient } from '@/lib/supabase-server';
-import { getResend, FROM_EMAIL } from '@/lib/resend';
+import { getResend, fromEmail } from '@/lib/resend';
 import { buildReviewUrl } from '@/lib/proposal-url';
 import {
   buildCommentDigestEmail,
@@ -168,7 +168,7 @@ async function handle(req: NextRequest) {
     try {
       const unsub = buildUnsubscribeUrl(appUrl, first.review_project_id, first.recipient_email);
       await getResend().emails.send({
-        from: FROM_EMAIL,
+        from: fromEmail(branding.companyName),
         to: first.recipient_email,
         subject,
         html: withUnsubscribeLink(html, unsub),

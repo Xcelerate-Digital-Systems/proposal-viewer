@@ -685,7 +685,8 @@ export default function FeedbackDetailView({
               <ItemContentView
                 item={selectedItem}
                 cursorStyle={
-                  feedbackMode === 'highlight' ? 'text'
+                  browseMode ? 'default'
+                    : feedbackMode === 'highlight' ? 'text'
                     : feedbackMode === 'text' ? 'text'
                     : feedbackMode === 'arrow' || feedbackMode === 'box' ? 'crosshair'
                     : pinActive ? 'crosshair'

@@ -13,6 +13,18 @@ export function escapeHtml(str: string) {
     .replace(/"/g, '&quot;');
 }
 
+export interface ProposalEmailBranding {
+  companyName: string;
+  accentColor: string;
+  logoUrl: string | null;
+}
+
+const DEFAULT_BRANDING: ProposalEmailBranding = {
+  companyName: 'AgencyViz',
+  accentColor: '#017C87',
+  logoUrl: null,
+};
+
 /* ─── Team email builder ─────────────────────────────────────────────────── */
 
 interface TeamEmailParams {
@@ -26,12 +38,14 @@ interface TeamEmailParams {
   resolvedBy?:      string;
   feedbackText?:    string;
   feedbackBy?:      string;
+  branding?:        ProposalEmailBranding;
 }
 
 export function buildTeamEmail(params: TeamEmailParams): { subject: string; html: string } {
   const {
     event_type, proposalTitle, clientName, viewerUrl, dashboardUrl,
     commentAuthor, commentContent, resolvedBy, feedbackText, feedbackBy,
+    branding = DEFAULT_BRANDING,
   } = params;
 
   let subject = '';
@@ -82,7 +96,7 @@ export function buildTeamEmail(params: TeamEmailParams): { subject: string; html
       headline = 'New Comment';
       body     = `
         <p><strong>${commentAuthor || 'Someone'}</strong> left a comment on <strong>"${proposalTitle}"</strong>:</p>
-        <div style="background:#f3fafa;border-left:3px solid #017C87;padding:12px 16px;margin:16px 0;border-radius:4px;">
+        <div style="background:#f3fafa;border-left:3px solid ${escapeHtml(branding.accentColor)};padding:12px 16px;margin:16px 0;border-radius:4px;">
           <p style="margin:0;color:#374151;">${escapeHtml(commentContent || '')}</p>
         </div>`;
       break;
@@ -94,7 +108,7 @@ export function buildTeamEmail(params: TeamEmailParams): { subject: string; html
       break;
   }
 
-  const html = teamEmailTemplate(headline, body, viewerUrl, dashboardUrl);
+  const html = teamEmailTemplate(headline, body, viewerUrl, dashboardUrl, branding);
   return { subject, html };
 }
 
@@ -108,10 +122,12 @@ interface ClientEmailParams {
   commentAuthor?:   string;
   commentContent?:  string;
   resolvedBy?:      string;
+  branding?:        ProposalEmailBranding;
 }
 
 export function buildClientEmail(params: ClientEmailParams): { subject: string; html: string } {
-  const { event_type, proposalTitle, companyName, viewerUrl, commentAuthor, commentContent, resolvedBy } = params;
+  const { event_type, proposalTitle, companyName, viewerUrl, commentAuthor, commentContent, resolvedBy, branding } = params;
+  const b = branding || { ...DEFAULT_BRANDING, companyName };
 
   let subject = '';
   let headline = '';
@@ -123,7 +139,7 @@ export function buildClientEmail(params: ClientEmailParams): { subject: string; 
       headline = 'New Reply on Your Proposal';
       body     = `
         <p><strong>${commentAuthor || companyName}</strong> replied on your proposal <strong>"${proposalTitle}"</strong>:</p>
-        <div style="background:#f3fafa;border-left:3px solid #017C87;padding:12px 16px;margin:16px 0;border-radius:4px;">
+        <div style="background:#f3fafa;border-left:3px solid ${escapeHtml(b.accentColor)};padding:12px 16px;margin:16px 0;border-radius:4px;">
           <p style="margin:0;color:#374151;">${escapeHtml(commentContent || '')}</p>
         </div>
         <p>Click below to view the proposal and respond.</p>`;
@@ -141,13 +157,20 @@ export function buildClientEmail(params: ClientEmailParams): { subject: string; 
       body     = `<p>There has been an update on your proposal <strong>"${proposalTitle}"</strong>.</p>`;
   }
 
-  const html = clientEmailTemplate(headline, body, viewerUrl, companyName);
+  const html = clientEmailTemplate(headline, body, viewerUrl, b);
   return { subject, html };
 }
 
 /* ─── HTML layout templates ──────────────────────────────────────────────── */
 
-function teamEmailTemplate(headline: string, body: string, viewerUrl: string, dashboardUrl: string) {
+function renderEmailHeader(branding: ProposalEmailBranding) {
+  if (branding.logoUrl) {
+    return `<img src="${escapeHtml(branding.logoUrl)}" alt="${escapeHtml(branding.companyName)}" style="display:block;max-height:32px;max-width:200px;height:auto;width:auto;border:0;outline:none;text-decoration:none;" />`;
+  }
+  return `<span style="color:#ffffff;font-weight:700;font-size:16px;">${escapeHtml(branding.companyName)}</span>`;
+}
+
+function teamEmailTemplate(headline: string, body: string, viewerUrl: string, dashboardUrl: string, branding: ProposalEmailBranding = DEFAULT_BRANDING) {
   return `
 <!DOCTYPE html>
 <html>
@@ -162,7 +185,7 @@ function teamEmailTemplate(headline: string, body: string, viewerUrl: string, da
         <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
           <tr>
             <td style="background:#043946;padding:20px 32px;">
-              <span style="color:#ffffff;font-weight:700;font-size:16px;">AgencyViz</span>
+              ${renderEmailHeader(branding)}
             </td>
           </tr>
           <tr>
@@ -172,7 +195,7 @@ function teamEmailTemplate(headline: string, body: string, viewerUrl: string, da
               <table cellpadding="0" cellspacing="0" style="margin-top:24px;">
                 <tr>
                   <td style="padding-right:12px;">
-                    <a href="${viewerUrl}" style="display:inline-block;padding:10px 20px;background:#017C87;color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">View Proposal</a>
+                    <a href="${viewerUrl}" style="display:inline-block;padding:10px 20px;background:${escapeHtml(branding.accentColor)};color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">View Proposal</a>
                   </td>
                   <td>
                     <a href="${dashboardUrl}" style="display:inline-block;padding:10px 20px;background:#f3f4f6;color:#374151;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">Dashboard</a>
@@ -183,7 +206,7 @@ function teamEmailTemplate(headline: string, body: string, viewerUrl: string, da
           </tr>
           <tr>
             <td style="padding:16px 32px;border-top:1px solid #f3f4f6;">
-              <p style="margin:0;color:#9ca3af;font-size:12px;">You're receiving this because you have notifications enabled in AgencyViz.</p>
+              <p style="margin:0;color:#9ca3af;font-size:12px;">You're receiving this because you have notifications enabled in ${escapeHtml(branding.companyName)}.</p>
             </td>
           </tr>
         </table>
@@ -194,7 +217,7 @@ function teamEmailTemplate(headline: string, body: string, viewerUrl: string, da
 </html>`;
 }
 
-function clientEmailTemplate(headline: string, body: string, viewerUrl: string, companyName: string) {
+function clientEmailTemplate(headline: string, body: string, viewerUrl: string, branding: ProposalEmailBranding) {
   return `
 <!DOCTYPE html>
 <html>
@@ -209,7 +232,7 @@ function clientEmailTemplate(headline: string, body: string, viewerUrl: string, 
         <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
           <tr>
             <td style="background:#043946;padding:20px 32px;">
-              <span style="color:#ffffff;font-weight:700;font-size:16px;">${escapeHtml(companyName)}</span>
+              ${renderEmailHeader(branding)}
             </td>
           </tr>
           <tr>
@@ -219,7 +242,7 @@ function clientEmailTemplate(headline: string, body: string, viewerUrl: string, 
               <table cellpadding="0" cellspacing="0" style="margin-top:24px;">
                 <tr>
                   <td>
-                    <a href="${viewerUrl}" style="display:inline-block;padding:10px 20px;background:#017C87;color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">View Proposal</a>
+                    <a href="${viewerUrl}" style="display:inline-block;padding:10px 20px;background:${escapeHtml(branding.accentColor)};color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">View Proposal</a>
                   </td>
                 </tr>
               </table>
@@ -244,10 +267,11 @@ interface ClientConfirmationParams {
   companyLogo:   string | null;
   viewerUrl:     string;
   entityType?:   string;
+  accentColor?:  string;
 }
 
 export function buildClientConfirmationEmail(params: ClientConfirmationParams): { subject: string; html: string } {
-  const { action, proposalTitle, companyName, companyLogo, viewerUrl, entityType } = params;
+  const { action, proposalTitle, companyName, companyLogo, viewerUrl, entityType, accentColor = '#017C87' } = params;
   const label = entityType === 'quote' ? 'quote' : 'proposal';
 
   let subject = '';
@@ -318,7 +342,7 @@ export function buildClientConfirmationEmail(params: ClientConfirmationParams): 
               <table cellpadding="0" cellspacing="0" style="margin-top:24px;">
                 <tr>
                   <td>
-                    <a href="${viewerUrl}" style="display:inline-block;padding:10px 20px;background:#017C87;color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">View ${label.charAt(0).toUpperCase() + label.slice(1)}</a>
+                    <a href="${viewerUrl}" style="display:inline-block;padding:10px 20px;background:${escapeHtml(accentColor)};color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">View ${label.charAt(0).toUpperCase() + label.slice(1)}</a>
                   </td>
                 </tr>
               </table>

@@ -1,7 +1,7 @@
 // app/api/review-notify/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
-import { getResend, FROM_EMAIL } from '@/lib/resend';
+import { getResend, fromEmail } from '@/lib/resend';
 import { buildReviewUrl } from '@/lib/proposal-url';
 import crypto from 'crypto';
 import { isValidWebhookUrl } from '@/lib/sanitize';
@@ -234,7 +234,7 @@ export async function POST(req: NextRequest) {
             mentionedName: m.displayName,
           });
           const unsub = buildUnsubscribeUrl(appUrl, project.id, m.targetEmail);
-          await getResend().emails.send({ from: FROM_EMAIL, to: m.targetEmail, subject, html: withUnsubscribeLink(html, unsub) });
+          await getResend().emails.send({ from: fromEmail(companyName), to: m.targetEmail, subject, html: withUnsubscribeLink(html, unsub) });
           mentioned++;
           // Don't double-email this person via the digest queue.
           recipientEmails.delete(m.targetEmail);
@@ -377,7 +377,7 @@ export async function POST(req: NextRequest) {
         for (const email of Array.from(recipientEmails)) {
           try {
             const unsub = buildUnsubscribeUrl(appUrl, project.id, email);
-            await getResend().emails.send({ from: FROM_EMAIL, to: email, subject, html: withUnsubscribeLink(html, unsub) });
+            await getResend().emails.send({ from: fromEmail(companyName), to: email, subject, html: withUnsubscribeLink(html, unsub) });
             sent++;
           } catch (err) {
             console.error(`Failed to notify ${email}:`, err);
