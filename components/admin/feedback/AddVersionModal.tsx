@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Upload, Plus, Trash2, Type, AlignLeft, Check, ChevronDown } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import type { FeedbackItem, FeedbackItemVersion } from '@/lib/supabase';
@@ -11,25 +11,21 @@ import { type MetaAdVariant, type FeedbackStatus } from '@/lib/types/feedback';
 import type { AdCopyVariation } from '@/lib/types/feedback';
 import { supabase } from '@/lib/supabase';
 import { getFeedbackStatusDef } from '@/lib/feedback/status';
+import AdMockupPreview, { type AdPlatform } from '@/components/admin/feedback/AdMockupPreview';
 
-function newVariantId(): string {
-  return crypto.randomUUID().slice(0, 8);
-}
+/* ─── Shared helpers ──────────────────────────────────────────────── */
 
-function newAdVariant(): MetaAdVariant {
-  return { id: newVariantId(), label: '', primary_text: '', headline: '' };
-}
+function newVariantId(): string { return crypto.randomUUID().slice(0, 8); }
+function newAdVariant(): MetaAdVariant { return { id: newVariantId(), label: '', primary_text: '', headline: '' }; }
 
-/** A variation in the version picker — either existing shared or new inline. */
-type VersionPickerVariation = {
-  id: string;
-  label: string;
-  headline: string;
-  primary_text: string;
-  isExisting: boolean;
-  selected: boolean;
-  usedByCount?: number;
+type PickerVariation = {
+  id: string; label: string; headline: string; primary_text: string;
+  isExisting: boolean; selected: boolean; usedByCount?: number;
 };
+
+function newTempVariation(): PickerVariation {
+  return { id: `new-${crypto.randomUUID().slice(0, 8)}`, label: '', headline: '', primary_text: '', isExisting: false, selected: true };
+}
 
 const CTA_OPTIONS = [
   'Learn More', 'Shop Now', 'Sign Up', 'Book Now', 'Contact Us',
@@ -42,6 +38,8 @@ const MAX_GAD_DESCRIPTIONS = 4;
 const GAD_HEADLINE_CHARS = 30;
 const GAD_DESCRIPTION_CHARS = 90;
 
+/* ─── Types ───────────────────────────────────────────────────────── */
+
 interface AddVersionModalProps {
   item: FeedbackItem;
   nextVersionNumber: number;
@@ -53,11 +51,6 @@ interface AddVersionModalProps {
     resetToStage?: FeedbackStatus | null;
   }) => Promise<FeedbackItemVersion | null>;
   onUploadAsset: (file: File) => Promise<string | null>;
-  /**
-   * When provided, the modal switches to edit mode: prefills from this
-   * version, hides the version-number heading, and calls `onUpdate`
-   * instead of `onSubmit` to save in place.
-   */
   editingVersion?: VersionView;
   onUpdate?: (
     versionId: string | null,
@@ -73,18 +66,17 @@ function assetKindForType(type: FeedbackItem['type']): AssetKind {
   if (type === 'google_search_ad') return 'google_search_ad';
   if (type === 'google_banner_ad') return 'google_banner_ad';
   if (type === 'meta_lead_form') return 'meta_lead_form';
-  return 'file'; // image, video, pdf
+  return 'file';
 }
 
 function fileAccept(type: FeedbackItem['type']): string {
   if (type === 'image') return 'image/*';
   if (type === 'video') return 'video/*';
-  if (type === 'pdf')   return 'application/pdf';
+  if (type === 'pdf') return 'application/pdf';
   if (type === 'ad' || type === 'google_banner_ad' || type === 'meta_lead_form') return 'image/*';
   return '*';
 }
 
-/** Which DB column holds the uploaded URL for a given item type. */
 function fileTargetField(type: FeedbackItem['type']): keyof FeedbackItemVersion {
   if (type === 'image') return 'image_url';
   if (type === 'video') return 'video_url';
@@ -92,19 +84,19 @@ function fileTargetField(type: FeedbackItem['type']): keyof FeedbackItemVersion 
   return 'ad_creative_url';
 }
 
+/* ─── Main component ──────────────────────────────────────────────── */
+
 export default function AddVersionModal({
   item, nextVersionNumber, creating, onClose, onSubmit, onUploadAsset,
   editingVersion, onUpdate,
 }: AddVersionModalProps) {
   const toast = useToast();
   const kind = assetKindForType(item.type);
-
   const isEditing = !!editingVersion;
-  // In edit mode, prefill from the version being edited; otherwise prefill
-  // from the item (so v2 starts as a copy of v1's content).
   const seed = editingVersion?.assets ?? item;
 
   const [file, setFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
   const [notes, setNotes] = useState(editingVersion?.notes ?? '');
 
   // Text variants
@@ -113,34 +105,40 @@ export default function AddVersionModal({
   const [emailBody, setEmailBody] = useState(seed.email_body ?? '');
   const [smsBody, setSmsBody] = useState(seed.sms_body ?? '');
 
-  // Meta ad copy — variants array is the source of truth. When editing a
-  // legacy version with only ad_headline/ad_copy set, synthesise a single
-  // starter variant so the user sees their existing copy in the editor.
-  const [adCta, setAdCta] = useState(seed.ad_cta ?? '');
-  const [adVariants, setAdVariants] = useState<MetaAdVariant[]>(() => {
-    const stored = Array.isArray(seed.meta_ad_variants) ? seed.meta_ad_variants as MetaAdVariant[] : null;
-    if (stored && stored.length > 0) return stored.map((v) => ({ ...v, label: v.label ?? '' }));
-    return [{
-      id: newAdVariant().id,
-      label: '',
-      headline: seed.ad_headline ?? '',
-      primary_text: seed.ad_copy ?? '',
-    }];
-  });
-  const patchAdVariant = (id: string, patch: Partial<MetaAdVariant>) =>
-    setAdVariants((prev) => prev.map((v) => (v.id === id ? { ...v, ...patch } : v)));
-  const addAdVariant = () => setAdVariants((prev) => [...prev, newAdVariant()]);
-  const removeAdVariant = (id: string) =>
-    setAdVariants((prev) => (prev.length > 1 ? prev.filter((v) => v.id !== id) : prev));
+  // Meta ad copy
+  const [adCta, setAdCta] = useState(seed.ad_cta ?? 'Learn More');
+  const [adPlatform] = useState<AdPlatform>((item.ad_platform as AdPlatform) || 'facebook_feed');
 
-  // Shared campaign variations picker — only for Meta ads. Shows existing
-  // shared variations the user can toggle on/off for this version. New
-  // inline variants are still supported alongside.
-  const [campaignVariations, setCampaignVariations] = useState<VersionPickerVariation[]>([]);
+  // Variation picker state
+  const [variations, setVariations] = useState<PickerVariation[]>([]);
+  const [activeVariationId, setActiveVariationId] = useState<string | null>(null);
+  const [loadingVariations, setLoadingVariations] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Load existing creative preview for the current item
+  const currentCreativeUrl = seed.ad_creative_url || item.ad_creative_url || null;
+
+  // Generate file preview
   useEffect(() => {
-    if (item.type !== 'ad') return;
+    if (!file) { setFilePreview(null); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => setFilePreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  }, [file]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0];
+    if (!selected) return;
+    if (!selected.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
+    if (selected.size > 10 * 1024 * 1024) { toast.error('Image must be under 10MB'); return; }
+    setFile(selected);
+  };
+
+  // Fetch campaign variations + current item links for Meta ads
+  useEffect(() => {
+    if (kind !== 'ad') return;
     let cancelled = false;
+    setLoadingVariations(true);
     (async () => {
       const { data: existingVariations } = await supabase
         .from('ad_copy_variations')
@@ -148,7 +146,7 @@ export default function AddVersionModal({
         .eq('review_project_id', item.review_project_id)
         .order('created_at', { ascending: true });
 
-      if (cancelled || !existingVariations) return;
+      if (cancelled || !existingVariations) { setLoadingVariations(false); return; }
 
       const varIds = existingVariations.map((v) => v.id);
       let usageCounts: Record<string, number> = {};
@@ -165,14 +163,13 @@ export default function AddVersionModal({
         }
       }
 
-      // Check which variations are currently linked to this item
       const { data: currentLinks } = await supabase
         .from('review_item_ad_variations')
         .select('ad_copy_variation_id')
         .eq('review_item_id', item.id);
       const linkedIds = new Set((currentLinks || []).map((l) => l.ad_copy_variation_id));
 
-      const picker: VersionPickerVariation[] = existingVariations
+      const picker: PickerVariation[] = existingVariations
         .filter((v: AdCopyVariation) => v.headline.trim() || v.primary_text.trim())
         .map((v: AdCopyVariation) => ({
           id: v.id,
@@ -184,53 +181,51 @@ export default function AddVersionModal({
           usedByCount: usageCounts[v.id] || 0,
         }));
 
-      setCampaignVariations(picker);
-
-      // If we have linked variations, replace the inline editor variants
-      // with the linked ones so the user sees the current state.
-      if (linkedIds.size > 0) {
-        const linkedVariants: MetaAdVariant[] = picker
-          .filter((v) => v.selected)
-          .map((v) => ({ id: v.id, label: v.label, headline: v.headline, primary_text: v.primary_text }));
-        if (linkedVariants.length > 0) {
-          setAdVariants(linkedVariants);
-        }
+      if (!cancelled) {
+        setVariations(picker.length > 0 ? picker : [newTempVariation()]);
+        const firstSelected = picker.find((v) => v.selected);
+        if (firstSelected) setActiveVariationId(firstSelected.id);
+        else if (picker.length > 0) setActiveVariationId(picker[0].id);
+        setLoadingVariations(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [item.id, item.review_project_id, item.type]);
+  }, [item.id, item.review_project_id, kind]);
 
-  const toggleCampaignVariation = (id: string) => {
-    setCampaignVariations((prev) => prev.map((v) =>
-      v.id === id ? { ...v, selected: !v.selected } : v
-    ));
-    // Sync with adVariants for the submit
-    setCampaignVariations((prev) => {
-      const toggled = prev.find((v) => v.id === id);
-      if (!toggled) return prev;
-      if (toggled.selected) {
-        // Was just toggled ON — add to adVariants
-        setAdVariants((avs) => {
-          if (avs.some((v) => v.id === id)) return avs;
-          return [...avs, { id: toggled.id, label: toggled.label, headline: toggled.headline, primary_text: toggled.primary_text }];
-        });
-      } else {
-        // Was just toggled OFF — remove from adVariants
-        setAdVariants((avs) => avs.filter((v) => v.id !== id));
+  const selectedVariations = variations.filter((v) => v.selected);
+  const activeVariation = selectedVariations.find((v) => v.id === activeVariationId)
+    ?? selectedVariations[0] ?? null;
+
+  const toggleVariation = (id: string) => {
+    setVariations((prev) => prev.map((v) => v.id === id ? { ...v, selected: !v.selected } : v));
+  };
+
+  const patchVariation = (id: string, patch: Partial<PickerVariation>) =>
+    setVariations((prev) => prev.map((v) => (v.id === id ? { ...v, ...patch } : v)));
+
+  const addNewVariation = () => {
+    const v = newTempVariation();
+    setVariations((prev) => [...prev, v]);
+    setActiveVariationId(v.id);
+  };
+
+  const removeVariation = (id: string) => {
+    setVariations((prev) => {
+      const v = prev.find((x) => x.id === id);
+      if (!v) return prev;
+      if (!v.isExisting) {
+        const next = prev.filter((x) => x.id !== id);
+        if (activeVariationId === id) {
+          const firstSelected = next.find((x) => x.selected);
+          if (firstSelected) setActiveVariationId(firstSelected.id);
+        }
+        return next;
       }
-      return prev;
+      return prev.map((x) => x.id === id ? { ...x, selected: false } : x);
     });
   };
 
-  // Meta lead form (copy-iteration version: swap cover + edit headline/description/CTA)
-  const lf = seed.meta_lead_form_data ?? item.meta_lead_form_data;
-  const [lfHeadline, setLfHeadline] = useState(lf?.intro_headline ?? '');
-  const [lfDescription, setLfDescription] = useState(lf?.intro_description ?? '');
-  const [lfCta, setLfCta] = useState(lf?.cta ?? 'Continue');
-
-  // Google ad — versioning lets the user iterate on the full set of headlines
-  // and descriptions while keeping the base item's sitelinks, paths, and call
-  // extension. For banner ads we only need a single headline (gadHeadlines[0]).
+  // Google ad state
   const gad = seed.google_ad_data ?? item.google_ad_data ?? null;
   const [gadHeadlines, setGadHeadlines] = useState<string[]>(() => {
     const seeded = (gad?.headlines || []).filter((h) => typeof h === 'string');
@@ -248,7 +243,6 @@ export default function AddVersionModal({
     gadHeadlines.length < MAX_GAD_HEADLINES && setGadHeadlines((prev) => [...prev, '']);
   const removeHeadline = (idx: number) =>
     setGadHeadlines((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev));
-
   const updateDescription = (idx: number, value: string) =>
     setGadDescriptions((prev) => prev.map((d, i) => (i === idx ? value.slice(0, GAD_DESCRIPTION_CHARS) : d)));
   const addDescription = () =>
@@ -256,19 +250,23 @@ export default function AddVersionModal({
   const removeDescription = (idx: number) =>
     setGadDescriptions((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev));
 
+  // Meta lead form
+  const lf = seed.meta_lead_form_data ?? item.meta_lead_form_data;
+  const [lfHeadline, setLfHeadline] = useState(lf?.intro_headline ?? '');
+  const [lfDescription, setLfDescription] = useState(lf?.intro_description ?? '');
+  const [lfCta, setLfCta] = useState(lf?.cta ?? 'Continue');
+
   const [uploading, setUploading] = useState(false);
   const busy = uploading || creating;
 
-  // After-upload routing. Mirrors Filestage's "send to next stage" flow —
-  // a fresh version usually wants a fresh review. Hidden in edit mode (the
-  // version is just being touched up, the item's stage shouldn't shift).
   const RESET_OPTIONS: { value: FeedbackStatus | 'keep'; label: string }[] = [
-    { value: 'client_review',    label: 'Send to Client Review' },
-    { value: 'internal_review',  label: 'Send to Internal Review' },
-    { value: 'keep',             label: 'Keep current stage' },
+    { value: 'client_review', label: 'Send to Client Review' },
+    { value: 'internal_review', label: 'Send to Internal Review' },
+    { value: 'keep', label: 'Keep current stage' },
   ];
   const [resetTo, setResetTo] = useState<FeedbackStatus | 'keep'>('client_review');
 
+  /* ── Submit ── */
   const handleSubmit = async () => {
     setUploading(true);
     const assets: Partial<FeedbackItemVersion> = {};
@@ -301,62 +299,75 @@ export default function AddVersionModal({
           if (!url) { setUploading(false); return; }
           assets.ad_creative_url = url;
         }
-        const cleanVariants = adVariants
+
+        // Build variant array from selected variations
+        const selected = variations.filter((v) => v.selected);
+        const cleanVariants: MetaAdVariant[] = selected
           .map((v) => ({
-            ...v,
-            label: (v.label ?? '').trim() || null,
+            id: v.id,
+            label: v.label.trim() || null,
             headline: v.headline.trim(),
             primary_text: v.primary_text.trim(),
           }))
           .filter((v) => v.headline || v.primary_text);
         const first = cleanVariants[0];
-        // Mirror the first variant into the legacy columns so any downstream
-        // consumer that still reads ad_headline / ad_copy directly keeps
-        // working with the latest copy.
         assets.ad_headline = first?.headline || null;
         assets.ad_copy = first?.primary_text || null;
         assets.ad_cta = adCta || null;
         assets.ad_platform = item.ad_platform;
         assets.meta_ad_variants = cleanVariants.length > 0 ? cleanVariants : null;
+
+        // After version save, update the junction links + create new variations
+        // via the API. This is fire-and-forget since the version is already saved.
+        setTimeout(async () => {
+          try {
+            const { authFetch } = await import('@/lib/auth-fetch');
+            const existingIds = selected.filter((v) => v.isExisting).map((v) => v.id);
+            const newVars = selected
+              .filter((v) => !v.isExisting)
+              .map((v) => ({ label: v.label.trim() || null, headline: v.headline.trim(), primary_text: v.primary_text.trim() }))
+              .filter((v) => v.headline || v.primary_text);
+
+            let allIds = [...existingIds];
+            if (newVars.length > 0) {
+              const res = await authFetch(`/api/campaigns/${item.review_project_id}/ad-variations`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ variations: newVars }),
+              });
+              if (res.ok) {
+                const { variations: created } = await res.json();
+                allIds = [...allIds, ...created.map((v: { id: string }) => v.id)];
+              }
+            }
+            if (allIds.length > 0) {
+              await authFetch(`/api/campaigns/${item.review_project_id}/ad-variations/link`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ review_item_id: item.id, variation_ids: allIds }),
+              });
+            }
+          } catch { /* non-fatal */ }
+        }, 0);
       }
 
       if (kind === 'meta_lead_form') {
-        if (!lf) {
-          toast.error('Lead form not configured');
-          setUploading(false);
-          return;
-        }
+        if (!lf) { toast.error('Lead form not configured'); setUploading(false); return; }
         let coverUrl = lf.cover_url;
         if (file) {
           const url = await onUploadAsset(file);
           if (!url) { setUploading(false); return; }
           coverUrl = url;
         }
-        assets.meta_lead_form_data = {
-          ...lf,
-          cover_url: coverUrl,
-          intro_headline: lfHeadline,
-          intro_description: lfDescription,
-          cta: lfCta,
-        };
+        assets.meta_lead_form_data = { ...lf, cover_url: coverUrl, intro_headline: lfHeadline, intro_description: lfDescription, cta: lfCta };
       }
 
       if (kind === 'google_search_ad') {
         const base = item.google_ad_data;
         if (!base) { toast.error('Base ad not configured'); setUploading(false); return; }
         const headlines = gadHeadlines.map((h) => h.trim()).filter(Boolean);
-        const descriptions = gadDescriptions.map((d) => d.trim()).filter(Boolean);
-        if (headlines.length === 0) {
-          toast.error('At least one headline is required');
-          setUploading(false);
-          return;
-        }
-        assets.google_ad_data = {
-          ...base,
-          final_url: gadFinalUrl.trim() || base.final_url,
-          headlines,
-          descriptions,
-        };
+        if (headlines.length === 0) { toast.error('At least one headline is required'); setUploading(false); return; }
+        assets.google_ad_data = { ...base, final_url: gadFinalUrl.trim() || base.final_url, headlines, descriptions: gadDescriptions.map((d) => d.trim()).filter(Boolean) };
       }
 
       if (kind === 'google_banner_ad') {
@@ -367,28 +378,16 @@ export default function AddVersionModal({
           const url = await onUploadAsset(file);
           if (!url) { setUploading(false); return; }
           bannerImageUrl = url;
-          assets.ad_creative_url = url; // keep list/card thumbnails in sync
+          assets.ad_creative_url = url;
         }
-        assets.google_ad_data = {
-          ...base,
-          final_url: gadFinalUrl.trim() || base.final_url,
-          headlines: [(gadHeadlines[0]?.trim() || base.headlines[0] || '')],
-          banner_image_url: bannerImageUrl,
-        };
+        assets.google_ad_data = { ...base, final_url: gadFinalUrl.trim() || base.final_url, headlines: [(gadHeadlines[0]?.trim() || base.headlines[0] || '')], banner_image_url: bannerImageUrl };
       }
 
       if (isEditing && onUpdate && editingVersion) {
-        const ok = await onUpdate(editingVersion.id, {
-          notes: notes.trim() || null,
-          assets,
-        });
+        const ok = await onUpdate(editingVersion.id, { notes: notes.trim() || null, assets });
         if (ok) onClose();
       } else {
-        const result = await onSubmit({
-          notes: notes.trim() || null,
-          assets,
-          resetToStage: resetTo === 'keep' ? null : resetTo,
-        });
+        const result = await onSubmit({ notes: notes.trim() || null, assets, resetToStage: resetTo === 'keep' ? null : resetTo });
         if (result) onClose();
       }
     } finally {
@@ -396,16 +395,188 @@ export default function AddVersionModal({
     }
   };
 
+  const modalTitle = isEditing
+    ? `Edit Version ${editingVersion?.versionNumber ?? ''}`
+    : `New Version ${nextVersionNumber}`;
+
+  /* ── Meta Ad: Full-width two-column layout ── */
+  if (kind === 'ad') {
+    const previewUrl = filePreview || currentCreativeUrl;
+    const mockupVariants: MetaAdVariant[] = selectedVariations.map((v) => ({
+      id: v.id, label: v.label.trim() || null, headline: v.headline.trim(), primary_text: v.primary_text.trim(),
+    }));
+
+    return (
+      <Modal open onClose={onClose} size="full">
+        <Modal.Header>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-semibold tracking-tight text-ink">{modalTitle}</h3>
+              <p className="text-xs text-dim mt-0.5 truncate max-w-[360px]">{item.title}</p>
+            </div>
+            <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} aria-label="Close" />
+          </div>
+        </Modal.Header>
+
+        <div className="flex-1 min-h-0 flex">
+          {/* LEFT: Creative + CTA + Preview */}
+          <div className="w-[420px] shrink-0 border-r border-edge-strong flex flex-col overflow-y-auto">
+            <div className="p-5 space-y-4 flex-1">
+              {/* Creative image */}
+              <div>
+                <label className="block text-xs font-medium text-dim uppercase tracking-wider mb-1.5">
+                  Creative Image
+                </label>
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                {previewUrl ? (
+                  <div className="rounded-2xl border border-edge-strong bg-white overflow-hidden">
+                    <img src={previewUrl} alt="Creative" className="w-full aspect-square object-cover" />
+                    <div className="flex items-center justify-between px-3 py-2 bg-surface border-t border-edge">
+                      <p className="text-detail text-faint truncate">{file ? file.name : 'Current creative'}</p>
+                      <button type="button" onClick={() => fileInputRef.current?.click()} className="text-detail font-semibold text-teal hover:text-teal-hover shrink-0">
+                        Replace
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full aspect-square border-2 border-dashed border-edge-strong rounded-2xl flex flex-col items-center justify-center hover:border-teal hover:bg-teal/5 transition-colors">
+                    <Upload size={24} className="text-faint mb-2" />
+                    <p className="text-xs font-medium text-prose">Upload new creative</p>
+                    <p className="text-2xs text-faint mt-1">1:1 recommended · max 10MB</p>
+                  </button>
+                )}
+              </div>
+
+              <CtaDropdown value={adCta} onChange={(v) => {/* adCta is const for version — CTA lives on the item */}} disabled />
+
+              {/* Live preview */}
+              {previewUrl && mockupVariants.length > 0 && (
+                <div className="pt-2">
+                  <p className="text-2xs font-semibold uppercase tracking-wider text-dim mb-2">Preview</p>
+                  <div className="transform scale-[0.65] origin-top-left" style={{ width: '154%' }}>
+                    <AdMockupPreview
+                      creativeUrl={previewUrl}
+                      ctaText={adCta}
+                      platform={adPlatform}
+                      pageName="Your Brand"
+                      showPlatformToggle={false}
+                      variants={mockupVariants}
+                      activeVariantId={activeVariation?.id}
+                      onVariantChange={(id) => setActiveVariationId(id)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* RIGHT: Copy Variations */}
+          <div className="flex-1 min-w-0 flex flex-col overflow-y-auto">
+            <div className="p-5 flex-1">
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-medium text-dim uppercase tracking-wider">Copy Variations</label>
+                <button type="button" onClick={addNewVariation} className="inline-flex items-center gap-1 text-detail font-semibold text-teal hover:text-teal-hover">
+                  <Plus size={12} /> New variation
+                </button>
+              </div>
+              <p className="text-detail text-faint mb-4">
+                Select existing variations or create new ones. Shared variations carry their feedback across all ads that use them.
+              </p>
+
+              {loadingVariations && (
+                <div className="flex items-center gap-2 text-detail text-faint py-2">
+                  <div className="w-3 h-3 border border-faint border-t-teal rounded-full animate-spin" />
+                  Loading…
+                </div>
+              )}
+
+              <div className="space-y-2.5">
+                {/* Existing variations */}
+                {variations.filter((v) => v.isExisting).length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-2xs font-semibold uppercase tracking-wider text-dim">Existing in this campaign</p>
+                    {variations.filter((v) => v.isExisting).map((v) => (
+                      <ExistingVariationRow
+                        key={v.id}
+                        variation={v}
+                        isActive={activeVariation?.id === v.id}
+                        onToggle={() => toggleVariation(v.id)}
+                        onActivate={() => { if (v.selected) setActiveVariationId(v.id); }}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* New variations */}
+                {variations.filter((v) => !v.isExisting).length > 0 && (
+                  <div className="space-y-2.5">
+                    {variations.filter((v) => v.isExisting).length > 0 && (
+                      <p className="text-2xs font-semibold uppercase tracking-wider text-dim mt-3">New variations</p>
+                    )}
+                    {variations.filter((v) => !v.isExisting).map((v, i) => (
+                      <NewVariationEditor
+                        key={v.id}
+                        variation={v}
+                        index={i}
+                        isActive={activeVariation?.id === v.id}
+                        onPatch={(patch) => patchVariation(v.id, patch)}
+                        onActivate={() => setActiveVariationId(v.id)}
+                        onRemove={() => removeVariation(v.id)}
+                        canRemove={variations.filter((x) => !x.isExisting).length > 1 || variations.filter((x) => x.isExisting && x.selected).length > 0}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Notes + stage reset */}
+              <div className="mt-6 space-y-3 border-t border-edge pt-4">
+                <Field label="Version notes (optional)">
+                  <input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. tightened copy, swapped hero shot" />
+                </Field>
+                {!isEditing && (
+                  <Field label="After upload">
+                    <div className="flex items-center gap-2">
+                      <select className={`${inputCls} flex-1`} value={resetTo} onChange={(e) => setResetTo(e.target.value as FeedbackStatus | 'keep')}>
+                        {RESET_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                      {resetTo !== 'keep' && (
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium border ${getFeedbackStatusDef(resetTo).bg} ${getFeedbackStatusDef(resetTo).text} ${getFeedbackStatusDef(resetTo).border}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${getFeedbackStatusDef(resetTo).dot}`} />
+                          {getFeedbackStatusDef(resetTo).label}
+                        </span>
+                      )}
+                    </div>
+                  </Field>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="shrink-0 border-t border-edge-strong px-5 py-3 flex items-center justify-between bg-white">
+          <span className="text-detail text-faint">
+            {selectedVariations.length} variation{selectedVariations.length !== 1 ? 's' : ''} selected
+          </span>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>Cancel</Button>
+            <Button size="sm" loading={busy} leftIcon={Upload} onClick={handleSubmit}>
+              {isEditing ? 'Save Changes' : 'Save Version'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
+  /* ── Non-ad types: standard modal ── */
   return (
-    <Modal open onClose={onClose} size={kind === 'ad' ? 'xl' : 'lg'}>
+    <Modal open onClose={onClose} size="lg">
       <Modal.Header>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base font-semibold tracking-tight text-ink">
-              {isEditing
-                ? `Edit Version ${editingVersion?.versionNumber ?? ''}`
-                : `Upload Version ${nextVersionNumber}`}
-            </h3>
+            <h3 className="text-base font-semibold tracking-tight text-ink">{modalTitle}</h3>
             <p className="text-xs text-dim mt-0.5 truncate max-w-[360px]">{item.title}</p>
           </div>
           <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} aria-label="Close" />
@@ -413,252 +584,71 @@ export default function AddVersionModal({
       </Modal.Header>
 
       <Modal.Body className="space-y-4">
-          {kind === 'file' && (
-            <FileInput file={file} onChange={setFile} accept={fileAccept(item.type)} optional={isEditing} />
-          )}
+        {kind === 'file' && <FileInput file={file} onChange={setFile} accept={fileAccept(item.type)} optional={isEditing} />}
 
-          {kind === 'text' && item.type === 'email' && (
-            <>
-              <Field label="Subject">
-                <input className={inputCls} value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} />
-              </Field>
-              <Field label="Preheader">
-                <input className={inputCls} value={emailPreheader} onChange={(e) => setEmailPreheader(e.target.value)} />
-              </Field>
-              <Field label="Body">
-                <textarea className={`${inputCls} min-h-[120px]`} value={emailBody} onChange={(e) => setEmailBody(e.target.value)} />
-              </Field>
-            </>
-          )}
+        {kind === 'text' && item.type === 'email' && (
+          <>
+            <Field label="Subject"><input className={inputCls} value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} /></Field>
+            <Field label="Preheader"><input className={inputCls} value={emailPreheader} onChange={(e) => setEmailPreheader(e.target.value)} /></Field>
+            <Field label="Body"><textarea className={`${inputCls} min-h-[120px]`} value={emailBody} onChange={(e) => setEmailBody(e.target.value)} /></Field>
+          </>
+        )}
 
-          {kind === 'text' && item.type === 'sms' && (
-            <Field label="Body">
-              <textarea className={`${inputCls} min-h-[120px]`} value={smsBody} onChange={(e) => setSmsBody(e.target.value)} />
-            </Field>
-          )}
+        {kind === 'text' && item.type === 'sms' && (
+          <Field label="Body"><textarea className={`${inputCls} min-h-[120px]`} value={smsBody} onChange={(e) => setSmsBody(e.target.value)} /></Field>
+        )}
 
-          {kind === 'ad' && (
-            <>
-              <FileInput file={file} onChange={setFile} accept={fileAccept(item.type)} optional />
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-medium text-dim uppercase tracking-wider">
-                    Copy Variations
-                  </label>
-                  <button
-                    type="button"
-                    onClick={addAdVariant}
-                    className="inline-flex items-center gap-1 text-detail font-semibold text-teal hover:text-teal-hover"
-                  >
-                    <Plus size={12} />
-                    New variation
-                  </button>
-                </div>
-                <p className="text-detail text-faint mb-2">
-                  Select shared variations or create new ones. Shared feedback carries across all ads using the same variation.
-                </p>
+        {kind === 'meta_lead_form' && (
+          <>
+            <FileInput file={file} onChange={setFile} accept={fileAccept(item.type)} optional />
+            <Field label="Intro headline"><input className={inputCls} value={lfHeadline} onChange={(e) => setLfHeadline(e.target.value)} /></Field>
+            <Field label="Intro description"><textarea className={`${inputCls} min-h-[80px]`} value={lfDescription} onChange={(e) => setLfDescription(e.target.value)} /></Field>
+            <Field label="CTA button"><input className={inputCls} value={lfCta} onChange={(e) => setLfCta(e.target.value)} /></Field>
+            <p className="text-detail text-dim -mt-1">To edit questions or other pages, edit the item directly.</p>
+          </>
+        )}
 
-                {/* Existing campaign variations (checkbox toggle) */}
-                {campaignVariations.length > 0 && (
-                  <div className="space-y-1.5 mb-3">
-                    <p className="text-2xs font-semibold uppercase tracking-wider text-dim">Existing in campaign</p>
-                    {campaignVariations.map((cv) => {
-                      const displayLabel = cv.label?.trim() || cv.headline?.trim() || 'Untitled';
-                      return (
-                        <div
-                          key={cv.id}
-                          className={`flex items-start gap-2.5 p-2.5 rounded-2xl border cursor-pointer transition-colors ${
-                            cv.selected ? 'border-teal/20 bg-white' : 'border-edge-strong bg-white hover:bg-surface'
-                          }`}
-                          onClick={() => toggleCampaignVariation(cv.id)}
-                        >
-                          <button
-                            type="button"
-                            className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                              cv.selected ? 'bg-teal border-teal text-white' : 'border-gray-300 hover:border-teal/50'
-                            }`}
-                          >
-                            {cv.selected && <Check size={12} />}
-                          </button>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-ink truncate">{displayLabel}</p>
-                            {cv.primary_text?.trim() && (
-                              <p className="text-detail text-faint truncate mt-0.5">{cv.primary_text.trim()}</p>
-                            )}
-                            {(cv.usedByCount ?? 0) > 0 && (
-                              <p className="text-2xs text-dim mt-1">
-                                Used by {cv.usedByCount} ad{cv.usedByCount === 1 ? '' : 's'}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+        {kind === 'google_search_ad' && (
+          <>
+            <p className="text-detail text-dim -mt-1">Versions iterate on headlines and descriptions. Sitelinks, paths, and call extension stay from the base item.</p>
+            <AssetListField label="Headlines" items={gadHeadlines} max={MAX_GAD_HEADLINES} charLimit={GAD_HEADLINE_CHARS} onUpdate={updateHeadline} onAdd={addHeadline} onRemove={removeHeadline} addLabel="Add headline" />
+            <AssetListField label="Descriptions" items={gadDescriptions} max={MAX_GAD_DESCRIPTIONS} charLimit={GAD_DESCRIPTION_CHARS} onUpdate={updateDescription} onAdd={addDescription} onRemove={removeDescription} addLabel="Add description" multiline />
+            <Field label="Final URL"><input className={inputCls} value={gadFinalUrl} onChange={(e) => setGadFinalUrl(e.target.value)} /></Field>
+          </>
+        )}
 
-                {/* Inline new variants (editable) */}
-                {adVariants.filter((v) => !campaignVariations.some((cv) => cv.id === v.id)).length > 0 && (
-                  <div className="space-y-2.5">
-                    {campaignVariations.length > 0 && (
-                      <p className="text-2xs font-semibold uppercase tracking-wider text-dim">New variations</p>
-                    )}
-                    {adVariants
-                      .filter((v) => !campaignVariations.some((cv) => cv.id === v.id))
-                      .map((v, i) => (
-                        <div key={v.id} className="rounded-2xl border border-edge-strong bg-white">
-                          <div className="flex items-center gap-2 px-3 pt-2.5">
-                            <span className="inline-flex items-center justify-center w-5 h-5 rounded text-detail font-semibold bg-gray-100 text-prose shrink-0">
-                              {i + 1}
-                            </span>
-                            <input
-                              type="text"
-                              value={v.label ?? ''}
-                              onChange={(e) => patchAdVariant(v.id, { label: e.target.value })}
-                              placeholder={`New variation ${i + 1} (name optional)`}
-                              className="flex-1 min-w-0 bg-transparent text-caption font-semibold text-ink placeholder:text-faint placeholder:font-normal outline-none"
-                            />
-                            {adVariants.filter((x) => !campaignVariations.some((cv) => cv.id === x.id)).length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => removeAdVariant(v.id)}
-                                className="text-faint hover:text-red-500 p-1 rounded shrink-0"
-                                title="Remove variant"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            )}
-                          </div>
-                          <div className="px-3 pb-3 pt-2 space-y-2">
-                            <div>
-                              <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-faint mb-1">
-                                <AlignLeft size={10} /> Primary text
-                              </label>
-                              <textarea
-                                value={v.primary_text}
-                                onChange={(e) => patchAdVariant(v.id, { primary_text: e.target.value })}
-                                rows={4}
-                                className={`${inputCls} min-h-[96px]`}
-                              />
-                            </div>
-                            <div>
-                              <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-faint mb-1">
-                                <Type size={10} /> Headline
-                              </label>
-                              <input
-                                type="text"
-                                value={v.headline}
-                                onChange={(e) => patchAdVariant(v.id, { headline: e.target.value })}
-                                className={inputCls}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
-              <CtaDropdown value={adCta} onChange={setAdCta} />
-            </>
-          )}
+        {kind === 'google_banner_ad' && (
+          <>
+            <FileInput file={file} onChange={setFile} accept={fileAccept(item.type)} optional />
+            <Field label="Headline"><input className={inputCls} value={gadHeadlines[0] ?? ''} onChange={(e) => updateHeadline(0, e.target.value)} /></Field>
+            <Field label="Final URL"><input className={inputCls} value={gadFinalUrl} onChange={(e) => setGadFinalUrl(e.target.value)} /></Field>
+          </>
+        )}
 
-          {kind === 'meta_lead_form' && (
-            <>
-              <FileInput file={file} onChange={setFile} accept={fileAccept(item.type)} optional />
-              <Field label="Intro headline">
-                <input className={inputCls} value={lfHeadline} onChange={(e) => setLfHeadline(e.target.value)} />
-              </Field>
-              <Field label="Intro description">
-                <textarea className={`${inputCls} min-h-[80px]`} value={lfDescription} onChange={(e) => setLfDescription(e.target.value)} />
-              </Field>
-              <Field label="CTA button">
-                <input className={inputCls} value={lfCta} onChange={(e) => setLfCta(e.target.value)} />
-              </Field>
-              <p className="text-detail text-dim -mt-1">
-                To edit questions or other pages, edit the item directly.
-              </p>
-            </>
-          )}
+        <Field label="Version notes (optional)">
+          <input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. tightened copy, swapped hero shot" />
+        </Field>
 
-          {kind === 'google_search_ad' && (
-            <>
-              <p className="text-detail text-dim -mt-1">
-                Versions iterate on headlines and descriptions. Sitelinks, paths, and call extension stay from the base item.
-              </p>
-              <AssetListField
-                label="Headlines"
-                items={gadHeadlines}
-                max={MAX_GAD_HEADLINES}
-                charLimit={GAD_HEADLINE_CHARS}
-                onUpdate={updateHeadline}
-                onAdd={addHeadline}
-                onRemove={removeHeadline}
-                addLabel="Add headline"
-              />
-              <AssetListField
-                label="Descriptions"
-                items={gadDescriptions}
-                max={MAX_GAD_DESCRIPTIONS}
-                charLimit={GAD_DESCRIPTION_CHARS}
-                onUpdate={updateDescription}
-                onAdd={addDescription}
-                onRemove={removeDescription}
-                addLabel="Add description"
-                multiline
-              />
-              <Field label="Final URL"><input className={inputCls} value={gadFinalUrl} onChange={(e) => setGadFinalUrl(e.target.value)} /></Field>
-            </>
-          )}
-
-          {kind === 'google_banner_ad' && (
-            <>
-              <FileInput file={file} onChange={setFile} accept={fileAccept(item.type)} optional />
-              <Field label="Headline"><input className={inputCls} value={gadHeadlines[0] ?? ''} onChange={(e) => updateHeadline(0, e.target.value)} /></Field>
-              <Field label="Final URL"><input className={inputCls} value={gadFinalUrl} onChange={(e) => setGadFinalUrl(e.target.value)} /></Field>
-            </>
-          )}
-
-          <Field label="Version notes (optional)">
-            <input
-              className={inputCls}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. tightened copy, swapped hero shot"
-            />
+        {!isEditing && (
+          <Field label="After upload">
+            <div className="flex items-center gap-2">
+              <select className={`${inputCls} flex-1`} value={resetTo} onChange={(e) => setResetTo(e.target.value as FeedbackStatus | 'keep')}>
+                {RESET_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              {resetTo !== 'keep' && (
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium border ${getFeedbackStatusDef(resetTo).bg} ${getFeedbackStatusDef(resetTo).text} ${getFeedbackStatusDef(resetTo).border}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${getFeedbackStatusDef(resetTo).dot}`} />
+                  {getFeedbackStatusDef(resetTo).label}
+                </span>
+              )}
+            </div>
+            <p className="text-detail text-faint mt-1">Reviewers assigned to the next stage will be notified automatically.</p>
           </Field>
-
-          {!isEditing && (
-            <Field label="After upload">
-              <div className="flex items-center gap-2">
-                <select
-                  className={`${inputCls} flex-1`}
-                  value={resetTo}
-                  onChange={(e) => setResetTo(e.target.value as FeedbackStatus | 'keep')}
-                >
-                  {RESET_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-                {resetTo !== 'keep' && (
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium border ${getFeedbackStatusDef(resetTo).bg} ${getFeedbackStatusDef(resetTo).text} ${getFeedbackStatusDef(resetTo).border}`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${getFeedbackStatusDef(resetTo).dot}`} />
-                    {getFeedbackStatusDef(resetTo).label}
-                  </span>
-                )}
-              </div>
-              <p className="text-detail text-faint mt-1">
-                Reviewers assigned to the next stage will be notified automatically.
-              </p>
-            </Field>
-          )}
+        )}
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>
-          Cancel
-        </Button>
+        <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>Cancel</Button>
         <Button size="sm" loading={busy} leftIcon={Upload} onClick={handleSubmit}>
           {isEditing ? 'Save Changes' : 'Save Version'}
         </Button>
@@ -667,7 +657,7 @@ export default function AddVersionModal({
   );
 }
 
-/* ─── Tiny presentational bits ─────────────────────────────────────── */
+/* ─── Shared sub-components ───────────────────────────────────────── */
 
 const inputCls = 'w-full px-3 py-2 bg-surface rounded-2xl text-caption focus:outline-none focus:ring-2 focus:ring-teal/30';
 
@@ -680,127 +670,107 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function AssetListField({
-  label, items, max, charLimit, onUpdate, onAdd, onRemove, addLabel, multiline,
-}: {
-  label: string;
-  items: string[];
-  max: number;
-  charLimit: number;
-  onUpdate: (idx: number, value: string) => void;
-  onAdd: () => void;
-  onRemove: (idx: number) => void;
-  addLabel: string;
-  multiline?: boolean;
+function ExistingVariationRow({ variation, isActive, onToggle, onActivate }: {
+  variation: PickerVariation; isActive: boolean; onToggle: () => void; onActivate: () => void;
 }) {
-  const filled = items.filter((v) => v.trim()).length;
+  const displayLabel = variation.label?.trim() || variation.headline?.trim() || 'Untitled';
+  const subtitle = variation.headline?.trim() ? variation.primary_text?.trim() || '' : '';
   return (
-    <div className="block">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-detail font-medium uppercase tracking-wider text-dim">
-          {label}
-        </span>
-        <span className="text-2xs tabular-nums text-faint">{filled}/{max}</span>
+    <div
+      className={`flex items-start gap-2.5 p-3 rounded-2xl border transition-colors cursor-pointer ${
+        variation.selected
+          ? (isActive ? 'border-teal/40 bg-teal/5' : 'border-teal/20 bg-white')
+          : 'border-edge-strong bg-white hover:bg-surface'
+      }`}
+      onClick={() => { if (!variation.selected) onToggle(); onActivate(); }}
+    >
+      <button type="button" onClick={(e) => { e.stopPropagation(); onToggle(); }}
+        className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+          variation.selected ? 'bg-teal border-teal text-white' : 'border-gray-300 hover:border-teal/50'
+        }`}>
+        {variation.selected && <Check size={12} />}
+      </button>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-ink truncate">{displayLabel}</p>
+        {subtitle && <p className="text-detail text-faint line-clamp-2 mt-0.5">{subtitle}</p>}
+        {(variation.usedByCount ?? 0) > 0 && (
+          <p className="text-2xs text-dim mt-1">Used by {variation.usedByCount} ad{variation.usedByCount === 1 ? '' : 's'}</p>
+        )}
       </div>
-      <div className="space-y-1.5">
-        {items.map((value, i) => (
-          <div key={i} className="flex items-start gap-1.5">
-            <span className="mt-2 text-2xs tabular-nums text-faint w-4 text-right">{i + 1}.</span>
-            {multiline ? (
-              <textarea
-                className={`${inputCls} min-h-[52px]`}
-                value={value}
-                onChange={(e) => onUpdate(i, e.target.value)}
-                maxLength={charLimit}
-              />
-            ) : (
-              <input
-                className={inputCls}
-                value={value}
-                onChange={(e) => onUpdate(i, e.target.value)}
-                maxLength={charLimit}
-              />
-            )}
-            {items.length > 1 && (
-              <button
-                type="button"
-                onClick={() => onRemove(i)}
-                className="mt-2 p-1 text-faint hover:text-red-500 transition-colors"
-                title="Remove"
-              >
-                <Trash2 size={13} />
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-      {items.length < max && (
-        <button
-          type="button"
-          onClick={onAdd}
-          className="mt-2 inline-flex items-center gap-1 text-xs text-teal hover:text-teal-hover font-medium"
-        >
-          <Plus size={13} /> {addLabel}
-        </button>
-      )}
     </div>
   );
 }
 
-function FileInput({
-  file, onChange, accept, optional,
-}: { file: File | null; onChange: (f: File | null) => void; accept: string; optional?: boolean }) {
+function NewVariationEditor({ variation, index, isActive, onPatch, onActivate, onRemove, canRemove }: {
+  variation: PickerVariation; index: number; isActive: boolean;
+  onPatch: (patch: Partial<PickerVariation>) => void; onActivate: () => void; onRemove: () => void; canRemove: boolean;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const autoResize = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.max(el.scrollHeight, 140)}px`;
+  }, []);
+  useEffect(() => { autoResize(); }, [variation.primary_text, autoResize]);
+
   return (
-    <Field label={optional ? 'New file (optional)' : 'New file'}>
-      <div className="flex items-center gap-2">
-        <input
-          type="file"
-          accept={accept}
-          onChange={(e) => onChange(e.target.files?.[0] ?? null)}
-          className="block w-full text-caption text-prose file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-edge-strong file:text-xs file:font-medium file:bg-surface hover:file:bg-gray-100"
-        />
-        {file && <span className="text-detail text-dim truncate max-w-[120px]">{file.name}</span>}
+    <div className={`rounded-2xl border transition-colors ${isActive ? 'border-teal/40 bg-teal/5' : 'border-edge-strong bg-white'}`}>
+      <div className="flex items-center gap-2 px-3 pt-3">
+        <button type="button" onClick={onActivate}
+          className={`inline-flex items-center justify-center w-5 h-5 rounded text-detail font-semibold shrink-0 transition-colors ${
+            isActive ? 'bg-teal text-white' : 'bg-gray-100 text-prose hover:bg-gray-200'
+          }`}>{index + 1}</button>
+        <input type="text" value={variation.label} onChange={(e) => onPatch({ label: e.target.value })} onFocus={onActivate}
+          placeholder={`Variation ${index + 1} name (optional)`}
+          className="flex-1 min-w-0 bg-transparent text-caption font-semibold text-ink placeholder:text-faint placeholder:font-normal outline-none" />
+        {canRemove && (
+          <button type="button" onClick={onRemove} className="text-faint hover:text-red-500 p-1 rounded shrink-0" title="Remove"><Trash2 size={13} /></button>
+        )}
       </div>
-    </Field>
+      <div className="px-3 pb-3 pt-2 space-y-2.5">
+        <div>
+          <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-faint mb-1"><AlignLeft size={10} /> Primary text</label>
+          <textarea ref={textareaRef} value={variation.primary_text}
+            onChange={(e) => { onPatch({ primary_text: e.target.value }); autoResize(); }} onFocus={onActivate}
+            placeholder="Body copy shown above the image…"
+            className="w-full px-3 py-2 bg-white border border-edge-strong rounded-lg text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 resize-none overflow-hidden"
+            style={{ minHeight: 140 }} />
+        </div>
+        <div>
+          <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-faint mb-1"><Type size={10} /> Headline</label>
+          <input type="text" value={variation.headline} onChange={(e) => onPatch({ headline: e.target.value })} onFocus={onActivate}
+            placeholder="Short punchy headline…"
+            className="w-full px-3 py-2 bg-white border border-edge-strong rounded-lg text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20" />
+        </div>
+      </div>
+    </div>
   );
 }
 
-function CtaDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function CtaDropdown({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
-
   return (
     <div className="relative" ref={ref}>
-      <span className="text-detail font-medium uppercase tracking-wider text-dim mb-1 block">Call to action</span>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={`w-full flex items-center justify-between gap-2 px-3 py-2 bg-surface rounded-2xl text-caption hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-teal/30`}
-      >
+      <label className="block text-xs font-medium text-dim uppercase tracking-wider mb-1">CTA Button</label>
+      <button type="button" onClick={() => !disabled && setOpen((v) => !v)}
+        className={`w-full flex items-center justify-between gap-2 px-3 py-2 bg-surface rounded-2xl text-sm text-ink transition-colors focus:outline-none focus:ring-2 focus:ring-teal/20 ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}`}>
         <span className="truncate">{value || 'Select CTA'}</span>
         <ChevronDown size={14} className={`text-faint shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      {open && (
+      {open && !disabled && (
         <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-2xl border border-edge-strong shadow-lg overflow-hidden z-50">
           <div className="max-h-60 overflow-y-auto py-1">
             {CTA_OPTIONS.map((cta) => (
-              <button
-                key={cta}
-                type="button"
-                onClick={() => { onChange(cta); setOpen(false); }}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
-                  cta === value ? 'bg-teal/5 text-teal font-medium' : 'text-ink hover:bg-surface'
-                }`}
-              >
+              <button key={cta} type="button" onClick={() => { onChange(cta); setOpen(false); }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${cta === value ? 'bg-teal/5 text-teal font-medium' : 'text-ink hover:bg-surface'}`}>
                 {cta === value && <Check size={13} className="shrink-0" />}
                 {cta !== value && <span className="w-[13px] shrink-0" />}
                 {cta}
@@ -810,5 +780,48 @@ function CtaDropdown({ value, onChange }: { value: string; onChange: (v: string)
         </div>
       )}
     </div>
+  );
+}
+
+function AssetListField({ label, items, max, charLimit, onUpdate, onAdd, onRemove, addLabel, multiline }: {
+  label: string; items: string[]; max: number; charLimit: number;
+  onUpdate: (idx: number, value: string) => void; onAdd: () => void; onRemove: (idx: number) => void; addLabel: string; multiline?: boolean;
+}) {
+  const filled = items.filter((v) => v.trim()).length;
+  return (
+    <div className="block">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-detail font-medium uppercase tracking-wider text-dim">{label}</span>
+        <span className="text-2xs tabular-nums text-faint">{filled}/{max}</span>
+      </div>
+      <div className="space-y-1.5">
+        {items.map((value, i) => (
+          <div key={i} className="flex items-start gap-1.5">
+            <span className="mt-2 text-2xs tabular-nums text-faint w-4 text-right">{i + 1}.</span>
+            {multiline
+              ? <textarea className={`${inputCls} min-h-[52px]`} value={value} onChange={(e) => onUpdate(i, e.target.value)} maxLength={charLimit} />
+              : <input className={inputCls} value={value} onChange={(e) => onUpdate(i, e.target.value)} maxLength={charLimit} />}
+            {items.length > 1 && (
+              <button type="button" onClick={() => onRemove(i)} className="mt-2 p-1 text-faint hover:text-red-500 transition-colors" title="Remove"><Trash2 size={13} /></button>
+            )}
+          </div>
+        ))}
+      </div>
+      {items.length < max && (
+        <button type="button" onClick={onAdd} className="mt-2 inline-flex items-center gap-1 text-xs text-teal hover:text-teal-hover font-medium"><Plus size={13} /> {addLabel}</button>
+      )}
+    </div>
+  );
+}
+
+function FileInput({ file, onChange, accept, optional }: { file: File | null; onChange: (f: File | null) => void; accept: string; optional?: boolean }) {
+  return (
+    <Field label={optional ? 'New file (optional)' : 'New file'}>
+      <div className="flex items-center gap-2">
+        <input type="file" accept={accept} onChange={(e) => onChange(e.target.files?.[0] ?? null)}
+          className="block w-full text-caption text-prose file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-edge-strong file:text-xs file:font-medium file:bg-surface hover:file:bg-gray-100" />
+        {file && <span className="text-detail text-dim truncate max-w-[120px]">{file.name}</span>}
+      </div>
+    </Field>
   );
 }
