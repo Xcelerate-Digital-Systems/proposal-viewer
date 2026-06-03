@@ -13,7 +13,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { authFetch } from '@/lib/auth-fetch';
 import {
-  Loader2, Upload, Trash2,
+  Loader2, Upload, Trash2, ChevronDown,
   Image as ImageIcon, RotateCcw, Hash, LayoutPanelTop,
   Paintbrush, Package, DollarSign, ArrowUpRight, CheckSquare,
 } from 'lucide-react';
@@ -100,15 +100,25 @@ function tipTapToPlainText(node: unknown): string {
 /*  Group heading                                                      */
 /* ------------------------------------------------------------------ */
 
-function GroupHeading({ title, hint }: { title: string; hint?: string }) {
+function GroupHeading({ title, hint, open, onToggle }: { title: string; hint?: string; open: boolean; onToggle: () => void }) {
   return (
-    <div className="pt-4">
-      <div className="flex items-baseline justify-between gap-3 flex-wrap">
-        <h3 className="text-xl font-semibold text-ink">{title}</h3>
-        {hint && <span className="text-xs text-faint">{hint}</span>}
+    <button
+      type="button"
+      onClick={onToggle}
+      className="w-full pt-4 text-left group"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-baseline gap-3 flex-wrap min-w-0">
+          <h3 className="text-xl font-semibold text-ink">{title}</h3>
+          {hint && <span className="text-xs text-faint">{hint}</span>}
+        </div>
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-faint group-hover:text-dim transition-transform ${open ? 'rotate-180' : ''}`}
+        />
       </div>
       <div className="mt-2 h-px bg-edge" />
-    </div>
+    </button>
   );
 }
 
@@ -325,6 +335,14 @@ export default function ViewerStyleSection({
   // Pull a plain-text snippet from the entity's first text page so the
   // Globals live preview shows the user's actual body copy instead of
   // canned "Body text on a proposal page" filler. Falls back to a sample.
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(['Globals']));
+  const toggleGroup = (name: string) =>
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      return next;
+    });
+
   const [bodySnippet, setBodySnippet] = useState<string | null>(null);
   useEffect(() => {
     if (!entityId) return;
@@ -446,12 +464,9 @@ export default function ViewerStyleSection({
       {/* ============================================================
           1. GLOBALS — truly cross-cutting controls
           ============================================================ */}
-      <GroupHeading title="Globals" hint="Apply across every page" />
+      <GroupHeading title="Globals" hint="Apply across every page" open={openGroups.has('Globals')} onToggle={() => toggleGroup('Globals')} />
 
-      {/* Globals — same flex+aside shape as Text Page Colours / Pricing Design.
-          Controls live inside a single SectionCard on the left; the live
-          typography preview is a sticky sibling aside on the right. */}
-      <div className="flex gap-6 items-start">
+      {openGroups.has('Globals') && <div className="flex gap-6 items-start">
         <div className="flex-1 min-w-0 space-y-5">
           <SectionCard
             title="Global Page Defaults"
@@ -687,14 +702,14 @@ export default function ViewerStyleSection({
             </p>
           </div>
         </StickyPreviewAside>
-      </div>
+      </div>}
 
       {/* ============================================================
           2. COVER PAGE
           ============================================================ */}
-      <GroupHeading title="Cover Page" hint="Logo, avatar and titles live in the Cover tab" />
+      <GroupHeading title="Cover Page" hint="Logo, avatar and titles live in the Cover tab" open={openGroups.has('Cover Page')} onToggle={() => toggleGroup('Cover Page')} />
 
-      {coverEntity ? (
+      {openGroups.has('Cover Page') && (coverEntity ? (
         <CoverDesignPanel
           type={type === 'document' ? 'document' : type}
           entity={coverEntity}
@@ -726,16 +741,16 @@ export default function ViewerStyleSection({
             Cover design controls appear here when the page passes a cover entity.
           </p>
         </SectionCard>
-      )}
+      ))}
 
       {/* ============================================================
           3. PRICING PAGE — quote pages
           ============================================================ */}
       {type !== 'document' && (
         <>
-          <GroupHeading title="Pricing Page" hint="Line item table, totals, payment schedule" />
+          <GroupHeading title="Pricing Page" hint="Line item table, totals, payment schedule" open={openGroups.has('Pricing Page')} onToggle={() => toggleGroup('Pricing Page')} />
 
-          <div className="flex gap-6 items-start">
+          {openGroups.has('Pricing Page') && <div className="flex gap-6 items-start">
             <div className="flex-1 min-w-0">
               <SectionCard
                 title="Pricing Design"
@@ -836,16 +851,16 @@ export default function ViewerStyleSection({
                 }}
               />
             </StickyPreviewAside>
-          </div>
+          </div>}
         </>
       )}
 
       {/* ============================================================
           4. PACKAGE PAGE
           ============================================================ */}
-      <GroupHeading title="Package Page" hint="Gradient picker, feature icons, tier colours" />
+      <GroupHeading title="Package Page" hint="Gradient picker, feature icons, tier colours" open={openGroups.has('Package Page')} onToggle={() => toggleGroup('Package Page')} />
 
-      {type === 'document' ? (
+      {openGroups.has('Package Page') && (type === 'document' ? (
         <SectionCard
           title="Packages Design"
           description="Documents don't have packages pages."
@@ -858,16 +873,16 @@ export default function ViewerStyleSection({
           entityId={entityId}
           entityKey={type === 'template' ? 'template_id' : 'proposal_id'}
         />
-      )}
+      ))}
 
       {/* ============================================================
           5. DECISION PAGE
           ============================================================ */}
       {type !== 'document' && (
         <>
-          <GroupHeading title="Decision Page" hint="Accept / Decline / Request Changes form" />
+          <GroupHeading title="Decision Page" hint="Accept / Decline / Request Changes form" open={openGroups.has('Decision Page')} onToggle={() => toggleGroup('Decision Page')} />
 
-          <div className="flex gap-6 items-start">
+          {openGroups.has('Decision Page') && <div className="flex gap-6 items-start">
             <div className="flex-1 min-w-0">
               <SectionCard
                 title="Decision Design"
@@ -959,7 +974,7 @@ export default function ViewerStyleSection({
                 }}
               />
             </StickyPreviewAside>
-          </div>
+          </div>}
         </>
       )}
 

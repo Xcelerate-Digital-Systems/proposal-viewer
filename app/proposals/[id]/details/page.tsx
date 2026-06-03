@@ -2,13 +2,11 @@
 'use client';
 
 import EditDetailsPanel from '@/components/admin/shared/EditDetailsPanel';
-import { useToast } from '@/components/ui/Toast';
 import PostAcceptSection from '@/components/admin/proposals/PostAcceptSection';
 import { useProposalDetail } from '@/components/admin/proposals/ProposalDetailContext';
 
 export default function ProposalDetailsPage() {
   const { proposal, refetch } = useProposalDetail();
-  const toast = useToast();
 
   return (
     <div className="flex-1 px-6 lg:px-10 py-6">
@@ -23,11 +21,7 @@ export default function ProposalDetailsPage() {
             crm_identifier: proposal.crm_identifier,
             description: proposal.description,
           }}
-          onSave={() => {
-            toast.success('Details saved');
-            refetch();
-          }}
-          onCancel={() => {}}
+          onSave={refetch}
           hiddenFields={['site_address', 'estimated_start_date', 'estimated_duration']}
         />
         <PostAcceptSection

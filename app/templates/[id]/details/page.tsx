@@ -2,13 +2,11 @@
 'use client';
 
 import EditDetailsPanel from '@/components/admin/shared/EditDetailsPanel';
-import { useToast } from '@/components/ui/Toast';
 import PostAcceptSection from '@/components/admin/proposals/PostAcceptSection';
 import { useTemplateDetail } from '@/components/admin/templates/TemplateDetailContext';
 
 export default function TemplateDetailsPage() {
   const { template, refetch } = useTemplateDetail();
-  const toast = useToast();
 
   return (
     <div className="flex-1 px-6 lg:px-10 py-6 space-y-4">
@@ -19,10 +17,7 @@ export default function TemplateDetailsPage() {
           name: template.name,
           description: template.description,
         }}
-        onSave={() => {
-          toast.success('Details saved');
-          refetch();
-        }}
+        onSave={refetch}
       />
       <PostAcceptSection
         entityId={template.id}

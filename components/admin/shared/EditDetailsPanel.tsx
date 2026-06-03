@@ -1,13 +1,13 @@
 // components/admin/shared/EditDetailsPanel.tsx
 'use client';
 
-import { useState } from 'react';
-import { Info, Save } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { Info } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { FormFields, fieldsByType, type EntityType } from '@/components/ui/FormField';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
-import { Button } from '@/components/ui/Button';
+import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 
 const tableByType: Record<EntityType, string> = {
   proposal: 'proposals',
@@ -25,7 +25,7 @@ interface EditDetailsPanelProps {
   hiddenFields?: string[];
 }
 
-export default function EditDetailsPanel({ type, id, initialValues, onSave, onCancel, hiddenFields }: EditDetailsPanelProps) {
+export default function EditDetailsPanel({ type, id, initialValues, onSave, hiddenFields }: EditDetailsPanelProps) {
   const toast = useToast();
   const allFields = fieldsByType[type];
   const fields = hiddenFields?.length
@@ -38,46 +38,56 @@ export default function EditDetailsPanel({ type, id, initialValues, onSave, onCa
     }
     return initial;
   });
-  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  useReportSaveStatus(saveStatus);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const persist = useCallback(
+    async (next: Record<string, string>) => {
+      setSaveStatus('saving');
+      try {
+        const payload: Record<string, string | null> = {};
+        for (const f of fields) {
+          payload[f.key] = next[f.key]?.trim() || null;
+        }
+
+        const { error } = await supabase
+          .from(tableByType[type])
+          .update(payload)
+          .eq('id', id);
+
+        if (error) throw error;
+
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+        onSave();
+      } catch {
+        setSaveStatus('idle');
+        toast.error('Failed to save details');
+      }
+    },
+    [id, type, fields, toast, onSave],
+  );
+
+  const schedule = useCallback(
+    (next: Record<string, string>) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => persist(next), 600);
+    },
+    [persist],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const update = (key: string, value: string) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    const next = { ...form, [key]: value };
+    setForm(next);
+    schedule(next);
   };
-
-  const handleSave = async () => {
-    // Validate required fields
-    for (const f of fields) {
-      if (f.required && !form[f.key]?.trim()) {
-        toast.error(`${f.label} is required`);
-        return;
-      }
-    }
-
-    setSaving(true);
-    try {
-      const payload: Record<string, string | null> = {};
-      for (const f of fields) {
-        payload[f.key] = form[f.key]?.trim() || null;
-      }
-
-      const { error } = await supabase
-        .from(tableByType[type])
-        .update(payload)
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast.success('Details updated');
-      onSave();
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to save changes');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const hasChanges = fields.some((f) => (form[f.key] || '') !== (initialValues[f.key] || ''));
 
   return (
     <SectionCard
@@ -85,30 +95,11 @@ export default function EditDetailsPanel({ type, id, initialValues, onSave, onCa
       description={`Core information about this ${type}.`}
       icon={<Info size={14} className="text-faint" />}
     >
-      <div className="space-y-4">
-        <FormFields
-          fields={fields}
-          values={form}
-          onChange={update}
-        />
-
-        <div className="flex items-center justify-end gap-2 pt-2">
-          {onCancel && (
-            <Button variant="ghost" size="sm" onClick={onCancel}>
-              Cancel
-            </Button>
-          )}
-          <Button
-            size="sm"
-            leftIcon={Save}
-            loading={saving}
-            disabled={saving || !hasChanges}
-            onClick={handleSave}
-          >
-            Save Changes
-          </Button>
-        </div>
-      </div>
+      <FormFields
+        fields={fields}
+        values={form}
+        onChange={update}
+      />
     </SectionCard>
   );
 }
