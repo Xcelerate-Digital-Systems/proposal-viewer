@@ -81,7 +81,7 @@ export default function SortableTocRow({
           {onRemove && (
             <button
               onClick={onRemove}
-              className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+              className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
               title="Remove table of contents"
             >
               <Trash2 size={12} />

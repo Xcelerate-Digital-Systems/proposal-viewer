@@ -29,7 +29,7 @@ export default function PageLinkInput({ linkUrl, linkLabel, onChange, variant = 
             ? 'text-teal bg-teal/10 border-teal/30 hover:bg-teal/20'
             : teal
             ? 'text-teal/40 border-transparent hover:text-teal hover:bg-teal/10'
-            : 'text-gray-300 border-edge hover:text-teal hover:border-teal/25 hover:bg-teal/5'
+            : 'text-faint border-edge hover:text-teal hover:border-teal/25 hover:bg-teal/5'
         }`}
       >
         <Link2 size={13} />

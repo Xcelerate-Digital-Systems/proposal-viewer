@@ -29,7 +29,7 @@ export default function PricingPanel({
           Quote Page
         </span>
         <div className="flex items-center gap-2">
-          {pricingSaveStatus === 'saving' && <Loader2 size={12} className="animate-spin text-gray-300" />}
+          {pricingSaveStatus === 'saving' && <Loader2 size={12} className="animate-spin text-faint" />}
           {pricingSaveStatus === 'saved' && <Check size={13} className="text-emerald-400" />}
           <button
             onClick={onRemove}

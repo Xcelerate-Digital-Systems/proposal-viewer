@@ -90,7 +90,7 @@ export default function PdfPreviewPanel({
     return (
       <div
         ref={containerRef}
-        className="flex-1 rounded-lg border border-edge-strong bg-gray-100 flex items-center justify-center"
+        className="flex-1 rounded-lg border border-edge-strong bg-surface flex items-center justify-center"
       >
         <div className="flex flex-col items-center gap-2">
           <div className="w-5 h-5 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
@@ -125,7 +125,7 @@ export default function PdfPreviewPanel({
         onLoadSuccess={handleLoadSuccess}
         loading={
           <div className="flex-1 flex items-center justify-center py-20">
-            <Loader2 size={20} className="animate-spin text-gray-300" />
+            <Loader2 size={20} className="animate-spin text-faint" />
           </div>
         }
         key={documentKey}
@@ -136,7 +136,7 @@ export default function PdfPreviewPanel({
           </div>
         )}
         {resolvedPageCount > 0 && (
-          <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-edge-strong bg-gray-100 min-h-0">
+          <div className="flex-1 flex flex-col rounded-lg overflow-hidden border border-edge-strong bg-surface min-h-0">
             {/* Page preview */}
             <div className="flex-1 min-h-0 overflow-hidden bg-white flex items-center justify-center p-2">
               <Page
@@ -147,7 +147,7 @@ export default function PdfPreviewPanel({
                 className="max-h-full"
                 loading={
                   <div className="flex flex-col items-center justify-center py-20">
-                    <Loader2 size={20} className="animate-spin text-gray-300" />
+                    <Loader2 size={20} className="animate-spin text-faint" />
                   </div>
                 }
               />

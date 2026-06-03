@@ -328,7 +328,7 @@ export default function ImportPagesModal({
       <Modal.Body>
         {/* Source toggle — only show when on the initial step */}
         {(step === 'pick-template' || source === 'library') && (
-          <div className="flex items-center gap-1 p-0.5 rounded-lg bg-gray-100 mb-3">
+          <div className="flex items-center gap-1 p-0.5 rounded-lg bg-surface mb-3">
             <button
               onClick={() => { setSource('templates'); setStep('pick-template'); setSearch(''); setSelectedLibIds(new Set()); }}
               className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
@@ -367,11 +367,11 @@ export default function ImportPagesModal({
               </div>
             ) : filteredLibrary.length === 0 ? (
               <div className="text-center py-12">
-                <BookOpen size={28} className="mx-auto text-gray-200 mb-2" />
+                <BookOpen size={28} className="mx-auto text-faint mb-2" />
                 <p className="text-sm text-faint">
                   {search ? 'No matching pages' : 'Your page library is empty'}
                 </p>
-                <p className="text-xs text-gray-300 mt-1">
+                <p className="text-xs text-faint mt-1">
                   Save pages from the page editor to build your library
                 </p>
               </div>
@@ -405,7 +405,7 @@ export default function ImportPagesModal({
                       <div
                         key={lp.id}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer ${
-                          isSelected ? 'bg-teal/5 ring-1 ring-teal/30' : 'hover:bg-gray-50'
+                          isSelected ? 'bg-teal/5 ring-1 ring-teal/30' : 'hover:bg-paper'
                         }`}
                         onClick={() =>
                           setSelectedLibIds((prev) => {
@@ -416,18 +416,18 @@ export default function ImportPagesModal({
                         }
                       >
                         <div className={`shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                          isSelected ? 'bg-teal border-teal' : 'border-gray-300'
+                          isSelected ? 'bg-teal border-teal' : 'border-edge-hover'
                         }`}>
                           {isSelected && <Check size={12} className="text-white" />}
                         </div>
 
                         {lp.type === 'pdf' && thumbUrl ? (
-                          <div className="shrink-0 w-10 h-14 rounded border border-edge overflow-hidden bg-gray-50">
+                          <div className="shrink-0 w-10 h-14 rounded border border-edge overflow-hidden bg-paper">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
                           </div>
                         ) : (
-                          <div className="shrink-0 w-8 h-8 rounded bg-gray-100 flex items-center justify-center">
+                          <div className="shrink-0 w-8 h-8 rounded bg-surface flex items-center justify-center">
                             <Icon size={14} className="text-dim" />
                           </div>
                         )}
@@ -443,7 +443,7 @@ export default function ImportPagesModal({
 
                         <button
                           onClick={(e) => { e.stopPropagation(); handleLibraryDelete(lp.id); }}
-                          className="shrink-0 p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                          className="shrink-0 p-1 rounded text-faint hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
                           style={{ opacity: undefined }}
                           title="Remove from library"
                           onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
@@ -486,7 +486,7 @@ export default function ImportPagesModal({
                   <button
                     key={t.id}
                     onClick={() => selectTemplate(t)}
-                    className="w-full text-left px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-3 group"
+                    className="w-full text-left px-3 py-3 rounded-lg hover:bg-paper transition-colors flex items-center gap-3 group"
                   >
                     <div className="shrink-0 w-8 h-8 rounded-lg bg-teal/10 flex items-center justify-center">
                       <Library size={16} className="text-teal" />
@@ -513,7 +513,7 @@ export default function ImportPagesModal({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => { setStep('pick-template'); setSearch(''); }}
-                className="p-1 rounded hover:bg-gray-100 transition-colors"
+                className="p-1 rounded hover:bg-surface transition-colors"
               >
                 <ArrowLeft size={16} className="text-dim" />
               </button>
@@ -559,21 +559,21 @@ export default function ImportPagesModal({
                         className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-3 cursor-pointer ${
                           isSelected
                             ? 'bg-teal/5 ring-1 ring-teal/30'
-                            : 'hover:bg-gray-50'
+                            : 'hover:bg-paper'
                         }`}
                       >
                         {/* Checkbox */}
                         <div className={`shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                           isSelected
                             ? 'bg-teal border-teal'
-                            : 'border-gray-300'
+                            : 'border-edge-hover'
                         }`}>
                           {isSelected && <Check size={12} className="text-white" />}
                         </div>
 
                         {/* Thumbnail or type icon */}
                         {page.type === 'pdf' && thumbnailUrl ? (
-                          <div className="shrink-0 w-10 h-14 rounded border border-edge overflow-hidden bg-gray-50">
+                          <div className="shrink-0 w-10 h-14 rounded border border-edge overflow-hidden bg-paper">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={thumbnailUrl}
@@ -582,7 +582,7 @@ export default function ImportPagesModal({
                             />
                           </div>
                         ) : (
-                          <div className="shrink-0 w-8 h-8 rounded bg-gray-100 flex items-center justify-center">
+                          <div className="shrink-0 w-8 h-8 rounded bg-surface flex items-center justify-center">
                             <Icon size={14} className="text-dim" />
                           </div>
                         )}
@@ -603,7 +603,7 @@ export default function ImportPagesModal({
                           className={`shrink-0 p-1.5 rounded transition-colors ${
                             alreadySaved
                               ? 'text-emerald-400 cursor-default'
-                              : 'text-gray-300 hover:text-teal hover:bg-teal/5'
+                              : 'text-faint hover:text-teal hover:bg-teal/5'
                           }`}
                           title={alreadySaved ? 'Saved to library' : 'Save to page library'}
                         >

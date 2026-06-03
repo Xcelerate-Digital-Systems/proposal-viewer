@@ -104,7 +104,7 @@ export default function TextPageEditorModal({
                   aria-checked={page.show_title ?? true}
                   onClick={handleToggleTitle}
                   className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal/20 ${
-                    (page.show_title ?? true) ? 'bg-teal' : 'bg-gray-300'
+                    (page.show_title ?? true) ? 'bg-teal' : 'bg-edge-hover'
                   }`}
                 >
                   <span
@@ -137,7 +137,7 @@ export default function TextPageEditorModal({
                 aria-checked={!!page.show_member_badge}
                 onClick={handleToggleBadge}
                 className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal/20 ${
-                  page.show_member_badge ? 'bg-teal' : 'bg-gray-300'
+                  page.show_member_badge ? 'bg-teal' : 'bg-edge-hover'
                 }`}
               >
                 <span
@@ -180,7 +180,7 @@ export default function TextPageEditorModal({
                 aria-checked={!!page.show_client_logo}
                 onClick={handleToggleClientLogo}
                 className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal/20 ${
-                  page.show_client_logo ? 'bg-teal' : 'bg-gray-300'
+                  page.show_client_logo ? 'bg-teal' : 'bg-edge-hover'
                 }`}
               >
                 <span

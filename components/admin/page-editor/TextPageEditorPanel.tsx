@@ -42,7 +42,7 @@ export default function TextPageEditorPanel({
             <button
               onClick={onGoPrev}
               disabled={!canGoPrev}
-              className="w-7 h-7 flex items-center justify-center rounded text-faint hover:text-prose hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded text-faint hover:text-prose hover:bg-surface disabled:text-edge-hover disabled:hover:bg-transparent transition-colors"
             >
               <ChevronLeft size={14} />
             </button>
@@ -50,7 +50,7 @@ export default function TextPageEditorPanel({
             <button
               onClick={onGoNext}
               disabled={!canGoNext}
-              className="w-7 h-7 flex items-center justify-center rounded text-faint hover:text-prose hover:bg-gray-100 disabled:text-gray-200 disabled:hover:bg-transparent transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded text-faint hover:text-prose hover:bg-surface disabled:text-edge-hover disabled:hover:bg-transparent transition-colors"
             >
               <ChevronRight size={14} />
             </button>

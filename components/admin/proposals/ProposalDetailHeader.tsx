@@ -4,47 +4,26 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-  ArrowLeft, Copy, Check, ExternalLink, Trash2,
-  FileText, Clock, Eye, CheckCircle2, X, PenLine, BookTemplate } from 'lucide-react';
+import { ArrowLeft, Copy, Check, ExternalLink, Trash2, BookTemplate } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
 import { authedFetch } from '@/lib/api-fetch';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
-import StatusDropdown, { type StatusOption } from '@/components/ui/StatusDropdown';
+import StatusDropdown from '@/components/ui/StatusDropdown';
 import { Button, buttonClasses } from '@/components/ui/Button';
 import EditorSaveStatusBadge from '@/components/admin/EditorSaveStatusBadge';
+import {
+  type ProposalStatus,
+  PROPOSAL_STATUS_OPTIONS,
+} from '@/lib/proposals/status';
 import ProposalTabs from './ProposalTabs';
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
-
-type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'revision_requested' | 'declined';
 
 interface ProposalDetailHeaderProps {
   proposal: Proposal;
   customDomain?: string | null;
   onProposalChange?: (next: Proposal) => void;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Status options                                                     */
-/* ------------------------------------------------------------------ */
-
-const statusOptions: StatusOption<ProposalStatus>[] = [
-  { value: 'draft',    label: 'Draft',    bg: 'bg-surface',     text: 'text-muted',        border: 'border-edge',          icon: <FileText size={13} /> },
-  { value: 'sent',     label: 'Sent',     bg: 'bg-surface',     text: 'text-muted',        border: 'border-edge',          icon: <Clock size={13} /> },
-  { value: 'viewed',   label: 'Viewed',   bg: 'bg-surface',     text: 'text-muted',        border: 'border-edge',          icon: <Eye size={13} /> },
-  { value: 'revision_requested', label: 'Changes Requested', bg: 'bg-surface', text: 'text-muted', border: 'border-edge', icon: <PenLine size={13} /> },
-  { value: 'accepted', label: 'Accepted', bg: 'bg-emerald-50',  text: 'text-emerald-600',  border: 'border-emerald-200',   icon: <CheckCircle2 size={13} /> },
-  { value: 'declined', label: 'Declined', bg: 'bg-red-50',      text: 'text-red-500',      border: 'border-red-200',       icon: <X size={13} /> },
-];
-
-/* ------------------------------------------------------------------ */
-/*  Component                                                          */
-/* ------------------------------------------------------------------ */
 
 export default function ProposalDetailHeader({
   proposal,
@@ -73,9 +52,6 @@ export default function ProposalDetailHeader({
     if (newStatus === 'sent' && proposal.status === 'draft') {
       updates.sent_at = new Date().toISOString();
     }
-    // Moving back to draft (e.g. after fixing a mistake) clears the view-
-    // tracking fields so the next real send fires a fresh first-view
-    // notification instead of being suppressed by stale state.
     if (newStatus === 'draft') {
       updates.first_viewed_at = null;
       updates.last_viewed_at = null;
@@ -90,7 +66,7 @@ export default function ProposalDetailHeader({
     if (error) {
       toast.error('Failed to update status');
     } else {
-      const label = statusOptions.find((o) => o.value === newStatus)?.label ?? newStatus;
+      const label = PROPOSAL_STATUS_OPTIONS.find((o) => o.value === newStatus)?.label ?? newStatus;
       toast.success(`Pitch marked as ${label}`);
       onProposalChange?.({ ...proposal, status: newStatus } as Proposal);
     }
@@ -134,22 +110,20 @@ export default function ProposalDetailHeader({
       toast.error('Failed to delete pitch');
     } else {
       toast.success('Pitch deleted');
-      router.push('/');
+      router.push('/proposals');
     }
   };
 
   return (
     <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-edge lg:border-b-0">
-      {/* Back link */}
       <Link
-        href="/"
+        href="/proposals"
         className="inline-flex items-center gap-1.5 text-sm text-faint hover:text-prose transition-colors mb-3"
       >
         <ArrowLeft size={14} />
         All Proposals
       </Link>
 
-      {/* Title row */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
@@ -164,7 +138,7 @@ export default function ProposalDetailHeader({
             )}
             {proposal.description && (
               <>
-                {proposal.client_name && <span className="text-gray-200">·</span>}
+                {proposal.client_name && <span className="text-edge-hover">·</span>}
                 <span className="text-sm text-faint truncate max-w-[300px]">
                   {proposal.description}
                 </span>
@@ -173,17 +147,14 @@ export default function ProposalDetailHeader({
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Status dropdown */}
           <StatusDropdown
             value={proposal.status as ProposalStatus}
-            options={statusOptions}
+            options={PROPOSAL_STATUS_OPTIONS}
             onChange={handleStatusChange}
             fullWidth={false}
           />
 
-          {/* Copy link */}
           <Button
             variant="secondary"
             size="sm"
@@ -193,7 +164,6 @@ export default function ProposalDetailHeader({
             {copied ? 'Copied!' : 'Copy Link'}
           </Button>
 
-          {/* Preview */}
           <a
             href={`/view/${proposal.share_token}`}
             target="_blank"
@@ -203,7 +173,6 @@ export default function ProposalDetailHeader({
             Preview
           </a>
 
-          {/* Save as Template */}
           <div className="relative">
             <Button
               variant="outline"
@@ -217,7 +186,7 @@ export default function ProposalDetailHeader({
               Save as Template
             </Button>
             {showSaveAsTemplate && (
-              <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl border border-edge shadow-lg p-4 z-50">
+              <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl border border-edge shadow-popover p-4 z-50">
                 <label className="block text-sm font-medium text-ink mb-1">Template Name</label>
                 <input
                   autoFocus
@@ -245,18 +214,19 @@ export default function ProposalDetailHeader({
             )}
           </div>
 
-          {/* Delete */}
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
+            aria-label="Delete proposal"
             onClick={deleteProposal}
-            className="p-2 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
-            title="Delete proposal"
+            className="text-faint hover:text-red-500 hover:bg-red-50"
           >
             <Trash2 size={16} />
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* Tabs */}
       <ProposalTabs proposalId={proposal.id} />
     </div>
   );

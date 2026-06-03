@@ -47,12 +47,12 @@ export default function ProposalTabs({ proposalId }: ProposalTabsProps) {
 
         return (
           <div key={tab.key} className="flex items-center">
-            {showDivider && <div className="w-px h-5 bg-gray-200 mx-2" aria-hidden />}
+            {showDivider && <div className="w-px h-5 bg-edge mx-2" aria-hidden />}
             <Link
               href={`/proposals/${proposalId}/${tab.path}`}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${isActive
                 ? 'border-teal text-teal'
-                : 'border-transparent text-dim hover:text-prose hover:border-gray-300'
+                : 'border-transparent text-dim hover:text-prose hover:border-edge-hover'
                 }`}
             >
               <Icon size={16} />

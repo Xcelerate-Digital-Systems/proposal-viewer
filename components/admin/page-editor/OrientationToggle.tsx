@@ -86,7 +86,7 @@ export default function OrientationToggle({ value, onChange, variant = 'default'
                 }}
                 className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors ${
                   value === opt.key
-                    ? 'bg-gray-100 font-medium text-ink'
+                    ? 'bg-surface font-medium text-ink'
                     : 'text-prose hover:bg-surface'
                 }`}
               >

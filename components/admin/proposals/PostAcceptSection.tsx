@@ -144,7 +144,7 @@ export default function PostAcceptSection({
               className={`flex flex-col items-start gap-1.5 p-3 rounded-lg border text-left transition-all ${
                 selected
                   ? 'border-teal/40 bg-teal/5 ring-1 ring-teal/20'
-                  : 'border-edge-strong bg-surface hover:border-gray-300 hover:bg-gray-100'
+                  : 'border-edge-strong bg-surface hover:border-edge-hover hover:bg-surface'
               }`}
             >
               <div className="flex items-center gap-1.5">
@@ -172,10 +172,10 @@ export default function PostAcceptSection({
           />
           <div className="flex items-center gap-2 pt-0.5">
             <span className="text-2xs text-faint">Common uses:</span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 text-2xs text-dim">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface text-2xs text-dim">
               <CreditCard size={9} /> Payment link
             </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 text-2xs text-dim">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface text-2xs text-dim">
               <Calendar size={9} /> Booking page
             </span>
           </div>

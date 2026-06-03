@@ -256,7 +256,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
             </Button>
 
             {showNewDropdown && (
-              <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-2xl shadow-lg border border-edge-strong overflow-hidden z-30">
+              <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-2xl shadow-popover border border-edge-strong overflow-hidden z-30">
                 <button
                   onClick={() => openModal('upload')}
                   className="flex items-center gap-3 w-full px-4 py-3 text-sm text-prose hover:bg-surface transition-colors text-left"
@@ -360,7 +360,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
             )}
             {showRecent && (
               <section className="mb-8">
-                <h2 className="text-xs font-semibold text-faint uppercase tracking-wide mb-3">
+                <h2 className="text-xs font-semibold text-dim uppercase tracking-wide mb-3">
                   Recently edited
                 </h2>
                 {viewMode === 'grid' ? (
@@ -386,7 +386,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
                     ))}
                   </div>
                 )}
-                <h2 className="text-xs font-semibold text-faint uppercase tracking-wide mt-8 mb-3">
+                <h2 className="text-xs font-semibold text-dim uppercase tracking-wide mt-8 mb-3">
                   All pitches · {proposals.length}
                 </h2>
               </section>

@@ -2,18 +2,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Copy, Check, ExternalLink, FileText, Clock, Eye, CheckCircle2, X, PenLine } from 'lucide-react';
+import { Copy, Check, ExternalLink, Eye } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
-import StatusDropdown, { type StatusOption } from '@/components/ui/StatusDropdown';
+import StatusDropdown from '@/components/ui/StatusDropdown';
 import EntityCard from '@/components/admin/EntityCard';
 import { formatSize, pageCountFromPageNames } from '@/lib/entity-card-helpers';
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
+import {
+  type ProposalStatus,
+  PROPOSAL_STATUS_OPTIONS,
+} from '@/lib/proposals/status';
 
 interface ProposalListCardProps {
   proposal: Proposal;
@@ -23,21 +23,6 @@ interface ProposalListCardProps {
    *  and quotes to /proposals/[id]/quote-pricing. The /quotes area passes /quotes/[id]. */
   hrefOverride?: string;
 }
-
-type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'revision_requested' | 'declined';
-
-const statusOptions: StatusOption<ProposalStatus>[] = [
-  { value: 'draft',    label: 'Draft',    bg: 'bg-surface',    text: 'text-muted',   border: 'border-edge',   icon: <FileText size={12} /> },
-  { value: 'sent',     label: 'Sent',     bg: 'bg-teal-tint',    text: 'text-teal',   border: 'border-teal/20',icon: <Clock size={12} /> },
-  { value: 'viewed',   label: 'Viewed',   bg: 'bg-[#FFF8E1]',    text: 'text-[#E6A817]',   border: 'border-[#E6A817]/20',icon: <Eye size={12} /> },
-  { value: 'revision_requested', label: 'Changes Requested', bg: 'bg-[#FFF8E1]', text: 'text-[#E6A817]', border: 'border-[#E6A817]/20', icon: <PenLine size={13} /> },
-  { value: 'accepted', label: 'Accepted', bg: 'bg-[#E8F5E9]',    text: 'text-[#2E7D32]',   border: 'border-[#2E7D32]/20',icon: <CheckCircle2 size={12} /> },
-  { value: 'declined', label: 'Declined', bg: 'bg-red-50',        text: 'text-red-500',     border: 'border-red-200',     icon: <X size={12} /> },
-];
-
-/* ------------------------------------------------------------------ */
-/*  Component                                                          */
-/* ------------------------------------------------------------------ */
 
 export default function ProposalListCard({ proposal: p, onRefresh, customDomain, hrefOverride }: ProposalListCardProps) {
   const confirm = useConfirm();
@@ -67,7 +52,7 @@ export default function ProposalListCard({ proposal: p, onRefresh, customDomain,
     if (error) {
       toast.error('Failed to update status');
     } else {
-      toast.success(`Marked as ${statusOptions.find((o) => o.value === newStatus)?.label}`);
+      toast.success(`Marked as ${PROPOSAL_STATUS_OPTIONS.find((o) => o.value === newStatus)?.label}`);
       onRefresh();
     }
   };
@@ -120,7 +105,7 @@ export default function ProposalListCard({ proposal: p, onRefresh, customDomain,
       body={
         <StatusDropdown
           value={p.status as ProposalStatus}
-          options={statusOptions}
+          options={PROPOSAL_STATUS_OPTIONS}
           onChange={handleStatusChange}
         />
       }
@@ -137,7 +122,7 @@ export default function ProposalListCard({ proposal: p, onRefresh, customDomain,
             onClick={copyLink}
             className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-ink hover:bg-surface transition-colors"
           >
-            {copied ? <Check size={12} className="text-[#2E7D32]" /> : <Copy size={12} />}
+            {copied ? <Check size={12} className="text-emerald-700" /> : <Copy size={12} />}
             {copied ? 'Copied' : 'Link'}
           </button>
           <a

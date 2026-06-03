@@ -3,15 +3,16 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Copy, Check, Trash2, ExternalLink, FileText, Clock, Eye, CheckCircle2, X, PenLine } from 'lucide-react';
+import { Copy, Check, Trash2, ExternalLink } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
+import {
+  type ProposalStatus,
+  PROPOSAL_STATUS_CONFIG,
+  getProposalStatusIcon,
+} from '@/lib/proposals/status';
 
 interface ProposalListRowProps {
   proposal: Proposal;
@@ -21,19 +22,6 @@ interface ProposalListRowProps {
   selected?: boolean;
   onToggleSelect?: () => void;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Constants                                                          */
-/* ------------------------------------------------------------------ */
-
-const statusConfig: Record<string, { icon: React.ReactNode; bg: string; text: string; label: string }> = {
-  draft:    { icon: <FileText size={12} />,    bg: 'bg-surface',    text: 'text-muted',   label: 'Draft' },
-  sent:     { icon: <Clock size={12} />,       bg: 'bg-teal-tint',    text: 'text-teal',   label: 'Sent' },
-  viewed:   { icon: <Eye size={12} />,         bg: 'bg-[#FFF8E1]',    text: 'text-[#E6A817]',   label: 'Viewed' },
-  revision_requested: { icon: <PenLine size={12} />, bg: 'bg-[#FFF8E1]', text: 'text-[#E6A817]', label: 'Changes Requested' },
-  accepted: { icon: <CheckCircle2 size={12} />,bg: 'bg-[#E8F5E9]',    text: 'text-[#2E7D32]',   label: 'Accepted' },
-  declined: { icon: <X size={12} />,           bg: 'bg-red-50',        text: 'text-red-500',     label: 'Declined' },
-};
 
 const formatDate = (date: string | null) => {
   if (!date) return '—';
@@ -49,17 +37,14 @@ const getPageCount = (p: Proposal): number => {
   return 0;
 };
 
-/* ------------------------------------------------------------------ */
-/*  Component                                                          */
-/* ------------------------------------------------------------------ */
-
 export default function ProposalListRow({ proposal: p, onRefresh, customDomain, hrefOverride, selected, onToggleSelect }: ProposalListRowProps) {
   const router = useRouter();
   const confirm = useConfirm();
   const toast = useToast();
   const [copied, setCopied] = useState(false);
 
-  const sc = statusConfig[p.status] || statusConfig.draft;
+  const status = (p.status as ProposalStatus) || 'draft';
+  const def = PROPOSAL_STATUS_CONFIG[status] ?? PROPOSAL_STATUS_CONFIG.draft;
   const pageCount = getPageCount(p);
 
   const copyLink = (e: React.MouseEvent) => {
@@ -93,9 +78,8 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain, 
   return (
     <div
       onClick={() => router.push(hrefOverride ?? (p.entity_type === 'quote' ? `/proposals/${p.id}/quote-pricing` : `/proposals/${p.id}/pages`))}
-      className={`flex items-center gap-4 px-4 py-3 bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_8px_rgba(20,20,40,0.06)] cursor-pointer transition-shadow group ${selected ? 'ring-2 ring-teal/40' : ''}`}
+      className={`flex items-center gap-4 px-4 py-3 bg-white rounded-2xl shadow-card-soft hover:shadow-card cursor-pointer transition-shadow group ${selected ? 'ring-2 ring-teal/40' : ''}`}
     >
-      {/* Selection checkbox */}
       {onToggleSelect && (
         <input
           type="checkbox"
@@ -106,20 +90,17 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain, 
         />
       )}
 
-      {/* Status badge */}
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium shrink-0 ${sc.bg} ${sc.text}`}>
-        {sc.icon}
-        {sc.label}
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium shrink-0 ${def.badge.bg} ${def.badge.text}`}>
+        {getProposalStatusIcon(status)}
+        {def.label}
       </span>
 
-      {/* Quote badge */}
       {p.entity_type === 'quote' && (
         <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-detail font-semibold bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
           Quote
         </span>
       )}
 
-      {/* Title + client */}
       <div className="flex-1 min-w-0">
         <h3 className="text-sm font-medium text-ink truncate group-hover:text-teal transition-colors">
           {p.title}
@@ -129,24 +110,21 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain, 
         )}
       </div>
 
-      {/* Page count (proposals only) */}
       <span className="text-xs text-faint shrink-0 hidden sm:block w-16 text-right">
         {p.entity_type === 'quote' ? 'Quote' : `${pageCount} page${pageCount !== 1 ? 's' : ''}`}
       </span>
 
-      {/* Date */}
       <span className="text-xs text-faint shrink-0 hidden md:block w-16 text-right">
         {formatDate(p.created_at)}
       </span>
 
-      {/* Actions */}
       <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={copyLink}
           className="p-1.5 rounded-lg text-faint hover:text-ink hover:bg-surface transition-colors"
           title="Copy share link"
         >
-          {copied ? <Check size={14} className="text-[#2E7D32]" /> : <Copy size={14} />}
+          {copied ? <Check size={14} className="text-emerald-700" /> : <Copy size={14} />}
         </button>
         <a
           href={`/view/${p.share_token}`}

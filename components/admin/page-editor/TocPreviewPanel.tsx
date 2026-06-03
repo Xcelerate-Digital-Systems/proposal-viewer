@@ -69,11 +69,11 @@ export default function TocPreviewPanel({ tocSettings, pages, onGoPrev, onGoNext
   return (
     <div className="flex-1 flex flex-col">
       <div className="flex items-center justify-between mb-3">
-        <button onClick={onGoPrev} disabled={!canGoPrev} className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors">
+        <button onClick={onGoPrev} disabled={!canGoPrev} className="p-1 rounded hover:bg-surface disabled:opacity-30 transition-colors">
           <ChevronLeft size={16} className="text-dim" />
         </button>
         <span className="text-xs text-faint font-medium">Table of Contents</span>
-        <button onClick={onGoNext} disabled={!canGoNext} className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors">
+        <button onClick={onGoNext} disabled={!canGoNext} className="p-1 rounded hover:bg-surface disabled:opacity-30 transition-colors">
           <ChevronRight size={16} className="text-dim" />
         </button>
       </div>

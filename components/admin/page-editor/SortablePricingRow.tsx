@@ -61,7 +61,7 @@ export default function SortablePricingRow({ id, title, indent, isFirst, isSelec
           title={indent ? 'Remove indent' : 'Indent under parent'}
           className={`shrink-0 w-7 h-7 flex items-center justify-center rounded transition-colors ${
             isFirst
-              ? 'text-gray-200 cursor-not-allowed'
+              ? 'text-edge-hover cursor-not-allowed'
               : indent
               ? 'text-teal bg-teal/10 hover:bg-teal/20'
               : 'text-teal/40 hover:text-teal hover:bg-teal/10'
@@ -85,7 +85,7 @@ export default function SortablePricingRow({ id, title, indent, isFirst, isSelec
               className={`shrink-0 w-7 h-7 flex items-center justify-center rounded border transition-colors ${
                 tocIncluded
                   ? 'text-teal border-teal/25 bg-teal/5 hover:bg-teal/10'
-                  : 'text-gray-300 border-edge hover:text-gray-400 hover:bg-gray-50'
+                  : 'text-faint border-edge hover:text-dim hover:bg-paper'
               }`}
               title={tocIncluded ? 'Included in contents' : 'Excluded from contents'}
             >
@@ -103,7 +103,7 @@ export default function SortablePricingRow({ id, title, indent, isFirst, isSelec
           {onSaveToLibrary && (
             <button
               onClick={(e) => { e.stopPropagation(); onSaveToLibrary(); }}
-              className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-300 hover:text-teal hover:bg-teal/5 transition-colors"
+              className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-faint hover:text-teal hover:bg-teal/5 transition-colors"
               title="Save to page library"
             >
               <BookOpen size={12} />
@@ -113,7 +113,7 @@ export default function SortablePricingRow({ id, title, indent, isFirst, isSelec
           {/* Remove button */}
           <button
             onClick={(e) => { e.stopPropagation(); onRemove(); }}
-            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
             title="Remove pricing page"
           >
             <Trash2 size={12} />

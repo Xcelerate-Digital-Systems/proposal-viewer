@@ -49,7 +49,7 @@ export default function PreviewRouter({
 }: PreviewRouterProps) {
   if (!selectedPage) {
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-300 text-xs">
+      <div className="flex-1 flex items-center justify-center text-faint text-xs">
         Select a page to preview
       </div>
     );

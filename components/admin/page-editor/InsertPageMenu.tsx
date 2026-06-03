@@ -93,7 +93,7 @@ export default function InsertPageMenu({
         disabled={disabled}
         className={`flex items-center gap-1 px-2.5 py-1 rounded text-2xs transition-colors ${
           disabled
-            ? 'text-gray-300 cursor-not-allowed'
+            ? 'text-faint cursor-not-allowed'
             : open
             ? 'text-teal bg-teal/10'
             : 'text-faint hover:text-teal hover:bg-teal/5 cursor-pointer'

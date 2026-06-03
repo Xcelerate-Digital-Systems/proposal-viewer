@@ -97,7 +97,7 @@ export default function SavePageToLibraryModal({
         <div className="px-5 py-3 border-t border-edge-strong flex items-center justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium text-dim hover:bg-gray-100 transition-colors"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-dim hover:bg-surface transition-colors"
           >
             Cancel
           </button>

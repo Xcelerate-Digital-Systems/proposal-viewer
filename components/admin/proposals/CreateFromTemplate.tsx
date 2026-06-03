@@ -388,7 +388,7 @@ export default function CreateFromTemplate({
         <h3 className="text-ink font-semibold mb-4">Choose a Template</h3>
         {loading ? (
           <div className="flex justify-center py-8">
-            <Loader2 size={20} className="animate-spin text-gray-300" />
+            <Loader2 size={20} className="animate-spin text-faint" />
           </div>
         ) : templates.length === 0 ? (
           <p className="text-sm text-faint text-center py-8">
@@ -406,7 +406,7 @@ export default function CreateFromTemplate({
                 {t.description && (
                   <div className="text-xs text-faint mt-0.5">{t.description}</div>
                 )}
-                <div className="text-xs text-gray-300 mt-0.5">
+                <div className="text-xs text-faint mt-0.5">
                   {(t as any).page_count ?? pages.length} pages
                 </div>
               </button>
@@ -487,7 +487,7 @@ export default function CreateFromTemplate({
                   ) : s.status === 'active' ? (
                     <Loader2 size={16} className="text-teal animate-spin" />
                   ) : (
-                    <div className="w-3.5 h-3.5 rounded-full border-2 border-gray-200" />
+                    <div className="w-3.5 h-3.5 rounded-full border-2 border-edge" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -502,10 +502,10 @@ export default function CreateFromTemplate({
                       <span className="text-[10px] text-teal">Done</span>
                     )}
                   </div>
-                  <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="w-full h-1.5 bg-surface rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-300 ease-out ${
-                        s.status === 'done' ? 'bg-teal' : s.status === 'active' ? 'bg-teal' : 'bg-gray-100'
+                        s.status === 'done' ? 'bg-teal' : s.status === 'active' ? 'bg-teal' : 'bg-surface'
                       }`}
                       style={{ width: s.status === 'done' ? '100%' : s.status === 'active' ? `${activeProgress}%` : '0%' }}
                     />

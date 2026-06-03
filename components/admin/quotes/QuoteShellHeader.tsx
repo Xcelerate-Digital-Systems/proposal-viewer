@@ -13,20 +13,21 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Copy, Check, ExternalLink, Trash2, Download, BookmarkPlus,
-  FileText, Clock, Eye, CheckCircle2, X, PenLine,
-  Paintbrush, SlidersHorizontal, Files, Loader2,
+  PenLine, Paintbrush, SlidersHorizontal, Files, Loader2,
 } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
 import { formatQuoteNumber } from '@/lib/quote-number';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
-import StatusDropdown, { type StatusOption } from '@/components/ui/StatusDropdown';
+import StatusDropdown from '@/components/ui/StatusDropdown';
 import EditorSaveStatusBadge from '@/components/admin/EditorSaveStatusBadge';
 import { useProposalDetail } from '@/components/admin/proposals/ProposalDetailContext';
 import { Button, buttonClasses } from '@/components/ui/Button';
-
-type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'revision_requested' | 'declined';
+import {
+  type ProposalStatus,
+  PROPOSAL_STATUS_OPTIONS,
+} from '@/lib/proposals/status';
 
 interface QuoteShellHeaderProps {
   proposal: Proposal;
@@ -34,14 +35,7 @@ interface QuoteShellHeaderProps {
   onProposalChange?: (next: Proposal) => void;
 }
 
-const statusOptions: StatusOption<ProposalStatus>[] = [
-  { value: 'draft',    label: 'Draft',    bg: 'bg-surface',     text: 'text-muted',        border: 'border-edge',          icon: <FileText size={13} /> },
-  { value: 'sent',     label: 'Sent',     bg: 'bg-surface',     text: 'text-muted',        border: 'border-edge',          icon: <Clock size={13} /> },
-  { value: 'viewed',   label: 'Viewed',   bg: 'bg-surface',     text: 'text-muted',        border: 'border-edge',          icon: <Eye size={13} /> },
-  { value: 'revision_requested', label: 'Changes Requested', bg: 'bg-surface', text: 'text-muted', border: 'border-edge', icon: <PenLine size={13} /> },
-  { value: 'accepted', label: 'Accepted', bg: 'bg-emerald-50',  text: 'text-emerald-600',  border: 'border-emerald-200',   icon: <CheckCircle2 size={13} /> },
-  { value: 'declined', label: 'Declined', bg: 'bg-red-50',      text: 'text-red-500',      border: 'border-red-200',       icon: <X size={13} /> },
-];
+const statusOptions = PROPOSAL_STATUS_OPTIONS;
 
 const tabs = [
   { key: 'cover',    label: 'Cover',    icon: Paintbrush,        segment: 'cover' },
@@ -283,7 +277,7 @@ export default function QuoteShellHeader({
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                 isActive
                   ? 'border-teal text-teal'
-                  : 'border-transparent text-dim hover:text-prose hover:border-gray-300'
+                  : 'border-transparent text-dim hover:text-prose hover:border-edge-hover'
               }`}
             >
               <Icon size={16} />

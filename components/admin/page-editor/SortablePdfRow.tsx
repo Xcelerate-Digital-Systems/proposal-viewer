@@ -54,7 +54,7 @@ export default function SortablePdfRow({
     <div ref={setNodeRef} style={style}>
       <div
         className={`flex items-center gap-2 rounded-lg px-2.5 py-2 cursor-pointer transition-colors border border-dashed ${
-          isSelected ? 'bg-teal/10 border-teal/40 ring-1 ring-teal/30' : 'border-edge-strong hover:bg-surface hover:border-gray-300'
+          isSelected ? 'bg-teal/10 border-teal/40 ring-1 ring-teal/30' : 'border-edge-strong hover:bg-surface hover:border-edge-hover'
         }`}
         onClick={onSelect}
       >
@@ -62,7 +62,7 @@ export default function SortablePdfRow({
         <button
           {...attributes}
           {...listeners}
-          className="shrink-0 p-0.5 text-gray-300 hover:text-dim cursor-grab active:cursor-grabbing touch-none"
+          className="shrink-0 p-0.5 text-faint hover:text-dim cursor-grab active:cursor-grabbing touch-none"
         >
           <GripVertical size={14} />
         </button>
@@ -76,10 +76,10 @@ export default function SortablePdfRow({
           title={page.indent ? 'Remove indent' : 'Indent under parent'}
           className={`shrink-0 w-7 h-7 flex items-center justify-center rounded transition-colors ${
             index === 0
-              ? 'text-gray-200 cursor-not-allowed'
+              ? 'text-edge-hover cursor-not-allowed'
               : page.indent
               ? 'text-teal bg-teal/10 hover:bg-teal/20'
-              : 'text-faint hover:text-prose hover:bg-gray-100'
+              : 'text-faint hover:text-prose hover:bg-surface'
           }`}
         >
           {page.indent ? <ArrowLeft size={13} /> : <CornerDownRight size={13} />}
@@ -103,7 +103,7 @@ export default function SortablePdfRow({
 
         {/* Autosave status */}
         <div className="shrink-0 w-5 flex items-center justify-center">
-          {status === 'saving' && <Loader2 size={12} className="animate-spin text-gray-300" />}
+          {status === 'saving' && <Loader2 size={12} className="animate-spin text-faint" />}
           {status === 'saved'  && <Check   size={13} className="text-emerald-400" />}
         </div>
 
@@ -115,7 +115,7 @@ export default function SortablePdfRow({
               className={`p-1.5 rounded-lg flex items-center justify-center border transition-colors ${
                 tocIncluded
                   ? 'text-teal border-teal/25 bg-teal/5 hover:bg-teal/10'
-                  : 'text-gray-300 border-edge hover:text-gray-400 hover:bg-gray-50'
+                  : 'text-faint border-edge hover:text-dim hover:bg-paper'
               }`}
               title={tocIncluded ? 'Included in contents' : 'Excluded from contents'}
             >
@@ -134,7 +134,7 @@ export default function SortablePdfRow({
           {onSaveToLibrary && (
             <button
               onClick={onSaveToLibrary}
-              className="p-1.5 rounded-lg flex items-center justify-center border text-gray-300 border-edge hover:text-teal hover:border-teal/25 hover:bg-teal/5 transition-colors"
+              className="p-1.5 rounded-lg flex items-center justify-center border text-faint border-edge hover:text-teal hover:border-teal/25 hover:bg-teal/5 transition-colors"
               title="Save to page library"
             >
               <BookOpen size={13} />
@@ -143,7 +143,7 @@ export default function SortablePdfRow({
           <label
             className={`p-1.5 rounded-lg flex items-center justify-center border transition-colors ${
               processing
-                ? 'text-gray-200 border-edge cursor-not-allowed'
+                ? 'text-edge-hover border-edge cursor-not-allowed'
                 : 'text-teal border-teal/25 hover:bg-teal/5 hover:border-teal/40 cursor-pointer'
             }`}
             title="Replace page PDF"
@@ -162,8 +162,8 @@ export default function SortablePdfRow({
             disabled={processing || pageCount <= 1}
             className={`p-1.5 rounded-lg flex items-center justify-center border transition-colors ${
               processing || pageCount <= 1
-                ? 'text-gray-200 border-edge cursor-not-allowed'
-                : 'text-gray-300 border-edge hover:text-red-500 hover:border-red-200 hover:bg-red-50'
+                ? 'text-edge-hover border-edge cursor-not-allowed'
+                : 'text-faint border-edge hover:text-red-500 hover:border-red-200 hover:bg-red-50'
             }`}
             title={pageCount <= 1 ? 'Cannot delete last page' : 'Delete page'}
           >

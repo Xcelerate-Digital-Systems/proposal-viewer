@@ -175,7 +175,7 @@ export default function ProposalAnalytics({ proposalId }: Props) {
                       <span className="text-sm font-medium text-ink truncate pr-3">{page.pageName}</span>
                       <span className="text-xs text-dim tabular-nums shrink-0">{formatDuration(page.totalSeconds)}</span>
                     </div>
-                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-surface rounded-full overflow-hidden">
                       <div
                         className="h-full bg-teal rounded-full transition-all duration-500"
                         style={{ width: `${barWidth}%` }}
