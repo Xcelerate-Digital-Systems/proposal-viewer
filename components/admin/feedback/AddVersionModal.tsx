@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { type MetaAdVariant, type FeedbackStatus } from '@/lib/types/feedback';
 import type { AdCopyVariation } from '@/lib/types/feedback';
 import { supabase } from '@/lib/supabase';
+import { authFetch } from '@/lib/auth-fetch';
 import { getFeedbackStatusDef } from '@/lib/feedback/status';
 import AdMockupPreview, { type AdPlatform } from '@/components/admin/feedback/AdMockupPreview';
 
@@ -114,6 +115,7 @@ export default function AddVersionModal({
   const [activeVariationId, setActiveVariationId] = useState<string | null>(null);
   const [loadingVariations, setLoadingVariations] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const originalExistingRef = useRef<Map<string, { label: string; headline: string; primary_text: string }>>(new Map());
 
   // Load existing creative preview for the current item
   const currentCreativeUrl = seed.ad_creative_url || item.ad_creative_url || null;
@@ -134,44 +136,32 @@ export default function AddVersionModal({
     setFile(selected);
   };
 
-  // Fetch campaign variations + current item links for Meta ads
+  // Fetch campaign variations + current item links via the API (handles super-admin auth)
   useEffect(() => {
     if (kind !== 'ad') return;
     let cancelled = false;
     setLoadingVariations(true);
     (async () => {
-      const { data: existingVariations } = await supabase
-        .from('ad_copy_variations')
-        .select('*')
-        .eq('review_project_id', item.review_project_id)
-        .order('created_at', { ascending: true });
+      const res = await authFetch(`/api/campaigns/${item.review_project_id}/ad-variations?company_id=${item.company_id}`);
+      if (cancelled || !res.ok) { setLoadingVariations(false); return; }
+      const { variations: existingVariations, links } = await res.json() as {
+        variations: AdCopyVariation[];
+        links: { review_item_id: string; ad_copy_variation_id: string }[];
+      };
 
-      if (cancelled || !existingVariations) { setLoadingVariations(false); return; }
-
-      const varIds = existingVariations.map((v) => v.id);
-      let usageCounts: Record<string, number> = {};
-      if (varIds.length > 0) {
-        const { data: links } = await supabase
-          .from('review_item_ad_variations')
-          .select('ad_copy_variation_id')
-          .in('ad_copy_variation_id', varIds);
-        if (links) {
-          usageCounts = links.reduce<Record<string, number>>((acc, l) => {
-            acc[l.ad_copy_variation_id] = (acc[l.ad_copy_variation_id] ?? 0) + 1;
-            return acc;
-          }, {});
-        }
+      const usageCounts: Record<string, number> = {};
+      for (const l of links) {
+        usageCounts[l.ad_copy_variation_id] = (usageCounts[l.ad_copy_variation_id] ?? 0) + 1;
       }
 
-      const { data: currentLinks } = await supabase
-        .from('review_item_ad_variations')
-        .select('ad_copy_variation_id')
-        .eq('review_item_id', item.id);
-      const linkedIds = new Set((currentLinks || []).map((l) => l.ad_copy_variation_id));
+      // Which variations are currently linked to THIS item
+      const linkedIds = new Set(
+        links.filter((l) => l.review_item_id === item.id).map((l) => l.ad_copy_variation_id)
+      );
 
       const picker: PickerVariation[] = existingVariations
-        .filter((v: AdCopyVariation) => v.headline.trim() || v.primary_text.trim())
-        .map((v: AdCopyVariation) => ({
+        .filter((v) => v.headline.trim() || v.primary_text.trim())
+        .map((v) => ({
           id: v.id,
           label: v.label || '',
           headline: v.headline,
@@ -180,6 +170,11 @@ export default function AddVersionModal({
           selected: linkedIds.has(v.id),
           usedByCount: usageCounts[v.id] || 0,
         }));
+
+      // Snapshot for edit detection
+      const snap = new Map<string, { label: string; headline: string; primary_text: string }>();
+      for (const v of picker) snap.set(v.id, { label: v.label, headline: v.headline, primary_text: v.primary_text });
+      originalExistingRef.current = snap;
 
       if (!cancelled) {
         setVariations(picker.length > 0 ? picker : [newTempVariation()]);
@@ -298,6 +293,19 @@ export default function AddVersionModal({
           const url = await onUploadAsset(file);
           if (!url) { setUploading(false); return; }
           assets.ad_creative_url = url;
+        }
+
+        // Patch any existing variations whose copy was edited
+        for (const v of variations.filter((v) => v.isExisting && v.selected)) {
+          const orig = originalExistingRef.current.get(v.id);
+          if (!orig) continue;
+          if (orig.label !== v.label || orig.headline !== v.headline || orig.primary_text !== v.primary_text) {
+            authFetch(`/api/campaigns/${item.review_project_id}/ad-variations?company_id=${item.company_id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ variation_id: v.id, label: v.label.trim() || null, headline: v.headline.trim(), primary_text: v.primary_text.trim() }),
+            }).catch(() => {});
+          }
         }
 
         // Build variant array from selected variations
@@ -502,6 +510,7 @@ export default function AddVersionModal({
                         isActive={activeVariation?.id === v.id}
                         onToggle={() => toggleVariation(v.id)}
                         onActivate={() => { if (v.selected) setActiveVariationId(v.id); }}
+                        onPatch={(patch) => patchVariation(v.id, patch)}
                       />
                     ))}
                   </div>
@@ -670,33 +679,75 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function ExistingVariationRow({ variation, isActive, onToggle, onActivate }: {
+function ExistingVariationRow({ variation, isActive, onToggle, onActivate, onPatch }: {
   variation: PickerVariation; isActive: boolean; onToggle: () => void; onActivate: () => void;
+  onPatch: (patch: Partial<PickerVariation>) => void;
 }) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const expanded = variation.selected && isActive;
   const displayLabel = variation.label?.trim() || variation.headline?.trim() || 'Untitled';
   const subtitle = variation.headline?.trim() ? variation.primary_text?.trim() || '' : '';
+
+  const autoResize = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.max(el.scrollHeight, 140)}px`;
+  }, []);
+  useEffect(() => { if (expanded) autoResize(); }, [expanded, variation.primary_text, autoResize]);
+
   return (
     <div
-      className={`flex items-start gap-2.5 p-3 rounded-2xl border transition-colors cursor-pointer ${
+      className={`rounded-2xl border transition-colors ${
         variation.selected
           ? (isActive ? 'border-teal/40 bg-teal/5' : 'border-teal/20 bg-white')
-          : 'border-edge-strong bg-white hover:bg-surface'
+          : 'border-edge-strong bg-white hover:bg-surface cursor-pointer'
       }`}
       onClick={() => { if (!variation.selected) onToggle(); onActivate(); }}
     >
-      <button type="button" onClick={(e) => { e.stopPropagation(); onToggle(); }}
-        className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-          variation.selected ? 'bg-teal border-teal text-white' : 'border-gray-300 hover:border-teal/50'
-        }`}>
-        {variation.selected && <Check size={12} />}
-      </button>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-ink truncate">{displayLabel}</p>
-        {subtitle && <p className="text-detail text-faint line-clamp-2 mt-0.5">{subtitle}</p>}
-        {(variation.usedByCount ?? 0) > 0 && (
-          <p className="text-2xs text-dim mt-1">Used by {variation.usedByCount} ad{variation.usedByCount === 1 ? '' : 's'}</p>
+      <div className="flex items-center gap-2.5 p-3">
+        <button type="button" onClick={(e) => { e.stopPropagation(); onToggle(); }}
+          className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+            variation.selected ? 'bg-teal border-teal text-white' : 'border-gray-300 hover:border-teal/50'
+          }`}>
+          {variation.selected && <Check size={12} />}
+        </button>
+        <div className="flex-1 min-w-0">
+          {expanded ? (
+            <input type="text" value={variation.label} onChange={(e) => onPatch({ label: e.target.value })}
+              placeholder="Variation name (optional)"
+              className="w-full bg-transparent text-xs font-semibold text-ink placeholder:text-faint placeholder:font-normal outline-none"
+              onClick={(e) => e.stopPropagation()} />
+          ) : (
+            <p className="text-xs font-medium text-ink truncate">{displayLabel}</p>
+          )}
+          {!expanded && subtitle && <p className="text-detail text-faint line-clamp-2 mt-0.5">{subtitle}</p>}
+        </div>
+        {!expanded && (variation.usedByCount ?? 0) > 0 && (
+          <span className="text-2xs text-dim shrink-0">{variation.usedByCount} ad{variation.usedByCount === 1 ? '' : 's'}</span>
         )}
       </div>
+      {expanded && (
+        <div className="px-3 pb-3 space-y-2.5" onClick={(e) => e.stopPropagation()}>
+          <div>
+            <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-faint mb-1"><AlignLeft size={10} /> Primary text</label>
+            <textarea ref={textareaRef} value={variation.primary_text}
+              onChange={(e) => { onPatch({ primary_text: e.target.value }); autoResize(); }}
+              placeholder="Body copy shown above the image…"
+              className="w-full px-3 py-2 bg-white border border-edge-strong rounded-lg text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 resize-none overflow-hidden"
+              style={{ minHeight: 140 }} />
+          </div>
+          <div>
+            <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-faint mb-1"><Type size={10} /> Headline</label>
+            <input type="text" value={variation.headline} onChange={(e) => onPatch({ headline: e.target.value })}
+              placeholder="Short punchy headline…"
+              className="w-full px-3 py-2 bg-white border border-edge-strong rounded-lg text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20" />
+          </div>
+          {(variation.usedByCount ?? 0) > 0 && (
+            <p className="text-2xs text-dim">Changes will update this copy across {variation.usedByCount} ad{variation.usedByCount === 1 ? '' : 's'}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
