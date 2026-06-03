@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Workflow, Search, Trash2, Copy, ExternalLink, FileText, GitBranch, Bookmark } from 'lucide-react';
+import { Plus, Workflow, Search, Trash2, Copy, ExternalLink, FileText, GitBranch, Bookmark, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ui/ErrorState';
@@ -196,71 +196,130 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
             }
           />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {filtered.map((f) => (
-              <div key={f.id} className="group bg-white rounded-2xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all flex flex-col p-4">
-                <button
-                  onClick={() => router.push(`/funnels/${f.id}/board`)}
-                  className="text-left flex-1"
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-teal/10 flex items-center justify-center">
-                      <Workflow size={18} className="text-teal" />
-                    </div>
-                    {f.parent_funnel_id && (
-                      <span className="inline-flex items-center gap-1 text-2xs text-muted bg-surface border border-edge rounded-full px-2 py-0.5">
-                        <GitBranch size={10} />
-                        Scenario
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="text-sm font-semibold text-ink truncate">{f.name}</h3>
-                  {f.description && (
-                    <p className="text-xs text-muted mt-1 line-clamp-2">{f.description}</p>
-                  )}
-                  <p className="text-detail text-faint mt-3">
-                    Updated {new Date(f.updated_at).toLocaleDateString()}
-                  </p>
-                </button>
-                <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-edge">
-                  <button
-                    onClick={() => copyShareLink(f.share_token)}
-                    className="flex items-center gap-1 text-detail text-muted hover:text-ink px-2 py-1 rounded hover:bg-surface transition-colors"
-                    title="Copy share link"
-                  >
-                    <Copy size={11} />
-                    Share
-                  </button>
-                  <a
-                    href={`/funnel/${f.share_token}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-detail text-muted hover:text-ink px-2 py-1 rounded hover:bg-surface transition-colors"
-                    title="Open public view"
-                  >
-                    <ExternalLink size={11} />
-                    View
-                  </a>
-                  <button
-                    onClick={() => duplicateAsScenario(f)}
-                    className="flex items-center gap-1 text-detail text-muted hover:text-ink px-2 py-1 rounded hover:bg-surface transition-colors"
-                    title="Duplicate as scenario (compare 'what if' variations)"
-                  >
-                    <GitBranch size={11} />
-                    Scenario
-                  </button>
-                  <button
-                    onClick={() => remove(f.id)}
-                    className="ml-auto flex items-center gap-1 text-detail text-rose-500 hover:text-rose-700 px-2 py-1 rounded hover:bg-rose-50 transition-colors"
-                    title="Delete funnel"
-                  >
-                    <Trash2 size={11} />
-                  </button>
-                </div>
-              </div>
+              <FunnelCard
+                key={f.id}
+                funnel={f}
+                onOpen={() => router.push(`/funnels/${f.id}/board`)}
+                onCopyLink={() => copyShareLink(f.share_token)}
+                onDuplicate={() => duplicateAsScenario(f)}
+                onDelete={() => remove(f.id)}
+              />
             ))}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  return `${Math.floor(months / 12)}y ago`;
+}
+
+const STATUS_STYLES: Record<string, { label: string; cls: string }> = {
+  active:   { label: 'Active',   cls: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+  draft:    { label: 'Draft',    cls: 'text-muted bg-surface border-edge' },
+  archived: { label: 'Archived', cls: 'text-muted bg-surface border-edge' },
+};
+
+function FunnelCard({
+  funnel: f, onOpen, onCopyLink, onDuplicate, onDelete,
+}: {
+  funnel: Funnel;
+  onOpen: () => void;
+  onCopyLink: () => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const statusStyle = STATUS_STYLES[f.status] ?? STATUS_STYLES.draft;
+  const isArchived = f.status === 'archived';
+
+  return (
+    <div className={`group relative bg-white rounded-xl border border-edge hover:border-edge-hover hover:shadow-card-hover transition-all flex flex-col ${isArchived ? 'opacity-60' : ''}`}>
+      <button onClick={onOpen} className="text-left flex-1 p-4 pb-3">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h3 className="text-sm font-semibold text-ink leading-snug line-clamp-2">{f.name}</h3>
+          <span className={`shrink-0 text-2xs font-medium border rounded-full px-2 py-0.5 ${statusStyle.cls}`}>
+            {statusStyle.label}
+          </span>
+        </div>
+        {f.description && (
+          <p className="text-detail text-muted line-clamp-2 mb-2">{f.description}</p>
+        )}
+        <div className="flex items-center gap-2 text-2xs text-faint">
+          <span>{relativeTime(f.updated_at)}</span>
+          {f.parent_funnel_id && (
+            <>
+              <span className="text-edge-strong">·</span>
+              <span className="inline-flex items-center gap-0.5 text-muted">
+                <GitBranch size={9} />
+                Scenario
+              </span>
+            </>
+          )}
+        </div>
+      </button>
+
+      <div className="flex items-center border-t border-edge px-2 py-1.5">
+        <button
+          onClick={onCopyLink}
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-surface transition-colors"
+          title="Copy share link"
+        >
+          <Copy size={13} />
+        </button>
+        <a
+          href={`/funnel/${f.share_token}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-surface transition-colors"
+          title="Open public view"
+        >
+          <ExternalLink size={13} />
+        </a>
+        <div className="relative ml-auto">
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-surface transition-colors"
+            title="More actions"
+          >
+            <MoreHorizontal size={14} />
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 bottom-full mb-1 w-44 bg-white border border-edge shadow-popover rounded-lg py-1 z-50">
+                <button
+                  onClick={() => { onDuplicate(); setMenuOpen(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-ink hover:bg-surface transition-colors"
+                >
+                  <GitBranch size={12} className="text-muted" />
+                  Create scenario
+                </button>
+                <button
+                  onClick={() => { onDelete(); setMenuOpen(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 transition-colors"
+                >
+                  <Trash2 size={12} />
+                  Delete funnel
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

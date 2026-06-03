@@ -29,7 +29,7 @@ export default function BoardSummary({ forecast, currency = 'USD', period }: Pro
                      : 'Profit';
 
   return (
-    <div className="flex items-center gap-3 bg-white rounded-2xl border border-edge shadow-lg px-4 py-2">
+    <div className="flex items-center gap-3 bg-white rounded-lg border border-edge shadow-sm px-3.5 py-2">
       <Stat label={revenueLabel} value={formatMoney(forecast.totalRevenue, currency)} tone="positive" />
       <Divider />
       <Stat label={costLabel}    value={formatMoney(forecast.totalCost, currency)}    tone={forecast.totalCost > 0 ? 'negative' : 'neutral'} />
@@ -41,7 +41,6 @@ export default function BoardSummary({ forecast, currency = 'USD', period }: Pro
       />
       <Divider />
       <Stat label="ROAS" value={roasLabel} tone={forecast.roas >= 1 ? 'positive' : 'neutral'} />
-
     </div>
   );
 }
@@ -50,7 +49,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone: 'pos
   const cls = tone === 'positive' ? 'text-emerald-600' : tone === 'negative' ? 'text-rose-600' : 'text-ink';
   return (
     <div className="leading-tight">
-      <div className="text-2xs uppercase tracking-wider text-muted">{label}</div>
+      <div className="text-detail text-muted">{label}</div>
       <div className={`text-caption font-semibold ${cls}`}>{value}</div>
     </div>
   );

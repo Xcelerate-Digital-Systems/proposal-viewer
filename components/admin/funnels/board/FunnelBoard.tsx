@@ -436,7 +436,7 @@ function FunnelBoardInner() {
   const selectionCount = rf.getNodes().filter((n) => n.selected).length;
 
   return (
-    <div className="flex h-full min-h-[400px] bg-white rounded-2xl border border-edge overflow-hidden shadow-sm">
+    <div className="flex h-full min-h-[400px] bg-white overflow-hidden">
       <NodePalette
         onPickStep={handlePickStep}
         onPickShape={handlePickShape}
@@ -577,14 +577,11 @@ function FunnelBoardInner() {
           )}
 
           {boardEmpty && !board.selectedEdge && (
-            <Panel position="top-center" className="!top-24">
-              <div className="bg-white rounded-2xl border border-edge shadow-lg px-6 py-5 max-w-sm text-center">
-                <div className="w-10 h-10 rounded-lg bg-teal/10 flex items-center justify-center mx-auto mb-3">
-                  <MousePointer size={18} className="text-teal" />
-                </div>
-                <p className="text-base font-semibold text-ink mb-1">Start your funnel</p>
-                <p className="text-xs text-muted">
-                  Drag a step from the left onto the canvas, then connect them to show the flow.
+            <Panel position="top-center" className="!top-20">
+              <div className="bg-white rounded-lg border border-edge shadow-sm px-5 py-4 max-w-xs text-center">
+                <p className="text-sm font-semibold text-ink mb-1">Empty canvas</p>
+                <p className="text-detail text-muted leading-relaxed">
+                  Drag a step from the palette, or right-click the canvas to add one. Connect steps to build your flow.
                 </p>
               </div>
             </Panel>
