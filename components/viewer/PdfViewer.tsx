@@ -10,7 +10,7 @@ import { CompanyBranding, PageUrlEntry } from '@/hooks/useProposal';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import ViewerBackground from '@/components/viewer/ViewerBackground';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
 
 interface PdfViewerProps {
   /** Legacy single signed URL (populated in fallback mode only) */
