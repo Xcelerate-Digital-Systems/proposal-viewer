@@ -35,7 +35,7 @@ async function notifyParticipantsAsync(params: {
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
     await fetch(`${appUrl}/api/review-notify`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
       body: JSON.stringify({
         event_type: 'review_comment_added',
         share_token: project.share_token,
@@ -133,25 +133,44 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    // Determine thread_number for new top-level annotated comments (campaign-wide)
+    // Enforce pause_new_comments at the API level (not just UI)
+    const { data: projectForPause } = await supabase
+      .from('review_projects')
+      .select('pause_new_comments')
+      .eq('id', item.review_project_id)
+      .maybeSingle();
+    if (projectForPause?.pause_new_comments) {
+      return NextResponse.json({ error: 'New comments are paused for this project' }, { status: 403 });
+    }
+
+    // Determine thread_number for new top-level annotated comments (campaign-wide).
+    // Uses an advisory-lock RPC to prevent duplicate numbers under concurrency.
     const NUMBERED_TYPES = ['pin', 'box', 'text', 'screenshot', 'text_highlight'];
     let thread_number: number | null = null;
     if (!parent_comment_id && NUMBERED_TYPES.includes(comment_type)) {
-      // Get all item IDs in the same project for campaign-wide numbering
-      const { data: projectItems } = await supabase
-        .from('review_items')
-        .select('id')
-        .eq('review_project_id', item.review_project_id);
-      const projectItemIds = projectItems?.map((i) => i.id) ?? [review_item_id];
-      const { data: maxRow } = await supabase
-        .from('review_comments')
-        .select('thread_number')
-        .in('review_item_id', projectItemIds)
-        .not('thread_number', 'is', null)
-        .order('thread_number', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      thread_number = (maxRow?.thread_number ?? 0) + 1;
+      const { data: nextNum, error: rpcErr } = await supabase.rpc(
+        'claim_next_thread_number',
+        { p_review_project_id: item.review_project_id },
+      );
+      if (rpcErr) {
+        console.error('claim_next_thread_number RPC failed, falling back:', rpcErr);
+        const { data: projectItems } = await supabase
+          .from('review_items')
+          .select('id')
+          .eq('review_project_id', item.review_project_id);
+        const projectItemIds = projectItems?.map((i) => i.id) ?? [review_item_id];
+        const { data: maxRow } = await supabase
+          .from('review_comments')
+          .select('thread_number')
+          .in('review_item_id', projectItemIds)
+          .not('thread_number', 'is', null)
+          .order('thread_number', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        thread_number = (maxRow?.thread_number ?? 0) + 1;
+      } else {
+        thread_number = nextNum as number;
+      }
     }
 
     // Validate URL fields — reject anything that isn't http(s).
@@ -368,19 +387,25 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ token: 
 }
 
 /**
- * DELETE /api/review/[token]/comments?comment_id=...&author_email=...&author_name=...
+ * DELETE /api/review/[token]/comments
  *
+ * Body: { comment_id, author_email?, author_name? }
  * Guests can delete their own comments only. Cascades to replies when the
- * target is a top-level comment.
+ * target is a top-level comment. Identity params moved from query string to
+ * body to prevent leaking emails into server/CDN logs.
  */
 export async function DELETE(req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
   try {
     const supabase = createServiceClient();
+
+    // Accept identity from body (preferred) or fall back to query params
+    // for backwards compat with existing clients.
+    const body = await req.json().catch(() => null);
     const url = req.nextUrl;
-    const comment_id = url.searchParams.get('comment_id');
-    const author_email = url.searchParams.get('author_email');
-    const author_name = url.searchParams.get('author_name');
+    const comment_id = body?.comment_id || url.searchParams.get('comment_id');
+    const author_email = body?.author_email || url.searchParams.get('author_email');
+    const author_name = body?.author_name || url.searchParams.get('author_name');
 
     if (!comment_id) {
       return NextResponse.json({ error: 'Missing comment_id' }, { status: 400 });

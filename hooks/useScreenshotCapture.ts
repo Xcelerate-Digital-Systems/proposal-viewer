@@ -1,7 +1,7 @@
 // hooks/useScreenshotCapture.ts
 'use client';
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 
 interface UseScreenshotCaptureOptions {
@@ -24,6 +24,7 @@ export function useScreenshotCapture({
   shareToken,
   itemId,
 }: UseScreenshotCaptureOptions) {
+  const [capturing, setCapturing] = useState(false);
   const capturingRef = useRef(false);
 
   const capture = useCallback(
@@ -31,6 +32,7 @@ export function useScreenshotCapture({
       if (!containerEl || !shareToken || !itemId || capturingRef.current) return null;
 
       capturingRef.current = true;
+      setCapturing(true);
       try {
         // Scroll the nearest scrollable ancestor so the pin area is in view.
         // html2canvas uses viewport-relative positioning, so elements scrolled
@@ -115,10 +117,11 @@ export function useScreenshotCapture({
         return null;
       } finally {
         capturingRef.current = false;
+        setCapturing(false);
       }
     },
     [shareToken, itemId]
   );
 
-  return { capture, capturing: capturingRef.current };
+  return { capture, capturing };
 }

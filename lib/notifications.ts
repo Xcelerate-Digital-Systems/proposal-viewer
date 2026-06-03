@@ -67,7 +67,7 @@ export async function sendNotifications(payload: NotifyPayload) {
   if (author_type === 'team' && (event_type === 'comment_added' || event_type === 'comment_resolved')) {
     clientSent = await notifyClient({
       supabase, proposal, companyName, branding, viewerUrl, event_type,
-      comment_author, comment_content, resolved_by,
+      comment_id, comment_author, comment_content, resolved_by,
     });
   } else {
     teamSent = await notifyTeamMembers({
@@ -251,13 +251,14 @@ interface ClientNotifyParams {
   branding:         ProposalEmailBranding;
   viewerUrl:        string;
   event_type:       EventType;
+  comment_id?:      string;
   comment_author?:  string;
   comment_content?: string;
   resolved_by?:     string;
 }
 
 async function notifyClient(params: ClientNotifyParams): Promise<number> {
-  const { supabase, proposal, companyName, branding, viewerUrl, event_type, comment_author, comment_content, resolved_by } = params;
+  const { supabase, proposal, companyName, branding, viewerUrl, event_type, comment_id, comment_author, comment_content, resolved_by } = params;
 
   if (!proposal.client_email) return 0;
 
@@ -268,11 +269,21 @@ async function notifyClient(params: ClientNotifyParams): Promise<number> {
   });
 
   // Dedup client emails using a stable event_ref so retries don't double-send.
-  const clientEventRef = event_type === 'comment_added'
-    ? `client_comment_${comment_author || ''}_${(comment_content || '').slice(0, 50)}`
-    : event_type === 'comment_resolved'
-      ? `client_resolved_${resolved_by || ''}`
-      : `client_${event_type}`;
+  // Prefer comment_id when available — content-based keys can collide when the
+  // same author posts similar comments in quick succession.
+  let clientEventRef: string;
+  if (event_type === 'comment_added') {
+    if (comment_id) {
+      clientEventRef = `client_comment_${comment_id}`;
+    } else {
+      console.warn('sendNotifications: comment_added event without comment_id — falling back to content-based dedup key');
+      clientEventRef = `client_comment_${comment_author || ''}_${(comment_content || '').slice(0, 50)}`;
+    }
+  } else if (event_type === 'comment_resolved') {
+    clientEventRef = `client_resolved_${resolved_by || ''}`;
+  } else {
+    clientEventRef = `client_${event_type}`;
+  }
 
   const { data: existingClientLog } = await supabase
     .from('notification_log')

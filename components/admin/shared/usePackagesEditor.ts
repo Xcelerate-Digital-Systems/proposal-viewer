@@ -130,6 +130,17 @@ export function usePackagesEditor({
   const [resolvedCompanyId, setResolvedCompanyId] = useState<string | null>(companyId);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSaveRef = useRef<(() => void) | null>(null);
+
+  // Flush any pending debounced save on unmount so changes aren't discarded.
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        pendingSaveRef.current?.();
+      }
+    };
+  }, []);
 
   const selectedPage = allPages.find((p) => p.id === selectedId) ?? null;
 
@@ -266,7 +277,9 @@ export function usePackagesEditor({
       setForm((prev) => {
         const next = { ...prev, ...changes };
         if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => savePkg(id, next, position), 800);
+        const flush = () => savePkg(id, next, position);
+        pendingSaveRef.current = flush;
+        debounceRef.current = setTimeout(() => { flush(); pendingSaveRef.current = null; }, 800);
         return next;
       });
     },

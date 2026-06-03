@@ -193,16 +193,29 @@ export async function POST(
       // assigneeUniverse.size === 0 → no gate, fall through to legacy direct-update.
     }
 
+    // Conditional update: only apply if the item is still in the expected stage.
+    // This prevents TOCTOU races where two concurrent voters both read the same
+    // pre-existing state and double-advance.
     const { data: updated, error } = await supabase
       .from('review_items')
       .update({ status: effectiveTargetStatus, updated_at: new Date().toISOString() })
       .eq('id', params.itemId)
+      .eq('status', currentStage)
       .select('id, status')
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('[api/review/[token]/items/[itemId]/status] POST:', error.message);
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+
+    // If no row was updated, the item's status changed between our read and
+    // write (concurrent voter). Return 409 so the client can refresh.
+    if (!updated) {
+      return NextResponse.json(
+        { error: 'Item status changed concurrently, please refresh and try again' },
+        { status: 409 },
+      );
     }
 
     // Record the per-reviewer decision after the status is written so the
@@ -259,7 +272,7 @@ export async function POST(
           const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
           fetch(`${appUrl}/api/review-notify`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
             body: JSON.stringify({
               event_type: notifyEvent,
               share_token: proj.share_token,

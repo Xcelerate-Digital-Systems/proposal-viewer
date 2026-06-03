@@ -94,10 +94,25 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (err) {
-    console.error('Stripe webhook handler error:', err);
-    // 500 so Stripe retries.
+    const message = err instanceof Error ? err.message : 'Internal error';
+    console.error('Stripe webhook handler error:', message);
+
+    // Permanent / deterministic failures (missing data, bad metadata) should
+    // NOT return 500 — that triggers Stripe's 3-day retry storm for an error
+    // that will never self-resolve. Return 200 to acknowledge receipt and
+    // stop retries. Only truly transient failures (DB timeout, network blip)
+    // should 500 so Stripe retries.
+    const permanentFailure =
+      /not found|missing|invalid|no plan|could not resolve/i.test(message);
+
+    if (permanentFailure) {
+      console.error('Stripe webhook permanent failure (will not retry):', message);
+      return NextResponse.json({ received: true, error: 'permanent failure' });
+    }
+
+    // Transient — 500 so Stripe retries.
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Internal error' },
+      { error: message },
       { status: 500 },
     );
   }

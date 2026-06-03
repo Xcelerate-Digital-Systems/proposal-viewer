@@ -237,6 +237,7 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   useReportSaveStatus(saveStatus);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSaveRef = useRef<(() => void) | null>(null);
   const initializedRef = useRef(false);
   const tpInitializedRef = useRef(false);
   const titleFontInitializedRef = useRef(false);
@@ -305,10 +306,13 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
     if (data?.publicUrl) setBgImageUrl(data.publicUrl);
   }, [bgImagePath]);
 
-  // Cleanup debounce on unmount
+  // Flush any pending debounced save on unmount so changes aren't discarded.
   useEffect(() => {
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        pendingSaveRef.current?.();
+      }
     };
   }, []);
 
@@ -393,9 +397,12 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
 
   const scheduleSave = useCallback((delay = 800) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    const flush = () => save();
+    pendingSaveRef.current = flush;
     debounceRef.current = setTimeout(() => {
-      save();
+      flush();
       debounceRef.current = null;
+      pendingSaveRef.current = null;
     }, delay);
   }, [save]);
 

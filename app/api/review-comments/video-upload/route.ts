@@ -41,8 +41,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File too large (max 100MB)' }, { status: 400 });
     }
 
-    if (file.type && !ALLOWED_MIME.has(file.type)) {
-      return NextResponse.json({ error: `Unsupported video type: ${file.type}` }, { status: 400 });
+    if (!file.type || !ALLOWED_MIME.has(file.type)) {
+      return NextResponse.json({ error: `Unsupported video type: ${file.type || 'unknown'}` }, { status: 400 });
     }
 
     // Resolve a scope segment for the storage path. For public uploads we

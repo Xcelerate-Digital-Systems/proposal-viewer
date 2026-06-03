@@ -69,7 +69,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
 
     // Apply bulk status updates silently — the only email that goes out for
     // this flow is the feedback_marked_complete one fired below.
-    const CLIENT_ALLOWED = new Set(['client_review', 'revision_needed', 'approved', 'rejected']);
+    // Bulk status updates from the complete flow should NOT set items directly
+    // to 'approved' — that bypasses the per-reviewer approval gate. The
+    // reviewer's individual approve vote goes through the /status endpoint.
+    const CLIENT_ALLOWED = new Set(['client_review', 'revision_needed', 'rejected']);
     if (Array.isArray(item_statuses) && item_statuses.length > 0) {
       const filtered = item_statuses.filter(
         (s) => s && typeof s.item_id === 'string' && typeof s.status === 'string' && CLIENT_ALLOWED.has(s.status)
@@ -104,7 +107,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
       void fetch(`${appUrl}/api/review-notify`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
         body: JSON.stringify({
           event_type: 'review_feedback_marked_complete',
           share_token: project.share_token,

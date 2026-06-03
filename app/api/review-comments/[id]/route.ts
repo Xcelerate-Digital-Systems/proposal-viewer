@@ -22,7 +22,7 @@ async function loadAuthorisedComment(req: NextRequest, id: string) {
   const supabase = createServiceClient();
   const { data: comment, error } = await supabase
     .from('review_comments')
-    .select('id, company_id, review_item_id, parent_comment_id')
+    .select('id, company_id, review_item_id, parent_comment_id, author_type, author_email')
     .eq('id', id)
     .single();
 
@@ -41,6 +41,23 @@ async function loadAuthorisedComment(req: NextRequest, id: string) {
   return { auth, comment, supabase };
 }
 
+/** Check whether the caller is allowed to mutate (edit/delete) a comment they
+ *  don't own. Owners, admins, and super-admins may edit any team comment;
+ *  regular members may only edit their own. */
+function canMutateComment(
+  auth: { member: Record<string, unknown> },
+  comment: { author_type: string | null; author_email: string | null },
+): boolean {
+  if (auth.member.is_super_admin) return true;
+  const role = auth.member.role as string | undefined;
+  if (role === 'owner' || role === 'admin') return true;
+  // Regular members can only mutate their own team comments.
+  if (comment.author_type === 'team') {
+    return (auth.member.email as string | null) === comment.author_email;
+  }
+  return true;
+}
+
 /**
  * PATCH /api/review-comments/[id]
  * Edit a comment's content. Agency team members only.
@@ -52,6 +69,10 @@ export async function PATCH(req: NextRequest, props: RouteContext) {
     const ctx = await loadAuthorisedComment(req, params.id);
     if ('error' in ctx) return ctx.error;
     const { supabase } = ctx;
+
+    if (!canMutateComment(ctx.auth, ctx.comment)) {
+      return NextResponse.json({ error: 'You can only edit your own comments' }, { status: 403 });
+    }
 
     const body = await req.json().catch(() => null);
     if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
@@ -114,6 +135,10 @@ export async function DELETE(req: NextRequest, props: RouteContext) {
     const ctx = await loadAuthorisedComment(req, params.id);
     if ('error' in ctx) return ctx.error;
     const { supabase } = ctx;
+
+    if (!canMutateComment(ctx.auth, ctx.comment)) {
+      return NextResponse.json({ error: 'You can only delete your own comments' }, { status: 403 });
+    }
 
     // Delete reactions on this comment and any replies
     const { data: replyIds } = await supabase

@@ -25,6 +25,9 @@ import {
 const REVIEW_NOTIFY_LIMIT = 20;
 const REVIEW_NOTIFY_WINDOW_SECONDS = 60;
 
+// Allow up to 30s for large campaigns with many recipients.
+export const maxDuration = 30;
+
 type ReviewEventType =
   | 'review_comment_added'
   | 'review_comment_resolved'
@@ -35,6 +38,25 @@ type ReviewEventType =
 
 export async function POST(req: NextRequest) {
   try {
+    // Auth gate: accept either an internal server secret (server-to-server) or
+    // a valid Supabase Bearer token (admin browser calls).
+    const internalSecret = req.headers.get('x-internal-secret');
+    const expectedSecret = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const hasInternalAuth = !!internalSecret && !!expectedSecret && internalSecret === expectedSecret;
+
+    if (!hasInternalAuth) {
+      const authHeader = req.headers.get('authorization');
+      if (!authHeader?.startsWith('Bearer ')) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      const token = authHeader.slice(7);
+      const authClient = createServiceClient();
+      const { data: { user }, error: authErr } = await authClient.auth.getUser(token);
+      if (authErr || !user) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+
     const body = await req.json().catch(() => null);
     if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     const {
@@ -583,28 +605,6 @@ async function collectRecipients(params: {
     }
   }
 
-  // Replies also notify guests who participated in that thread (the parent
-  // comment's author + any earlier replier on it).
-  if (isComment && isReply && parentCommentId) {
-    const { data: parent } = await supabase
-      .from('review_comments')
-      .select('author_email')
-      .eq('id', parentCommentId)
-      .maybeSingle();
-    const parentEmail = parent?.author_email?.trim().toLowerCase();
-    if (parentEmail) recipients.add(parentEmail);
-
-    const { data: siblings } = await supabase
-      .from('review_comments')
-      .select('author_email')
-      .eq('parent_comment_id', parentCommentId)
-      .not('author_email', 'is', null);
-    for (const row of siblings ?? []) {
-      const email = (row as { author_email: string | null }).author_email?.trim().toLowerCase();
-      if (email) recipients.add(email);
-    }
-  }
-
   // New-version notifications also pull in the project's client_email plus
   // anyone who has previously commented on the item — they're the people
   // who asked for the revisions.
@@ -635,6 +635,44 @@ async function collectRecipients(params: {
     prefColumn: prefColumn as keyof GuestPrefRow,
     itemStage,
   });
+
+  // Replies also notify prior thread participants (parent author + earlier
+  // repliers). Collected AFTER applyGuestPrefs so that the same stage-scoping
+  // and notification-pref checks apply — prevents guests from receiving
+  // notifications for items in stages they shouldn't see.
+  if (isComment && isReply && parentCommentId) {
+    const threadEmails = new Set<string>();
+    const { data: parent } = await supabase
+      .from('review_comments')
+      .select('author_email')
+      .eq('id', parentCommentId)
+      .maybeSingle();
+    const parentEmail = parent?.author_email?.trim().toLowerCase();
+    if (parentEmail) threadEmails.add(parentEmail);
+
+    const { data: siblings } = await supabase
+      .from('review_comments')
+      .select('author_email')
+      .eq('parent_comment_id', parentCommentId)
+      .not('author_email', 'is', null);
+    for (const row of siblings ?? []) {
+      const email = (row as { author_email: string | null }).author_email?.trim().toLowerCase();
+      if (email) threadEmails.add(email);
+    }
+
+    if (excludeEmail) threadEmails.delete(excludeEmail);
+
+    // Add thread participants then apply guest prefs so removed/toggled-off
+    // guests and stage-scoped guests are filtered out.
+    for (const email of Array.from(threadEmails)) recipients.add(email);
+    await applyGuestPrefs({
+      supabase,
+      projectId,
+      recipients,
+      prefColumn: prefColumn as keyof GuestPrefRow,
+      itemStage,
+    });
+  }
 
   // Hard backstop: if the event targets an item currently in an internal
   // stage, drop every non-team-member recipient. This protects against any

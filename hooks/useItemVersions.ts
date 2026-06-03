@@ -156,6 +156,16 @@ export function useItemVersions({ item, companyId, userId }: UseItemVersionsOpti
         toast.error('Version saved, but failed to update the item preview');
       }
 
+      // Clear prior approval votes for the stage being reset to, so the new
+      // version doesn't auto-advance from stale votes.
+      if (input.resetToStage) {
+        await supabase
+          .from('review_item_decisions')
+          .delete()
+          .eq('review_item_id', itemId)
+          .eq('stage', input.resetToStage);
+      }
+
       setCreating(false);
       toast.success(`Version ${row.version_number} added`);
 

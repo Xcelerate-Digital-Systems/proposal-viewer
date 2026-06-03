@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     // `${appUrl}${redirect_to}` and parsed by new URL().
     const rawRedirect = typeof body?.redirect_to === 'string' ? body.redirect_to : null;
     const redirectTo =
-      rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')
+      rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') && !rawRedirect.includes('\\')
         ? rawRedirect
         : null;
 

@@ -67,6 +67,7 @@ async function handle(req: NextRequest) {
     .from('pending_review_notifications')
     .select('id, recipient_email, company_id, review_project_id, review_item_id, review_comment_id, event_type, payload, created_at')
     .is('dispatched_at', null)
+    .lt('attempts', 5)
     .lte('dispatch_after', new Date().toISOString())
     .order('created_at', { ascending: true })
     .limit(500);
@@ -198,8 +199,14 @@ async function handle(req: NextRequest) {
         console.error('notification_log insert failed:', logErr);
       }
     } catch (sendErr) {
-      // Leave the rows un-dispatched so the next tick retries.
-      console.error(`Failed to send digest to ${first.recipient_email}:`, sendErr);
+      // Increment attempt counter so permanently-failing rows hit the dead-letter
+      // threshold (attempts >= 5) and stop retrying.
+      const failedIds = rows.map((r) => r.id);
+      const { error: incErr } = await supabase.rpc('increment_pending_notification_attempts', {
+        p_ids: failedIds,
+      });
+      if (incErr) console.warn('increment_pending_notification_attempts failed:', incErr.message);
+      console.error(`Failed to send digest to ${first.recipient_email} (attempt incremented):`, sendErr);
     }
   }
 

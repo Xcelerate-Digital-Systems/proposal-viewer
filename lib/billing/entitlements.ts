@@ -209,6 +209,29 @@ export async function checkResourceLimit(
     return { allowed: true, used: 0, limit: null, reason: 'ok', inactiveReason: null };
   }
 
+  // Try atomic check via advisory-lock RPC to prevent TOCTOU races.
+  const RESOURCE_TABLE: Record<string, string> = {
+    proposals: 'proposals',
+    documents: 'documents',
+    reviews: 'review_projects',
+  };
+  const atomicTable = RESOURCE_TABLE[resource];
+  if (atomicTable) {
+    const supabase = (await import('@/lib/supabase-server')).createServiceClient();
+    const { data: allowed, error: rpcErr } = await supabase.rpc('check_resource_limit_atomic', {
+      p_company_id: companyId,
+      p_table: atomicTable,
+      p_limit: limit,
+    });
+    if (!rpcErr && typeof allowed === 'boolean') {
+      const used = await countResource(companyId, resource);
+      return allowed
+        ? { allowed: true, used, limit, reason: 'ok', inactiveReason: null }
+        : { allowed: false, used, limit, reason: 'limit_reached', inactiveReason: null };
+    }
+  }
+
+  // Fallback: non-atomic count (for seats, meta_connections, or pre-migration DBs)
   const used = await countResource(companyId, resource);
   if (used >= limit) {
     return {

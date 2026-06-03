@@ -99,7 +99,9 @@ export function useDocument(token: string) {
 
           setBranding({ ...DEFAULT_BRANDING, ...data });
         }
-      } catch { /* Use defaults */ }
+      } catch (err) {
+        console.warn('Failed to fetch company branding — using defaults', err);
+      }
       setBrandingLoaded(true);
 
       // 3. Fetch all pages (unified v2 — signed URLs included)

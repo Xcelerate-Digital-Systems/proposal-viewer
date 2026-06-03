@@ -105,9 +105,16 @@ export function extractAssets(src: FeedbackItem | FeedbackItemVersion): VersionA
 export function applyVersion(item: FeedbackItem, version: VersionView): FeedbackItem {
   if (version.id === null) return { ...item, ...version.assets };
 
+  // v2+ is a patch: null/undefined = "unchanged, inherit from v1".
+  // Empty string = "explicitly cleared" — the user intentionally blanked it.
   const merged: Record<string, unknown> = { ...item };
   for (const [key, value] of Object.entries(version.assets)) {
-    if (value !== null && value !== undefined) merged[key] = value;
+    if (value === null || value === undefined) continue;
+    if (value === '') {
+      merged[key] = null;
+    } else {
+      merged[key] = value;
+    }
   }
   return merged as FeedbackItem;
 }

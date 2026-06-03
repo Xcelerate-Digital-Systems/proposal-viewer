@@ -80,7 +80,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
             const notifyUrl = new URL('/api/review-notify', req.url);
             fetch(notifyUrl.toString(), {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
               body: JSON.stringify({
                 event_type: 'review_comment_resolved',
                 share_token: projectData.share_token,

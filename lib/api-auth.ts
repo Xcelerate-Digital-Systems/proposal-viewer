@@ -162,8 +162,17 @@ export async function getAuthContext(req: NextRequest) {
         .select('account_type')
         .eq('id', requestedCompanyId)
         .single();
+      // Try to find an actual membership in the target company first. If one
+      // exists, use it so the member.id and member.company_id are consistent.
+      // Otherwise fall back to the home member with a cross-company marker.
+      const { data: targetMember } = await supabase
+        .from('team_members')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('company_id', requestedCompanyId)
+        .maybeSingle();
       return {
-        member: defaultMember,
+        member: targetMember ?? { ...defaultMember, _crossCompanyOverride: true },
         companyId: requestedCompanyId,
         accountType: (targetCompany?.account_type ?? 'agency') as 'agency' | 'client',
       };

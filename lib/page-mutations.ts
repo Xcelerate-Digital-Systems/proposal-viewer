@@ -14,6 +14,7 @@ import {
 
 /* ─── addPage ────────────────────────────────────────────────────────────── */
 
+// Note: no DB-level unique constraint on (entity_id, position). Concurrent addPage calls could produce duplicate positions.
 export async function addPage(
   supabase: SupabaseClient,
   entityType: EntityType,
@@ -104,31 +105,60 @@ export async function updatePage(
   entityType: EntityType,
   pageId: string,
   changes: UpdatePageChanges,
+  opts?: { entityId?: string },
 ): Promise<{ page: UnifiedPage | null; error?: string }> {
   const { pagesTable, idColumn } = getEntityConfig(entityType);
 
-  // Handle payload_patch: merge into existing payload
   let updates: Record<string, unknown> = { ...changes };
   if (changes.payload_patch) {
     const { payload_patch, ...rest } = changes;
-    const { data: current } = await supabase
-      .from(pagesTable)
-      .select('payload')
-      .eq('id', pageId)
-      .single();
 
-    updates = {
-      ...rest,
-      payload: { ...((current?.payload as Record<string, unknown>) ?? {}), ...payload_patch },
-    };
+    // Try atomic JSONB merge via RPC to avoid read-modify-write races.
+    const { data: merged, error: rpcErr } = await supabase.rpc('merge_page_payload', {
+      p_table: pagesTable,
+      p_page_id: pageId,
+      p_patch: payload_patch,
+    });
+
+    if (!rpcErr && merged !== null) {
+      // RPC handled the payload merge atomically. Only update non-payload fields.
+      if (Object.keys(rest).length > 0) {
+        updates = { ...rest };
+      } else {
+        // Nothing else to update — re-read and return the page.
+        const { data: page } = await supabase
+          .from(pagesTable)
+          .select()
+          .eq('id', pageId)
+          .single();
+        return { page: page ? rowToUnifiedPage(page as Record<string, unknown>, idColumn) : null };
+      }
+    } else {
+      // Fallback: client-side merge (pre-migration DBs)
+      const { data: current } = await supabase
+        .from(pagesTable)
+        .select('payload')
+        .eq('id', pageId)
+        .single();
+
+      updates = {
+        ...rest,
+        payload: { ...((current?.payload as Record<string, unknown>) ?? {}), ...payload_patch },
+      };
+    }
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from(pagesTable)
     .update(updates)
-    .eq('id', pageId)
-    .select()
-    .single();
+    .eq('id', pageId);
+
+  // Scope to entity when provided to prevent cross-tenant writes
+  if (opts?.entityId) {
+    query = query.eq(idColumn, opts.entityId);
+  }
+
+  const { data, error } = await query.select().single();
 
   if (error) return { page: null, error: error.message };
 
@@ -154,22 +184,24 @@ export async function deletePage(
     return { success: false, totalPages: total ?? 1, error: 'Cannot delete the only remaining page.', status: 400 };
   }
 
-  // Fetch the page to get file_path for storage cleanup if pdf
+  // Fetch the page — scoped to entity to prevent cross-tenant access.
   const { data: page, error: fetchError } = await supabase
     .from(pagesTable)
     .select('type, payload')
     .eq('id', opts.pageId)
+    .eq(idColumn, opts.entityId)
     .single();
 
   if (fetchError || !page) {
     return { success: false, totalPages: total ?? 0, error: 'Page not found', status: 404 };
   }
 
-  // Delete the row
+  // Delete the row — scoped to entity to prevent cross-tenant deletes.
   const { error: deleteError } = await supabase
     .from(pagesTable)
     .delete()
-    .eq('id', opts.pageId);
+    .eq('id', opts.pageId)
+    .eq(idColumn, opts.entityId);
 
   if (deleteError) {
     return { success: false, totalPages: total ?? 0, error: 'Failed to delete page record' };
@@ -210,7 +242,19 @@ export async function reorderPages(
 
   if (opts.orderedIds.length === 0) return { success: true };
 
-  // Pass 1: assign negative positions
+  // Prefer the atomic RPC that runs both passes inside a single transaction.
+  const { error: rpcErr } = await supabase.rpc('reorder_pages', {
+    p_table: pagesTable,
+    p_id_column: idColumn,
+    p_entity_id: opts.entityId,
+    p_ordered_ids: opts.orderedIds,
+  });
+
+  if (!rpcErr) return { success: true };
+
+  // Fallback: sequential updates (non-atomic, for pre-migration DBs)
+  console.warn('reorder_pages RPC unavailable, falling back to sequential updates:', rpcErr.message);
+
   for (let i = 0; i < opts.orderedIds.length; i++) {
     await supabase
       .from(pagesTable)
@@ -219,7 +263,6 @@ export async function reorderPages(
       .eq(idColumn, opts.entityId);
   }
 
-  // Pass 2: assign final positions
   for (let i = 0; i < opts.orderedIds.length; i++) {
     const { error } = await supabase
       .from(pagesTable)
@@ -242,15 +285,16 @@ export async function reorderPages(
 export async function replacePdfPage(
   supabase: SupabaseClient,
   entityType: EntityType,
-  opts: { pageId: string; tempPath: string },
+  opts: { pageId: string; tempPath: string; entityId?: string },
 ): Promise<{ success: boolean; error?: string }> {
-  const { pagesTable } = getEntityConfig(entityType);
+  const { pagesTable, idColumn } = getEntityConfig(entityType);
 
-  const { data: current, error: fetchError } = await supabase
+  let fetchQuery = supabase
     .from(pagesTable)
     .select('payload')
-    .eq('id', opts.pageId)
-    .single();
+    .eq('id', opts.pageId);
+  if (opts.entityId) fetchQuery = fetchQuery.eq(idColumn, opts.entityId);
+  const { data: current, error: fetchError } = await fetchQuery.single();
 
   if (fetchError || !current) return { success: false, error: 'Page not found' };
 
@@ -311,7 +355,8 @@ export async function insertPdfPage(
     await supabase
       .from(pagesTable)
       .update({ position: (row.position as number) + 1 })
-      .eq('id', row.id);
+      .eq('id', row.id)
+      .eq(idColumn, opts.entityId);
   }
 
   const { data: inserted, error: insertError } = await supabase
@@ -330,12 +375,17 @@ export async function insertPdfPage(
     .single();
 
   if (insertError) {
-    // Rollback the position shifts
-    for (const row of (toShift ?? [])) {
-      await supabase
-        .from(pagesTable)
-        .update({ position: row.position })
-        .eq('id', row.id);
+    // Rollback the position shifts — best-effort, scoped to entity
+    try {
+      for (const row of (toShift ?? [])) {
+        await supabase
+          .from(pagesTable)
+          .update({ position: row.position })
+          .eq('id', row.id)
+          .eq(idColumn, opts.entityId);
+      }
+    } catch (rollbackErr) {
+      console.error('insertPdfPage: rollback failed after insert error — positions may be inconsistent', rollbackErr);
     }
     return { page: null, totalPages: 0, error: 'Failed to insert page record' };
   }

@@ -129,6 +129,22 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
     })();
   };
 
+  // State-machine guard: only allow transitions from valid source states.
+  const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+    accept: ['sent', 'viewed', 'revision_requested'],
+    decline: ['sent', 'viewed', 'revision_requested'],
+    request_revision: ['sent', 'viewed'],
+  };
+  if (action !== 'view') {
+    const allowed = ALLOWED_TRANSITIONS[action];
+    if (allowed && !allowed.includes(proposal.status)) {
+      return NextResponse.json(
+        { error: `Cannot ${action} a proposal with status "${proposal.status}"` },
+        { status: 409 },
+      );
+    }
+  }
+
   if (action === 'accept') {
     const name = typeof body.name === 'string' ? body.name.slice(0, 200) : '';
     if (!name) return NextResponse.json({ error: 'name is required' }, { status: 400 });

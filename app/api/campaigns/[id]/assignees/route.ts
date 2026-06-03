@@ -183,6 +183,14 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
+  // Look up the member's email before removing them, so we can clean up
+  // their decision votes afterwards.
+  const { data: member } = await supabase
+    .from('team_members')
+    .select('email')
+    .eq('id', team_member_id)
+    .single();
+
   const { error } = await supabase
     .from('review_project_assignees')
     .delete()
@@ -192,6 +200,23 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
   if (error) {
     console.error('[api/campaigns/[id]/assignees] DELETE:', error.message);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+
+  // Clear any decision votes the removed assignee had cast on items in
+  // this project, so approval counts stay accurate.
+  if (member?.email) {
+    const { data: projectItems } = await supabase
+      .from('review_items')
+      .select('id')
+      .eq('review_project_id', params.id);
+    const itemIds = (projectItems ?? []).map((i: { id: string }) => i.id);
+    if (itemIds.length > 0) {
+      await supabase
+        .from('review_item_decisions')
+        .delete()
+        .in('review_item_id', itemIds)
+        .eq('reviewer_email', member.email.trim().toLowerCase());
+    }
   }
 
   return NextResponse.json({ success: true });

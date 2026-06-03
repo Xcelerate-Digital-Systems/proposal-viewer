@@ -1,40 +1,18 @@
 // app/api/admin/accounts/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
-
-// Use the shared no-store-fetch service client. The bare createClient()
-// allows Next.js's Data Cache to cache PostgREST GETs, which has previously
-// caused stale-auth bugs in this codebase.
-const supabaseAdmin = createServiceClient();
-
-async function verifySuperAdmin(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader) return null;
-
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user } } = await supabaseAdmin.auth.getUser(token);
-  if (!user) return null;
-
-  // A user can have rows in multiple companies; pick the first super-admin
-  // row if any.
-  const { data: members } = await supabaseAdmin
-    .from('team_members')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('is_super_admin', true)
-    .limit(1);
-
-  return members?.[0] ?? null;
-}
+import { getAuthContext } from '@/lib/api-auth';
 
 // GET: List all agency accounts (account_type = 'agency' only)
 export async function GET(req: NextRequest) {
-  const admin = await verifySuperAdmin(req);
-  if (!admin) {
+  const auth = await getAuthContext(req);
+  if (!auth || !auth.member.is_super_admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
-  const { data: companies, error } = await supabaseAdmin
+  const supabase = createServiceClient();
+
+  const { data: companies, error } = await supabase
     .from('companies')
     .select('*')
     .eq('account_type', 'agency')
@@ -49,20 +27,20 @@ export async function GET(req: NextRequest) {
 
   const [proposalCounts, memberCounts, recentActivity, subscriptions] = await Promise.all([
     companyIds.length
-      ? supabaseAdmin.from('proposals').select('company_id').in('company_id', companyIds)
+      ? supabase.from('proposals').select('company_id').in('company_id', companyIds)
       : Promise.resolve({ data: [] }),
     companyIds.length
-      ? supabaseAdmin.from('team_members').select('company_id').in('company_id', companyIds)
+      ? supabase.from('team_members').select('company_id').in('company_id', companyIds)
       : Promise.resolve({ data: [] }),
     companyIds.length
-      ? supabaseAdmin
+      ? supabase
           .from('proposals')
           .select('company_id, updated_at')
           .in('company_id', companyIds)
           .order('updated_at', { ascending: false })
       : Promise.resolve({ data: [] }),
     companyIds.length
-      ? supabaseAdmin
+      ? supabase
           .from('subscriptions')
           .select('company_id, status, plan_id, plans(slug, name)')
           .in('company_id', companyIds)
@@ -110,8 +88,8 @@ export async function GET(req: NextRequest) {
 
 // POST: Create a new agency account (optionally with lifetime subscription)
 export async function POST(req: NextRequest) {
-  const admin = await verifySuperAdmin(req);
-  if (!admin) {
+  const auth = await getAuthContext(req);
+  if (!auth || !auth.member.is_super_admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
@@ -128,7 +106,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
   }
 
-  const { data: company, error } = await supabaseAdmin
+  const supabase = createServiceClient();
+
+  const { data: company, error } = await supabase
     .from('companies')
     .insert({ name, slug, account_type: 'agency' })
     .select()
@@ -143,14 +123,14 @@ export async function POST(req: NextRequest) {
   }
 
   if (grant_lifetime) {
-    const { data: lifetimePlan } = await supabaseAdmin
+    const { data: lifetimePlan } = await supabase
       .from('plans')
       .select('id')
       .eq('slug', 'lifetime')
       .maybeSingle();
 
     if (lifetimePlan) {
-      await supabaseAdmin.from('subscriptions').upsert(
+      await supabase.from('subscriptions').upsert(
         {
           company_id: company.id,
           plan_id: lifetimePlan.id,

@@ -20,6 +20,7 @@ import {
   type FeedbackBoardShape,
   type FeedbackStatus,
 } from '@/lib/supabase';
+import { authFetch } from '@/lib/auth-fetch';
 import { useToast } from '@/components/ui/Toast';
 import AddFeedbackItemModal from '@/components/admin/feedback/AddFeedbackItemModal';
 import { NOTE_COLORS } from './nodes/StickyNoteNode';
@@ -283,17 +284,18 @@ export function FeedbackBoardProvider({
 
   const updateItemStatus = useCallback(
     async (itemId: string, status: FeedbackStatus) => {
-      const { error } = await supabase
-        .from('review_items')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', itemId);
-      if (error) {
+      const res = await authFetch(`/api/campaigns/${projectId}/items/${itemId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
         toast.error('Failed to update status');
         return;
       }
       refreshItems();
     },
-    [toast, refreshItems]
+    [projectId, toast, refreshItems]
   );
 
   // Persist a drag-end position and update local state so a subsequent

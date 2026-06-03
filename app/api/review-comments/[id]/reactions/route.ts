@@ -49,7 +49,7 @@ async function authoriseReactionAccess(req: NextRequest, commentId: string) {
   // Public path — verify share_token matches the comment's review project
   const { data: item } = await supabase
     .from('review_items')
-    .select('id, project_id')
+    .select('id, review_project_id')
     .eq('id', comment.review_item_id)
     .single();
 
@@ -60,7 +60,7 @@ async function authoriseReactionAccess(req: NextRequest, commentId: string) {
   const { data: project } = await supabase
     .from('review_projects')
     .select('id')
-    .eq('id', item.project_id)
+    .eq('id', item.review_project_id)
     .eq('share_token', shareToken)
     .maybeSingle();
 

@@ -1,4 +1,4 @@
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 const SECRET = () => process.env.SUPABASE_SERVICE_ROLE_KEY || 'dev-fallback';
 
@@ -23,7 +23,10 @@ export function verifyUnsubscribeToken(token: string): { projectId: string; emai
   }
 
   const expected = createHmac('sha256', SECRET()).update(payload).digest('hex').slice(0, 32);
-  if (sig !== expected) return null;
+  if (sig.length !== expected.length) return null;
+  const sigBuf = Buffer.from(sig, 'utf8');
+  const expectedBuf = Buffer.from(expected, 'utf8');
+  if (!timingSafeEqual(sigBuf, expectedBuf)) return null;
 
   const colonIdx = payload.indexOf(':');
   if (colonIdx === -1) return null;

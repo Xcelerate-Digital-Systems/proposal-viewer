@@ -192,6 +192,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Admins cannot remove other admins' }, { status: 403 });
     }
 
+    // Remove campaign assignee rows first so FK constraints don't block
+    // the team_members delete.
+    await supabase
+      .from('review_project_assignees')
+      .delete()
+      .eq('team_member_id', id);
+
     // Delete team member row
     const { error } = await supabase
       .from('team_members')

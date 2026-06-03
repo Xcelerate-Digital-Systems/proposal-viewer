@@ -251,12 +251,13 @@ export default function KanbanBoard({
       const optimistic = items.map((i) => (i.id === itemId ? { ...i, status: targetStatus } : i));
       onItemsChange(optimistic);
 
-      const { error } = await supabase
-        .from('review_items')
-        .update({ status: targetStatus, updated_at: new Date().toISOString() })
-        .eq('id', itemId);
+      const res = await authFetch(`/api/campaigns/${projectId}/items/${itemId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: targetStatus }),
+      });
 
-      if (error) {
+      if (!res.ok) {
         toast.error('Failed to update status');
         onItemsChange(items);
       }

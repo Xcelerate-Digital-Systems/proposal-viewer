@@ -17,16 +17,17 @@ export interface InAppNotification {
 
 export function useNotifications(userId: string | null, companyId: string | null) {
   const [notifications, setNotifications] = useState<InAppNotification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
+
+  // Derive unread count from the notifications array so the two can never drift.
+  const unreadCount = notifications.filter((n) => !n.read_at).length;
 
   const refresh = useCallback(async () => {
     const res = await authFetch('/api/notifications?limit=30');
     if (!res.ok || !mountedRef.current) return;
     const data = await res.json();
     setNotifications(data.notifications ?? []);
-    setUnreadCount(data.unread_count ?? 0);
     setLoading(false);
   }, []);
 
@@ -54,7 +55,6 @@ export function useNotifications(userId: string | null, companyId: string | null
           if (!mountedRef.current) return;
           const row = payload.new as InAppNotification;
           setNotifications((prev) => [row, ...prev].slice(0, 30));
-          setUnreadCount((c) => c + 1);
         },
       )
       .subscribe();
@@ -68,14 +68,12 @@ export function useNotifications(userId: string | null, companyId: string | null
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n)),
     );
-    setUnreadCount((c) => Math.max(0, c - 1));
     await authFetch(`/api/notifications/${id}/read`, { method: 'PATCH' });
   }, []);
 
   const markAllRead = useCallback(async () => {
     const now = new Date().toISOString();
     setNotifications((prev) => prev.map((n) => (n.read_at ? n : { ...n, read_at: now })));
-    setUnreadCount(0);
     await authFetch('/api/notifications/read-all', { method: 'POST' });
   }, []);
 

@@ -1,7 +1,7 @@
 // hooks/useCommentReactions.ts
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FeedbackCommentReaction } from '@/lib/supabase';
 
 interface UseCommentReactionsOptions {
@@ -30,6 +30,8 @@ export function useCommentReactions(
 ): UseCommentReactionsResult {
   const [reactions, setReactions] = useState<FeedbackCommentReaction[]>([]);
   const [loading, setLoading] = useState(false);
+  // Track last server-confirmed state for rollback, not the optimistic snapshot.
+  const confirmedRef = useRef<FeedbackCommentReaction[]>([]);
 
   const buildUrl = useCallback(
     (base: string) => shareToken ? `${base}?share_token=${encodeURIComponent(shareToken)}` : base,
@@ -52,7 +54,11 @@ export function useCommentReactions(
     doFetch(buildUrl(`/api/review-comments/${commentId}/reactions`))
       .then((r) => (r.ok ? r.json() : { reactions: [] }))
       .then((data) => {
-        if (!cancelled) setReactions(data.reactions || []);
+        if (!cancelled) {
+          const fetched = data.reactions || [];
+          confirmedRef.current = fetched;
+          setReactions(fetched);
+        }
       })
       .catch(() => {
         if (!cancelled) setReactions([]);
@@ -77,7 +83,7 @@ export function useCommentReactions(
             r.author_name === currentUserName)
       );
 
-      const optimisticPrev = reactions;
+      const rollbackState = confirmedRef.current;
       if (existing) {
         setReactions((prev) => prev.filter((r) => r.id !== existing.id));
       } else {
@@ -105,18 +111,22 @@ export function useCommentReactions(
         if (!res.ok) throw new Error('Reaction toggle failed');
         const data = await res.json();
         if (data.action === 'added' && data.reaction) {
-          // Replace any optimistic placeholder for this emoji with the real row.
-          setReactions((prev) => [
-            ...prev.filter(
-              (r) => !(r.emoji === emoji && r.id.startsWith('optimistic-'))
-            ),
-            data.reaction,
-          ]);
+          setReactions((prev) => {
+            const updated = [
+              ...prev.filter(
+                (r) => !(r.emoji === emoji && r.id.startsWith('optimistic-'))
+              ),
+              data.reaction,
+            ];
+            confirmedRef.current = updated;
+            return updated;
+          });
+        } else if (data.action === 'removed') {
+          // Sync confirmed state with the optimistic removal.
+          confirmedRef.current = confirmedRef.current.filter((r) => r.id !== existing?.id);
         }
-        // 'removed' — already reflected in optimistic update.
       } catch {
-        // Roll back on failure.
-        setReactions(optimisticPrev);
+        setReactions(rollbackState);
       }
     },
     [commentId, currentUserName, currentUserId, reactions, doFetch, buildUrl]

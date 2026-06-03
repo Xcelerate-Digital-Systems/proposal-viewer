@@ -9,6 +9,13 @@ import { resetAnalyticsUser } from '@/components/analytics/PostHogProvider';
 const COMPANY_OVERRIDE_KEY = 'company_override';
 const ACTIVE_MEMBERSHIP_KEY = 'active_membership_id';
 
+// Module-level deduplication: Supabase's onAuthStateChange fires into every
+// subscriber, so N components using useAuth() create N redundant listeners
+// that each trigger full membership re-fetches. This flag ensures only the
+// first mounted instance registers the listener; subsequent mounts skip it.
+// The first instance's cleanup unsets the flag so a future mount can re-register.
+let _authListenerActive = false;
+
 type AccountType = 'agency' | 'client';
 
 /**
@@ -196,6 +203,11 @@ export function useAuth() {
       }
     });
 
+    // Only the first mounted instance registers the auth state listener to
+    // avoid N redundant listeners triggering N membership re-fetches.
+    if (_authListenerActive) return;
+    _authListenerActive = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session?.user) {
@@ -206,7 +218,10 @@ export function useAuth() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      _authListenerActive = false;
+    };
   }, [fetchMemberships]);
 
   const signInWithPassword = async (email: string, password: string) => {

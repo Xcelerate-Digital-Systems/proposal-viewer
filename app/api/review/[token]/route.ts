@@ -4,6 +4,12 @@ import {
   GUEST_VISIBLE_STAGES, isGuestVisibleStage, isInternalStage,
 } from '@/lib/feedback/visibility';
 
+// Explicit column allowlists — never SELECT * on public endpoints.
+const PROJECT_COLUMNS = 'id, title, client_name, status, share_mode, shared_views, pause_new_comments, show_thread_numbers, show_version_selector, cover_image_path, created_at, updated_at';
+const ITEM_COLUMNS = 'id, review_project_id, title, type, status, sort_order, url, content, share_token, ad_platform, ad_headline, ad_primary_text, ad_description, ad_cta, ad_display_link, thumbnail_url, preview_image_url, screenshot_url, ad_headline_variations, ad_primary_text_variations, ad_description_variations, sms_content, sender_name, has_variations, meta_data, created_at, updated_at';
+const COMMENT_COLUMNS = 'id, review_item_id, parent_comment_id, thread_number, author_name, author_email, author_type, content, comment_type, pin_x, pin_y, attachments, annotation_data, screenshot_url, highlight_start, highlight_end, highlight_text, highlight_element_path, resolved, resolved_by, resolved_at, priority, video_url, version_id, ad_copy_variation_id, stage_at_creation, created_at, updated_at';
+const VERSION_COLUMNS = 'id, review_item_id, version_number, file_url, notes, uploaded_by_name, uploaded_by_email, url, content, ad_headline, ad_primary_text, ad_description, ad_cta, ad_display_link, thumbnail_url, sms_content, ad_headline_variations, ad_primary_text_variations, ad_description_variations, created_at';
+
 /**
  * GET /api/review/[token]
  *
@@ -21,15 +27,14 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
     /* ── 1. Try item share_token first ────────────────────────── */
     const { data: item } = await supabase
       .from('review_items')
-      .select('*')
+      .select(ITEM_COLUMNS)
       .eq('share_token', params.token)
       .single();
 
     if (item) {
-      // Load the parent project
       const { data: project } = await supabase
         .from('review_projects')
-        .select('*')
+        .select(PROJECT_COLUMNS)
         .eq('id', item.review_project_id)
         .single();
 
@@ -50,12 +55,12 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
       const [commentsRes, versionsRes] = await Promise.all([
         supabase
           .from('review_comments')
-          .select('*')
+          .select(COMMENT_COLUMNS)
           .eq('review_item_id', item.id)
           .order('created_at', { ascending: true }),
         supabase
           .from('review_item_versions')
-          .select('*')
+          .select(VERSION_COLUMNS)
           .eq('review_item_id', item.id)
           .order('version_number', { ascending: true }),
       ]);
@@ -77,7 +82,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
     /* ── 2. Fall back to project share_token ───────────────────── */
     const { data: project, error: projErr } = await supabase
       .from('review_projects')
-      .select('*')
+      .select(PROJECT_COLUMNS)
       .eq('share_token', params.token)
       .single();
 
@@ -94,7 +99,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
     // never appears in network responses to public-token requests.
     const { data: items } = await supabase
       .from('review_items')
-      .select('*')
+      .select(ITEM_COLUMNS)
       .eq('review_project_id', project.id)
       .in('status', GUEST_VISIBLE_STAGES)
       .order('sort_order', { ascending: true });
@@ -110,13 +115,13 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
       const [commentRes, versionRes] = await Promise.all([
         supabase
           .from('review_comments')
-          .select('*')
+          .select(COMMENT_COLUMNS)
           .in('review_item_id', itemIds)
           .in('stage_at_creation', GUEST_VISIBLE_STAGES)
           .order('created_at', { ascending: true }),
         supabase
           .from('review_item_versions')
-          .select('*')
+          .select(VERSION_COLUMNS)
           .in('review_item_id', itemIds)
           .order('version_number', { ascending: true }),
       ]);
@@ -148,7 +153,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
 
         const { data: varComments } = await supabase
           .from('review_comments')
-          .select('*')
+          .select(COMMENT_COLUMNS)
           .in('ad_copy_variation_id', allVarIds)
           .in('stage_at_creation', GUEST_VISIBLE_STAGES)
           .order('created_at', { ascending: true });
@@ -186,15 +191,15 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
       const [edgesRes, notesRes, shapesRes] = await Promise.all([
         supabase
           .from('review_board_edges')
-          .select('*')
+          .select('id, review_project_id, source, target, type, animated, data, created_at')
           .eq('review_project_id', project.id),
         supabase
           .from('review_board_notes')
-          .select('*')
+          .select('id, review_project_id, content, position_x, position_y, width, height, color, created_at')
           .eq('review_project_id', project.id),
         supabase
           .from('review_board_shapes')
-          .select('*')
+          .select('id, review_project_id, shape_type, position_x, position_y, width, height, color, label, data, created_at')
           .eq('review_project_id', project.id),
       ]);
 

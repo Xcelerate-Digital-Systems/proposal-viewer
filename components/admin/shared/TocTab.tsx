@@ -90,6 +90,17 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
     setTocPageIdState(id);
   }, []);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSaveRef = useRef<(() => void) | null>(null);
+
+  // Flush any pending debounced save on unmount so changes aren't discarded.
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        pendingSaveRef.current?.();
+      }
+    };
+  }, []);
 
   /* ── Load data ───────────────────────────────────────────────── */
 
@@ -217,9 +228,12 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
 
   const scheduleSave = useCallback((newSettings: TocSettings, prevEnabled?: boolean) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    const flush = () => save(newSettings, prevEnabled);
+    pendingSaveRef.current = flush;
     debounceRef.current = setTimeout(() => {
-      save(newSettings, prevEnabled);
+      flush();
       debounceRef.current = null;
+      pendingSaveRef.current = null;
     }, 800);
   }, [save]);
 

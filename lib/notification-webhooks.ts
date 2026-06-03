@@ -14,41 +14,28 @@ import {
 
 export type { WebhookPayload };
 
-const MAX_RETRIES = 2;
-const RETRY_DELAYS = [2000, 5000];
+// Single attempt with short timeout — retries happen via a dead-letter queue,
+// not in-process. This avoids exceeding Vercel's 10s serverless timeout when
+// multiple endpoints are configured or targets are slow.
+const DELIVERY_TIMEOUT_MS = 5000;
 
 async function deliverWithRetry(
   url: string,
   body: string,
   headers: Record<string, string>,
 ): Promise<{ ok: boolean; status: number; error?: string }> {
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers,
-        body,
-        redirect: 'manual',
-        signal: AbortSignal.timeout(10000),
-      });
-
-      if (res.ok || res.status < 500) {
-        return { ok: res.ok, status: res.status };
-      }
-
-      if (attempt < MAX_RETRIES) {
-        await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt]));
-      } else {
-        return { ok: false, status: res.status };
-      }
-    } catch (err) {
-      if (attempt >= MAX_RETRIES) {
-        return { ok: false, status: 0, error: err instanceof Error ? err.message : 'Unknown error' };
-      }
-      await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt]));
-    }
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body,
+      redirect: 'manual',
+      signal: AbortSignal.timeout(DELIVERY_TIMEOUT_MS),
+    });
+    return { ok: res.ok, status: res.status };
+  } catch (err) {
+    return { ok: false, status: 0, error: err instanceof Error ? err.message : 'Unknown error' };
   }
-  return { ok: false, status: 0, error: 'Exhausted retries' };
 }
 
 export async function fireWebhooks(payload: WebhookPayload) {
@@ -226,7 +213,7 @@ export async function fireWebhooks(payload: WebhookPayload) {
         response_status: result.status,
         success: result.ok,
         error_message: result.error ?? null,
-        attempts: result.ok ? 1 : MAX_RETRIES + 1,
+        attempts: 1,
       });
     } catch {
       // Logging is best-effort — don't fail the webhook pipeline

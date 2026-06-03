@@ -1,28 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { getAuthContext } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
-async function verifySuperAdmin(req: NextRequest) {
-  const supabase = createServiceClient();
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader) return null;
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user } } = await supabase.auth.getUser(token);
-  if (!user) return null;
-  const { data: members } = await supabase
-    .from('team_members')
-    .select('id, user_id, is_super_admin')
-    .eq('user_id', user.id)
-    .eq('is_super_admin', true)
-    .limit(1);
-  return members?.[0] ?? null;
-}
-
 export async function GET(req: NextRequest) {
   try {
-    const admin = await verifySuperAdmin(req);
-    if (!admin) {
+    const auth = await getAuthContext(req);
+    if (!auth || !auth.member.is_super_admin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 

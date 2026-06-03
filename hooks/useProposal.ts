@@ -138,7 +138,9 @@ export function useProposal(token: string) {
 
         setBranding(brandingData);
       }
-    } catch { /* Non-critical */ }
+    } catch (err) {
+      console.warn('Failed to fetch company branding — using defaults', err);
+    }
     setBrandingLoaded(true);
 
     // Check if viewer is a logged-in team member

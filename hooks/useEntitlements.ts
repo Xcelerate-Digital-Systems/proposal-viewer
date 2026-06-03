@@ -104,10 +104,10 @@ export function useEntitlements(companyId: string | null | undefined) {
   const check = useCallback(
     (resource: Resource): ResourceCheck => {
       if (!data) {
-        // Fail open while loading — better to let the click through and let
-        // the server 402 catch it than to block legitimate use during the
-        // initial fetch.
-        return { allowed: true, used: 0, limit: null, reason: 'ok', message: '' };
+        // Fail closed while loading — the server is the authority anyway, but
+        // blocking during the brief fetch window prevents resource creation
+        // from slipping through before entitlements are known.
+        return { allowed: false, used: 0, limit: null, reason: 'ok', message: '' };
       }
       if (!data.is_active) {
         return {

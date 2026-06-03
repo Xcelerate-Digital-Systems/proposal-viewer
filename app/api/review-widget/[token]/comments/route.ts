@@ -44,7 +44,7 @@ async function notifyWidgetCommentAsync(
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
     await fetch(`${appUrl}/api/review-notify`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
       body: JSON.stringify({
         event_type: 'review_comment_added',
         share_token: project.share_token,
