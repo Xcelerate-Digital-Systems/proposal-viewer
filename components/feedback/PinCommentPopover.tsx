@@ -153,55 +153,55 @@ export default function PinCommentPopover({
       <div
         ref={popoverRef}
         style={{ ...style, width: POPOVER_STYLE.widthPx, ...POPOVER_INLINE_STYLE }}
-        className="max-h-[440px] overflow-y-auto bg-white rounded-2xl border border-edge-strong z-50"
+        className="max-h-[520px] overflow-y-auto bg-white rounded-2xl border border-edge-strong z-50"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-3 py-2 border-b border-edge">
-          <div className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center text-2xs font-bold">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-edge">
+          <div className="flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-teal text-white flex items-center justify-center text-xs font-bold">
               {comment.thread_number || '•'}
             </span>
-            <span className="text-2xs text-faint">
+            <span className="text-xs text-faint">
               Pin Comment
             </span>
           </div>
           <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} aria-label="Close" />
         </div>
 
-        <div className="p-3 space-y-2.5">
+        <div className="p-4 space-y-3">
           {/* Main comment */}
-          <div className="flex items-start gap-2">
+          <div className="flex items-start gap-3">
             <CommentAvatar
               authorName={comment.author_name}
               authorUserId={comment.author_user_id}
               isTeam={isTeam}
               memberLookup={memberLookup}
-              className="w-6 h-6 text-2xs"
+              className="w-8 h-8 text-xs"
             />
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-ink">{comment.author_name}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-medium text-ink">{comment.author_name}</span>
                 {isTeam && (
-                  <span className="text-2xs font-medium uppercase bg-teal/10 text-teal px-1.5 py-0.5 rounded">Team</span>
+                  <span className="text-2xs font-medium uppercase bg-teal/10 text-teal px-1.5 py-0.5 rounded-full">Team</span>
                 )}
-                <span className="text-2xs text-faint">{timeAgo(comment.created_at)}</span>
+                <span className="text-detail text-faint">{timeAgo(comment.created_at)}</span>
               </div>
               {comment.comment_type === 'text_highlight' && comment.highlight_text && (
-                <div className="mt-1 mb-1 px-2 py-1.5 rounded bg-yellow-50 border-l-2 border-yellow-300">
-                  <p className="text-2xs text-yellow-700 italic line-clamp-2">&ldquo;{comment.highlight_text}&rdquo;</p>
+                <div className="mt-1.5 mb-1 px-2.5 py-1.5 rounded-lg bg-teal/5">
+                  <p className="text-detail text-teal italic line-clamp-2">&ldquo;{comment.highlight_text}&rdquo;</p>
                 </div>
               )}
               <CommentContent
                 content={comment.content}
-                className="text-xs text-prose mt-0.5"
+                className="text-caption text-prose leading-relaxed mt-1"
               />
               <AttachmentList attachments={comment.attachments} size="sm" />
 
               {/* Screenshot thumbnail */}
               {comment.screenshot_url && (
                 <a href={comment.screenshot_url} target="_blank" rel="noopener noreferrer"
-                  className="block mt-1.5 w-full max-w-[200px] rounded-lg border border-edge-strong overflow-hidden hover:border-teal/40 transition-colors">
+                  className="block mt-2 w-full max-w-[220px] rounded-lg border border-edge-strong overflow-hidden hover:border-teal/40 transition-colors">
                   <img src={comment.screenshot_url} alt="Screenshot" className="w-full object-cover" />
                 </a>
               )}
@@ -212,7 +212,7 @@ export default function PinCommentPopover({
                   src={comment.video_url}
                   controls
                   preload="metadata"
-                  className="mt-1.5 w-full max-w-[240px] rounded-lg bg-black"
+                  className="mt-2 w-full max-w-[260px] rounded-lg bg-black"
                 />
               )}
 
@@ -231,7 +231,7 @@ export default function PinCommentPopover({
 
           {/* Replies */}
           {replies.length > 0 && (
-            <div className="ml-4 pl-3 border-l-2 border-edge space-y-2">
+            <div className="ml-5 pl-3 border-l-2 border-edge space-y-2.5">
               {replies.map((r) => (
                 <PopoverReplyItem
                   key={r.id}
@@ -244,51 +244,48 @@ export default function PinCommentPopover({
           )}
 
           {/* Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
             {!showReply && (
-              <button onClick={() => setShowReply(true)}
-                className="flex items-center gap-1 text-2xs font-medium text-faint hover:text-prose transition-colors">
-                <CornerDownRight size={10} />
+              <Button variant="ghost" size="sm" onClick={() => setShowReply(true)} leftIcon={CornerDownRight}>
                 Reply
-              </button>
+              </Button>
             )}
             {!comment.resolved && onResolve && (
-              <button onClick={() => onResolve(comment.id)}
-                className="flex items-center gap-1 text-2xs font-medium text-faint hover:text-emerald-600 transition-colors">
-                <CheckCircle2 size={10} />
+              <Button variant="ghost" size="sm" onClick={() => onResolve(comment.id)} leftIcon={CheckCircle2}>
                 Resolve
-              </button>
+              </Button>
             )}
             {comment.resolved && onUnresolve && (
-              <button onClick={() => onUnresolve(comment.id)}
-                className="flex items-center gap-1 text-2xs font-medium text-faint hover:text-amber-600 transition-colors">
-                <RotateCcw size={10} />
+              <Button variant="ghost" size="sm" onClick={() => onUnresolve(comment.id)} leftIcon={RotateCcw}>
                 Reopen
-              </button>
+              </Button>
             )}
             {canDelete && (
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={async () => {
                   await onDelete!(comment.id);
                   onClose();
                 }}
-                className="flex items-center gap-1 text-2xs font-medium text-faint hover:text-red-600 transition-colors ml-auto">
-                <Trash2 size={10} />
+                leftIcon={Trash2}
+                className="ml-auto text-faint hover:text-red-600"
+              >
                 Delete
-              </button>
+              </Button>
             )}
           </div>
 
           {/* Reply form */}
           {showReply && (
-            <form onSubmit={handleReply} className="space-y-1.5">
+            <form onSubmit={handleReply} className="space-y-2">
               {isGuest && !guestName && (
                 <input type="text" value={guestName || ''} onChange={(e) => onNameChange?.(e.target.value)}
                   placeholder="Your name"
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-edge-strong text-xs text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal" />
+                  className="w-full px-3 py-2 rounded-2xl bg-warm-dark text-caption text-ink focus:outline-none focus:ring-2 focus:ring-teal/20" />
               )}
-              <div className="flex gap-1.5">
-                <div className="flex-1 px-2.5 py-1.5 rounded-lg border border-edge-strong focus-within:ring-2 focus-within:ring-teal/20 focus-within:border-teal">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 px-3 py-2 rounded-2xl bg-warm-dark focus-within:ring-2 focus-within:ring-teal/20">
                   <MentionEditor
                     value={replyText}
                     onChange={setReplyText}
@@ -300,7 +297,7 @@ export default function PinCommentPopover({
                       handleReply({ preventDefault: () => {} } as unknown as React.FormEvent);
                     }}
                     participantsUrl={participantsUrl ?? null}
-                    className="w-full text-detail text-ink"
+                    className="w-full text-caption text-ink"
                   />
                 </div>
                 <Button
@@ -338,25 +335,25 @@ function PopoverReplyItem({
   const { reactions, toggle } = useCommentReactions(reply.id, { currentUserName });
 
   return (
-    <div className="flex items-start gap-2">
+    <div className="flex items-start gap-2.5">
       <CommentAvatar
         authorName={reply.author_name}
         authorUserId={reply.author_user_id}
         isTeam={rIsTeam}
         memberLookup={memberLookup}
-        className="w-5 h-5 text-2xs"
+        className="w-7 h-7 text-detail"
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-detail font-medium text-ink">{reply.author_name}</span>
+          <span className="text-caption font-medium text-ink">{reply.author_name}</span>
           {rIsTeam && (
-            <span className="text-2xs font-medium uppercase bg-teal/10 text-teal px-1 py-0.5 rounded">Team</span>
+            <span className="text-2xs font-medium uppercase bg-teal/10 text-teal px-1.5 py-0.5 rounded-full">Team</span>
           )}
-          <span className="text-2xs text-faint">{timeAgo(reply.created_at)}</span>
+          <span className="text-detail text-faint">{timeAgo(reply.created_at)}</span>
         </div>
         <CommentContent
           content={reply.content}
-          className="text-detail text-prose mt-0.5"
+          className="text-caption text-prose leading-relaxed mt-0.5"
         />
         <AttachmentList attachments={reply.attachments} size="sm" />
         {currentUserName && (

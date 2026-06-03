@@ -10,7 +10,7 @@
  *   `.aviz-pin-form{width:${POPOVER_STYLE.widthPx}px;padding:${POPOVER_STYLE.paddingPx}px;...}`
  */
 export const POPOVER_STYLE = {
-  widthPx: 380,
+  widthPx: 420,
   paddingPx: 22,
   borderRadiusPx: 14,
   borderColor: '#e5e7eb', // tailwind gray-200

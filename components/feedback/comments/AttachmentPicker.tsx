@@ -118,9 +118,9 @@ export default function AttachmentPicker({
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="flex items-center gap-1 text-2xs font-medium text-faint hover:text-prose transition-colors"
+          className="flex items-center gap-1.5 text-xs font-medium text-faint hover:text-prose transition-colors"
         >
-          <Paperclip size={10} />
+          <Paperclip size={14} />
           Attach file
         </button>
       )}

@@ -5,6 +5,18 @@ import type { Participant } from '@/lib/feedback/participants';
 
 const cache = new Map<string, Participant[]>();
 
+function needsAuth(url: string): boolean {
+  return url.startsWith('/api/campaigns/');
+}
+
+async function fetchParticipants(url: string): Promise<Response> {
+  if (needsAuth(url)) {
+    const { authFetch } = await import('@/lib/auth-fetch');
+    return authFetch(url);
+  }
+  return fetch(url);
+}
+
 /**
  * Fetch the mentionable participants for the current comment surface once,
  * cache by URL across editor mounts (one cache entry per project / share
@@ -27,7 +39,7 @@ export function useParticipants(url: string | null) {
       return;
     }
 
-    fetch(url)
+    fetchParticipants(url)
       .then(async (res) => {
         if (!res.ok) return;
         const body = await res.json();
