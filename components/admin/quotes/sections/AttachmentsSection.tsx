@@ -141,9 +141,9 @@ export default function AttachmentsSection({ proposal, onSaved }: Props) {
           type="button"
           onClick={() => fileInput.current?.click()}
           disabled={uploading}
-          className="w-full border-2 border-dashed border-edge-strong rounded-lg px-4 py-8 text-center hover:border-gray-300 transition-colors"
+          className="w-full border-2 border-dashed border-edge-strong rounded-lg px-4 py-8 text-center hover:border-edge-hover transition-colors"
         >
-          <Paperclip size={20} className="mx-auto text-gray-300 mb-2" />
+          <Paperclip size={20} className="mx-auto text-faint mb-2" />
           <p className="text-sm text-dim">
             PDFs, images, documents — up to 10 MB each, 30 MB total, max 10 files
           </p>
@@ -163,7 +163,7 @@ export default function AttachmentsSection({ proposal, onSaved }: Props) {
               <button
                 type="button"
                 onClick={() => removeAt(i)}
-                className="p-1 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                className="p-1 rounded-lg text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
                 title="Remove"
               >
                 <X size={14} />

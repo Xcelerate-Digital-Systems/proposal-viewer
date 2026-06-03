@@ -379,7 +379,7 @@ export default function CoverDesignPanel({
                     <button
                       onClick={() => fileRef.current?.click()}
                       disabled={uploading}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-prose bg-surface border border-edge-strong rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-prose bg-surface border border-edge-strong rounded-lg hover:bg-surface disabled:opacity-50 transition-colors"
                     >
                       {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
                       Replace
@@ -457,7 +457,7 @@ export default function CoverDesignPanel({
                       <button
                         onClick={() => clientLogoRef.current?.click()}
                         disabled={uploadingClientLogo}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-prose bg-surface border border-edge-strong rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-prose bg-surface border border-edge-strong rounded-lg hover:bg-surface disabled:opacity-50 transition-colors"
                       >
                         {uploadingClientLogo ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
                         Replace

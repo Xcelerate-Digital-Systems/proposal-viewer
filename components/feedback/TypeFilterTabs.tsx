@@ -65,7 +65,7 @@ export default function TypeFilterTabs({
         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
           !typeFilter
             ? 'bg-teal/10 text-teal'
-            : 'text-faint hover:text-prose hover:bg-gray-100'
+            : 'text-faint hover:text-prose hover:bg-surface'
         }`}
       >
         All{showCounts ? ` (${items.length})` : ''}
@@ -77,7 +77,7 @@ export default function TypeFilterTabs({
           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
             typeFilter === t
               ? 'bg-teal/10 text-teal'
-              : 'text-faint hover:text-prose hover:bg-gray-100'
+              : 'text-faint hover:text-prose hover:bg-surface'
           }`}
         >
           {TYPE_LABELS[t] || t}s{showCounts ? ` (${items.filter((i) => i.type === t).length})` : ''}

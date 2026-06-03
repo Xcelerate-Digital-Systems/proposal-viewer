@@ -46,7 +46,7 @@ export default function TemplatePricingPanel({
           Pricing Page
         </span>
         <div className="flex items-center gap-2">
-          {pricingSaveStatus === 'saving' && <Loader2 size={12} className="animate-spin text-gray-300" />}
+          {pricingSaveStatus === 'saving' && <Loader2 size={12} className="animate-spin text-faint" />}
           {pricingSaveStatus === 'saved' && <Check size={13} className="text-emerald-400" />}
           <Button
             variant="danger"

@@ -108,7 +108,7 @@ export function PricingDesignPreview({
   if (!loaded) {
     return (
       <div className="flex items-center justify-center py-12 bg-white rounded-2xl border border-edge-strong">
-        <Loader2 size={18} className="animate-spin text-gray-300" />
+        <Loader2 size={18} className="animate-spin text-faint" />
       </div>
     );
   }
@@ -116,9 +116,9 @@ export function PricingDesignPreview({
   if (!pricing) {
     return (
       <div className="rounded-2xl border border-dashed border-edge-strong bg-surface py-16 text-center">
-        <DollarSign size={28} className="mx-auto text-gray-300 mb-2" />
+        <DollarSign size={28} className="mx-auto text-faint mb-2" />
         <p className="text-sm text-faint">No pricing page yet</p>
-        <p className="text-xs text-gray-300 mt-0.5">Add one on the Quote tab to see a preview here</p>
+        <p className="text-xs text-faint mt-0.5">Add one on the Quote tab to see a preview here</p>
       </div>
     );
   }
@@ -189,7 +189,7 @@ export function TextPageDesignPreview({ entityId, entityKey }: PreviewProps) {
   if (!loaded) {
     return (
       <div className="flex items-center justify-center py-12 bg-white rounded-2xl border border-edge-strong">
-        <Loader2 size={18} className="animate-spin text-gray-300" />
+        <Loader2 size={18} className="animate-spin text-faint" />
       </div>
     );
   }
@@ -305,7 +305,7 @@ export function DecisionDesignPreview({
   if (!loaded) {
     return (
       <div className="flex items-center justify-center py-12 bg-white rounded-2xl border border-edge-strong">
-        <Loader2 size={18} className="animate-spin text-gray-300" />
+        <Loader2 size={18} className="animate-spin text-faint" />
       </div>
     );
   }

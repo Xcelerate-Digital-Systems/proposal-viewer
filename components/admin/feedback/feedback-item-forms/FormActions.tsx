@@ -43,7 +43,7 @@ export default function FormActions({
             className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
               previewToggle.visible
                 ? 'bg-teal/10 text-teal'
-                : 'bg-surface text-dim hover:bg-gray-100'
+                : 'bg-surface text-dim hover:bg-surface'
             }`}
           >
             {previewToggle.visible ? 'Hide Preview' : 'Show Preview'}

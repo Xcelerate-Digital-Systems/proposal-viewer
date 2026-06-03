@@ -43,7 +43,7 @@ export default function RichTextEditor({ content, onUpdate, placeholder }: RichT
     onUpdate: ({ editor: ed }) => onUpdate(ed.getJSON()),
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[200px] px-4 py-3 text-gray-800',
+        class: 'prose prose-sm max-w-none focus:outline-none min-h-[200px] px-4 py-3 text-ink',
       },
     },
   });

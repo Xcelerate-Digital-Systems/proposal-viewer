@@ -85,7 +85,7 @@ export default function PreparedBySelector({
           }
           setOpen(!open);
         }}
-        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-edge-strong bg-white text-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 transition-colors"
+        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-edge-strong bg-white text-sm hover:border-edge-hover focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 transition-colors"
       >
         {loading ? (
           <Loader2 size={14} className="animate-spin text-faint" />
@@ -98,7 +98,7 @@ export default function PreparedBySelector({
                 className="w-6 h-6 rounded-full object-cover shrink-0"
               />
             ) : (
-              <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+              <div className="w-6 h-6 rounded-full bg-surface flex items-center justify-center shrink-0">
                 <User size={12} className="text-faint" />
               </div>
             )}
@@ -155,7 +155,7 @@ export default function PreparedBySelector({
                       className="w-6 h-6 rounded-full object-cover shrink-0"
                     />
                   ) : (
-                    <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                    <div className="w-6 h-6 rounded-full bg-surface flex items-center justify-center shrink-0">
                       <User size={12} className="text-faint" />
                     </div>
                   )}

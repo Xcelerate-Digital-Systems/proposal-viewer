@@ -280,7 +280,7 @@ export default function HeaderStyleCard({
                   type="button"
                   onClick={() => setMode(m.id)}
                   className={`p-2 rounded-lg border-2 transition-all text-center ${
-                    active ? 'border-teal bg-teal/5' : 'border-edge-strong hover:border-gray-300'
+                    active ? 'border-teal bg-teal/5' : 'border-edge-strong hover:border-edge-hover'
                   }`}
                 >
                   <div className="w-full h-10 rounded mb-1.5" style={{ background: swatch }} />

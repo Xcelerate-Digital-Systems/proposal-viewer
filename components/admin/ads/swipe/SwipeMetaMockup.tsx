@@ -131,7 +131,7 @@ export default function SwipeMetaMockup({ file, compact = false, onShare }: Prop
       )}
 
       {/* Media */}
-      <div className="w-full bg-gray-100 overflow-hidden">
+      <div className="w-full bg-surface overflow-hidden">
         {file.media_url ? (
           isVideo ? (
             // eslint-disable-next-line jsx-a11y/media-has-caption

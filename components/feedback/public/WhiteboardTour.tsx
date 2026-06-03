@@ -243,7 +243,7 @@ export default function WhiteboardTour({
               <button
                 type="button"
                 onClick={end}
-                className="text-xs font-medium text-faint hover:text-prose hover:bg-gray-100 px-2 py-1.5 rounded-lg transition-all duration-300"
+                className="text-xs font-medium text-faint hover:text-prose hover:bg-surface px-2 py-1.5 rounded-lg transition-all duration-300"
               >
                 Skip tour
               </button>

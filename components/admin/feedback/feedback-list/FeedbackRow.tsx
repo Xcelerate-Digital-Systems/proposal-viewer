@@ -136,7 +136,7 @@ export default function FeedbackRow({
             onViewItem();
           }}
           title="Open item"
-          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-detail font-medium text-dim hover:text-ink hover:bg-gray-100 transition-colors"
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-detail font-medium text-dim hover:text-ink hover:bg-surface transition-colors"
         >
           <ExternalLink size={11} />
           View

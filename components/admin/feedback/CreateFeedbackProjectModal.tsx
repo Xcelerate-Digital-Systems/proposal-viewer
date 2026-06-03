@@ -43,7 +43,7 @@ export default function CreateFeedbackProjectModal({
     }
 
     setSaving(true);
-    const res = await authFetch('/api/campaigns', {
+    const res = await authFetch(`/api/campaigns?company_id=${companyId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -156,7 +156,7 @@ export default function CreateFeedbackProjectModal({
               <div className="flex items-center justify-between text-xs">
                 <span className="text-dim">Creating campaign...</span>
               </div>
-              <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-surface rounded-full overflow-hidden">
                 <div className="h-full w-1/3 bg-teal rounded-full animate-progress-indeterminate" />
               </div>
             </div>

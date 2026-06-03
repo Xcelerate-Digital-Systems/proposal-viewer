@@ -58,7 +58,7 @@ export default function CoverColorControls({
             className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
               coverBgStyle === 'gradient'
                 ? 'border-teal bg-teal/5 text-teal'
-                : 'border-edge-strong text-dim hover:border-gray-300'
+                : 'border-edge-strong text-dim hover:border-edge-hover'
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -81,7 +81,7 @@ export default function CoverColorControls({
             className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
               coverBgStyle === 'solid'
                 ? 'border-teal bg-teal/5 text-teal'
-                : 'border-edge-strong text-dim hover:border-gray-300'
+                : 'border-edge-strong text-dim hover:border-edge-hover'
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -104,7 +104,7 @@ export default function CoverColorControls({
                 className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
                   coverGradientType === type
                     ? 'border-teal bg-teal/5 text-teal'
-                    : 'border-edge-strong text-dim hover:border-gray-300'
+                    : 'border-edge-strong text-dim hover:border-edge-hover'
                 }`}
               >
                 <div className="flex items-center justify-center gap-2">
@@ -139,7 +139,7 @@ export default function CoverColorControls({
                 className={`px-2.5 py-1 rounded-lg text-xs transition-all ${
                   coverGradientAngle === deg
                     ? 'text-teal bg-teal/10 font-medium'
-                    : 'text-faint hover:text-prose hover:bg-gray-100'
+                    : 'text-faint hover:text-prose hover:bg-surface'
                 }`}
               >
                 {deg}°

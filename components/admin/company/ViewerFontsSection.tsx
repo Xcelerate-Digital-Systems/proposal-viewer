@@ -228,7 +228,7 @@ function FontSelect({
                 <button
                   type="button"
                   onClick={() => { onChange(null); onWeightChange(null); setOpen(false); setSearch(''); }}
-                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-surface transition-colors border-b border-gray-50 ${
+                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-surface transition-colors border-b border-paper ${
                     !value ? 'bg-teal/5 text-teal font-medium' : 'text-muted'
                   }`}
                 >

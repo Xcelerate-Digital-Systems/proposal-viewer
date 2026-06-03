@@ -259,7 +259,7 @@ export default function ColorPickerField({
                 className={`w-6 h-6 rounded-lg border transition-all hover:scale-110 ${
                   displayBase === c
                     ? 'border-teal ring-2 ring-teal/20'
-                    : 'border-edge-strong hover:border-gray-400'
+                    : 'border-edge-strong hover:border-edge-hover'
                 }`}
                 style={{ backgroundColor: c }}
                 title={c}
@@ -282,7 +282,7 @@ export default function ColorPickerField({
                   key={c}
                   onClick={() => { applyColor(c); setHexInput(c); }}
                   className={`relative w-6 h-6 rounded-lg border transition-all hover:scale-110 overflow-hidden ${
-                    isSelected ? 'border-teal ring-2 ring-teal/20' : 'border-edge-strong hover:border-gray-400'
+                    isSelected ? 'border-teal ring-2 ring-teal/20' : 'border-edge-strong hover:border-edge-hover'
                   }`}
                   title={c}
                 >
@@ -367,7 +367,7 @@ export default function ColorPickerField({
           className={`
             relative w-8 h-8 rounded-lg border-2 transition-all shadow-sm overflow-hidden
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 hover:shadow-md active:scale-95 cursor-pointer'}
-            ${isCustom ? 'border-gray-300' : 'border-edge-strong border-dashed'}
+            ${isCustom ? 'border-edge-hover' : 'border-edge-strong border-dashed'}
           `}
           title={disabled ? displayColor : `${displayColor} — click to change`}
         >
@@ -385,7 +385,7 @@ export default function ColorPickerField({
         {isCustom && onReset && (
           <button
             onClick={(e) => { e.stopPropagation(); onReset(); setOpen(false); }}
-            className="w-5 h-5 flex items-center justify-center rounded-full text-gray-300 hover:text-dim hover:bg-gray-100 transition-colors"
+            className="w-5 h-5 flex items-center justify-center rounded-full text-faint hover:text-dim hover:bg-surface transition-colors"
             title="Reset to default"
           >
             <X size={10} />

@@ -95,7 +95,7 @@ export default function KanbanCard({
                 <span className="text-amber-600 font-semibold">{unresolvedCount} open</span>
                 {commentCount - unresolvedCount > 0 && (
                   <>
-                    <span className="text-gray-300">·</span>
+                    <span className="text-faint">·</span>
                     <span className="text-emerald-600">{commentCount - unresolvedCount} resolved</span>
                   </>
                 )}
@@ -106,7 +106,7 @@ export default function KanbanCard({
           </div>
           {decisionTally && (decisionTally.approved > 0 || decisionTally.changesRequested > 0) && (
             <>
-              <span className="text-gray-200">·</span>
+              <span className="text-edge-hover">·</span>
               {decisionTally.approved > 0 && (
                 <div
                   className="flex items-center gap-0.5 text-emerald-600 font-semibold"

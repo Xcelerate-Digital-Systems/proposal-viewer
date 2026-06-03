@@ -118,7 +118,7 @@ export function SetupChecklist() {
 
   return (
     <div className="fixed bottom-5 right-5 z-[9990] w-80 animate-enter-up">
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-lg border border-edge overflow-hidden">
         {/* ── Header ────────────────────────────────── */}
         <button
           onClick={toggleCollapse}
@@ -178,7 +178,7 @@ export function SetupChecklist() {
         </button>
 
         {/* ── Progress bar ──────────────────────────── */}
-        <div className="h-0.5 bg-gray-100">
+        <div className="h-0.5 bg-surface">
           <div
             className="h-full bg-teal transition-all duration-700 ease-out"
             style={{ width: `${progressPct}%` }}
@@ -210,7 +210,7 @@ export function SetupChecklist() {
                     {isDone ? (
                       <CheckCircle2 size={18} className="text-teal" />
                     ) : (
-                      <Circle size={18} className="text-gray-300 group-hover:text-teal/50 transition-colors" />
+                      <Circle size={18} className="text-faint group-hover:text-teal/50 transition-colors" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -237,7 +237,7 @@ export function SetupChecklist() {
             })}
 
             {/* Dismiss link */}
-            <div className="pt-2 pb-1 px-3 border-t border-gray-50 mt-1">
+            <div className="pt-2 pb-1 px-3 border-t border-paper mt-1">
               <button
                 onClick={dismiss}
                 className="text-2xs text-faint hover:text-ink transition-colors flex items-center gap-1"

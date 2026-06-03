@@ -136,7 +136,7 @@ export default function SignatureCapture({
           type="button"
           onClick={() => { setMode('typed'); onSignatureChange(signerName.trim() ? { mode: 'typed', typed_name: signerName.trim() } : null); }}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-            mode === 'typed' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+            mode === 'typed' ? 'bg-white shadow-sm text-gray-900' : 'text-dim hover:text-prose'
           }`}
         >
           <Type size={13} />
@@ -146,7 +146,7 @@ export default function SignatureCapture({
           type="button"
           onClick={() => { setMode('drawn'); onSignatureChange(null); }}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-            mode === 'drawn' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+            mode === 'drawn' ? 'bg-white shadow-sm text-gray-900' : 'text-dim hover:text-prose'
           }`}
         >
           <PenTool size={13} />
@@ -209,7 +209,7 @@ export default function SignatureCapture({
             <button
               type="button"
               onClick={clearCanvas}
-              className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-md bg-white/90 text-xs text-gray-500 hover:text-gray-700 shadow-sm border border-gray-200"
+              className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-md bg-white/90 text-xs text-dim hover:text-prose shadow-sm border border-edge"
             >
               <Eraser size={12} />
               Clear
@@ -217,14 +217,14 @@ export default function SignatureCapture({
           )}
           {!hasDrawn && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="text-sm text-gray-400">Draw your signature here</span>
+              <span className="text-sm text-dim">Draw your signature here</span>
             </div>
           )}
           </div>
         </div>
       )}
 
-      <p className="text-xs text-gray-400 text-center">
+      <p className="text-xs text-dim text-center">
         By signing, you confirm your identity and agree to the terms above.
       </p>
     </div>

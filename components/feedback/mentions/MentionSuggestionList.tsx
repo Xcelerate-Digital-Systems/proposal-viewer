@@ -68,7 +68,7 @@ const MentionSuggestionList = forwardRef<MentionSuggestionListHandle, Props>(fun
             index === selectedIndex ? 'bg-teal/10 text-ink' : 'text-prose hover:bg-surface'
           }`}
         >
-          <span className="w-5 h-5 rounded-full bg-gray-100 text-dim text-2xs flex items-center justify-center font-medium shrink-0">
+          <span className="w-5 h-5 rounded-full bg-surface text-dim text-2xs flex items-center justify-center font-medium shrink-0">
             {(item.name || item.email).charAt(0).toUpperCase()}
           </span>
           <span className="min-w-0 flex-1 truncate">

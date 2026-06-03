@@ -143,7 +143,7 @@ export default function ProjectPhotosSection({ proposal, onSaved }: Props) {
                     type="button"
                     onClick={() => fileInputs.current[slot]?.click()}
                     disabled={isUploading}
-                    className="w-full h-full flex flex-col items-center justify-center gap-2 text-faint hover:text-prose hover:bg-gray-100 transition-colors"
+                    className="w-full h-full flex flex-col items-center justify-center gap-2 text-faint hover:text-prose hover:bg-surface transition-colors"
                   >
                     {isUploading ? (
                       <Loader2 size={20} className="animate-spin" />

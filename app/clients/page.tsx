@@ -241,7 +241,7 @@ function ClientsContent({
                   </button>
                   <button
                     onClick={() => handleDelete(client)}
-                    className="p-2 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                    className="p-2 rounded-lg text-faint hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
                     title="Delete client"
                   >
                     <Trash2 size={14} />

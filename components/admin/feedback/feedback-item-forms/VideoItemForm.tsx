@@ -124,9 +124,9 @@ export default function VideoItemForm({ onSubmit, onBack, onCancel, uploading }:
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="h-px flex-1 bg-gray-200" />
+          <div className="h-px flex-1 bg-edge" />
           <span className="text-2xs text-faint uppercase tracking-wider">or upload</span>
-          <div className="h-px flex-1 bg-gray-200" />
+          <div className="h-px flex-1 bg-edge" />
         </div>
 
         <div>

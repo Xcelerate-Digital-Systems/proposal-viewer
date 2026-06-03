@@ -57,7 +57,7 @@ export default function Slider({
         onMouseUp={onCommit ? (e) => onCommit(Number((e.target as HTMLInputElement).value)) : undefined}
         onTouchEnd={onCommit ? (e) => onCommit(Number((e.target as HTMLInputElement).value)) : undefined}
         onKeyUp={onCommit ? (e) => onCommit(Number((e.target as HTMLInputElement).value)) : undefined}
-        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full h-2 bg-edge rounded-lg appearance-none cursor-pointer accent-teal disabled:opacity-50 disabled:cursor-not-allowed"
       />
       {hint && <p className="text-xs text-faint mt-1">{hint}</p>}
     </div>

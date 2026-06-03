@@ -134,7 +134,7 @@ export default function FeedbackProjectHeader({
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-medium transition-colors disabled:opacity-50 ${
               project.pause_new_comments
                 ? 'bg-amber-100 text-amber-700 hover:bg-amber-200/70'
-                : 'bg-surface text-prose hover:bg-gray-100'
+                : 'bg-surface text-prose hover:bg-surface'
             }`}
             title={project.pause_new_comments ? 'Reopen comments for reviewers' : 'Pause new reviewer comments'}
           >
@@ -144,7 +144,7 @@ export default function FeedbackProjectHeader({
 
           <button
             onClick={() => setShowNoteModal(true)}
-            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-medium bg-surface text-prose hover:bg-gray-100 transition-colors"
+            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-medium bg-surface text-prose hover:bg-surface transition-colors"
             title={project.reviewer_note ? 'Edit reviewer note' : 'Add a note for reviewers'}
           >
             <FileText size={14} />

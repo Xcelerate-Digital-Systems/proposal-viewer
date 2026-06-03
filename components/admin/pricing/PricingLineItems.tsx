@@ -173,7 +173,7 @@ export default function PricingLineItems({
                 <button
                   type="button"
                   onClick={() => removeItem(item.id)}
-                  className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                  className="p-1 rounded text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
                   title="Remove line"
                 >
                   <Trash2 size={12} />
@@ -188,7 +188,7 @@ export default function PricingLineItems({
                   className={`flex items-center gap-1 px-2 py-0.5 rounded text-detail font-medium transition-colors ${
                     hasDiscount
                       ? 'bg-teal/10 text-teal border border-teal/20'
-                      : 'text-gray-300 hover:text-prose hover:bg-surface border border-transparent'
+                      : 'text-faint hover:text-prose hover:bg-surface border border-transparent'
                   }`}
                 >
                   <Tag size={10} />
@@ -244,7 +244,7 @@ export default function PricingLineItems({
             onChange={(e) => onFooterNoteChange(e.target.value)}
             rows={2}
             placeholder="Footer note — e.g. * Prices exclude travel expenses. All figures in AUD."
-            className="w-full px-3 py-2 rounded-lg border border-edge-strong bg-white text-xs text-dim placeholder:text-gray-300 focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
+            className="w-full px-3 py-2 rounded-lg border border-edge-strong bg-white text-xs text-dim placeholder:text-faint focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
           />
         </div>
       )}

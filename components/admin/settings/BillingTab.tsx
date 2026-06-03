@@ -571,10 +571,10 @@ function StatusBadge({ status }: { status: string }) {
     trialing: 'bg-teal/10 text-teal',
     active: 'bg-emerald-50 text-emerald-700',
     past_due: 'bg-amber-50 text-amber-700',
-    canceled: 'bg-gray-100 text-prose',
+    canceled: 'bg-surface text-prose',
     unpaid: 'bg-red-50 text-red-700',
-    paused: 'bg-gray-100 text-prose',
-    incomplete: 'bg-gray-100 text-prose',
+    paused: 'bg-surface text-prose',
+    incomplete: 'bg-surface text-prose',
   };
   const label: Record<string, string> = {
     trialing: 'Trial',
@@ -588,7 +588,7 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <span
       className={`text-detail font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full ${
-        styles[status] ?? 'bg-gray-100 text-prose'
+        styles[status] ?? 'bg-surface text-prose'
       }`}
     >
       {label[status] ?? status}

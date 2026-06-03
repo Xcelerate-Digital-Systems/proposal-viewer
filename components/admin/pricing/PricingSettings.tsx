@@ -64,7 +64,7 @@ function Chip({
       className={`flex items-center justify-center gap-1.5 w-full px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors disabled:opacity-50 ${
         enabled
           ? 'bg-teal/10 border-teal/30 text-teal hover:bg-teal/15'
-          : 'bg-surface border-edge-strong text-faint hover:text-prose hover:border-gray-300'
+          : 'bg-surface border-edge-strong text-faint hover:text-prose hover:border-edge-hover'
       }`}
     >
       {enabled ? <Check size={11} className="shrink-0" /> : <X size={11} className="shrink-0" />}
@@ -97,7 +97,7 @@ function ColumnRow({
           className={LABEL_INPUT_CLS}
         />
       ) : (
-        <span className="text-xs text-gray-300 italic">Hidden</span>
+        <span className="text-xs text-faint italic">Hidden</span>
       )}
     </div>
   );

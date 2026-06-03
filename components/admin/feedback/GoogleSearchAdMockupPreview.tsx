@@ -108,10 +108,10 @@ export default function GoogleSearchAdMockupPreview({ data, activeView, onViewCh
             </text>
           </svg>
           <div className="flex-1 max-w-2xl h-11 rounded-full border border-edge-strong hover:shadow-md transition-shadow flex items-center gap-3 px-5">
-            <div className="flex-1 h-3 rounded bg-gray-100" />
+            <div className="flex-1 h-3 rounded bg-surface" />
             <Search size={18} className="text-[#4285F4]" />
           </div>
-          <div className="w-9 h-9 rounded-full bg-gray-100 shrink-0" />
+          <div className="w-9 h-9 rounded-full bg-surface shrink-0" />
         </div>
 
         {/* Tabs row */}
@@ -136,7 +136,7 @@ export default function GoogleSearchAdMockupPreview({ data, activeView, onViewCh
             <p className="text-xs font-medium text-ink mb-1.5">Sponsored</p>
 
             <div className="flex items-center gap-2.5 mb-1">
-              <div className="w-7 h-7 rounded-full bg-gray-100 border border-edge-strong flex items-center justify-center text-2xs font-semibold text-dim shrink-0">
+              <div className="w-7 h-7 rounded-full bg-surface border border-edge-strong flex items-center justify-center text-2xs font-semibold text-dim shrink-0">
                 {(data.business_name || data.display_url || 'A').slice(0, 1).toUpperCase()}
               </div>
               <div className="min-w-0">
@@ -181,13 +181,13 @@ export default function GoogleSearchAdMockupPreview({ data, activeView, onViewCh
 
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-gray-100" />
+              <div className="w-6 h-6 rounded-full bg-surface" />
               <div>
-                <div className="h-2.5 bg-gray-100 rounded w-32 mb-1" />
+                <div className="h-2.5 bg-surface rounded w-32 mb-1" />
                 <div className="h-2 bg-surface rounded w-40" />
               </div>
             </div>
-            <div className="h-4 bg-gray-100 rounded w-3/5 mt-1.5" />
+            <div className="h-4 bg-surface rounded w-3/5 mt-1.5" />
             <div className="h-2.5 bg-surface rounded w-full" />
             <div className="h-2.5 bg-surface rounded w-5/6" />
           </div>
@@ -249,7 +249,7 @@ function AssetSection({
                     active
                       ? 'bg-blue-50 text-[#1a0dab]'
                       : previewing
-                        ? 'bg-surface text-gray-800'
+                        ? 'bg-surface text-ink'
                         : 'text-prose hover:bg-surface'
                   }`}
                   title={text}
@@ -258,8 +258,8 @@ function AssetSection({
                     active
                       ? 'bg-[#1a0dab] text-white'
                       : previewing
-                        ? 'bg-gray-200 text-prose'
-                        : 'bg-gray-100 text-dim'
+                        ? 'bg-edge text-prose'
+                        : 'bg-surface text-dim'
                   }`}>
                     {i + 1}
                   </span>

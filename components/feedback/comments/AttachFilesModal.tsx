@@ -100,7 +100,7 @@ export default function AttachFilesModal({
           <h3 className="text-lg font-semibold text-ink">Attach Files</h3>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-faint hover:text-prose hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-lg text-faint hover:text-prose hover:bg-surface transition-colors"
           >
             <X size={18} />
           </button>
@@ -122,10 +122,10 @@ export default function AttachFilesModal({
             className={`flex flex-col items-center justify-center w-full min-h-[200px] rounded-2xl border-2 border-dashed cursor-pointer transition-colors ${
               dragOver
                 ? 'border-teal bg-teal/5'
-                : 'border-gray-300 hover:border-gray-400 bg-surface/50'
+                : 'border-edge-hover hover:border-edge-hover bg-surface/50'
             }`}
           >
-            <div className="flex items-center gap-2 text-gray-300">
+            <div className="flex items-center gap-2 text-faint">
               <FileTextIcon size={44} strokeWidth={1.5} />
               <Film size={44} strokeWidth={1.5} />
               <FileImage size={44} strokeWidth={1.5} />

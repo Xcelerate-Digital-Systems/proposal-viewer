@@ -27,7 +27,7 @@ export default function FeedbackConceptPage() {
           <PinMarker n={1} top="22%" left="34%" />
           <PinMarker n={2} top="58%" left="68%" />
           <PinMarker n={3} top="78%" left="22%" tone="resolved" />
-          <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-sm">
+          <div className="absolute inset-0 flex items-center justify-center text-faint text-sm">
             (content preview)
           </div>
         </div>
@@ -218,7 +218,7 @@ function ResolvedThread({ n, author, time, body }: { n: number; author: string; 
         className="w-full flex items-start gap-3 text-left"
         onClick={() => setOpen((o) => !o)}
       >
-        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-faint text-detail font-semibold shrink-0">
+        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-surface text-faint text-detail font-semibold shrink-0">
           {n}
         </span>
         <div className="flex-1 min-w-0">
@@ -305,7 +305,7 @@ function PriorityPill({ label, tone }: { label: string; tone: 'rose' | 'amber' |
 function PinMarker({ n, top, left, tone = 'open' }: { n: number; top: string; left: string; tone?: 'open' | 'resolved' }) {
   const colors =
     tone === 'resolved'
-      ? 'bg-gray-100 text-faint ring-gray-200'
+      ? 'bg-surface text-faint ring-gray-200'
       : 'bg-emerald-100 text-emerald-700 ring-emerald-200';
   return (
     <span

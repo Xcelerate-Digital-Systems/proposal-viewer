@@ -187,7 +187,7 @@ function KanbanColumn({
     <div className="shrink-0 w-[280px] flex flex-col h-full min-h-0">
       <div className="flex items-center gap-2 mb-3 shrink-0">
         <span className={`w-2 h-2 rounded-full ${def.dot}`} />
-        <h3 className="text-caption font-semibold text-gray-800">{def.label}</h3>
+        <h3 className="text-caption font-semibold text-ink">{def.label}</h3>
         <span className="text-detail font-medium text-faint">{items.length}</span>
       </div>
 

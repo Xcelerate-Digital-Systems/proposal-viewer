@@ -45,7 +45,7 @@ export default function SmsMockupPreview({
     <div className="w-full max-w-[380px]">
       {/* Client toggle */}
       {showClientToggle && (
-        <div className="flex items-center gap-1 mb-4 bg-gray-100 rounded-lg p-1 max-w-[240px] mx-auto">
+        <div className="flex items-center gap-1 mb-4 bg-surface rounded-lg p-1 max-w-[240px] mx-auto">
           {CLIENT_OPTIONS.map((c) => (
             <button
               key={c.key}
@@ -90,14 +90,14 @@ function IMessagePreview({
   const charCount = body.length;
 
   return (
-    <div className="rounded-[2rem] border border-gray-300 overflow-hidden bg-white shadow-sm">
+    <div className="rounded-[2rem] border border-edge-hover overflow-hidden bg-white shadow-sm">
       {/* Status bar */}
       <div className="px-6 pt-3 pb-1 flex items-center justify-between">
         <span className="text-xs font-semibold text-ink">9:41</span>
         <div className="flex items-center gap-1">
           <div className="flex items-center gap-0.5">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className={`w-[3px] rounded-sm ${i <= 3 ? 'bg-gray-900' : 'bg-gray-300'}`}
+              <div key={i} className={`w-[3px] rounded-sm ${i <= 3 ? 'bg-gray-900' : 'bg-edge-hover'}`}
                 style={{ height: 4 + i * 2 }} />
             ))}
           </div>
@@ -113,7 +113,7 @@ function IMessagePreview({
       <div className="px-4 py-2 flex items-center justify-between border-b border-edge">
         <ChevronLeft size={22} className="text-[#007AFF]" />
         <div className="flex flex-col items-center">
-          <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm font-bold text-white mb-1">
+          <div className="w-10 h-10 rounded-full bg-edge-hover flex items-center justify-center text-sm font-bold text-white mb-1">
             {initial}
           </div>
           <span className="text-xs font-semibold text-ink">{senderName}</span>
@@ -147,7 +147,7 @@ function IMessagePreview({
       {/* Input bar */}
       <div className="px-3 py-2 border-t border-edge flex items-center gap-2">
         <Camera size={24} className="text-faint shrink-0" />
-        <div className="flex-1 border border-gray-300 rounded-full px-4 py-2 flex items-center justify-between">
+        <div className="flex-1 border border-edge-hover rounded-full px-4 py-2 flex items-center justify-between">
           <span className="text-sm text-faint">iMessage</span>
         </div>
       </div>
@@ -183,14 +183,14 @@ function AndroidPreview({
   const charCount = body.length;
 
   return (
-    <div className="rounded-[2rem] border border-gray-300 overflow-hidden bg-white shadow-sm">
+    <div className="rounded-[2rem] border border-edge-hover overflow-hidden bg-white shadow-sm">
       {/* Status bar */}
       <div className="px-6 pt-3 pb-1 flex items-center justify-between">
         <span className="text-xs font-semibold text-ink">9:41</span>
         <div className="flex items-center gap-1">
           <div className="flex items-center gap-0.5">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className={`w-[3px] rounded-sm ${i <= 3 ? 'bg-gray-900' : 'bg-gray-300'}`}
+              <div key={i} className={`w-[3px] rounded-sm ${i <= 3 ? 'bg-gray-900' : 'bg-edge-hover'}`}
                 style={{ height: 4 + i * 2 }} />
             ))}
           </div>

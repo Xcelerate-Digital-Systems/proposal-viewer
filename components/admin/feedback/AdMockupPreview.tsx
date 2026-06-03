@@ -317,7 +317,7 @@ function FacebookFeedAd({
           placed here gets stamped with the shared `creative` view instead
           of the active variant; that way creative feedback is visible on
           every variant (the image doesn't change between them). */}
-      <div data-creative className="w-full aspect-square bg-gray-100 overflow-hidden">
+      <div data-creative className="w-full aspect-square bg-surface overflow-hidden">
         <img
           src={creativeUrl}
           alt="Ad creative"

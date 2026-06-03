@@ -163,7 +163,7 @@ export default function LineItemsLibraryBar({ items, replaceItems }: LineItemsLi
                   <button
                     type="button"
                     onClick={() => deleteTemplate(t.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-500"
+                    className="opacity-0 group-hover:opacity-100 p-1 text-faint hover:text-red-500"
                     title="Delete template"
                   >
                     <X size={12} />

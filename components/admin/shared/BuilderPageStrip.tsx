@@ -59,7 +59,7 @@ export default function BuilderPageStrip({
             <span
               role="button"
               onClick={(e) => { e.stopPropagation(); onDelete(page.id); }}
-              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:text-red-500 text-gray-300 transition-all"
+              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:text-red-500 text-faint transition-all"
             >
               <Trash2 size={11} />
             </span>
@@ -87,7 +87,7 @@ export default function BuilderPageStrip({
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               previewVisible
                 ? 'bg-teal/10 text-teal'
-                : 'bg-gray-100 text-faint hover:text-prose'
+                : 'bg-surface text-faint hover:text-prose'
             }`}
           >
             <Eye size={13} /> Preview

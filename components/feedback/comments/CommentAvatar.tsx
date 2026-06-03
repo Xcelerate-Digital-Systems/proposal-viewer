@@ -31,7 +31,7 @@ export default function CommentAvatar({
   const url = authorUserId ? memberLookup?.[authorUserId]?.avatarUrl : null;
 
   const initialBg = muted
-    ? 'bg-gray-200 text-dim'
+    ? 'bg-edge text-dim'
     : isTeam
       ? 'bg-teal/10 text-teal'
       : 'bg-violet-100 text-violet-700';

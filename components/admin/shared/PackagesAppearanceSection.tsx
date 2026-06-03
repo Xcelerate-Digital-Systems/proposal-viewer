@@ -142,7 +142,7 @@ export default function PackagesAppearanceSection({
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${
                 styling.feature_icon === opt.key
                   ? 'border-teal bg-teal/5 text-teal'
-                  : 'border-edge-strong text-faint hover:border-gray-300 hover:text-prose'
+                  : 'border-edge-strong text-faint hover:border-edge-hover hover:text-prose'
               }`}
               title={opt.label}
             >

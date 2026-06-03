@@ -132,7 +132,7 @@ export default function FeedbackHeaderBar({
           <>
             {backAction && (
               <span
-                className={`h-4 w-px shrink-0 ${headerBranded ? '' : 'bg-gray-100'}`}
+                className={`h-4 w-px shrink-0 ${headerBranded ? '' : 'bg-surface'}`}
                 style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
               />
             )}
@@ -147,7 +147,7 @@ export default function FeedbackHeaderBar({
           <>
             {backAction && (
               <span
-                className={`h-4 w-px shrink-0 ${headerBranded ? '' : 'bg-gray-100'}`}
+                className={`h-4 w-px shrink-0 ${headerBranded ? '' : 'bg-surface'}`}
                 style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
               />
             )}
@@ -161,7 +161,7 @@ export default function FeedbackHeaderBar({
         )}
 
         <span
-          className={`h-4 w-px ${headerBranded ? '' : 'bg-gray-100'}`}
+          className={`h-4 w-px ${headerBranded ? '' : 'bg-surface'}`}
           style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
         />
         <span
@@ -186,7 +186,7 @@ export default function FeedbackHeaderBar({
       {!singleItemOnly && stripTypes.length > 1 && (
         <>
           <div
-            className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-gray-100'}`}
+            className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-surface'}`}
             style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
           />
           <div className="shrink-0">
@@ -207,7 +207,7 @@ export default function FeedbackHeaderBar({
       {!singleItemOnly && filteredItems.length > 1 && (
         <>
           <div
-            className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-gray-100'}`}
+            className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-surface'}`}
             style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
           />
           <div className="flex items-center gap-2 shrink-0">
@@ -215,7 +215,7 @@ export default function FeedbackHeaderBar({
               onClick={() => onGoToItem(currentIdx - 1)}
               disabled={currentIdx <= 0}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
-                headerBranded ? '' : 'bg-surface text-prose hover:bg-gray-100'
+                headerBranded ? '' : 'bg-surface text-prose hover:bg-surface'
               }`}
               style={
                 headerBranded
@@ -238,7 +238,7 @@ export default function FeedbackHeaderBar({
               onClick={() => onGoToItem(currentIdx + 1)}
               disabled={currentIdx >= filteredItems.length - 1}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
-                headerBranded ? '' : 'bg-surface text-prose hover:bg-gray-100'
+                headerBranded ? '' : 'bg-surface text-prose hover:bg-surface'
               }`}
               style={
                 headerBranded
@@ -273,7 +273,7 @@ export default function FeedbackHeaderBar({
               <button
                 type="button"
                 onClick={() => onEditVersion(activeVersionId)}
-                className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-detail font-medium text-prose hover:bg-gray-100 hover:text-ink transition-colors"
+                className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-detail font-medium text-prose hover:bg-surface hover:text-ink transition-colors"
                 title="Edit this version's content"
               >
                 <Pencil size={11} />

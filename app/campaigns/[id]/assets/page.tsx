@@ -215,8 +215,8 @@ function ItemsContent({
           </div>
         ) : items.length === 0 ? (
           <div className="text-center py-20">
-            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Image size={28} className="text-gray-300" />
+            <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Image size={28} className="text-faint" />
             </div>
             <h3 className="text-lg font-semibold text-dim mb-1">No items yet</h3>
             <p className="text-sm text-faint mb-4">

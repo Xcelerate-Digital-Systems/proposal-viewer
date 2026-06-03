@@ -222,7 +222,7 @@ export default function VideoRecorderModal({
           <h3 className="text-lg font-semibold text-ink">Record a video</h3>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-faint hover:text-prose hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-lg text-faint hover:text-prose hover:bg-surface transition-colors"
           >
             <X size={18} />
           </button>
@@ -240,7 +240,7 @@ export default function VideoRecorderModal({
                   type="checkbox"
                   checked={micEnabled}
                   onChange={(e) => setMicEnabled(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-teal focus:ring-teal/20"
+                  className="w-4 h-4 rounded border-edge-hover text-teal focus:ring-teal/20"
                 />
                 <Mic size={14} className="text-faint" />
                 Include microphone audio

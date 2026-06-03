@@ -216,7 +216,7 @@ export default function ClientDetailsSection({
               }
               setShowDropdown((v) => !v);
             }}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-edge-strong bg-white text-sm text-prose hover:border-gray-300 transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-edge-strong bg-white text-sm text-prose hover:border-edge-hover transition-colors"
           >
             <span className="truncate">
               {form.client_name

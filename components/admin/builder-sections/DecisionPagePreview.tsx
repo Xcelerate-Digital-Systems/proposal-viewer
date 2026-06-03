@@ -135,7 +135,7 @@ export default function DecisionPagePreview({
   if (!loaded) {
     return (
       <div className="flex items-center justify-center py-12 bg-white rounded-2xl border border-edge-strong">
-        <Loader2 size={18} className="animate-spin text-gray-300" />
+        <Loader2 size={18} className="animate-spin text-faint" />
       </div>
     );
   }

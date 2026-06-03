@@ -94,9 +94,9 @@ export default function AttachmentPicker({
               {a.preview ? (
                 <img src={a.preview} alt={a.file.name} className="w-full h-full object-cover" />
               ) : IMAGE_TYPES.includes(a.file.type) ? (
-                <ImageIcon size={16} className="text-gray-300" />
+                <ImageIcon size={16} className="text-faint" />
               ) : (
-                <FileText size={16} className="text-gray-300" />
+                <FileText size={16} className="text-faint" />
               )}
               <button
                 type="button"

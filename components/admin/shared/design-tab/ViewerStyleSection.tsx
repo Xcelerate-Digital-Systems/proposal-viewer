@@ -107,7 +107,7 @@ function GroupHeading({ title, hint }: { title: string; hint?: string }) {
         <h3 className="text-xl font-semibold text-ink">{title}</h3>
         {hint && <span className="text-xs text-faint">{hint}</span>}
       </div>
-      <div className="mt-2 h-px bg-gray-200" />
+      <div className="mt-2 h-px bg-edge" />
     </div>
   );
 }
@@ -377,7 +377,7 @@ export default function ViewerStyleSection({
                 <button
                   onClick={() => fileRef.current?.click()}
                   disabled={uploading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-prose bg-surface border border-edge-strong rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-prose bg-surface border border-edge-strong rounded-lg hover:bg-surface disabled:opacity-50 transition-colors"
                 >
                   {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
                   Replace
@@ -474,7 +474,7 @@ export default function ViewerStyleSection({
                       }`}
                     >
                       <span className={`rounded-sm border-2 flex-shrink-0 ${
-                        pageOrientation === opt.key ? 'border-teal' : 'border-gray-300'
+                        pageOrientation === opt.key ? 'border-teal' : 'border-edge-hover'
                       } ${opt.key === 'landscape' ? 'w-4 h-3.5' : 'w-3.5 h-4'}`} />
                       {opt.label}
                     </button>
@@ -646,7 +646,7 @@ export default function ViewerStyleSection({
 
         <StickyPreviewAside>
           <div
-            className="rounded-lg overflow-hidden border border-edge-strong bg-gray-100 p-8 space-y-4"
+            className="rounded-lg overflow-hidden border border-edge-strong bg-surface p-8 space-y-4"
             style={{ backgroundColor: tpBgColor || companyDefaults.bg_color }}
           >
             <p

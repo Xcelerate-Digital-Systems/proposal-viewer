@@ -148,7 +148,7 @@ export default function TemplateUploadModal({
                 className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
                   entityType === 'proposal'
                     ? 'bg-teal/10 border-teal text-teal'
-                    : 'bg-white border-edge-strong text-dim hover:border-gray-300'
+                    : 'bg-white border-edge-strong text-dim hover:border-edge-hover'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 Proposal
@@ -160,7 +160,7 @@ export default function TemplateUploadModal({
                 className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
                   entityType === 'quote'
                     ? 'bg-teal/10 border-teal text-teal'
-                    : 'bg-white border-edge-strong text-dim hover:border-gray-300'
+                    : 'bg-white border-edge-strong text-dim hover:border-edge-hover'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 Quote
@@ -180,7 +180,7 @@ export default function TemplateUploadModal({
 
           <div>
             <label className="block text-sm font-medium text-prose mb-1">PDF File <span className="text-faint font-normal">(optional)</span></label>
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-teal/40 hover:bg-teal/5 transition-colors">
+            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-edge-hover rounded-2xl cursor-pointer hover:border-teal/40 hover:bg-teal/5 transition-colors">
               {file ? (
                 <div className="flex items-center gap-2 text-sm text-dim">
                   <FileText size={20} className="text-teal" />
@@ -189,9 +189,9 @@ export default function TemplateUploadModal({
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2">
-                  <Upload size={24} className="text-gray-300" />
+                  <Upload size={24} className="text-faint" />
                   <span className="text-sm text-faint">Click to upload PDF</span>
-                  <span className="text-xs text-gray-300">Or skip to create a blank template</span>
+                  <span className="text-xs text-faint">Or skip to create a blank template</span>
                 </div>
               )}
               <input
@@ -215,7 +215,7 @@ export default function TemplateUploadModal({
                   <span className="text-teal font-medium">{uploadProgress}%</span>
                 )}
               </div>
-              <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-surface rounded-full overflow-hidden">
                 <div
                   className="h-full bg-teal rounded-full transition-all duration-300 ease-out"
                   style={{ width: status === 'Uploading PDF...' ? `${uploadProgress}%` : '100%' }}

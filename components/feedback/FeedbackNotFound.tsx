@@ -25,12 +25,12 @@ export default function FeedbackNotFound({ type = 'not_found' }: ReviewNotFoundP
     <div className="min-h-screen bg-surface flex items-center justify-center p-6">
       <div className="max-w-sm w-full text-center">
         {/* Icon */}
-        <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-5">
+        <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center mx-auto mb-5">
           <Link2Off size={28} className="text-faint" />
         </div>
 
         {/* Heading */}
-        <h1 className="text-xl font-semibold text-gray-800 mb-2">
+        <h1 className="text-xl font-semibold text-ink mb-2">
           {isError ? 'Something went wrong' : 'This link is no longer active'}
         </h1>
 

@@ -88,7 +88,7 @@ export default function TextPagesSection({
   if (!loaded) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 size={18} className="animate-spin text-gray-300" />
+        <Loader2 size={18} className="animate-spin text-faint" />
       </div>
     );
   }
@@ -116,9 +116,9 @@ export default function TextPagesSection({
       <div className="flex flex-col gap-5">
         {pageStrip}
         <div className="rounded-lg border border-dashed border-edge-strong bg-surface py-16 text-center">
-          <FileText size={28} className="mx-auto text-gray-200 mb-3" />
+          <FileText size={28} className="mx-auto text-edge-hover mb-3" />
           <p className="text-sm text-faint mb-1">No text page selected</p>
-          <p className="text-xs text-gray-300">Select a page from the list or add a new one</p>
+          <p className="text-xs text-faint">Select a page from the list or add a new one</p>
         </div>
       </div>
     );
@@ -153,7 +153,7 @@ export default function TextPagesSection({
 
               <div className="rounded-2xl border border-edge-strong bg-white">
                 <div className="px-4 py-3 border-b border-edge">
-                  <h3 className="text-sm font-semibold text-gray-800">Content</h3>
+                  <h3 className="text-sm font-semibold text-ink">Content</h3>
                   <p className="text-xs text-faint mt-0.5">Write the body of this page</p>
                 </div>
                 <div className="p-4">
@@ -167,9 +167,9 @@ export default function TextPagesSection({
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-edge-strong bg-surface py-12 text-center">
-              <FileText size={24} className="mx-auto text-gray-300 mb-2" />
+              <FileText size={24} className="mx-auto text-faint mb-2" />
               <p className="text-sm text-faint mb-1">Text page is currently disabled</p>
-              <p className="text-xs text-gray-300">Toggle the switch above to enable it</p>
+              <p className="text-xs text-faint">Toggle the switch above to enable it</p>
             </div>
           )}
         </div>

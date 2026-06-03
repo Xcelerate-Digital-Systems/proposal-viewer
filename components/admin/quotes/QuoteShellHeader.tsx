@@ -202,7 +202,7 @@ export default function QuoteShellHeader({
             )}
             {proposal.category && (
               <>
-                <span className="text-gray-200">·</span>
+                <span className="text-edge-hover">·</span>
                 <span className="text-sm text-faint">{proposal.category}</span>
               </>
             )}
@@ -244,21 +244,21 @@ export default function QuoteShellHeader({
           <button
             onClick={saveAsTemplate}
             disabled={savingTemplate}
-            className="p-2 rounded-lg text-gray-300 hover:text-prose hover:bg-surface transition-colors disabled:opacity-50"
+            className="p-2 rounded-lg text-faint hover:text-prose hover:bg-surface transition-colors disabled:opacity-50"
             title="Save as quote template"
           >
             {savingTemplate ? <Loader2 size={16} className="animate-spin" /> : <BookmarkPlus size={16} />}
           </button>
           <button
             onClick={duplicateQuote}
-            className="p-2 rounded-lg text-gray-300 hover:text-prose hover:bg-surface transition-colors"
+            className="p-2 rounded-lg text-faint hover:text-prose hover:bg-surface transition-colors"
             title="Duplicate quote"
           >
             <Files size={16} />
           </button>
           <button
             onClick={deleteQuote}
-            className="p-2 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+            className="p-2 rounded-lg text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
             title="Delete quote"
           >
             <Trash2 size={16} />

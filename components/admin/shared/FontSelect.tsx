@@ -51,7 +51,7 @@ export function WeightPicker({
         value={current}
         onChange={(e) => onChange(e.target.value === '400' ? null : e.target.value)}
         disabled={disabled}
-        className="appearance-none pl-3 pr-7 py-1.5 rounded-lg border border-edge-strong bg-surface text-xs text-prose hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        className="appearance-none pl-3 pr-7 py-1.5 rounded-lg border border-edge-strong bg-surface text-xs text-prose hover:border-edge-hover focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         style={{ fontWeight: Number(current) }}
       >
         {options.map((w) => (
@@ -95,7 +95,7 @@ export function TransformPicker({
         value={current}
         onChange={(e) => onChange(e.target.value === 'none' ? null : e.target.value)}
         disabled={disabled}
-        className="appearance-none pl-3 pr-7 py-1.5 rounded-lg border border-edge-strong bg-surface text-xs text-prose hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        className="appearance-none pl-3 pr-7 py-1.5 rounded-lg border border-edge-strong bg-surface text-xs text-prose hover:border-edge-hover focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
         {TRANSFORM_OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -222,7 +222,7 @@ export default function FontSelect({
           type="button"
           onClick={() => !disabled && setOpen(!open)}
           disabled={disabled}
-          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-sm text-left hover:border-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-sm text-left hover:border-edge-hover transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span
             className={value ? 'text-ink' : 'text-faint'}
@@ -242,12 +242,12 @@ export default function FontSelect({
                 onChange(null);
                 onWeightChange(null);
               }}
-              className="p-0.5 text-gray-300 hover:text-dim transition-colors"
+              className="p-0.5 text-faint hover:text-dim transition-colors"
             >
               <X size={14} />
             </button>
           ) : (
-            <Type size={14} className="text-gray-300" />
+            <Type size={14} className="text-faint" />
           )}
         </button>
 
@@ -287,7 +287,7 @@ export default function FontSelect({
                       className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                         category === cat.key
                           ? 'bg-teal text-white'
-                          : 'text-faint hover:bg-gray-100'
+                          : 'text-faint hover:bg-surface'
                       }`}
                     >
                       {cat.label}
@@ -307,7 +307,7 @@ export default function FontSelect({
                     setOpen(false);
                     setSearch('');
                   }}
-                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-surface transition-colors border-b border-gray-50 ${
+                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-surface transition-colors border-b border-paper ${
                     !value ? 'bg-teal/5 text-teal font-medium' : 'text-dim'
                   }`}
                 >
@@ -333,7 +333,7 @@ export default function FontSelect({
                     >
                       {font.family}
                     </span>
-                    <span className="text-2xs text-gray-300 uppercase tracking-wider">
+                    <span className="text-2xs text-faint uppercase tracking-wider">
                       {font.category}
                     </span>
                   </button>

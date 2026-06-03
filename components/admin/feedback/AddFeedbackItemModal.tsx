@@ -310,7 +310,7 @@ export default function AddFeedbackItemModal({
 function CategoryIcon({ category }: { category: Category }) {
   if (category.brandLogo) {
     return (
-      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${category.brandBg ?? 'bg-gray-500'}`}>
+      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${category.brandBg ?? 'bg-paper0'}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={category.brandLogo} alt="" className="w-5 h-5" />
       </div>

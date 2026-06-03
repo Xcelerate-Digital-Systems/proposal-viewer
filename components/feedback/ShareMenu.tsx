@@ -153,7 +153,7 @@ export default function ShareMenu({
                 ) : (
                   <span
                     className={`relative w-8 h-[18px] rounded-full transition-colors ${
-                      checked ? 'bg-teal' : 'bg-gray-200'
+                      checked ? 'bg-teal' : 'bg-edge'
                     }`}
                   >
                     <span

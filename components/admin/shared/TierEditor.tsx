@@ -41,7 +41,7 @@ export default function TierEditor({
 
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2.5 bg-surface border-b border-edge rounded-t-lg">
-        <GripVertical size={14} className="text-gray-300 shrink-0" />
+        <GripVertical size={14} className="text-faint shrink-0" />
         <button onClick={onToggleExpand} className="flex-1 flex items-center gap-2 text-left min-w-0">
           <span className="text-xs font-medium text-prose truncate">{tier.name || 'Unnamed'}</span>
           {isExpanded
@@ -51,11 +51,11 @@ export default function TierEditor({
         <div className="flex items-center gap-2 shrink-0">
           <div className="flex items-center border border-edge-strong rounded-lg overflow-hidden divide-x divide-gray-200 bg-white">
             <button onClick={() => onMove('up')} disabled={tierIdx === 0} title="Move up"
-              className="px-1.5 py-1 hover:bg-gray-100 disabled:opacity-25 transition-colors text-dim">
+              className="px-1.5 py-1 hover:bg-surface disabled:opacity-25 transition-colors text-dim">
               <ArrowUp size={11} />
             </button>
             <button onClick={() => onMove('down')} disabled={tierIdx === totalTiers - 1} title="Move down"
-              className="px-1.5 py-1 hover:bg-gray-100 disabled:opacity-25 transition-colors text-dim">
+              className="px-1.5 py-1 hover:bg-surface disabled:opacity-25 transition-colors text-dim">
               <ArrowDown size={11} />
             </button>
           </div>
@@ -73,7 +73,7 @@ export default function TierEditor({
           <button
             onClick={onDuplicate}
             title="Duplicate package"
-            className="p-1 rounded hover:bg-teal/10 text-gray-300 hover:text-teal transition-colors"
+            className="p-1 rounded hover:bg-teal/10 text-faint hover:text-teal transition-colors"
           >
             <Copy size={12} />
           </button>
@@ -87,7 +87,7 @@ export default function TierEditor({
               Save Template
             </button>
           )}
-          <button onClick={onRemove} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors">
+          <button onClick={onRemove} className="p-1 rounded hover:bg-red-50 text-faint hover:text-red-500 transition-colors">
             <Trash2 size={12} />
           </button>
         </div>
@@ -153,7 +153,7 @@ export default function TierEditor({
                   placeholder="* Minimum 3 month contract"
                   className="flex-1 px-2.5 py-1.5 rounded border border-edge-strong text-xs focus:outline-none focus:ring-1 focus:ring-teal/20" />
                 <button onClick={() => onRemoveCondition(ci)}
-                  className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors">
+                  className="p-1 rounded hover:bg-red-50 text-faint hover:text-red-400 transition-colors">
                   <Trash2 size={10} />
                 </button>
               </div>
@@ -179,11 +179,11 @@ export default function TierEditor({
                     placeholder="Feature description"
                     className="flex-1 px-2.5 py-2.5 rounded border border-edge-strong text-xs focus:outline-none focus:ring-1 focus:ring-teal/20" />
                   <button onClick={() => onAddChild(fi)} title="Add sub-feature"
-                    className="p-1 rounded hover:bg-gray-100 text-gray-300 hover:text-dim transition-colors">
+                    className="p-1 rounded hover:bg-surface text-faint hover:text-dim transition-colors">
                     <Plus size={11} />
                   </button>
                   <button onClick={() => onRemoveFeature(fi)}
-                    className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors">
+                    className="p-1 rounded hover:bg-red-50 text-faint hover:text-red-400 transition-colors">
                     <Trash2 size={10} />
                   </button>
                 </div>
@@ -193,7 +193,7 @@ export default function TierEditor({
                       placeholder="Sub-feature"
                       className="flex-1 px-2.5 py-2.5 rounded border border-edge text-xs focus:outline-none focus:ring-1 focus:ring-teal/20 bg-surface" />
                     <button onClick={() => onRemoveChild(fi, ci)}
-                      className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors">
+                      className="p-1 rounded hover:bg-red-50 text-faint hover:text-red-400 transition-colors">
                       <Trash2 size={10} />
                     </button>
                   </div>

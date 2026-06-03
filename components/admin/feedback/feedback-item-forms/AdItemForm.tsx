@@ -437,7 +437,7 @@ function ExistingVariationRow({
           type="button"
           onClick={(e) => { e.stopPropagation(); onToggle(); }}
           className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-            variation.selected ? 'bg-teal border-teal text-white' : 'border-gray-300 hover:border-teal/50'
+            variation.selected ? 'bg-teal border-teal text-white' : 'border-edge-hover hover:border-teal/50'
           }`}
         >
           {variation.selected && <Check size={12} />}
@@ -539,7 +539,7 @@ function NewVariationEditor({
           type="button"
           onClick={onActivate}
           className={`inline-flex items-center justify-center w-5 h-5 rounded text-detail font-semibold shrink-0 transition-colors ${
-            isActive ? 'bg-teal text-white' : 'bg-gray-100 text-prose hover:bg-gray-200'
+            isActive ? 'bg-teal text-white' : 'bg-surface text-prose hover:bg-edge'
           }`}
         >
           {index + 1}
@@ -614,7 +614,7 @@ function CtaDropdown({ value, onChange }: { value: string; onChange: (v: string)
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-surface rounded-2xl text-sm text-ink hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-teal/20"
+        className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-surface rounded-2xl text-sm text-ink hover:bg-surface transition-colors focus:outline-none focus:ring-2 focus:ring-teal/20"
       >
         <span className="truncate">{value}</span>
         <ChevronDown size={14} className={`text-faint shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />

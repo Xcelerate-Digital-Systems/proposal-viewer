@@ -119,7 +119,7 @@ export default function LoadTemplateBar({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium text-prose bg-white border border-edge-strong hover:border-gray-300 transition-colors"
+        className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium text-prose bg-white border border-edge-strong hover:border-edge-hover transition-colors"
       >
         <Files size={14} className="text-faint" />
         Load Template

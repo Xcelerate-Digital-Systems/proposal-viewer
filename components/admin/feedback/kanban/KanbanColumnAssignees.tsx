@@ -242,7 +242,7 @@ export default function KanbanColumnAssignees({
             );
           })}
           {hiddenCount > 0 && (
-            <div className="w-6 h-6 rounded-full bg-gray-200 text-2xs font-semibold text-prose flex items-center justify-center ring-2 ring-white">
+            <div className="w-6 h-6 rounded-full bg-edge text-2xs font-semibold text-prose flex items-center justify-center ring-2 ring-white">
               +{hiddenCount}
             </div>
           )}
@@ -260,7 +260,7 @@ export default function KanbanColumnAssignees({
           }
           setOpen((v) => !v);
         }}
-        className="w-6 h-6 rounded-full border border-dashed border-gray-300 text-faint hover:text-prose hover:border-gray-500 transition-colors flex items-center justify-center"
+        className="w-6 h-6 rounded-full border border-dashed border-edge-hover text-faint hover:text-prose hover:border-paper0 transition-colors flex items-center justify-center"
         aria-label={`Add reviewer to ${stage}`}
       >
         <Plus size={13} />
@@ -298,7 +298,7 @@ export default function KanbanColumnAssignees({
                       size={24}
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="text-caption text-gray-800 truncate">{m.name || m.email}</div>
+                      <div className="text-caption text-ink truncate">{m.name || m.email}</div>
                       {m.name && <div className="text-detail text-faint truncate">{m.email}</div>}
                     </div>
                     {assigned && <Check size={14} className="text-emerald-500 shrink-0" />}
@@ -339,7 +339,7 @@ export default function KanbanColumnAssignees({
                           size={24}
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="text-caption text-gray-800 truncate">{g.name || g.email}</div>
+                          <div className="text-caption text-ink truncate">{g.name || g.email}</div>
                           {g.name && <div className="text-detail text-faint truncate">{g.email}</div>}
                         </div>
                         {assigned && <Check size={14} className="text-emerald-500 shrink-0" />}
@@ -357,13 +357,13 @@ export default function KanbanColumnAssignees({
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addGuest(); } }}
                   placeholder="Invite a new email..."
                   type="email"
-                  className="flex-1 min-w-0 text-caption outline-none placeholder:text-gray-300 py-1.5"
+                  className="flex-1 min-w-0 text-caption outline-none placeholder:text-faint py-1.5"
                 />
                 <button
                   type="button"
                   onClick={addGuest}
                   disabled={busy || !guestEmail.trim()}
-                  className="text-detail font-semibold text-teal hover:text-teal/80 disabled:text-gray-300"
+                  className="text-detail font-semibold text-teal hover:text-teal/80 disabled:text-faint"
                 >
                   Add
                 </button>

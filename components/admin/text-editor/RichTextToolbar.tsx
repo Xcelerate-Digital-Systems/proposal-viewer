@@ -70,7 +70,7 @@ function ToolbarButton({
       className={`shrink-0 p-2 rounded transition-colors ${
         isActive
           ? 'bg-teal/15 text-teal'
-          : 'text-dim hover:text-prose hover:bg-gray-100'
+          : 'text-dim hover:text-prose hover:bg-surface'
       } disabled:opacity-30 disabled:cursor-not-allowed`}
     >
       {children}
@@ -79,7 +79,7 @@ function ToolbarButton({
 }
 
 function Separator() {
-  return <div className="shrink-0 w-px h-6 bg-gray-200 mx-1" />;
+  return <div className="shrink-0 w-px h-6 bg-edge mx-1" />;
 }
 
 /* ─── Component ───────────────────────────────────────────────── */
@@ -156,7 +156,7 @@ export default function RichTextToolbar({ editor, className }: RichTextToolbarPr
           else editor.chain().focus().unsetFontSize().run();
         }}
         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); editor.commands.focus(); } }}
-        className="shrink-0 h-8 w-16 px-1.5 text-xs text-prose bg-white border border-edge-strong rounded hover:border-gray-300 focus:outline-none focus:border-teal [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="shrink-0 h-8 w-16 px-1.5 text-xs text-prose bg-white border border-edge-strong rounded hover:border-edge-hover focus:outline-none focus:border-teal [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
 
       {/* Font weight */}
@@ -168,7 +168,7 @@ export default function RichTextToolbar({ editor, className }: RichTextToolbarPr
           else editor.chain().focus().unsetFontWeight().run();
         }}
         title="Font Weight"
-        className="shrink-0 h-8 px-2 text-xs text-prose bg-white border border-edge-strong rounded cursor-pointer hover:border-gray-300 focus:outline-none focus:border-teal"
+        className="shrink-0 h-8 px-2 text-xs text-prose bg-white border border-edge-strong rounded cursor-pointer hover:border-edge-hover focus:outline-none focus:border-teal"
         style={{ fontWeight: currentFontWeight ? Number(currentFontWeight) : undefined }}
       >
         <option value="">Weight</option>

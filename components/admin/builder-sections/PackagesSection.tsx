@@ -34,7 +34,7 @@ export default function PackagesSection(props: PackagesSectionProps) {
   if (!editor.loaded) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 size={18} className="animate-spin text-gray-300" />
+        <Loader2 size={18} className="animate-spin text-faint" />
       </div>
     );
   }
@@ -59,7 +59,7 @@ export default function PackagesSection(props: PackagesSectionProps) {
           <span
             role="button"
             onClick={(e) => { e.stopPropagation(); editor.deletePage(page.id); }}
-            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:text-red-500 text-gray-300 transition-all"
+            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:text-red-500 text-faint transition-all"
           >
             <Trash2 size={11} />
           </span>
@@ -81,7 +81,7 @@ export default function PackagesSection(props: PackagesSectionProps) {
           <button
             onClick={() => setShowPreview(!showPreview)}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              showPreview ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-faint hover:text-prose'
+              showPreview ? 'bg-teal/10 text-teal' : 'bg-surface text-faint hover:text-prose'
             }`}
           >
             <Eye size={13} /> Preview
@@ -98,9 +98,9 @@ export default function PackagesSection(props: PackagesSectionProps) {
       <div className="space-y-5">
         {pageStrip}
         <div className="bg-white rounded-2xl border border-edge-strong py-16 text-center">
-          <Package size={28} className="mx-auto text-gray-200 mb-3" />
+          <Package size={28} className="mx-auto text-edge-hover mb-3" />
           <p className="text-sm text-faint mb-1">No packages page selected</p>
-          <p className="text-xs text-gray-300">Select a page from the list or add a new one</p>
+          <p className="text-xs text-faint">Select a page from the list or add a new one</p>
         </div>
       </div>
     );
@@ -130,7 +130,7 @@ export default function PackagesSection(props: PackagesSectionProps) {
             {!editor.form.enabled && (
               <div className="rounded-lg border border-dashed border-edge-strong bg-surface py-8 text-center">
                 <p className="text-sm text-faint mb-1">Packages page is currently disabled</p>
-                <p className="text-xs text-gray-300">Toggle the switch above to enable it</p>
+                <p className="text-xs text-faint">Toggle the switch above to enable it</p>
               </div>
             )}
             {editor.form.enabled && (
@@ -201,7 +201,7 @@ export default function PackagesSection(props: PackagesSectionProps) {
               >
                 {editor.form.packages.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-edge-strong py-8 text-center">
-                    <Package size={20} className="mx-auto text-gray-300 mb-2" />
+                    <Package size={20} className="mx-auto text-faint mb-2" />
                     <p className="text-xs text-faint">No packages yet</p>
                   </div>
                 ) : (

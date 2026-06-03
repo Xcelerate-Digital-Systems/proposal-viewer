@@ -106,7 +106,7 @@ export default function TemplateDetailHeader({ template }: TemplateDetailHeaderP
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
           {/* Page count badge */}
-          <span className="px-3 py-1.5 rounded-lg text-sm font-medium text-dim bg-gray-100 border border-edge-strong">
+          <span className="px-3 py-1.5 rounded-lg text-sm font-medium text-dim bg-surface border border-edge-strong">
             {template.page_count} page{template.page_count !== 1 ? 's' : ''}
           </span>
 
@@ -123,7 +123,7 @@ export default function TemplateDetailHeader({ template }: TemplateDetailHeaderP
           {/* Delete — red-on-hover icon button; left inline per migration rules */}
           <button
             onClick={deleteTemplate}
-            className="p-2 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+            className="p-2 rounded-lg text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
             title="Delete template"
           >
             <Trash2 size={16} />

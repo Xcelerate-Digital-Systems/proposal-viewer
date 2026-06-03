@@ -41,7 +41,7 @@ export default function AttachmentList({ attachments, size = 'md' }: AttachmentL
           >
             <FileText size={10} className="text-faint shrink-0" />
             <span className={`text-2xs text-prose truncate ${fileNameMax}`}>{a.name}</span>
-            <ExternalLink size={8} className="text-gray-300 shrink-0" />
+            <ExternalLink size={8} className="text-faint shrink-0" />
           </a>
         );
       })}

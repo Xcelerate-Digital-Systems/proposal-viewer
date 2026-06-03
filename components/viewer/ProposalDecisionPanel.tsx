@@ -369,7 +369,7 @@ export default function ProposalDecisionPanel({
               >
                 Your Signature
               </label>
-              <Suspense fallback={<div className="h-28 rounded-xl border-2 border-dashed border-gray-200 animate-pulse" />}>
+              <Suspense fallback={<div className="h-28 rounded-xl border-2 border-dashed border-edge animate-pulse" />}>
                 <SignatureCapture
                   signerName={signerName}
                   onSignerNameChange={setSignerName}

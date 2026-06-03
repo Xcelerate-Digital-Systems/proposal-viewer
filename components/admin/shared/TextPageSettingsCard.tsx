@@ -24,7 +24,7 @@ function Switch({ checked, onChange }: { checked: boolean; onChange: () => void 
       aria-checked={checked}
       onClick={onChange}
       className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-        checked ? 'bg-teal' : 'bg-gray-300'
+        checked ? 'bg-teal' : 'bg-edge-hover'
       }`}
     >
       <span
@@ -40,7 +40,7 @@ export default function TextPageSettingsCard({ form, companyId, onUpdate }: Text
   return (
     <div className="rounded-2xl border border-edge-strong bg-white">
       <div className="px-4 py-3 border-b border-edge">
-        <h3 className="text-sm font-semibold text-gray-800">Page Settings</h3>
+        <h3 className="text-sm font-semibold text-ink">Page Settings</h3>
         <p className="text-xs text-faint mt-0.5">Title, header, and footer options for this page</p>
       </div>
 

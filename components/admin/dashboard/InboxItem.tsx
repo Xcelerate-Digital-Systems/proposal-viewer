@@ -251,7 +251,7 @@ export default function InboxItem({ item, memberName, isLast, onDismiss }: Props
             <div className="flex items-center gap-1 mt-3">
               <button
                 onClick={() => setReplyOpen(true)}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-ink bg-surface hover:bg-gray-100 rounded-full px-3 py-1.5 transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-ink bg-surface hover:bg-surface rounded-full px-3 py-1.5 transition-colors"
               >
                 <Reply size={12} />
                 Reply

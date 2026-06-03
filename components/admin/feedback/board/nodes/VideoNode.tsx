@@ -21,7 +21,7 @@ function VideoThumbnail({ item }: { item: NodeItemProps['item'] }) {
 
   return (
     <div className="w-full h-full flex items-center justify-center bg-surface">
-      <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300">
+      <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-faint">
         <Video size={14} />
       </div>
     </div>

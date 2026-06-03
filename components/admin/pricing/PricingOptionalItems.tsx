@@ -72,7 +72,7 @@ export default function PricingOptionalItems({ items, onChange, currency = 'AUD'
                 />
                 <button
                   onClick={() => removeItem(item.id)}
-                  className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                  className="p-1 rounded text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
                 >
                   <Trash2 size={13} />
                 </button>

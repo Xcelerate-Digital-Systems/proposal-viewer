@@ -62,7 +62,7 @@ export default function ReactionBar({
             className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-2xs border transition-colors ${
               active
                 ? 'bg-teal/10 border-teal/30 text-teal'
-                : 'bg-surface border-edge-strong text-dim hover:border-gray-300'
+                : 'bg-surface border-edge-strong text-dim hover:border-edge-hover'
             }`}
           >
             <span>{emoji}</span>

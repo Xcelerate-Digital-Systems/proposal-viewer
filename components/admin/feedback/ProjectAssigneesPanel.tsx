@@ -360,7 +360,7 @@ export default function ProjectAssigneesPanel({
               setPickerOpen((v) => !v);
             }}
             disabled={unassignedMembers.length === 0}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-caption font-medium border border-edge-strong rounded-full hover:border-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-caption font-medium border border-edge-strong rounded-full hover:border-edge-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Add team member
             <ChevronDown size={14} />
@@ -520,7 +520,7 @@ export default function ProjectAssigneesPanel({
               onClick={() => {
                 setGuestFormOpen(true);
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-caption font-medium border border-edge-strong rounded-full hover:border-gray-300 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-caption font-medium border border-edge-strong rounded-full hover:border-edge-hover transition-colors"
             >
               <UserPlus size={14} />
               Add guest
@@ -568,7 +568,7 @@ function GuestRow({
               title="Resend invite email"
             >
               {resending ? (
-                <div className="w-3 h-3 border-2 border-gray-300 border-t-teal rounded-full animate-spin" />
+                <div className="w-3 h-3 border-2 border-edge-hover border-t-teal rounded-full animate-spin" />
               ) : (
                 <Send size={12} />
               )}
@@ -665,7 +665,7 @@ function StagesChipRow({
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium transition-colors border ${
                 on
                   ? `${def.bg} ${def.text} ${def.border}`
-                  : 'bg-white text-faint border-edge-strong hover:text-prose hover:border-gray-300'
+                  : 'bg-white text-faint border-edge-strong hover:text-prose hover:border-edge-hover'
               }`}
               title={on ? `Notifies on ${def.label}` : `Click to scope to ${def.label}`}
             >

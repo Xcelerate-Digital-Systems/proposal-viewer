@@ -108,7 +108,7 @@ export default function BrandColorsSection({
         {isOwner && brandColors.length < MAX_BRAND_COLORS && (
           <button
             onClick={handleAdd}
-            className="w-9 h-9 rounded-2xl border-2 border-dashed border-edge-strong flex items-center justify-center text-gray-300 hover:border-teal/40 hover:text-teal transition-colors"
+            className="w-9 h-9 rounded-2xl border-2 border-dashed border-edge-strong flex items-center justify-center text-faint hover:border-teal/40 hover:text-teal transition-colors"
             title="Add colour"
           >
             <Plus size={14} />

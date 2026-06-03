@@ -326,7 +326,7 @@ function Section({
         className="w-full flex items-center gap-2 px-4 py-3 hover:bg-surface transition-colors"
       >
         <Icon size={14} className="text-dim shrink-0" />
-        <span className="flex-1 text-left text-sm font-medium text-gray-800">
+        <span className="flex-1 text-left text-sm font-medium text-ink">
           {title}{required && <span className="text-red-400 ml-1">*</span>}
         </span>
         {open ? <ChevronDown size={14} className="text-faint" /> : <ChevronRight size={14} className="text-faint" />}

@@ -192,7 +192,7 @@ export default function GradientStopsEditor({ stops, onChange, onCommit }: Props
               onChange={(e) => updateSelectedPosition(parseInt(e.target.value))}
               onMouseUp={() => commit(stops)}
               onTouchEnd={() => commit(stops)}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal"
+              className="w-full h-2 bg-edge rounded-lg appearance-none cursor-pointer accent-teal"
             />
           </div>
         </div>

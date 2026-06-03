@@ -276,7 +276,7 @@ export default function CompleteFeedbackModal({
                 )}
                 {editableItems.map((it) => (
                   <div key={it.id} className="flex items-center gap-3 px-3 py-2">
-                    <p className="flex-1 min-w-0 truncate text-caption text-gray-800">{it.title}</p>
+                    <p className="flex-1 min-w-0 truncate text-caption text-ink">{it.title}</p>
                     <StatusPill
                       value={statusMap[it.id] ?? it.status}
                       onChange={(next) =>

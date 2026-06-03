@@ -389,7 +389,7 @@ export default function TaskDetailModal({
                         <button
                           onClick={() => fileRef.current?.click()}
                           disabled={uploading}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-dim border border-dashed border-gray-300 hover:border-teal hover:text-teal transition-colors disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-dim border border-dashed border-edge-hover hover:border-teal hover:text-teal transition-colors disabled:opacity-50"
                         >
                           <Upload size={12} />
                           {uploading ? 'Uploading…' : 'Add files'}
@@ -438,7 +438,7 @@ export default function TaskDetailModal({
               )}
 
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-xs font-semibold shrink-0">
+                <div className="w-8 h-8 rounded-full bg-edge text-prose flex items-center justify-center text-xs font-semibold shrink-0">
                   {commentAuthorName.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">

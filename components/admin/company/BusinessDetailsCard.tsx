@@ -232,7 +232,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className={`block text-xs font-medium mb-1.5 ${disabled ? 'text-gray-300' : 'text-prose'}`}>
+      <label className={`block text-xs font-medium mb-1.5 ${disabled ? 'text-faint' : 'text-prose'}`}>
         {label}
       </label>
       {children}

@@ -37,7 +37,7 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
   if (!editor.loaded) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 size={18} className="animate-spin text-gray-300" />
+        <Loader2 size={18} className="animate-spin text-faint" />
       </div>
     );
   }
@@ -113,7 +113,7 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
 
                     {editor.form.packages.length === 0 ? (
                       <div className="rounded-lg border border-dashed border-edge-strong py-8 text-center">
-                        <Package size={20} className="mx-auto text-gray-300 mb-2" />
+                        <Package size={20} className="mx-auto text-faint mb-2" />
                         <p className="text-xs text-faint">No packages yet</p>
                       </div>
                     ) : (
@@ -215,18 +215,18 @@ export default function PackagesTabEditor(props: PackagesTabEditorProps) {
                 </div>
               ) : (
                 <div className="rounded-lg border border-dashed border-edge-strong bg-surface py-12 text-center">
-                  <Package size={24} className="mx-auto text-gray-300 mb-2" />
+                  <Package size={24} className="mx-auto text-faint mb-2" />
                   <p className="text-sm text-faint mb-1">Packages page is currently disabled</p>
-                  <p className="text-xs text-gray-300">Toggle the switch above to enable it</p>
+                  <p className="text-xs text-faint">Toggle the switch above to enable it</p>
                 </div>
               )}
             </>
           ) : (
             <div className="flex items-center justify-center py-16">
               <div className="text-center">
-                <Package size={28} className="mx-auto text-gray-200 mb-3" />
+                <Package size={28} className="mx-auto text-edge-hover mb-3" />
                 <p className="text-sm text-faint mb-1">No packages page selected</p>
-                <p className="text-xs text-gray-300">Select a page from the list or add a new one</p>
+                <p className="text-xs text-faint">Select a page from the list or add a new one</p>
               </div>
             </div>
           )}

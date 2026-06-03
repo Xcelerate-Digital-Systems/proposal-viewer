@@ -223,7 +223,7 @@ export default function LineItemTemplateEditorModal({ open, onClose, template, o
                       type="button"
                       onClick={() => removeItem(item.id)}
                       disabled={items.length <= 1}
-                      className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30"
+                      className="p-1 rounded text-faint hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30"
                       title="Remove"
                     >
                       <Trash2 size={12} />

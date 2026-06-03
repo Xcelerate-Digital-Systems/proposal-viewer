@@ -87,7 +87,7 @@ export default function ProposalStyleSection({
               className={`group text-left rounded-lg overflow-hidden border-2 transition-all ${
                 isActive
                   ? 'border-teal ring-2 ring-teal/20'
-                  : 'border-edge-strong hover:border-gray-300'
+                  : 'border-edge-strong hover:border-edge-hover'
               } ${isSaving ? 'opacity-60' : ''}`}
             >
               <div

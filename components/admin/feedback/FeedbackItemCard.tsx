@@ -236,7 +236,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
               </h4>
               <button
                 onClick={() => setEditing(true)}
-                className="p-0.5 rounded text-gray-300 hover:text-dim transition-colors shrink-0"
+                className="p-0.5 rounded text-faint hover:text-dim transition-colors shrink-0"
               >
                 <Pencil size={11} />
               </button>
@@ -322,7 +322,7 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
                 }
                 setShowMenu(!showMenu);
               }}
-              className="p-1.5 rounded-lg text-faint hover:text-prose hover:bg-gray-100 transition-colors"
+              className="p-1.5 rounded-lg text-faint hover:text-prose hover:bg-surface transition-colors"
             >
               <MoreHorizontal size={14} />
             </button>

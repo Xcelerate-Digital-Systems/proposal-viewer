@@ -55,7 +55,7 @@ export default function ColorPickerDropdown({
         className={`p-2 rounded transition-colors flex items-center gap-0.5 ${
           isOpen
             ? 'bg-teal/15 text-teal'
-            : 'text-dim hover:text-prose hover:bg-gray-100'
+            : 'text-dim hover:text-prose hover:bg-surface'
         }`}
       >
         <div className="relative">
@@ -89,7 +89,7 @@ export default function ColorPickerDropdown({
                 className={`w-6 h-6 rounded border transition-all hover:scale-110 ${
                   currentColor === c.value
                     ? 'ring-2 ring-teal ring-offset-1'
-                    : 'border-edge-strong hover:border-gray-400'
+                    : 'border-edge-strong hover:border-edge-hover'
                 }`}
                 style={{
                   backgroundColor: c.value || '#ffffff',

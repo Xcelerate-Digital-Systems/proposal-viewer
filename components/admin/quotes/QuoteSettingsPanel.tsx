@@ -187,7 +187,7 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
                   >
                     {uploading ? <Loader2 size={12} className="animate-spin inline" /> : 'Replace'}
                   </button>
-                  <span className="text-gray-200">·</span>
+                  <span className="text-edge-hover">·</span>
                   <button
                     type="button"
                     onClick={removeBg}
@@ -222,12 +222,12 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
                 type="button"
                 onClick={() => fileInput.current?.click()}
                 disabled={uploading}
-                className="w-full border-2 border-dashed border-edge-strong rounded-lg px-4 py-6 text-center hover:border-gray-300 transition-colors disabled:opacity-50"
+                className="w-full border-2 border-dashed border-edge-strong rounded-lg px-4 py-6 text-center hover:border-edge-hover transition-colors disabled:opacity-50"
               >
                 {uploading ? (
-                  <Loader2 size={18} className="mx-auto text-gray-300 animate-spin" />
+                  <Loader2 size={18} className="mx-auto text-faint animate-spin" />
                 ) : (
-                  <ImageIcon size={18} className="mx-auto text-gray-300 mb-2" />
+                  <ImageIcon size={18} className="mx-auto text-faint mb-2" />
                 )}
                 <p className="text-sm text-dim">Upload image (JPG / PNG, ≤ 8 MB)</p>
               </button>

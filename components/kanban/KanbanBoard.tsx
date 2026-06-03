@@ -169,7 +169,7 @@ function KanbanColumnView<T extends { id: string }>({
           className="w-2 h-2 rounded-full shrink-0"
           style={{ backgroundColor: column.accentHex }}
         />
-        <h3 className="text-caption font-semibold text-gray-800 truncate">{column.label}</h3>
+        <h3 className="text-caption font-semibold text-ink truncate">{column.label}</h3>
         <span className="text-detail font-medium text-faint">{column.items.length}</span>
       </div>
 

@@ -290,7 +290,7 @@ function StatusCard({
             onClick={handleCopy}
             className="relative bg-gray-900 rounded-2xl p-4 cursor-pointer group"
           >
-            <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-all leading-relaxed select-all">
+            <pre className="text-xs text-faint font-mono whitespace-pre-wrap break-all leading-relaxed select-all">
               {scriptTag}
             </pre>
             <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-teal/30 transition-colors" />
@@ -359,7 +359,7 @@ function WidgetEnabledToggle({
     <div className="bg-white rounded-2xl shadow-card p-5 flex items-center gap-4">
       <div
         className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-          enabled ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-faint'
+          enabled ? 'bg-teal/10 text-teal' : 'bg-surface text-faint'
         }`}
       >
         <Power size={18} />
@@ -380,7 +380,7 @@ function WidgetEnabledToggle({
         onClick={toggle}
         disabled={saving}
         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${
-          enabled ? 'bg-teal' : 'bg-gray-300'
+          enabled ? 'bg-teal' : 'bg-edge-hover'
         }`}
       >
         <span

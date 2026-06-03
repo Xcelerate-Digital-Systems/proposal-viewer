@@ -293,24 +293,24 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
         <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
           isIncluded
             ? isGroup
-              ? 'bg-gray-400 border-gray-400'
+              ? 'bg-gray-400 border-edge-hover'
               : 'bg-teal border-teal'
-            : 'border-gray-300'
+            : 'border-edge-hover'
         }`}>
           {isIncluded && <Check size={10} className="text-white" />}
         </div>
 
         <span className={`text-sm truncate ${
           isGroup
-            ? `font-medium text-xs uppercase tracking-wide ${isIncluded ? 'text-dim' : 'text-gray-300'}`
-            : isIncluded ? 'text-prose' : 'text-gray-300'
+            ? `font-medium text-xs uppercase tracking-wide ${isIncluded ? 'text-dim' : 'text-faint'}`
+            : isIncluded ? 'text-prose' : 'text-faint'
         }`}>
           {item.label}
         </span>
 
         {/* Section label badge */}
         {isGroup ? (
-          <span className="ml-auto text-2xs px-1.5 py-0.5 rounded-full shrink-0 bg-gray-100 text-faint">
+          <span className="ml-auto text-2xs px-1.5 py-0.5 rounded-full shrink-0 bg-surface text-faint">
             section
           </span>
         ) : (
@@ -390,7 +390,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
                   {tocItems.length === 0 ? (
                     <div className="px-4 py-8 text-center">
                       <p className="text-sm text-faint">No pages found</p>
-                      <p className="text-xs text-gray-300 mt-1">Add PDF pages, text pages, or pricing to see them here</p>
+                      <p className="text-xs text-faint mt-1">Add PDF pages, text pages, or pricing to see them here</p>
                     </div>
                   ) : (
                     <div className="divide-y divide-gray-100">
@@ -414,9 +414,9 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-edge-strong bg-surface py-12 text-center">
-              <List size={24} className="mx-auto text-gray-300 mb-2" />
+              <List size={24} className="mx-auto text-faint mb-2" />
               <p className="text-sm text-faint mb-1">Table of Contents is currently disabled</p>
-              <p className="text-xs text-gray-300">Toggle the switch above to add a contents page</p>
+              <p className="text-xs text-faint">Toggle the switch above to add a contents page</p>
             </div>
           )}
         </div>

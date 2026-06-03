@@ -74,7 +74,7 @@ export default function FeedbackToolbar({
             accentColor={accentColor}
           />
 
-          <div className="w-5 h-px bg-gray-100 my-0.5" />
+          <div className="w-5 h-px bg-surface my-0.5" />
         </>
       )}
 

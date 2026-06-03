@@ -104,7 +104,7 @@ export default function ReviewTopBar({
             </span>
           ) : null}
           {(logoUrl || companyName) && (
-            <span className={`h-4 w-px ${branded ? '' : 'bg-gray-100'}`} style={dividerColor} />
+            <span className={`h-4 w-px ${branded ? '' : 'bg-surface'}`} style={dividerColor} />
           )}
           <div className="min-w-0 flex items-center gap-2">
             <span

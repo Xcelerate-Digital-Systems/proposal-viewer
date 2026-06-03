@@ -58,7 +58,7 @@ export function TourTooltip({
         width: 'calc(100vw - 48px)',
       }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200/80">
+      <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-edge/80">
         {/* ── Branded header bar ─────────────────────────── */}
         <div className="bg-surface-dark flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2.5">
@@ -86,7 +86,7 @@ export function TourTooltip({
         </div>
 
         {/* ── Progress bar ───────────────────────────────── */}
-        <div className="h-0.5 bg-gray-100">
+        <div className="h-0.5 bg-surface">
           <div
             className="h-full bg-teal transition-all duration-500 ease-out"
             style={{ width: `${progress}%` }}

@@ -395,7 +395,7 @@ export function CardShell({
                   <span className="text-amber-600 font-semibold">{unresolvedCount} open</span>
                   {commentCount - unresolvedCount > 0 && (
                     <>
-                      <span className="text-gray-300">·</span>
+                      <span className="text-faint">·</span>
                       <span className="text-emerald-600">{commentCount - unresolvedCount} resolved</span>
                     </>
                   )}

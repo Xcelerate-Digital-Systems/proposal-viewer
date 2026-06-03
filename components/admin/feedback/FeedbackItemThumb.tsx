@@ -55,7 +55,7 @@ export default function FeedbackItemThumb({ item }: Props) {
               </div>
               <span className="text-2xs text-faint truncate">Your Brand</span>
             </div>
-            <p className="text-xs font-semibold text-gray-800 truncate leading-snug">
+            <p className="text-xs font-semibold text-ink truncate leading-snug">
               {item.email_subject || 'No subject'}
             </p>
             {item.email_preheader && (
@@ -83,8 +83,8 @@ export default function FeedbackItemThumb({ item }: Props) {
         <img src={thumbnailUrl} alt={item.title} className="w-full h-full object-cover" />
       ) : (
         <div className="text-center">
-          <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto">
-            <Eye size={22} className="text-gray-300" />
+          <div className="w-12 h-12 rounded-2xl bg-surface flex items-center justify-center mx-auto">
+            <Eye size={22} className="text-faint" />
           </div>
           <p className="text-xs text-faint mt-2.5">No preview</p>
         </div>

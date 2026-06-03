@@ -579,7 +579,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
   if (ctx.loading) {
     return (
       <div className="flex items-center justify-center h-[600px]">
-        <Loader2 size={24} className="animate-spin text-gray-300" />
+        <Loader2 size={24} className="animate-spin text-faint" />
       </div>
     );
   }

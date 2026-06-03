@@ -134,7 +134,7 @@ export default function WebpageItemForm({
   if (stage === 'loading') {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="text-gray-300 animate-spin" size={24} />
+        <Loader2 className="text-faint animate-spin" size={24} />
       </div>
     );
   }

@@ -884,7 +884,7 @@ function PageLibraryView({
               ) : (
                 <>
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <div className="shrink-0 w-6 h-6 rounded bg-gray-100 flex items-center justify-center">
+                    <div className="shrink-0 w-6 h-6 rounded bg-surface flex items-center justify-center">
                       <Icon size={12} className="text-dim" />
                     </div>
                     <p className="text-xs font-semibold text-ink truncate">

@@ -438,7 +438,7 @@ export default function FeedbackModal({
 
               <div>
                 <p className="text-xs font-medium text-dim mb-1.5">Type</p>
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-prose capitalize">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface text-prose capitalize">
                   {comment.comment_type?.replace('_', ' ') || 'general'}
                 </span>
               </div>
@@ -449,7 +449,7 @@ export default function FeedbackModal({
                 {comment.author_email && (
                   <p className="text-xs text-faint mt-0.5">{comment.author_email}</p>
                 )}
-                <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-dim capitalize">
+                <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded text-xs font-medium bg-surface text-dim capitalize">
                   {comment.author_type}
                 </span>
               </div>

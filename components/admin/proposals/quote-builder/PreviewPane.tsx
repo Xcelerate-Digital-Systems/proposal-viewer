@@ -117,7 +117,7 @@ export default function PreviewPane({ proposal, companyId, noSticky }: PreviewPa
           type="button"
           onClick={refetch}
           disabled={refreshing}
-          className="p-1.5 rounded-lg text-faint hover:text-prose hover:bg-gray-100 transition-colors disabled:opacity-50"
+          className="p-1.5 rounded-lg text-faint hover:text-prose hover:bg-surface transition-colors disabled:opacity-50"
           title="Refresh preview"
         >
           <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />

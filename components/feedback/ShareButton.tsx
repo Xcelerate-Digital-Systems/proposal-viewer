@@ -153,7 +153,7 @@ export default function ShareButton({
           flex items-center gap-1.5 px-3 py-2 text-sm font-medium border transition-colors
           ${isActive
             ? 'text-teal border-teal/30 bg-teal/5 hover:bg-teal/10'
-            : 'text-dim border-edge-strong hover:text-prose hover:bg-gray-100'}
+            : 'text-dim border-edge-strong hover:text-prose hover:bg-surface'}
           ${isActive && !permanent ? 'rounded-l-lg border-r-0' : 'rounded-lg'}
         `}
       >

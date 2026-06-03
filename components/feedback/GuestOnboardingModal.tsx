@@ -149,7 +149,7 @@ export default function GuestOnboardingModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder=" "
-                className="peer w-full px-3.5 pt-5 pb-2 rounded-2xl bg-surface border border-edge-strong text-sm text-ink outline-none transition-all focus:bg-white focus:border-gray-300 focus:ring-2"
+                className="peer w-full px-3.5 pt-5 pb-2 rounded-2xl bg-surface border border-edge-strong text-sm text-ink outline-none transition-all focus:bg-white focus:border-edge-hover focus:ring-2"
                 style={{ ['--tw-ring-color' as string]: `${accentColor}25` }}
               />
               <label
@@ -168,7 +168,7 @@ export default function GuestOnboardingModal({
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setEmailError(false); }}
                 placeholder=" "
-                className={`peer w-full px-3.5 pt-5 pb-2 rounded-2xl bg-surface border text-sm text-ink outline-none transition-all focus:bg-white focus:border-gray-300 focus:ring-2 ${
+                className={`peer w-full px-3.5 pt-5 pb-2 rounded-2xl bg-surface border text-sm text-ink outline-none transition-all focus:bg-white focus:border-edge-hover focus:ring-2 ${
                   emailError ? 'border-red-300 focus:border-red-300' : 'border-edge-strong'
                 }`}
                 style={{ ['--tw-ring-color' as string]: emailError ? '#fecaca' : `${accentColor}25` }}

@@ -708,7 +708,7 @@ function ExistingVariationRow({ variation, isActive, onToggle, onActivate, onPat
       <div className="flex items-center gap-2.5 p-3">
         <button type="button" onClick={(e) => { e.stopPropagation(); onToggle(); }}
           className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-            variation.selected ? 'bg-teal border-teal text-white' : 'border-gray-300 hover:border-teal/50'
+            variation.selected ? 'bg-teal border-teal text-white' : 'border-edge-hover hover:border-teal/50'
           }`}>
           {variation.selected && <Check size={12} />}
         </button>
@@ -770,7 +770,7 @@ function NewVariationEditor({ variation, index, isActive, onPatch, onActivate, o
       <div className="flex items-center gap-2 px-3 pt-3">
         <button type="button" onClick={onActivate}
           className={`inline-flex items-center justify-center w-5 h-5 rounded text-detail font-semibold shrink-0 transition-colors ${
-            isActive ? 'bg-teal text-white' : 'bg-gray-100 text-prose hover:bg-gray-200'
+            isActive ? 'bg-teal text-white' : 'bg-surface text-prose hover:bg-edge'
           }`}>{index + 1}</button>
         <input type="text" value={variation.label} onChange={(e) => onPatch({ label: e.target.value })} onFocus={onActivate}
           placeholder={`Variation ${index + 1} name (optional)`}
@@ -812,7 +812,7 @@ function CtaDropdown({ value, onChange, disabled }: { value: string; onChange: (
     <div className="relative" ref={ref}>
       <label className="block text-xs font-medium text-dim uppercase tracking-wider mb-1">CTA Button</label>
       <button type="button" onClick={() => !disabled && setOpen((v) => !v)}
-        className={`w-full flex items-center justify-between gap-2 px-3 py-2 bg-surface rounded-2xl text-sm text-ink transition-colors focus:outline-none focus:ring-2 focus:ring-teal/20 ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}`}>
+        className={`w-full flex items-center justify-between gap-2 px-3 py-2 bg-surface rounded-2xl text-sm text-ink transition-colors focus:outline-none focus:ring-2 focus:ring-teal/20 ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-surface'}`}>
         <span className="truncate">{value || 'Select CTA'}</span>
         <ChevronDown size={14} className={`text-faint shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
@@ -870,7 +870,7 @@ function FileInput({ file, onChange, accept, optional }: { file: File | null; on
     <Field label={optional ? 'New file (optional)' : 'New file'}>
       <div className="flex items-center gap-2">
         <input type="file" accept={accept} onChange={(e) => onChange(e.target.files?.[0] ?? null)}
-          className="block w-full text-caption text-prose file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-edge-strong file:text-xs file:font-medium file:bg-surface hover:file:bg-gray-100" />
+          className="block w-full text-caption text-prose file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-edge-strong file:text-xs file:font-medium file:bg-surface hover:file:bg-surface" />
         {file && <span className="text-detail text-dim truncate max-w-[120px]">{file.name}</span>}
       </div>
     </Field>

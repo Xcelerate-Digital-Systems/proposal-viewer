@@ -77,7 +77,7 @@ export default function NextStepsSection({ proposal, onSaved }: Props) {
               type="button"
               onClick={() => setSteps((prev) => prev.filter((_, idx) => idx !== i))}
               disabled={steps.length <= 1}
-              className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30"
+              className="p-1.5 rounded-lg text-faint hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30"
               title="Remove step"
             >
               <X size={12} />

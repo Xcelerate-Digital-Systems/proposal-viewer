@@ -126,7 +126,7 @@ export function PackageTemplatesLibraryBar({ onPick }: LibraryBarProps) {
                 <button
                   type="button"
                   onClick={() => remove(t.id)}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-500"
+                  className="opacity-0 group-hover:opacity-100 p-1 text-faint hover:text-red-500"
                   title="Delete template"
                 >
                   <X size={12} />

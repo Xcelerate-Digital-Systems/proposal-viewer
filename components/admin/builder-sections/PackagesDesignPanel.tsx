@@ -162,7 +162,7 @@ export default function PackagesDesignPanel({ entityId, entityKey, onSave }: Pro
   if (!loaded) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 size={18} className="animate-spin text-gray-300" />
+        <Loader2 size={18} className="animate-spin text-faint" />
       </div>
     );
   }

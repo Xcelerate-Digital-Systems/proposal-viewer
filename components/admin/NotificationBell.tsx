@@ -87,7 +87,7 @@ export default function NotificationBell({
         className={`relative p-1.5 rounded-full transition-colors ${
           variant === 'sidebar'
             ? 'text-white/50 hover:text-white hover:bg-surface-dark-hover'
-            : 'text-dim hover:text-ink hover:bg-gray-100'
+            : 'text-dim hover:text-ink hover:bg-surface'
         }`}
         title="Notifications"
       >
@@ -134,12 +134,12 @@ export default function NotificationBell({
                   <button
                     key={n.id}
                     onClick={() => handleClick(n)}
-                    className={`w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-surface transition-colors border-b border-gray-50 ${
+                    className={`w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-surface transition-colors border-b border-paper ${
                       isUnread ? 'bg-teal/[0.03]' : ''
                     }`}
                   >
                     <div className={`mt-0.5 shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${
-                      isUnread ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-faint'
+                      isUnread ? 'bg-teal/10 text-teal' : 'bg-surface text-faint'
                     }`}>
                       <Icon size={14} />
                     </div>

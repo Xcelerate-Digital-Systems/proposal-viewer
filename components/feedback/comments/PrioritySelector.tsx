@@ -24,7 +24,7 @@ export const PRIORITY_OPTIONS: PriorityOptionDef[] = [
   { value: 'medium', label: 'Medium', icon: CircleMinus, iconClass: 'text-amber-500', badgeClass: 'bg-amber-100 text-amber-700' },
   { value: 'normal', label: 'Normal', icon: Circle, iconClass: 'text-sky-500', badgeClass: 'bg-sky-100 text-sky-700' },
   { value: 'low', label: 'Low', icon: CircleArrowDown, iconClass: 'text-emerald-500', badgeClass: 'bg-emerald-100 text-emerald-700' },
-  { value: 'none', label: 'None', icon: Check, iconClass: 'text-blue-500', badgeClass: 'bg-gray-100 text-dim' },
+  { value: 'none', label: 'None', icon: Check, iconClass: 'text-blue-500', badgeClass: 'bg-surface text-dim' },
 ];
 
 export function getPriorityDef(priority: FeedbackCommentPriority): PriorityOptionDef {
@@ -89,10 +89,10 @@ export default function PrioritySelector({ value, onChange, compact = true }: Pr
           compact
             ? `inline-flex items-center gap-1 px-2 py-1 rounded-full text-detail font-medium transition-colors ${
                 value === 'none'
-                  ? 'text-dim hover:text-ink hover:bg-gray-100'
+                  ? 'text-dim hover:text-ink hover:bg-surface'
                   : current.badgeClass
               }`
-            : 'flex items-center gap-1.5 px-2 py-1 rounded-full text-xs text-prose bg-surface hover:bg-gray-100'
+            : 'flex items-center gap-1.5 px-2 py-1 rounded-full text-xs text-prose bg-surface hover:bg-surface'
         }
         title={`Priority: ${current.label}`}
       >

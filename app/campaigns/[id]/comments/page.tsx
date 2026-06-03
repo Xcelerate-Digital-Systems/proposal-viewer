@@ -495,8 +495,8 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           </div>
         ) : enrichedComments.length === 0 && completions.length === 0 ? (
           <div className="text-center py-20">
-            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <MessageSquare size={28} className="text-gray-300" />
+            <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <MessageSquare size={28} className="text-faint" />
             </div>
             <h3 className="text-lg font-semibold text-dim mb-1">No feedback yet</h3>
             <p className="text-sm text-faint">
@@ -520,7 +520,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
                     <Circle size={14} />
                     Open
                     <span className={`ml-1 px-1.5 py-0.5 rounded text-xs ${
-                      tab === 'open' ? 'bg-gray-100 text-prose' : 'bg-surface text-faint'
+                      tab === 'open' ? 'bg-surface text-prose' : 'bg-surface text-faint'
                     }`}>
                       {openComments.length}
                     </span>
@@ -534,13 +534,13 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
                     <CheckCircle2 size={14} />
                     Resolved
                     <span className={`ml-1 px-1.5 py-0.5 rounded text-xs ${
-                      tab === 'resolved' ? 'bg-gray-100 text-prose' : 'bg-surface text-faint'
+                      tab === 'resolved' ? 'bg-surface text-prose' : 'bg-surface text-faint'
                     }`}>
                       {resolvedComments.length}
                     </span>
                   </button>
 
-                  <span className="w-px h-4 bg-gray-200" />
+                  <span className="w-px h-4 bg-edge" />
                   <button
                     onClick={() => setPriorityFilter('all')}
                     className={`text-xs font-medium transition-colors ${
@@ -611,7 +611,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
 
                 {allProjectTasks.total === 0 ? (
                   <div className="py-12 text-center">
-                    <ListTodo size={24} className="text-gray-300 mx-auto mb-2" />
+                    <ListTodo size={24} className="text-faint mx-auto mb-2" />
                     <p className="text-sm text-faint">No tasks yet</p>
                     <p className="text-xs text-faint mt-1">Create tasks from comments</p>
                   </div>

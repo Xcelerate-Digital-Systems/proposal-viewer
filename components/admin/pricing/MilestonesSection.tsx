@@ -56,7 +56,7 @@ export default function MilestonesSection({
                     <button
                       type="button"
                       onClick={() => onRemove(payment.id)}
-                      className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors"
+                      className="p-1 rounded hover:bg-red-50 text-faint hover:text-red-400 transition-colors"
                       title="Remove payment"
                     >
                       <Trash2 size={14} />
@@ -124,7 +124,7 @@ export default function MilestonesSection({
           {/* Progress bar */}
           {projectTotal > 0 && (
             <div>
-              <div className="flex rounded-full h-3 overflow-hidden bg-gray-100">
+              <div className="flex rounded-full h-3 overflow-hidden bg-surface">
                 {milestones.payments.map((payment, idx) => {
                   const amt = milestoneAmount(payment, projectTotal);
                   const pct = Math.min(100, (amt / projectTotal) * 100);

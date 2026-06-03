@@ -172,7 +172,7 @@ function GrantCell({ grant }: { grant: true | false | { partial: string } }) {
     return <Check size={16} className="text-emerald-500 inline" />;
   }
   if (grant === false) {
-    return <X size={16} className="text-gray-300 inline" />;
+    return <X size={16} className="text-faint inline" />;
   }
   return (
     <span className="text-2xs text-muted leading-snug inline-block max-w-[120px]">

@@ -75,7 +75,7 @@ export default function ThreadMenu({ onEdit, onDelete, align = 'end', className 
       <button
         ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
-        className="p-1 rounded text-faint hover:text-prose hover:bg-gray-100 transition-colors"
+        className="p-1 rounded text-faint hover:text-prose hover:bg-surface transition-colors"
         aria-label="More actions"
       >
         <MoreHorizontal size={12} />

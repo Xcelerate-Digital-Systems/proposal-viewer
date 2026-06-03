@@ -351,7 +351,7 @@ export default function MetaLeadFormItemForm({
               );
             })}
             <button type="button" onClick={addCustomQuestion}
-              className="w-full px-3 py-2 rounded-2xl text-caption font-medium text-teal hover:bg-teal/5 border border-dashed border-gray-300 hover:border-teal transition-colors inline-flex items-center justify-center gap-1.5">
+              className="w-full px-3 py-2 rounded-2xl text-caption font-medium text-teal hover:bg-teal/5 border border-dashed border-edge-hover hover:border-teal transition-colors inline-flex items-center justify-center gap-1.5">
               <Plus size={14} /> Add custom question
             </button>
           </div>
@@ -385,7 +385,7 @@ export default function MetaLeadFormItemForm({
               );
             })}
             <button type="button" onClick={addPrefillQuestion}
-              className="w-full px-3 py-2 rounded-2xl text-caption font-medium text-teal hover:bg-teal/5 border border-dashed border-gray-300 hover:border-teal transition-colors inline-flex items-center justify-center gap-1.5">
+              className="w-full px-3 py-2 rounded-2xl text-caption font-medium text-teal hover:bg-teal/5 border border-dashed border-edge-hover hover:border-teal transition-colors inline-flex items-center justify-center gap-1.5">
               <Plus size={14} /> Add contact field
             </button>
           </div>
@@ -449,7 +449,7 @@ export default function MetaLeadFormItemForm({
               </div>
             ))}
             <button type="button" onClick={addScreen}
-              className="w-full px-3 py-2 rounded-2xl text-caption font-medium text-teal hover:bg-teal/5 border border-dashed border-gray-300 hover:border-teal transition-colors inline-flex items-center justify-center gap-1.5">
+              className="w-full px-3 py-2 rounded-2xl text-caption font-medium text-teal hover:bg-teal/5 border border-dashed border-edge-hover hover:border-teal transition-colors inline-flex items-center justify-center gap-1.5">
               <Plus size={14} /> Add screen
             </button>
           </div>
@@ -517,7 +517,7 @@ function QuestionCard({
   return (
     <div className="border border-edge-strong rounded-2xl p-3 bg-surface/50">
       <div className="flex items-center gap-1 mb-2">
-        <GripVertical size={14} className="text-gray-300" />
+        <GripVertical size={14} className="text-faint" />
         <span className="text-2xs font-semibold uppercase tracking-wider text-faint">
           {positionLabel}
         </span>
@@ -548,11 +548,11 @@ function QuestionCard({
         </select>
         <div className="ml-auto flex items-center gap-0.5">
           <button type="button" onClick={() => onMove(-1)}
-            className="p-1 rounded hover:bg-gray-200 text-dim disabled:opacity-30" disabled={isFirst}>
+            className="p-1 rounded hover:bg-edge text-dim disabled:opacity-30" disabled={isFirst}>
             <ChevronUp size={13} />
           </button>
           <button type="button" onClick={() => onMove(1)}
-            className="p-1 rounded hover:bg-gray-200 text-dim disabled:opacity-30" disabled={isLast}>
+            className="p-1 rounded hover:bg-edge text-dim disabled:opacity-30" disabled={isLast}>
             <ChevronDown size={13} />
           </button>
           <button type="button" onClick={onRemove}
@@ -641,7 +641,7 @@ function ConditionalLogicEditor({
           default_screen_id: screens[0].id,
           rules: [],
         })}
-        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl text-caption font-medium text-teal hover:bg-teal/5 border border-dashed border-gray-300 hover:border-teal transition-colors"
+        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl text-caption font-medium text-teal hover:bg-teal/5 border border-dashed border-edge-hover hover:border-teal transition-colors"
       >
         <Zap size={14} /> Add logic rule
       </button>

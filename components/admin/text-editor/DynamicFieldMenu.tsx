@@ -33,7 +33,7 @@ export default function DynamicFieldMenu({ isOpen, onToggle, onClose, onInsert }
         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${
           isOpen
             ? 'bg-teal/15 text-teal'
-            : 'text-dim hover:text-prose hover:bg-gray-100'
+            : 'text-dim hover:text-prose hover:bg-surface'
         }`}
         title="Insert Dynamic Field"
       >
