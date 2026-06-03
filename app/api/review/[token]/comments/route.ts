@@ -172,6 +172,22 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       safeVersionId = v?.id ?? null;
     }
 
+    // Extract ad_copy_variation_id from annotation_data.view when the comment
+    // targets a shared variation (variant-<uuid>). Only set for real UUIDs
+    // from ad_copy_variations — legacy 8-char nanoid IDs stay NULL so the
+    // FK constraint isn't violated on existing ads.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let adCopyVariationId: string | null = null;
+    if (annotation_data && typeof annotation_data === 'object') {
+      const view = (annotation_data as Record<string, unknown>).view;
+      if (typeof view === 'string' && view.startsWith('variant-')) {
+        const candidateId = view.slice('variant-'.length);
+        if (UUID_RE.test(candidateId)) {
+          adCopyVariationId = candidateId;
+        }
+      }
+    }
+
     const { data: comment, error: insertErr } = await supabase
       .from('review_comments')
       .insert({
@@ -196,6 +212,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
         priority: safePriority,
         video_url: safeVideoUrl,
         version_id: safeVersionId,
+        ad_copy_variation_id: adCopyVariationId,
       })
       .select()
       .single();

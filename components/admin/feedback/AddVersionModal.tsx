@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Upload, Plus, Trash2, Type, AlignLeft, Copy, ChevronDown, Megaphone, Check } from 'lucide-react';
+import { X, Upload, Plus, Trash2, Type, AlignLeft, Check, ChevronDown } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import type { FeedbackItem, FeedbackItemVersion } from '@/lib/supabase';
 import type { VersionView } from '@/lib/feedback/versions';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
-import { type MetaAdVariant, getMetaAdVariants, type FeedbackStatus } from '@/lib/types/feedback';
+import { type MetaAdVariant, type FeedbackStatus } from '@/lib/types/feedback';
+import type { AdCopyVariation } from '@/lib/types/feedback';
 import { supabase } from '@/lib/supabase';
 import { getFeedbackStatusDef } from '@/lib/feedback/status';
 
@@ -19,12 +20,15 @@ function newAdVariant(): MetaAdVariant {
   return { id: newVariantId(), label: '', primary_text: '', headline: '' };
 }
 
-/** Shape returned by the "import variants from another ad" picker query
- *  inside the version modal. Mirrors AdItemForm's ImportableAd. */
-type ImportableAd = {
+/** A variation in the version picker — either existing shared or new inline. */
+type VersionPickerVariation = {
   id: string;
-  title: string;
-  variants: MetaAdVariant[];
+  label: string;
+  headline: string;
+  primary_text: string;
+  isExisting: boolean;
+  selected: boolean;
+  usedByCount?: number;
 };
 
 const CTA_OPTIONS = [
@@ -129,76 +133,94 @@ export default function AddVersionModal({
   const removeAdVariant = (id: string) =>
     setAdVariants((prev) => (prev.length > 1 ? prev.filter((v) => v.id !== id) : prev));
 
-  // Import-from-ad picker — only relevant when this version is for a Meta
-  // ad. Fetches other ads in the same project that have variants (or
-  // legacy ad_headline/ad_copy folded into a synthesised variant) so users
-  // can clone copy across ads without retyping. Mirrors AdItemForm.
-  const [importableAds, setImportableAds] = useState<ImportableAd[]>([]);
-  const [importPickerOpen, setImportPickerOpen] = useState(false);
-  const importPickerRef = useRef<HTMLDivElement>(null);
+  // Shared campaign variations picker — only for Meta ads. Shows existing
+  // shared variations the user can toggle on/off for this version. New
+  // inline variants are still supported alongside.
+  const [campaignVariations, setCampaignVariations] = useState<VersionPickerVariation[]>([]);
 
   useEffect(() => {
     if (item.type !== 'ad') return;
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
-        .from('review_items')
-        .select('id, title, ad_headline, ad_copy, meta_ad_variants')
+      const { data: existingVariations } = await supabase
+        .from('ad_copy_variations')
+        .select('*')
         .eq('review_project_id', item.review_project_id)
-        .eq('type', 'ad')
-        .neq('id', item.id)
-        .order('updated_at', { ascending: false });
-      if (cancelled || error || !data) return;
-      const ads = data
-        .map<ImportableAd>((row) => ({
-          id: row.id,
-          title: row.title || 'Untitled ad',
-          variants: getMetaAdVariants(row).filter((v) => v.headline.trim() || v.primary_text.trim()),
-        }))
-        .filter((ad) => ad.variants.length > 0);
-      setImportableAds(ads);
+        .order('created_at', { ascending: true });
+
+      if (cancelled || !existingVariations) return;
+
+      const varIds = existingVariations.map((v) => v.id);
+      let usageCounts: Record<string, number> = {};
+      if (varIds.length > 0) {
+        const { data: links } = await supabase
+          .from('review_item_ad_variations')
+          .select('ad_copy_variation_id')
+          .in('ad_copy_variation_id', varIds);
+        if (links) {
+          usageCounts = links.reduce<Record<string, number>>((acc, l) => {
+            acc[l.ad_copy_variation_id] = (acc[l.ad_copy_variation_id] ?? 0) + 1;
+            return acc;
+          }, {});
+        }
+      }
+
+      // Check which variations are currently linked to this item
+      const { data: currentLinks } = await supabase
+        .from('review_item_ad_variations')
+        .select('ad_copy_variation_id')
+        .eq('review_item_id', item.id);
+      const linkedIds = new Set((currentLinks || []).map((l) => l.ad_copy_variation_id));
+
+      const picker: VersionPickerVariation[] = existingVariations
+        .filter((v: AdCopyVariation) => v.headline.trim() || v.primary_text.trim())
+        .map((v: AdCopyVariation) => ({
+          id: v.id,
+          label: v.label || '',
+          headline: v.headline,
+          primary_text: v.primary_text,
+          isExisting: true,
+          selected: linkedIds.has(v.id),
+          usedByCount: usageCounts[v.id] || 0,
+        }));
+
+      setCampaignVariations(picker);
+
+      // If we have linked variations, replace the inline editor variants
+      // with the linked ones so the user sees the current state.
+      if (linkedIds.size > 0) {
+        const linkedVariants: MetaAdVariant[] = picker
+          .filter((v) => v.selected)
+          .map((v) => ({ id: v.id, label: v.label, headline: v.headline, primary_text: v.primary_text }));
+        if (linkedVariants.length > 0) {
+          setAdVariants(linkedVariants);
+        }
+      }
     })();
     return () => { cancelled = true; };
   }, [item.id, item.review_project_id, item.type]);
 
-  useEffect(() => {
-    if (!importPickerOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (importPickerRef.current && !importPickerRef.current.contains(e.target as Node)) {
-        setImportPickerOpen(false);
+  const toggleCampaignVariation = (id: string) => {
+    setCampaignVariations((prev) => prev.map((v) =>
+      v.id === id ? { ...v, selected: !v.selected } : v
+    ));
+    // Sync with adVariants for the submit
+    setCampaignVariations((prev) => {
+      const toggled = prev.find((v) => v.id === id);
+      if (!toggled) return prev;
+      if (toggled.selected) {
+        // Was just toggled ON — add to adVariants
+        setAdVariants((avs) => {
+          if (avs.some((v) => v.id === id)) return avs;
+          return [...avs, { id: toggled.id, label: toggled.label, headline: toggled.headline, primary_text: toggled.primary_text }];
+        });
+      } else {
+        // Was just toggled OFF — remove from adVariants
+        setAdVariants((avs) => avs.filter((v) => v.id !== id));
       }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [importPickerOpen]);
-
-  /** Shared importer for both single-variant and bulk-from-ad actions.
-   *  Clones source variants with fresh ids so source-ad pins don't move. */
-  const importVariants = (sourceVariants: MetaAdVariant[], sourceTitle: string) => {
-    const cloned = sourceVariants.map<MetaAdVariant>((v) => ({
-      id: newVariantId(),
-      label: v.label ?? '',
-      headline: v.headline,
-      primary_text: v.primary_text,
-    }));
-    setAdVariants((prev) => {
-      const hasOnlyEmptyStarter = prev.length === 1
-        && !prev[0].headline.trim()
-        && !prev[0].primary_text.trim();
-      return hasOnlyEmptyStarter ? cloned : [...prev, ...cloned];
+      return prev;
     });
-    setImportPickerOpen(false);
-    if (cloned.length === 1) {
-      const label = cloned[0].label?.trim() || 'variant';
-      toast.success(`Imported “${label}” from “${sourceTitle}”`);
-    } else {
-      toast.success(`Imported ${cloned.length} variants from “${sourceTitle}”`);
-    }
   };
-
-  const importAllFromAd = (ad: ImportableAd) => importVariants(ad.variants, ad.title);
-  const importOneVariant = (ad: ImportableAd, variant: MetaAdVariant) =>
-    importVariants([variant], ad.title);
 
   // Meta lead form (copy-iteration version: swap cover + edit headline/description/CTA)
   const lf = seed.meta_lead_form_data ?? item.meta_lead_form_data;
@@ -421,161 +443,120 @@ export default function AddVersionModal({
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-medium text-dim uppercase tracking-wider">
-                    Copy Variants
+                    Copy Variations
                   </label>
-                  <div className="flex items-center gap-2">
-                    {importableAds.length > 0 && (
-                      <div className="relative" ref={importPickerRef}>
-                        <button
-                          type="button"
-                          onClick={() => setImportPickerOpen((v) => !v)}
-                          className="inline-flex items-center gap-1 text-detail font-semibold text-teal hover:text-teal-hover"
-                          title="Reuse variants from another ad in this project"
-                        >
-                          <Copy size={12} />
-                          Import from ad
-                          <ChevronDown size={11} className={`transition-transform ${importPickerOpen ? 'rotate-180' : ''}`} />
-                        </button>
-                        {importPickerOpen && (
-                          <div className="absolute right-0 top-full mt-1.5 w-80 bg-white rounded-2xl shadow-lg border border-edge-strong overflow-hidden z-50">
-                            <div className="px-3 py-2 border-b border-edge">
-                              <p className="text-detail font-semibold uppercase tracking-wider text-dim">
-                                Existing ads in this project
-                              </p>
-                            </div>
-                            <div className="max-h-80 overflow-y-auto">
-                              {importableAds.map((ad) => (
-                                <div key={ad.id} className="border-b border-edge last:border-b-0">
-                                  <div className="flex items-center gap-2.5 px-3 pt-2 pb-1">
-                                    <span className="w-6 h-6 shrink-0 rounded-lg bg-surface flex items-center justify-center text-muted">
-                                      <Megaphone size={12} />
-                                    </span>
-                                    <span className="flex-1 min-w-0">
-                                      <span className="block text-xs font-semibold text-ink truncate">
-                                        {ad.title}
-                                      </span>
-                                      <span className="block text-2xs text-faint">
-                                        {ad.variants.length} variant{ad.variants.length === 1 ? '' : 's'}
-                                      </span>
-                                    </span>
-                                    {ad.variants.length > 1 && (
-                                      <button
-                                        type="button"
-                                        onClick={() => importAllFromAd(ad)}
-                                        className="text-detail font-semibold text-teal hover:text-teal-hover shrink-0"
-                                        title="Import all variants from this ad"
-                                      >
-                                        Import all
-                                      </button>
-                                    )}
-                                  </div>
-                                  <ul className="pb-1.5">
-                                    {ad.variants.map((v, i) => {
-                                      const label = v.label?.trim() || `Variant ${i + 1}`;
-                                      const preview = v.headline?.trim() || v.primary_text?.trim() || '';
-                                      return (
-                                        <li key={v.id}>
-                                          <button
-                                            type="button"
-                                            onClick={() => importOneVariant(ad, v)}
-                                            className="w-full flex items-center gap-2 pl-10 pr-3 py-1.5 text-left hover:bg-surface transition-colors group"
-                                          >
-                                            <span className="inline-flex items-center justify-center w-4 h-4 rounded text-2xs font-semibold bg-gray-100 text-dim shrink-0">
-                                              {i + 1}
-                                            </span>
-                                            <span className="flex-1 min-w-0">
-                                              <span className="block text-xs font-medium text-ink truncate">
-                                                {label}
-                                              </span>
-                                              {preview && (
-                                                <span className="block text-detail text-faint truncate">
-                                                  {preview}
-                                                </span>
-                                              )}
-                                            </span>
-                                            <span
-                                              className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-faint group-hover:bg-teal/10 group-hover:text-teal shrink-0 transition-colors"
-                                              title="Add this variant"
-                                            >
-                                              <Plus size={11} />
-                                            </span>
-                                          </button>
-                                        </li>
-                                      );
-                                    })}
-                                  </ul>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={addAdVariant}
-                      className="inline-flex items-center gap-1 text-detail font-semibold text-teal hover:text-teal-hover"
-                    >
-                      <Plus size={12} />
-                      Add variant
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={addAdVariant}
+                    className="inline-flex items-center gap-1 text-detail font-semibold text-teal hover:text-teal-hover"
+                  >
+                    <Plus size={12} />
+                    New variation
+                  </button>
                 </div>
                 <p className="text-detail text-faint mb-2">
-                  Each variant is a (primary text, headline) pair on the same creative. Reviewers switch in the sidebar; pins scope to the active variant.
+                  Select shared variations or create new ones. Shared feedback carries across all ads using the same variation.
                 </p>
-                <ol className="space-y-2.5">
-                  {adVariants.map((v, i) => (
-                    <li key={v.id} className="rounded-2xl border border-edge-strong bg-white">
-                      <div className="flex items-center gap-2 px-3 pt-2.5">
-                        <span className="inline-flex items-center justify-center w-5 h-5 rounded text-detail font-semibold bg-gray-100 text-prose shrink-0">
-                          {i + 1}
-                        </span>
-                        <input
-                          type="text"
-                          value={v.label ?? ''}
-                          onChange={(e) => patchAdVariant(v.id, { label: e.target.value })}
-                          placeholder={`Variant ${i + 1} name (optional)`}
-                          className="flex-1 min-w-0 bg-transparent text-caption font-semibold text-ink placeholder:text-faint placeholder:font-normal outline-none"
-                        />
-                        {adVariants.length > 1 && (
+
+                {/* Existing campaign variations (checkbox toggle) */}
+                {campaignVariations.length > 0 && (
+                  <div className="space-y-1.5 mb-3">
+                    <p className="text-2xs font-semibold uppercase tracking-wider text-dim">Existing in campaign</p>
+                    {campaignVariations.map((cv) => {
+                      const displayLabel = cv.label?.trim() || cv.headline?.trim() || 'Untitled';
+                      return (
+                        <div
+                          key={cv.id}
+                          className={`flex items-start gap-2.5 p-2.5 rounded-2xl border cursor-pointer transition-colors ${
+                            cv.selected ? 'border-teal/20 bg-white' : 'border-edge-strong bg-white hover:bg-surface'
+                          }`}
+                          onClick={() => toggleCampaignVariation(cv.id)}
+                        >
                           <button
                             type="button"
-                            onClick={() => removeAdVariant(v.id)}
-                            className="text-faint hover:text-red-500 p-1 rounded shrink-0"
-                            title="Remove variant"
+                            className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                              cv.selected ? 'bg-teal border-teal text-white' : 'border-gray-300 hover:border-teal/50'
+                            }`}
                           >
-                            <Trash2 size={13} />
+                            {cv.selected && <Check size={12} />}
                           </button>
-                        )}
-                      </div>
-                      <div className="px-3 pb-3 pt-2 space-y-2">
-                        <div>
-                          <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-faint mb-1">
-                            <AlignLeft size={10} /> Primary text
-                          </label>
-                          <textarea
-                            value={v.primary_text}
-                            onChange={(e) => patchAdVariant(v.id, { primary_text: e.target.value })}
-                            rows={4}
-                            className={`${inputCls} min-h-[96px]`}
-                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-ink truncate">{displayLabel}</p>
+                            {cv.primary_text?.trim() && (
+                              <p className="text-detail text-faint truncate mt-0.5">{cv.primary_text.trim()}</p>
+                            )}
+                            {(cv.usedByCount ?? 0) > 0 && (
+                              <p className="text-2xs text-dim mt-1">
+                                Used by {cv.usedByCount} ad{cv.usedByCount === 1 ? '' : 's'}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-faint mb-1">
-                            <Type size={10} /> Headline
-                          </label>
-                          <input
-                            type="text"
-                            value={v.headline}
-                            onChange={(e) => patchAdVariant(v.id, { headline: e.target.value })}
-                            className={inputCls}
-                          />
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Inline new variants (editable) */}
+                {adVariants.filter((v) => !campaignVariations.some((cv) => cv.id === v.id)).length > 0 && (
+                  <div className="space-y-2.5">
+                    {campaignVariations.length > 0 && (
+                      <p className="text-2xs font-semibold uppercase tracking-wider text-dim">New variations</p>
+                    )}
+                    {adVariants
+                      .filter((v) => !campaignVariations.some((cv) => cv.id === v.id))
+                      .map((v, i) => (
+                        <div key={v.id} className="rounded-2xl border border-edge-strong bg-white">
+                          <div className="flex items-center gap-2 px-3 pt-2.5">
+                            <span className="inline-flex items-center justify-center w-5 h-5 rounded text-detail font-semibold bg-gray-100 text-prose shrink-0">
+                              {i + 1}
+                            </span>
+                            <input
+                              type="text"
+                              value={v.label ?? ''}
+                              onChange={(e) => patchAdVariant(v.id, { label: e.target.value })}
+                              placeholder={`New variation ${i + 1} (name optional)`}
+                              className="flex-1 min-w-0 bg-transparent text-caption font-semibold text-ink placeholder:text-faint placeholder:font-normal outline-none"
+                            />
+                            {adVariants.filter((x) => !campaignVariations.some((cv) => cv.id === x.id)).length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeAdVariant(v.id)}
+                                className="text-faint hover:text-red-500 p-1 rounded shrink-0"
+                                title="Remove variant"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
+                          <div className="px-3 pb-3 pt-2 space-y-2">
+                            <div>
+                              <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-faint mb-1">
+                                <AlignLeft size={10} /> Primary text
+                              </label>
+                              <textarea
+                                value={v.primary_text}
+                                onChange={(e) => patchAdVariant(v.id, { primary_text: e.target.value })}
+                                rows={4}
+                                className={`${inputCls} min-h-[96px]`}
+                              />
+                            </div>
+                            <div>
+                              <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-faint mb-1">
+                                <Type size={10} /> Headline
+                              </label>
+                              <input
+                                type="text"
+                                value={v.headline}
+                                onChange={(e) => patchAdVariant(v.id, { headline: e.target.value })}
+                                className={inputCls}
+                              />
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
+                      ))}
+                  </div>
+                )}
               </div>
               <CtaDropdown value={adCta} onChange={setAdCta} />
             </>

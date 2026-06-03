@@ -239,6 +239,41 @@ export type MetaAdVariant = {
   headline: string;
 };
 
+/** A shared, campaign-scoped ad copy variation stored in `ad_copy_variations`.
+ *  Multiple Meta Ad items can link to the same variation via the junction table.
+ *  The `id` is a UUID (not the 8-char nanoid used in inline MetaAdVariant). */
+export type AdCopyVariation = {
+  id: string;
+  review_project_id: string;
+  company_id: string;
+  label: string | null;
+  headline: string;
+  primary_text: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Junction row linking a review_item to an ad_copy_variation. */
+export type ReviewItemAdVariation = {
+  id: string;
+  review_item_id: string;
+  ad_copy_variation_id: string;
+  sort_order: number;
+  created_at: string;
+};
+
+/** Convert an AdCopyVariation to the MetaAdVariant shape used by the
+ *  view layer (mockup preview, variant pills, comment view-scoping). */
+export function variationToMetaAdVariant(v: AdCopyVariation): MetaAdVariant {
+  return {
+    id: v.id,
+    label: v.label,
+    primary_text: v.primary_text,
+    headline: v.headline,
+  };
+}
+
 /** Build the view string used to scope pin comments to a specific variant. */
 export function metaAdVariantView(variantId: string): string {
   return `variant-${variantId}`;

@@ -185,12 +185,16 @@ export default function AddFeedbackItemModal({
       ? activeCat?.label ?? 'Choose Type'
       : (TITLES[itemType] || 'New Asset');
 
+  // Meta Ad gets the full-width modal for the two-column layout
+  const isMetaAd = step === 'details' && itemType === 'ad';
+  const modalSize = isMetaAd ? 'full' : (isWide ? 'xl' : 'lg');
+
   return (
     <Modal
       open
       onClose={onClose}
       title={modalTitle}
-      size={isWide ? 'xl' : 'lg'}
+      size={modalSize}
     >
         {/* Step 1: Choose category */}
         {step === 'category' && (

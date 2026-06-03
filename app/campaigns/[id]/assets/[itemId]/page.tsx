@@ -139,13 +139,42 @@ function ItemViewerContent({
   }, [projectId, itemId, router]);
 
   const fetchComments = useCallback(async () => {
-    const { data } = await supabase
+    // Fetch direct comments on this item
+    const { data: directComments } = await supabase
       .from('review_comments')
       .select('*')
       .eq('review_item_id', itemId)
       .order('created_at', { ascending: true });
 
-    setComments(data || []);
+    let allComments = directComments || [];
+
+    // For Meta Ads: also fetch variation-scoped comments from sibling items.
+    // These are comments where ad_copy_variation_id matches one of this
+    // item's linked variations but review_item_id is a different item.
+    const { data: links } = await supabase
+      .from('review_item_ad_variations')
+      .select('ad_copy_variation_id')
+      .eq('review_item_id', itemId);
+
+    if (links && links.length > 0) {
+      const varIds = links.map((l) => l.ad_copy_variation_id);
+      const { data: varComments } = await supabase
+        .from('review_comments')
+        .select('*')
+        .in('ad_copy_variation_id', varIds)
+        .neq('review_item_id', itemId)
+        .order('created_at', { ascending: true });
+
+      if (varComments && varComments.length > 0) {
+        // Remap review_item_id so useCommentFilters includes them
+        const remapped = varComments.map((c) => ({ ...c, review_item_id: itemId }));
+        allComments = [...allComments, ...remapped].sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+      }
+    }
+
+    setComments(allComments);
     setLoading(false);
   }, [itemId]);
 
@@ -311,6 +340,22 @@ function ItemViewerContent({
       thread_number = uniqueMax + 1;
     }
 
+    // Extract ad_copy_variation_id from the view string if this is a
+    // variation-scoped comment (variant-<uuid>). Only set for real UUIDs
+    // from ad_copy_variations — legacy 8-char nanoid IDs stay NULL so the
+    // FK constraint isn't violated on existing ads.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let adCopyVariationId: string | null = null;
+    if (annotationData && typeof annotationData === 'object') {
+      const view = (annotationData as Record<string, unknown>).view;
+      if (typeof view === 'string' && view.startsWith('variant-')) {
+        const candidateId = view.slice('variant-'.length);
+        if (UUID_RE.test(candidateId)) {
+          adCopyVariationId = candidateId;
+        }
+      }
+    }
+
     const insertData: Record<string, unknown> = {
       review_item_id: reviewItemId,
       company_id: companyId,
@@ -337,6 +382,7 @@ function ItemViewerContent({
       priority: priority ?? 'none',
       attachments: attachments || [],
       video_url: videoUrl ?? null,
+      ad_copy_variation_id: adCopyVariationId,
       // Pin the comment to whichever version the reviewer is currently looking
       // at. For replies, inherit the parent's version so threads stay coherent.
       version_id: parentId

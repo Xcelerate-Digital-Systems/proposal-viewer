@@ -93,6 +93,12 @@ export function useFeedbackItemSubmit({
 
         const imageUrl = urlData.publicUrl;
 
+        // Extract variation metadata before building the DB payload
+        const adVariationData = payload._ad_variation_data as {
+          existing_variation_ids: string[];
+          new_variations: { label?: string | null; headline: string; primary_text: string }[];
+        } | undefined;
+
         const fullPayload: Record<string, unknown> = {
           review_project_id: reviewProjectId,
           company_id: companyId,
@@ -102,6 +108,9 @@ export function useFeedbackItemSubmit({
           image_url: imageUrl,
           ...payload,
         };
+
+        // Don't persist the variation metadata to the item row
+        delete fullPayload._ad_variation_data;
 
         // Set type-specific URL fields based on the uploaded file
         if (payload.type === 'ad') {
@@ -129,6 +138,49 @@ export function useFeedbackItemSubmit({
           await supabase.storage.from('company-assets').remove([path]);
           setUploading(false);
           return;
+        }
+
+        // For Meta Ads: create new variations + link all (existing + new) via the API
+        if (payload.type === 'ad' && adVariationData) {
+          try {
+            const { authFetch } = await import('@/lib/auth-fetch');
+            const { existing_variation_ids, new_variations } = adVariationData;
+
+            let allVariationIds = [...existing_variation_ids];
+
+            // Create new variations via the API
+            if (new_variations.length > 0) {
+              const createRes = await authFetch(
+                `/api/campaigns/${reviewProjectId}/ad-variations`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ variations: new_variations }),
+                },
+              );
+              if (createRes.ok) {
+                const { variations: created } = await createRes.json();
+                allVariationIds = [...allVariationIds, ...created.map((v: { id: string }) => v.id)];
+              }
+            }
+
+            // Link all variations to the new item
+            if (allVariationIds.length > 0) {
+              await authFetch(
+                `/api/campaigns/${reviewProjectId}/ad-variations/link`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    review_item_id: newItem.id,
+                    variation_ids: allVariationIds,
+                  }),
+                },
+              );
+            }
+          } catch {
+            // Non-fatal — the item was created, variations can be linked later
+          }
         }
 
         toast.success('Item added');

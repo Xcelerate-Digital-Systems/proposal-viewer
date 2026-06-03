@@ -123,6 +123,53 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
 
       comments = commentRes.data || [];
       itemVersions = versionRes.data || [];
+
+      // Path B: include variation-scoped comments from sibling items that
+      // share the same ad copy variations. These comments have
+      // ad_copy_variation_id set and may live on items not in the visible
+      // set (e.g. internal_review ads). We fetch them separately and remap
+      // their review_item_id so useCommentFilters on the client picks them up.
+      const { data: junctionLinks } = await supabase
+        .from('review_item_ad_variations')
+        .select('review_item_id, ad_copy_variation_id')
+        .in('review_item_id', itemIds);
+
+      if (junctionLinks && junctionLinks.length > 0) {
+        const allVarIds = Array.from(new Set(junctionLinks.map((l: { ad_copy_variation_id: string }) => l.ad_copy_variation_id)));
+        // Build a map: variation_id → item_ids that use it (within visible items)
+        const varToItems = new Map<string, string[]>();
+        for (const l of junctionLinks) {
+          const arr = varToItems.get(l.ad_copy_variation_id) || [];
+          arr.push(l.review_item_id);
+          varToItems.set(l.ad_copy_variation_id, arr);
+        }
+
+        const existingIds = new Set((comments as { id: string }[]).map((c) => c.id));
+
+        const { data: varComments } = await supabase
+          .from('review_comments')
+          .select('*')
+          .in('ad_copy_variation_id', allVarIds)
+          .in('stage_at_creation', GUEST_VISIBLE_STAGES)
+          .order('created_at', { ascending: true });
+
+        if (varComments) {
+          for (const vc of varComments) {
+            if (existingIds.has(vc.id)) continue;
+            // Find which visible item(s) use this variation and clone
+            // the comment for each (so it appears on every ad that uses it)
+            const targetItems = varToItems.get(vc.ad_copy_variation_id) || [];
+            for (const targetItemId of targetItems) {
+              if (targetItemId === vc.review_item_id) continue;
+              (comments as unknown[]).push({
+                ...vc,
+                id: `${vc.id}__var_${targetItemId}`,
+                review_item_id: targetItemId,
+              });
+            }
+          }
+        }
+      }
     }
 
     // Load board data whenever the board tab is shared (or when share_mode
