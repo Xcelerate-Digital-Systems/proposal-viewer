@@ -24,12 +24,14 @@ export function useNotifications(userId: string | null, companyId: string | null
   const unreadCount = notifications.filter((n) => !n.read_at).length;
 
   const refresh = useCallback(async () => {
-    const res = await authFetch('/api/notifications?limit=30');
+    const params = new URLSearchParams({ limit: '30' });
+    if (companyId) params.set('company_id', companyId);
+    const res = await authFetch(`/api/notifications?${params}`);
     if (!res.ok || !mountedRef.current) return;
     const data = await res.json();
     setNotifications(data.notifications ?? []);
     setLoading(false);
-  }, []);
+  }, [companyId]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -39,10 +41,10 @@ export function useNotifications(userId: string | null, companyId: string | null
 
   // Real-time subscription for live badge updates.
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !companyId) return;
 
     const channel = supabase
-      .channel(`in_app_notifications:${userId}`)
+      .channel(`in_app_notifications:${userId}:${companyId}`)
       .on(
         'postgres_changes',
         {
@@ -53,7 +55,8 @@ export function useNotifications(userId: string | null, companyId: string | null
         },
         (payload) => {
           if (!mountedRef.current) return;
-          const row = payload.new as InAppNotification;
+          const row = payload.new as InAppNotification & { company_id?: string };
+          if (row.company_id && row.company_id !== companyId) return;
           setNotifications((prev) => [row, ...prev].slice(0, 30));
         },
       )
@@ -62,7 +65,7 @@ export function useNotifications(userId: string | null, companyId: string | null
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, companyId]);
 
   const markRead = useCallback(async (id: string) => {
     setNotifications((prev) =>
