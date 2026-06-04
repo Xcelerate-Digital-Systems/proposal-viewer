@@ -11,6 +11,7 @@ import QuoteShellHeader from '@/components/admin/quotes/QuoteShellHeader';
 import MissingInfoBanner from '@/components/admin/quotes/MissingInfoBanner';
 import { ProposalDetailProvider } from '@/components/admin/proposals/ProposalDetailContext';
 import { EditorSaveStatusProvider } from '@/components/admin/EditorSaveStatusContext';
+import { EditorUndoProvider } from '@/components/admin/EditorUndoContext';
 
 export default function QuoteDetailLayout(
   props: {
@@ -122,15 +123,17 @@ function DetailShell({
       value={{ proposal, refetch: fetchProposal, companyId, customDomain, companyBgPrimary, companyInfo }}
     >
       <EditorSaveStatusProvider>
-        <div className="flex flex-col h-full">
-          <QuoteShellHeader
-            proposal={proposal}
-            customDomain={customDomain}
-            onProposalChange={(next) => setProposal(next)}
-          />
-          <MissingInfoBanner companyInfo={companyInfo} />
-          {children}
-        </div>
+        <EditorUndoProvider>
+          <div className="flex flex-col h-full">
+            <QuoteShellHeader
+              proposal={proposal}
+              customDomain={customDomain}
+              onProposalChange={(next) => setProposal(next)}
+            />
+            <MissingInfoBanner companyInfo={companyInfo} />
+            {children}
+          </div>
+        </EditorUndoProvider>
       </EditorSaveStatusProvider>
     </ProposalDetailProvider>
   );

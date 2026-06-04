@@ -114,7 +114,7 @@ export default function ProposalAnalytics({ proposalId }: Props) {
 
   if (!summary || summary.totalSessions === 0) {
     return (
-      <div className="px-6 lg:px-10 py-8">
+      <div className="px-6 lg:px-10 py-6">
         <div className="text-center py-16">
           <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
             <Eye size={28} className="text-faint" />
@@ -131,7 +131,7 @@ export default function ProposalAnalytics({ proposalId }: Props) {
   const maxPageTime = Math.max(...pageBreakdown.map((p) => p.totalSeconds), 1);
 
   return (
-    <div className="px-6 lg:px-10 py-8 space-y-8">
+    <div className="px-6 lg:px-10 py-6 space-y-8">
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={Eye} label="Total Views" value={String(summary.totalSessions)} />

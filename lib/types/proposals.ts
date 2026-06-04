@@ -231,6 +231,7 @@ export type Proposal = {
   /** JSONB content rendered above the Accept/Decline form on the Decision page.
    *  Shape: DecisionExtras (next_steps + terms). NULL = use defaults. */
   decision_extras: unknown;
+  require_signature: boolean;
   /** Proposal pricing-page colour overrides. NULL = inherit from the
    *  text_page_* / sidebar_text_color / accent_color cascade. */
   pricing_header_text_color: string | null;

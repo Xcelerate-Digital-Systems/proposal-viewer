@@ -15,7 +15,7 @@ type TabGroup = 'content' | 'setup';
 const tabs: { key: string; label: string; icon: typeof Pencil; path: string; group: TabGroup }[] = [
   { key: 'cover',      label: 'Cover',    icon: ImageIcon,    path: 'cover',      group: 'content' },
   { key: 'pages',      label: 'Pages',    icon: Pencil,       path: 'pages',      group: 'content' },
-  { key: 'text-pages', label: 'Write',    icon: PenLine,      path: 'text-pages', group: 'content' },
+  { key: 'text-pages', label: 'Content',   icon: PenLine,      path: 'text-pages', group: 'content' },
   { key: 'pricing',    label: 'Quote',    icon: DollarSign,   path: 'pricing',    group: 'content' },
   { key: 'packages',   label: 'Packages', icon: Package,      path: 'packages',   group: 'content' },
   { key: 'decision',   label: 'Decision', icon: CheckCircle2, path: 'decision',   group: 'content' },

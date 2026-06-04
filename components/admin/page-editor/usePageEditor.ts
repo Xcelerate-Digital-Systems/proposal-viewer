@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { authedFetch } from '@/lib/api-fetch';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
+import { useEditorUndo } from '@/components/admin/EditorUndoContext';
 import type { UnifiedPage, PageType } from '@/lib/page-operations';
 
 export type { UnifiedPage, PageType };
@@ -24,6 +25,7 @@ export type SignedUrlMap = Record<string, string>;
 export function usePageEditor(entityId: string, entityType: EntityType) {
   const confirm = useConfirm();
   const toast   = useToast();
+  const editorUndo = useEditorUndo();
 
   /* ── State ────────────────────────────────────────────────────────────── */
 
@@ -246,6 +248,34 @@ export function usePageEditor(entityId: string, entityType: EntityType) {
 
       setPages((prev) => prev.filter((p) => p.id !== pageId));
       setSignedUrls((prev) => { const next = { ...prev }; delete next[pageId]; return next; });
+
+      if (page) {
+        editorUndo?.push(`Delete ${page.type} page`, async () => {
+          const res = await authedFetch(apiBase, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              [idKey]: entityId,
+              type: page.type,
+              position: page.position,
+              title: page.title,
+              indent: page.indent,
+              enabled: page.enabled,
+              payload: page.payload,
+              link_url: page.link_url,
+              link_label: page.link_label,
+              orientation: page.orientation,
+              show_title: page.show_title,
+              show_member_badge: page.show_member_badge,
+              prepared_by_member_id: page.prepared_by_member_id,
+            }),
+          });
+          if (res.ok) {
+            await loadPages();
+          }
+        });
+      }
+
       toast.success('Page deleted');
       return true;
     } catch {
@@ -254,11 +284,13 @@ export function usePageEditor(entityId: string, entityType: EntityType) {
     } finally {
       setProcessing(false);
     }
-  }, [entityId, idKey, apiBase, pages, confirm, toast]);
+  }, [entityId, idKey, apiBase, pages, confirm, toast, editorUndo, loadPages]);
 
   /* ── reorderPages ─────────────────────────────────────────────────────── */
 
   const reorderPages = useCallback(async (orderedIds: string[]): Promise<boolean> => {
+    const prevIds = pages.map((p) => p.id);
+
     // Optimistic: re-sort local state immediately
     setPages((prev) => {
       const byId = Object.fromEntries(prev.map((p) => [p.id, p]));
@@ -278,17 +310,31 @@ export function usePageEditor(entityId: string, entityType: EntityType) {
       });
       if (!res.ok) {
         toast.error('Failed to save order');
-        // Reload to get correct state from DB
         await loadPages();
         return false;
       }
+
+      editorUndo?.push('Reorder pages', async () => {
+        setPages((prev) => {
+          const byId = Object.fromEntries(prev.map((p) => [p.id, p]));
+          return prevIds
+            .map((id, i) => byId[id] ? { ...byId[id], position: i } : null)
+            .filter((p): p is UnifiedPage => p !== null);
+        });
+        await authedFetch(`${apiBase}/reorder`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ [idKey]: entityId, ordered_ids: prevIds }),
+        });
+      });
+
       return true;
     } catch {
       toast.error('Failed to save order');
       await loadPages();
       return false;
     }
-  }, [entityId, idKey, apiBase, loadPages, toast]);
+  }, [entityId, idKey, apiBase, loadPages, toast, pages, editorUndo]);
 
   /* ── insertPdfPage ────────────────────────────────────────────────────── */
 

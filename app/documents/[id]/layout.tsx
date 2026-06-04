@@ -8,6 +8,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import DocumentDetailHeader from '@/components/admin/documents/DocumentDetailHeader';
 import { DocumentDetailProvider } from '@/components/admin/documents/DocumentDetailContext';
 import { EditorSaveStatusProvider } from '@/components/admin/EditorSaveStatusContext';
+import { EditorUndoProvider } from '@/components/admin/EditorUndoContext';
 
 export default function DocumentDetailLayout(
   props: {
@@ -105,10 +106,12 @@ function DetailShell({
       }}
     >
       <EditorSaveStatusProvider>
-        <div className="flex flex-col h-full">
-          <DocumentDetailHeader document={document} customDomain={customDomain} />
-          {children}
-        </div>
+        <EditorUndoProvider>
+          <div className="flex flex-col h-full">
+            <DocumentDetailHeader document={document} customDomain={customDomain} />
+            {children}
+          </div>
+        </EditorUndoProvider>
       </EditorSaveStatusProvider>
     </DocumentDetailProvider>
   );

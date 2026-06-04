@@ -8,6 +8,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import TemplateDetailHeader from '@/components/admin/templates/TemplateDetailHeader';
 import { TemplateDetailProvider } from '@/components/admin/templates/TemplateDetailContext';
 import { EditorSaveStatusProvider } from '@/components/admin/EditorSaveStatusContext';
+import { EditorUndoProvider } from '@/components/admin/EditorUndoContext';
 
 export default function TemplateDetailLayout(
   props: {
@@ -98,10 +99,12 @@ function DetailShell({
       }}
     >
       <EditorSaveStatusProvider>
-        <div className="flex flex-col h-full">
-          <TemplateDetailHeader template={template} />
-          {children}
-        </div>
+        <EditorUndoProvider>
+          <div className="flex flex-col h-full">
+            <TemplateDetailHeader template={template} />
+            {children}
+          </div>
+        </EditorUndoProvider>
       </EditorSaveStatusProvider>
     </TemplateDetailProvider>
   );

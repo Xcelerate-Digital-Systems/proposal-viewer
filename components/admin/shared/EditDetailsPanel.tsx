@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { FormFields, fieldsByType, type EntityType } from '@/components/ui/FormField';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
+import { useEditorUndo } from '@/components/admin/EditorUndoContext';
 
 const tableByType: Record<EntityType, string> = {
   proposal: 'proposals',
@@ -41,10 +42,13 @@ export default function EditDetailsPanel({ type, id, initialValues, onSave, hidd
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   useReportSaveStatus(saveStatus);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const undo = useEditorUndo();
+  const lastSavedRef = useRef<Record<string, string>>({ ...form });
 
   const persist = useCallback(
     async (next: Record<string, string>) => {
       setSaveStatus('saving');
+      const prev = { ...lastSavedRef.current };
       try {
         const payload: Record<string, string | null> = {};
         for (const f of fields) {
@@ -58,6 +62,25 @@ export default function EditDetailsPanel({ type, id, initialValues, onSave, hidd
 
         if (error) throw error;
 
+        undo?.push('Edit details', () => {
+          setForm(prev);
+          lastSavedRef.current = { ...prev };
+          setSaveStatus('saving');
+          supabase
+            .from(tableByType[type])
+            .update(
+              Object.fromEntries(fields.map((f) => [f.key, prev[f.key]?.trim() || null]))
+            )
+            .eq('id', id)
+            .then(({ error: e }) => {
+              if (e) toast.error('Undo failed to save');
+              else onSave();
+              setSaveStatus(e ? 'idle' : 'saved');
+              if (!e) setTimeout(() => setSaveStatus('idle'), 2000);
+            });
+        });
+
+        lastSavedRef.current = { ...next };
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 2000);
         onSave();
@@ -66,7 +89,7 @@ export default function EditDetailsPanel({ type, id, initialValues, onSave, hidd
         toast.error('Failed to save details');
       }
     },
-    [id, type, fields, toast, onSave],
+    [id, type, fields, toast, onSave, undo],
   );
 
   const schedule = useCallback(

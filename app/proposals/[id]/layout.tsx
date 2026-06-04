@@ -8,6 +8,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import ProposalDetailHeader from '@/components/admin/proposals/ProposalDetailHeader';
 import { ProposalDetailProvider } from '@/components/admin/proposals/ProposalDetailContext';
 import { EditorSaveStatusProvider } from '@/components/admin/EditorSaveStatusContext';
+import { EditorUndoProvider } from '@/components/admin/EditorUndoContext';
 
 export default function ProposalDetailLayout(
   props: {
@@ -112,14 +113,16 @@ function DetailShell({
       }}
     >
       <EditorSaveStatusProvider>
-        <div className="flex flex-col h-full">
-          <ProposalDetailHeader
-            proposal={proposal}
-            customDomain={customDomain}
-            onProposalChange={(next) => setProposal(next)}
-          />
-          {children}
-        </div>
+        <EditorUndoProvider>
+          <div className="flex flex-col h-full">
+            <ProposalDetailHeader
+              proposal={proposal}
+              customDomain={customDomain}
+              onProposalChange={(next) => setProposal(next)}
+            />
+            {children}
+          </div>
+        </EditorUndoProvider>
       </EditorSaveStatusProvider>
     </ProposalDetailProvider>
   );

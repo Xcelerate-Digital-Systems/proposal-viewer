@@ -1,7 +1,7 @@
 // components/admin/proposals/ProposalDetailHeader.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Copy, Check, ExternalLink, Trash2, BookTemplate } from 'lucide-react';
@@ -11,6 +11,7 @@ import { authedFetch } from '@/lib/api-fetch';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import StatusDropdown from '@/components/ui/StatusDropdown';
+import { inputClassName } from '@/components/ui/FormField';
 import { Button, buttonClasses } from '@/components/ui/Button';
 import EditorSaveStatusBadge from '@/components/admin/EditorSaveStatusBadge';
 import {
@@ -38,6 +39,29 @@ export default function ProposalDetailHeader({
   const [showSaveAsTemplate, setShowSaveAsTemplate] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const templatePopoverRef = useRef<HTMLDivElement>(null);
+
+  const closeTemplatePopover = useCallback(() => {
+    setShowSaveAsTemplate(false);
+  }, []);
+
+  useEffect(() => {
+    if (!showSaveAsTemplate) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeTemplatePopover();
+    };
+    const handleClick = (e: MouseEvent) => {
+      if (templatePopoverRef.current && !templatePopoverRef.current.contains(e.target as Node)) {
+        closeTemplatePopover();
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    document.addEventListener('mousedown', handleClick);
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      document.removeEventListener('mousedown', handleClick);
+    };
+  }, [showSaveAsTemplate, closeTemplatePopover]);
 
   const copyLink = () => {
     const url = buildProposalUrl(proposal.share_token, customDomain ?? null, window.location.origin);
@@ -173,7 +197,7 @@ export default function ProposalDetailHeader({
             Preview
           </a>
 
-          <div className="relative">
+          <div className="relative" ref={templatePopoverRef}>
             <Button
               variant="outline"
               size="sm"
@@ -195,7 +219,7 @@ export default function ProposalDetailHeader({
                   onChange={(e) => setTemplateName(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSaveAsTemplate(); }}
                   placeholder="e.g. Standard Website Proposal"
-                  className="w-full px-3 py-2 text-sm border border-edge rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/30 mb-3"
+                  className={`${inputClassName} mb-3`}
                 />
                 <div className="flex gap-2 justify-end">
                   <Button variant="ghost" size="sm" onClick={() => setShowSaveAsTemplate(false)}>
