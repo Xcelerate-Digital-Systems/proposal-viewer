@@ -388,9 +388,21 @@ function FunnelBoardInner() {
   /* ─── Keyboard: Cmd-Z/Y undo+redo, Cmd-D duplicate ─── */
 
   useEffect(() => {
+    const PAN_STEP = 50;
     const onKey = (e: KeyboardEvent) => {
       const tgt = e.target as HTMLElement | null;
       if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable)) return;
+
+      // Shift+Arrow: pan the canvas without a mouse
+      if (e.shiftKey && !e.metaKey && !e.ctrlKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        const vp = rf.getViewport();
+        const dx = e.key === 'ArrowLeft' ? PAN_STEP : e.key === 'ArrowRight' ? -PAN_STEP : 0;
+        const dy = e.key === 'ArrowUp' ? PAN_STEP : e.key === 'ArrowDown' ? -PAN_STEP : 0;
+        rf.setViewport({ x: vp.x + dx, y: vp.y + dy, zoom: vp.zoom }, { duration: 120 });
+        return;
+      }
+
       const mod = e.metaKey || e.ctrlKey;
       if (!mod) return;
       if (e.key === 'c' || e.key === 'C') {
@@ -531,7 +543,7 @@ function FunnelBoardInner() {
                   onClick={() => void ctx.undo()}
                   disabled={!ctx.canUndo}
                   className="w-7 h-7 rounded-lg flex items-center justify-center text-ink/70 hover:text-ink hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  title="Undo (⌘Z)"
+                  title={ctx.canUndo ? 'Undo (⌘Z)' : 'Nothing to undo'}
                 >
                   <Undo2 size={14} />
                 </button>
@@ -540,7 +552,7 @@ function FunnelBoardInner() {
                   onClick={() => void ctx.redo()}
                   disabled={!ctx.canRedo}
                   className="w-7 h-7 rounded-lg flex items-center justify-center text-ink/70 hover:text-ink hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  title="Redo (⌘⇧Z)"
+                  title={ctx.canRedo ? 'Redo (⌘⇧Z)' : 'Nothing to redo'}
                 >
                   <Redo2 size={14} />
                 </button>
@@ -572,11 +584,16 @@ function FunnelBoardInner() {
 
           {boardEmpty && !board.selectedEdge && (
             <Panel position="top-center" className="!top-20">
-              <div className="bg-white rounded-lg border border-edge shadow-sm px-5 py-4 max-w-xs text-center">
+              <div className="bg-white rounded-lg border border-edge shadow-sm px-5 py-4 max-w-sm text-center">
                 <p className="text-sm font-semibold text-ink mb-1">Empty canvas</p>
                 <p className="text-detail text-muted leading-relaxed">
                   Drag a step from the palette, or right-click the canvas to add one. Connect steps to build your flow.
                 </p>
+                <div className="flex items-center justify-center gap-3 mt-2.5 text-2xs text-faint">
+                  <span>⌘D duplicate</span>
+                  <span>⌘Z undo</span>
+                  <span>⇧ drag to select</span>
+                </div>
               </div>
             </Panel>
           )}

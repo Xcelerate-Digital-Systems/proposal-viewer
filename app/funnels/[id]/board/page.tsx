@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Copy, ExternalLink, BookmarkPlus, Bookmark, Check, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Copy, ExternalLink, BookmarkPlus, Bookmark, Check, Loader2, AlertCircle, GitBranch } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { FunnelBoard } from '@/components/admin/funnels/board';
 import { useFunnelBoardContext } from '@/components/admin/funnels/board/FunnelBoardContext';
@@ -122,6 +122,11 @@ function BoardContent({ funnelId }: { funnelId: string }) {
                 {funnel.name}
               </button>
             )
+          )}
+          {funnel?.parent_funnel_id && (
+            <span className="inline-flex items-center gap-1 text-2xs text-muted bg-surface rounded-full px-2 py-0.5 shrink-0">
+              <GitBranch size={9} /> Scenario
+            </span>
           )}
           {funnel && (
             <ScenarioSwitcher funnel={funnel} companyId={cid} userId={userId} />

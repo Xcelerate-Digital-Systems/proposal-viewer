@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, ExternalLink, Trash2, Check } from 'lucide-react';
+import { X, ExternalLink, Trash2, Check, Search } from 'lucide-react';
 import type { FunnelStep, FunnelStepMetrics } from '@/lib/supabase';
 import {
   FUNNEL_STEP_DEFAULTS, FUNNEL_ICON_LIBRARY, FUNNEL_COLOR_PRESETS,
@@ -28,6 +28,7 @@ export default function StepSideDrawer({
   // Local drafts so typing doesn't re-fire DB writes on every keystroke.
   const [label, setLabel] = useState(step.label);
   const [url, setUrl] = useState(step.url || '');
+  const [iconQuery, setIconQuery] = useState('');
 
   // Re-sync drafts when the user switches to a different step.
   useEffect(() => { setLabel(step.label); setUrl(step.url || ''); }, [step.id]);
@@ -119,33 +120,56 @@ export default function StepSideDrawer({
         {/* Icon picker */}
         <div>
           <h4 className="text-2xs uppercase tracking-wider font-semibold text-muted mb-2">Icon</h4>
+          <div className="relative mb-2">
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-faint" />
+            <input
+              value={iconQuery}
+              onChange={(e) => setIconQuery(e.target.value)}
+              placeholder="Search icons..."
+              className="w-full pl-7 pr-2.5 py-1.5 rounded-lg border border-edge text-detail outline-none focus:border-teal"
+            />
+          </div>
           <div className="space-y-3">
-            {visibleIconGroups.map((group) => (
-              <div key={group.group}>
-                <div className="text-2xs text-muted mb-1.5">{group.group}</div>
-                <div className="grid grid-cols-8 gap-1">
-                  {group.icons.map((slug) => {
-                    const active = (step.icon || defaults.icon) === slug;
-                    return (
-                      <button
-                        key={slug}
-                        type="button"
-                        onClick={() => setIcon(slug)}
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
-                          active
-                            ? 'bg-teal text-white ring-2 ring-teal/30'
-                            : 'bg-surface text-ink/70 hover:bg-white hover:ring-1 hover:ring-edge'
-                        }`}
-                        style={active ? { backgroundColor: step.color || defaults.tint } : undefined}
-                        title={slug}
-                      >
-                        <StepIcon slug={slug} size={14} />
-                      </button>
-                    );
-                  })}
+            {(() => {
+              const q = iconQuery.toLowerCase().trim();
+              const groups = q
+                ? visibleIconGroups.map((g) => ({
+                    ...g,
+                    icons: g.icons.filter((slug) => slug.replaceAll('-', ' ').includes(q) || slug.includes(q)),
+                  })).filter((g) => g.icons.length > 0)
+                : visibleIconGroups;
+
+              if (groups.length === 0) {
+                return <p className="text-detail text-muted py-2 text-center">No icons match "{iconQuery}"</p>;
+              }
+
+              return groups.map((group) => (
+                <div key={group.group}>
+                  <div className="text-2xs text-muted mb-1.5">{group.group}</div>
+                  <div className="grid grid-cols-8 gap-1">
+                    {group.icons.map((slug) => {
+                      const active = (step.icon || defaults.icon) === slug;
+                      return (
+                        <button
+                          key={slug}
+                          type="button"
+                          onClick={() => setIcon(slug)}
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-teal/40 ${
+                            active
+                              ? 'bg-teal text-white ring-2 ring-teal/30'
+                              : 'bg-surface text-ink/70 hover:bg-white hover:ring-1 hover:ring-edge'
+                          }`}
+                          style={active ? { backgroundColor: step.color || defaults.tint } : undefined}
+                          title={slug}
+                        >
+                          <StepIcon slug={slug} size={14} />
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ));
+            })()}
           </div>
         </div>
 

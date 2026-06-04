@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, GitBranch, Plus, Loader2, Check } from 'lucide-react';
+import { ChevronDown, GitBranch, Plus, Loader2, Check, Search } from 'lucide-react';
 import { supabase, type Funnel } from '@/lib/supabase';
 import { duplicateFunnelAsScenario } from '@/lib/funnel/duplicate-funnel';
 import { useToast } from '@/components/ui/Toast';
@@ -26,6 +26,7 @@ export default function ScenarioSwitcher({ funnel, companyId, userId }: Props) {
   const [family, setFamily] = useState<Funnel[]>([]);
   const [loadingFamily, setLoadingFamily] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [scenarioQuery, setScenarioQuery] = useState('');
   const popoverRef = useRef<HTMLDivElement>(null);
 
   // The "root" funnel id — if this is a scenario it's the parent, otherwise
@@ -62,7 +63,8 @@ export default function ScenarioSwitcher({ funnel, companyId, userId }: Props) {
   }, [open]);
 
   const handleSwitch = (id: string) => {
-    if (id === funnel.id) { setOpen(false); return; }
+    if (id === funnel.id) { setOpen(false); setScenarioQuery(''); return; }
+    setScenarioQuery('');
     router.push(`/funnels/${id}/board`);
   };
 
@@ -96,20 +98,37 @@ export default function ScenarioSwitcher({ funnel, companyId, userId }: Props) {
 
       {open && (
         <div className="absolute left-0 top-full mt-1.5 w-[280px] bg-white border border-edge rounded-lg shadow-xl z-50 overflow-hidden">
-          <div className="px-3 py-2 border-b border-edge flex items-center justify-between">
-            <span className="text-2xs uppercase tracking-wider font-semibold text-muted">
-              {family.length > 0 ? `${family.length} scenarios` : 'Scenarios'}
-            </span>
-            {loadingFamily && <Loader2 size={11} className="animate-spin text-muted" />}
+          <div className="px-3 py-2 border-b border-edge">
+            <div className="flex items-center justify-between">
+              <span className="text-2xs uppercase tracking-wider font-semibold text-muted">
+                {family.length > 0 ? `${family.length} scenarios` : 'Scenarios'}
+              </span>
+              {loadingFamily && <Loader2 size={11} className="animate-spin text-muted" />}
+            </div>
+            <p className="text-2xs text-muted/70 mt-0.5 leading-snug">What-if variants of the same funnel</p>
           </div>
 
+          {family.length > 3 && (
+            <div className="px-2 py-1.5 border-b border-edge">
+              <div className="relative">
+                <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-faint" />
+                <input
+                  value={scenarioQuery}
+                  onChange={(e) => setScenarioQuery(e.target.value)}
+                  placeholder="Filter scenarios..."
+                  className="w-full pl-6 pr-2 py-1 rounded-md border border-edge text-2xs outline-none focus:border-teal"
+                  autoFocus
+                />
+              </div>
+            </div>
+          )}
           <div className="max-h-[320px] overflow-y-auto py-1">
             {family.length === 0 && !loadingFamily && (
               <div className="px-3 py-4 text-detail text-muted text-center">
                 No scenarios yet
               </div>
             )}
-            {family.map((f) => {
+            {family.filter((f) => !scenarioQuery || f.name.toLowerCase().includes(scenarioQuery.toLowerCase())).map((f) => {
               const isCurrent = f.id === funnel.id;
               const isRoot = f.id === rootId;
               return (

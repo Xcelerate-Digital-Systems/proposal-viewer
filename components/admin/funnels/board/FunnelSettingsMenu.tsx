@@ -44,7 +44,7 @@ export default function FunnelSettingsMenu({ funnel, onUpdate }: Props) {
         Settings
       </button>
       {open && (
-        <div className="absolute top-full right-0 mt-1 w-[260px] bg-white border border-edge shadow-xl rounded-lg p-3 z-50 space-y-3">
+        <div className="absolute top-full right-0 mt-1 w-[260px] max-h-[400px] overflow-y-auto bg-white border border-edge shadow-xl rounded-lg p-3 z-50 space-y-3">
           <Section label="Currency">
             <div className="space-y-1">
               {FUNNEL_CURRENCIES.map((c) => (

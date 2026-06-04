@@ -44,9 +44,27 @@ export default function CanvasContextMenu({
     const onDocClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
     };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onClose(); return; }
+      if (!ref.current) return;
+      const btns = Array.from(ref.current.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
+      if (btns.length === 0) return;
+      const active = document.activeElement as HTMLElement;
+      const idx = btns.indexOf(active as HTMLButtonElement);
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        btns[idx < 0 ? 0 : (idx + 1) % btns.length].focus();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        btns[idx < 0 ? btns.length - 1 : (idx - 1 + btns.length) % btns.length].focus();
+      }
+    };
     document.addEventListener('mousedown', onDocClick);
     document.addEventListener('keydown', onKey);
+    // Auto-focus the first non-disabled button
+    requestAnimationFrame(() => {
+      ref.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
+    });
     return () => {
       document.removeEventListener('mousedown', onDocClick);
       document.removeEventListener('keydown', onKey);
@@ -72,6 +90,7 @@ export default function CanvasContextMenu({
   return (
     <div
       ref={ref}
+      role="menu"
       className="fixed z-50 min-w-[180px] bg-white rounded-lg border border-edge shadow-xl py-1"
       style={{ left: target.clientX, top: target.clientY }}
       onClick={(e) => e.stopPropagation()}
@@ -80,9 +99,10 @@ export default function CanvasContextMenu({
         <button
           key={i}
           type="button"
+          role="menuitem"
           onClick={it.onClick}
           disabled={it.disabled}
-          className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left transition-colors ${
+          className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left transition-colors focus:outline-none focus:bg-surface ${
             it.disabled
               ? 'text-faint cursor-not-allowed'
               : it.danger

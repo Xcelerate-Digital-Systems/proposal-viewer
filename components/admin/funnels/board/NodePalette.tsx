@@ -132,7 +132,7 @@ export default function NodePalette({ onPickStep, onPickShape, onPickSticky }: P
       <div className="px-4 py-3 border-b border-edge flex items-start justify-between gap-2 shrink-0">
         <div className="min-w-0">
           <h3 className="text-sm font-semibold text-ink">Add to canvas</h3>
-          <p className="text-detail text-muted mt-0.5">Click or drag any tile to the canvas</p>
+          <p className="text-detail text-muted mt-0.5">Click or drag tiles · Right-click canvas for more</p>
         </div>
         <button
           type="button"
@@ -144,7 +144,23 @@ export default function NodePalette({ onPickStep, onPickShape, onPickSticky }: P
         </button>
       </div>
 
-      <div className="flex border-b border-edge shrink-0">
+      <div
+        className="flex border-b border-edge shrink-0"
+        role="tablist"
+        onKeyDown={(e) => {
+          const tabs = FUNNEL_PALETTE_TABS;
+          const idx = tabs.findIndex((t) => t.id === activeTab);
+          if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            const next = tabs[(idx + 1) % tabs.length];
+            setActiveTab(next.id);
+          } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            const prev = tabs[(idx - 1 + tabs.length) % tabs.length];
+            setActiveTab(prev.id);
+          }
+        }}
+      >
         {FUNNEL_PALETTE_TABS.map((t) => {
           const Icon = TAB_ICONS[t.id];
           const isActive = t.id === activeTab;
@@ -152,8 +168,11 @@ export default function NodePalette({ onPickStep, onPickShape, onPickSticky }: P
             <button
               key={t.id}
               type="button"
+              role="tab"
+              aria-selected={isActive}
+              tabIndex={isActive ? 0 : -1}
               onClick={() => setActiveTab(t.id)}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-2xs font-medium transition-colors border-b-2 ${
+              className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-2xs font-medium transition-colors border-b-2 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal/30 ${
                 isActive
                   ? 'border-teal text-teal bg-teal/[0.04]'
                   : 'border-transparent text-muted hover:text-ink hover:bg-surface'
