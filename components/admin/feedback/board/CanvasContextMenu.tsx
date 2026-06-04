@@ -46,6 +46,9 @@ export default function CanvasContextMenu({
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('mousedown', onDocClick);
     document.addEventListener('keydown', onKey);
+    // Auto-focus first enabled menu item
+    const first = ref.current?.querySelector<HTMLButtonElement>('button:not([disabled])');
+    first?.focus();
     return () => {
       document.removeEventListener('mousedown', onDocClick);
       document.removeEventListener('keydown', onKey);
@@ -56,6 +59,16 @@ export default function CanvasContextMenu({
 
   type MenuItem = { icon: React.ReactNode; label: string; shortcut?: string; onClick?: () => void; danger?: boolean; disabled?: boolean };
 
+  const handleMenuKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const buttons = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('button:not([disabled])'));
+      const idx = buttons.indexOf(document.activeElement as HTMLButtonElement);
+      const next = e.key === 'ArrowDown' ? Math.min(idx + 1, buttons.length - 1) : Math.max(idx - 1, 0);
+      buttons[next]?.focus();
+    }
+  };
+
   if (target.kind === 'pane') {
     const paneItems: MenuItem[] = [];
     if (onPaste) paneItems.push({ icon: <ClipboardPaste size={13} />, label: 'Paste', shortcut: '⌘V', onClick: run(onPaste), disabled: !canPaste });
@@ -64,17 +77,20 @@ export default function CanvasContextMenu({
     return (
       <div
         ref={ref}
+        role="menu"
         className="fixed z-50 min-w-[180px] bg-white rounded-lg border border-edge shadow-xl py-1"
         style={{ left: target.clientX, top: target.clientY }}
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={handleMenuKeyDown}
       >
         {paneItems.map((it, i) => (
           <button
             key={i}
             type="button"
+            role="menuitem"
             onClick={it.onClick}
             disabled={it.disabled}
-            className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left transition-colors ${
+            className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left transition-colors focus:outline-none focus:bg-surface ${
               it.disabled ? 'text-faint cursor-not-allowed' : 'text-ink hover:bg-surface'
             }`}
           >
@@ -97,17 +113,20 @@ export default function CanvasContextMenu({
   return (
     <div
       ref={ref}
+      role="menu"
       className="fixed z-50 min-w-[180px] bg-white rounded-lg border border-edge shadow-xl py-1"
       style={{ left: target.clientX, top: target.clientY }}
       onClick={(e) => e.stopPropagation()}
+      onKeyDown={handleMenuKeyDown}
     >
       {items.map((it, i) => (
         <button
           key={i}
           type="button"
+          role="menuitem"
           onClick={it.onClick}
           disabled={it.disabled}
-          className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left transition-colors ${
+          className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left transition-colors focus:outline-none focus:bg-surface ${
             it.disabled
               ? 'text-faint cursor-not-allowed'
               : it.danger

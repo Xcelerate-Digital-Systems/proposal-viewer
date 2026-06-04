@@ -108,7 +108,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
               onBlur={commitContent}
               onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
               placeholder={typeLabel}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal"
+              className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20"
             />
           ) : (
             <textarea
@@ -117,7 +117,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
               onBlur={commitContent}
               rows={3}
               placeholder="Type any text…"
-              className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal resize-y"
+              className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20 resize-y"
             />
           )}
         </Field>
@@ -161,14 +161,14 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
                   const n = Math.max(1, Math.min(9999, Number(e.target.value) || 1));
                   onUpdate({ content: serializeWaitContent({ ...waitData, duration: n }) });
                 }}
-                className="w-20 px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal"
+                className="w-20 px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20"
               />
               <select
                 value={waitData.unit}
                 onChange={(e) => {
                   onUpdate({ content: serializeWaitContent({ ...waitData, unit: e.target.value as FeedbackWaitUnit }) });
                 }}
-                className="flex-1 px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal bg-white"
+                className="flex-1 px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20 bg-white"
               >
                 {WAIT_UNITS.map((u) => (
                   <option key={u.value} value={u.value}>{u.label}</option>
@@ -222,7 +222,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
                 const n = Number(e.target.value);
                 onUpdate({ font_size: Number.isFinite(n) ? n : null });
               }}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal"
+              className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20"
             />
           </Field>
         )}

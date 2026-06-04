@@ -70,18 +70,18 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
 
   return (
     <>
-      {/* Allow connections on all 4 sides, stacked source+target so users can
-          drag from any side and drop on any side. */}
       {(() => {
         const cls = '!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors';
         return (
           <>
-            <Handle id="left" type="source" position={Position.Left} className={`${cls} !-left-1.5`} isConnectable={!readOnly} />
-            <Handle id="left-source" type="source" position={Position.Left} className={`${cls} !-left-1.5`} isConnectable={!readOnly} />
-            <Handle id="top" type="source" position={Position.Top} className={`${cls} !-top-1.5`} isConnectable={!readOnly} />
-            <Handle id="top-source" type="source" position={Position.Top} className={`${cls} !-top-1.5`} isConnectable={!readOnly} />
-            <Handle id="bottom" type="source" position={Position.Bottom} className={`${cls} !-bottom-1.5`} isConnectable={!readOnly} />
-            <Handle id="bottom-target" type="source" position={Position.Bottom} className={`${cls} !-bottom-1.5`} isConnectable={!readOnly} />
+            <Handle id="left" type="source" position={Position.Left} className={`${cls} !-left-1.5`} isConnectable={!readOnly} aria-label="Connect left" />
+            <Handle id="left-source" type="source" position={Position.Left} className={`${cls} !-left-1.5`} isConnectable={!readOnly} aria-hidden="true" />
+            <Handle id="top" type="source" position={Position.Top} className={`${cls} !-top-1.5`} isConnectable={!readOnly} aria-label="Connect top" />
+            <Handle id="top-source" type="source" position={Position.Top} className={`${cls} !-top-1.5`} isConnectable={!readOnly} aria-hidden="true" />
+            <Handle id="right" type="source" position={Position.Right} className={`${cls} !-right-1.5`} isConnectable={!readOnly} aria-label="Connect right" />
+            <Handle id="right-target" type="source" position={Position.Right} className={`${cls} !-right-1.5`} isConnectable={!readOnly} aria-hidden="true" />
+            <Handle id="bottom" type="source" position={Position.Bottom} className={`${cls} !-bottom-1.5`} isConnectable={!readOnly} aria-label="Connect bottom" />
+            <Handle id="bottom-target" type="source" position={Position.Bottom} className={`${cls} !-bottom-1.5`} isConnectable={!readOnly} aria-hidden="true" />
           </>
         );
       })()}
@@ -103,9 +103,10 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
             <div className="relative">
               <button
                 onClick={(e) => { e.stopPropagation(); setShowColors(!showColors); }}
-                className="w-5 h-5 rounded-full border-2 border-white shadow-sm"
+                className="w-5 h-5 rounded-full border-2 border-white shadow-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
                 style={{ backgroundColor: note.color || '#fef08a' }}
                 title="Change color"
+                aria-label="Change note color"
               />
               {showColors && (
                 <>
@@ -115,11 +116,12 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
                       <button
                         key={c.value}
                         onClick={(e) => { e.stopPropagation(); handleColorChange(c.value); }}
-                        className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 ${
+                        className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-teal/30 ${
                           note.color === c.value ? 'border-gray-600' : 'border-white'
                         }`}
                         style={{ backgroundColor: c.value }}
                         title={c.label}
+                        aria-label={`${c.label} color`}
                       />
                     ))}
                   </div>
@@ -127,11 +129,11 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
               )}
             </div>
 
-            {/* Delete */}
             <button
               onClick={handleDelete}
-              className="w-6 h-6 rounded-full bg-white shadow-sm border border-edge-strong flex items-center justify-center text-faint hover:text-red-500 transition-colors"
+              className="w-6 h-6 rounded-full bg-white shadow-sm border border-edge-strong flex items-center justify-center text-faint hover:text-red-500 transition-colors focus:outline-none focus:ring-2 focus:ring-red-300"
               title="Delete note"
+              aria-label="Delete note"
             >
               <Trash2 size={10} />
             </button>
@@ -171,20 +173,6 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
         </div>
       </div>
 
-      <Handle
-        id="right"
-        type="source"
-        position={Position.Right}
-        className="!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors !-right-1.5"
-        isConnectable={!readOnly}
-      />
-      <Handle
-        id="right-target"
-        type="source"
-        position={Position.Right}
-        className="!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors !-right-1.5"
-        isConnectable={!readOnly}
-      />
     </>
   );
 }

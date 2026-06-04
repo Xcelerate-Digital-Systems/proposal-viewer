@@ -40,27 +40,27 @@ const HANDLE_BASE =
 
 export function NodeHandles({ readOnly }: { readOnly?: boolean }) {
   return (
-    <>
+    <div role="group" aria-label="Connection handles">
       <Handle id="left" type="source" position={Position.Left}
-        className={`${HANDLE_BASE} !-left-1.5`} isConnectable={!readOnly} />
+        className={`${HANDLE_BASE} !-left-1.5`} isConnectable={!readOnly} aria-label="Connect left" />
       <Handle id="left-source" type="source" position={Position.Left}
-        className={`${HANDLE_BASE} !-left-1.5`} isConnectable={!readOnly} />
+        className={`${HANDLE_BASE} !-left-1.5`} isConnectable={!readOnly} aria-hidden="true" />
 
       <Handle id="right" type="source" position={Position.Right}
-        className={`${HANDLE_BASE} !-right-1.5`} isConnectable={!readOnly} />
+        className={`${HANDLE_BASE} !-right-1.5`} isConnectable={!readOnly} aria-label="Connect right" />
       <Handle id="right-target" type="source" position={Position.Right}
-        className={`${HANDLE_BASE} !-right-1.5`} isConnectable={!readOnly} />
+        className={`${HANDLE_BASE} !-right-1.5`} isConnectable={!readOnly} aria-hidden="true" />
 
       <Handle id="top" type="source" position={Position.Top}
-        className={`${HANDLE_BASE} !-top-1.5`} isConnectable={!readOnly} />
+        className={`${HANDLE_BASE} !-top-1.5`} isConnectable={!readOnly} aria-label="Connect top" />
       <Handle id="top-source" type="source" position={Position.Top}
-        className={`${HANDLE_BASE} !-top-1.5`} isConnectable={!readOnly} />
+        className={`${HANDLE_BASE} !-top-1.5`} isConnectable={!readOnly} aria-hidden="true" />
 
       <Handle id="bottom" type="source" position={Position.Bottom}
-        className={`${HANDLE_BASE} !-bottom-1.5`} isConnectable={!readOnly} />
+        className={`${HANDLE_BASE} !-bottom-1.5`} isConnectable={!readOnly} aria-label="Connect bottom" />
       <Handle id="bottom-target" type="source" position={Position.Bottom}
-        className={`${HANDLE_BASE} !-bottom-1.5`} isConnectable={!readOnly} />
-    </>
+        className={`${HANDLE_BASE} !-bottom-1.5`} isConnectable={!readOnly} aria-hidden="true" />
+    </div>
   );
 }
 
@@ -284,16 +284,45 @@ function StatusDropdown({
   onPick: (s: FeedbackStatus) => void;
   align?: 'left' | 'right';
 }) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [focusIdx, setFocusIdx] = useState(() =>
+    Math.max(0, REVIEW_STATUS_OPTIONS.findIndex((o) => o.value === currentValue))
+  );
+
+  useEffect(() => {
+    listRef.current?.querySelector<HTMLButtonElement>(`[data-idx="${focusIdx}"]`)?.focus();
+  }, [focusIdx]);
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocusIdx((i) => Math.min(i + 1, REVIEW_STATUS_OPTIONS.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocusIdx((i) => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onPick(REVIEW_STATUS_OPTIONS[focusIdx].value);
+    }
+  };
+
   return (
     <div
+      ref={listRef}
+      role="listbox"
+      aria-label="Change status"
       className={`absolute top-full mt-1 ${align === 'right' ? 'right-0' : 'left-0'} z-50 w-48 bg-white rounded-lg border border-edge shadow-lg py-1`}
       onClick={(e) => e.stopPropagation()}
+      onKeyDown={onKeyDown}
     >
-      {REVIEW_STATUS_OPTIONS.map((opt) => (
+      {REVIEW_STATUS_OPTIONS.map((opt, i) => (
         <button
           key={opt.value}
+          data-idx={i}
+          role="option"
+          aria-selected={opt.value === currentValue}
           onClick={() => onPick(opt.value)}
-          className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-surface transition-colors ${
+          className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-surface transition-colors focus:outline-none focus:bg-surface ${
             opt.value === currentValue ? 'bg-surface' : ''
           }`}
           type="button"

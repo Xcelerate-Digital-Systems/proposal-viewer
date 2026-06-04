@@ -2,13 +2,14 @@
 
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Copy, ExternalLink, BookmarkPlus, Bookmark } from 'lucide-react';
+import { ArrowLeft, Copy, ExternalLink, BookmarkPlus, Bookmark, Check, Loader2, AlertCircle } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { FunnelBoard } from '@/components/admin/funnels/board';
 import { useFunnelBoardContext } from '@/components/admin/funnels/board/FunnelBoardContext';
 import FunnelSettingsMenu from '@/components/admin/funnels/board/FunnelSettingsMenu';
 import ScenarioSwitcher from '@/components/admin/funnels/board/ScenarioSwitcher';
 import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { supabase, type Funnel } from '@/lib/supabase';
 import { buildFunnelUrl } from '@/lib/proposal-url';
 import { duplicateFunnelAsScenario } from '@/lib/funnel/duplicate-funnel';
@@ -36,6 +37,7 @@ function BoardContent({ funnelId }: { funnelId: string }) {
   const ctx = useFunnelBoardContext();
   const router = useRouter();
   const toast = useToast();
+  const confirmDialog = useConfirm();
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const [customDomain, setCustomDomain] = useState<string | null>(null);
@@ -67,6 +69,12 @@ function BoardContent({ funnelId }: { funnelId: string }) {
 
   const saveAsTemplate = async () => {
     if (!funnel) return;
+    const ok = await confirmDialog({
+      title: 'Save as template',
+      message: 'This creates a reusable copy in your template gallery. The original funnel stays unchanged.',
+      confirmLabel: 'Save copy',
+    });
+    if (!ok) return;
     const created = await duplicateFunnelAsScenario({
       source: funnel,
       companyId: cid,
@@ -119,6 +127,14 @@ function BoardContent({ funnelId }: { funnelId: string }) {
             <ScenarioSwitcher funnel={funnel} companyId={cid} userId={userId} />
           )}
         </div>
+
+        {/* Sync status */}
+        {funnel && ctx.syncStatus !== 'idle' && (
+          <div className="flex items-center gap-1 text-2xs text-muted ml-2">
+            {ctx.syncStatus === 'saving' && <><Loader2 size={10} className="animate-spin" /> Saving</>}
+            {ctx.syncStatus === 'error' && <><AlertCircle size={10} className="text-rose-500" /> <span className="text-rose-500">Save failed</span></>}
+          </div>
+        )}
 
         {/* Action group */}
         {funnel && (

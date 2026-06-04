@@ -8,6 +8,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Loader2, MousePointer, Undo2, Redo2 } from 'lucide-react';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import FunnelStepNode from './nodes/FunnelStepNode';
 import StickyNoteNode from '@/components/admin/feedback/board/nodes/StickyNoteNode';
 import ShapeNode from '@/components/admin/feedback/board/nodes/ShapeNode';
@@ -68,6 +69,7 @@ function FunnelBoardInner() {
   const containerRef = useRef<HTMLDivElement>(null);
   const ctx = useFunnelBoardContextOrThrow();
   const rf = useReactFlow();
+  const confirm = useConfirm();
 
   const board = useFunnelBoard();
 
@@ -327,6 +329,18 @@ function FunnelBoardInner() {
     }
   }, [ctx, viewportCentre]);
 
+  /* ─── Confirm before bulk delete ─── */
+
+  const onBeforeDelete = useCallback(async ({ nodes, edges }: { nodes: Node[]; edges: unknown[] }) => {
+    if (nodes.length <= 1) return true;
+    return confirm({
+      title: `Delete ${nodes.length} items`,
+      message: `Delete ${nodes.length} selected items? You can undo this with Cmd+Z.`,
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+  }, [confirm]);
+
   /* ─── Smart alignment guides while dragging ─── */
 
   const onNodeDrag = useCallback((_e: React.MouseEvent, node: Node) => {
@@ -470,6 +484,7 @@ function FunnelBoardInner() {
           snapGrid={[4, 4]}
           style={{ background: 'transparent' }}
           deleteKeyCode={['Backspace', 'Delete']}
+          onBeforeDelete={onBeforeDelete}
           // Selection model (Funnelytics/Figma style): left-click drag on empty
           // pane pans the canvas. Hold Shift + drag for a selection box.
           // Middle-mouse also pans. Right-click is reserved for context menu.

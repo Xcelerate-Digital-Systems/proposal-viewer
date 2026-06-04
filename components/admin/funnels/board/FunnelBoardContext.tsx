@@ -59,6 +59,8 @@ interface ContextValue {
   canUndo: boolean;
   canRedo: boolean;
 
+  syncStatus: 'idle' | 'saving' | 'error';
+
   // Notes
   boardNotes: FunnelBoardNote[];
   addNote: (position?: { x: number; y: number }) => Promise<FunnelBoardNote | null>;
@@ -208,7 +210,7 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
   const createStep = useCallback(
     async (stepType: FunnelStepType, position: { x: number; y: number }): Promise<FunnelStep | null> => {
       const defaults = FUNNEL_STEP_DEFAULTS[stepType];
-      const { data, error } = await supabase
+      const { data, error } = await trackSave(supabase
         .from('funnel_steps')
         .insert({
           funnel_id: funnelId,
@@ -222,7 +224,7 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
           board_y: Math.round(position.y),
           metrics: {},
         })
-        .select().single();
+        .select().single());
       if (error || !data) { toast.error('Failed to add step'); return null; }
       setSteps((prev) => [...prev, data]);
       setSelectedStepId(data.id);
@@ -253,10 +255,10 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
       : null;
 
     setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
-    const { error } = await supabase
+    const { error } = await trackSave(supabase
       .from('funnel_steps')
       .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq('id', id);
+      .eq('id', id));
     if (error) { toast.error('Failed to save step'); loadSteps(); return; }
 
     if (beforePatch) {
@@ -281,7 +283,7 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
     setSteps((prev) => prev.filter((s) => s.id !== id));
     setBoardEdges((prev) => prev.filter((e) => e.source_step_id !== id && e.target_step_id !== id));
     setSelectedStepId((prev) => (prev === id ? null : prev));
-    await supabase.from('funnel_steps').delete().eq('id', id);
+    await trackSave(supabase.from('funnel_steps').delete().eq('id', id));
 
     if (before) {
       recordHistory({
@@ -311,7 +313,7 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
     const existing = boardNotes.length;
     const x = position ? Math.round(position.x) : 50 + (existing % 3) * 240;
     const y = position ? Math.round(position.y) : 400 + Math.floor(existing / 3) * 200;
-    const { data, error } = await supabase
+    const { data, error } = await trackSave(supabase
       .from('funnel_board_notes')
       .insert({
         funnel_id: funnelId,
@@ -320,7 +322,7 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
         color: NOTE_COLORS[existing % NOTE_COLORS.length].value,
         board_x: x, board_y: y, width: 200, height: 150, font_size: 14,
       })
-      .select().single();
+      .select().single());
     if (error || !data) { toast.error('Failed to add note'); return null; }
     setBoardNotes((prev) => [...prev, data]);
     return data;
@@ -328,13 +330,13 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
 
   const updateNote = useCallback(async (id: string, changes: Partial<FunnelBoardNote>) => {
     setBoardNotes((prev) => prev.map((n) => (n.id === id ? { ...n, ...changes } : n)));
-    await supabase.from('funnel_board_notes').update({ ...changes, updated_at: new Date().toISOString() }).eq('id', id);
+    await trackSave(supabase.from('funnel_board_notes').update({ ...changes, updated_at: new Date().toISOString() }).eq('id', id));
   }, []);
 
   const deleteNote = useCallback(async (id: string) => {
     const before = boardNotes.find((n) => n.id === id);
     setBoardNotes((prev) => prev.filter((n) => n.id !== id));
-    await supabase.from('funnel_board_notes').delete().eq('id', id);
+    await trackSave(supabase.from('funnel_board_notes').delete().eq('id', id));
     if (before) {
       recordHistory({
         undo: async () => {
@@ -357,10 +359,10 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
   }, []);
 
   const createEdge = useCallback(async (edge: NewEdge): Promise<FunnelBoardEdge | null> => {
-    const { data, error } = await supabase
+    const { data, error } = await trackSave(supabase
       .from('funnel_board_edges')
       .insert({ ...edge, funnel_id: funnelId, company_id: companyId })
-      .select().single();
+      .select().single());
     if (error) { toast.error('Failed to create connection'); return null; }
     if (data) {
       setBoardEdges((prev) => [...prev, data]);
@@ -386,10 +388,10 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
       : null;
 
     setBoardEdges((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
-    const { error } = await supabase
+    const { error } = await trackSave(supabase
       .from('funnel_board_edges')
       .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq('id', id);
+      .eq('id', id));
     if (error) { toast.error('Failed to update connection'); loadEdges(); return; }
 
     if (beforePatch) {
@@ -409,7 +411,7 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
   const deleteEdge = useCallback(async (id: string) => {
     const before = boardEdges.find((e) => e.id === id);
     setBoardEdges((prev) => prev.filter((e) => e.id !== id));
-    await supabase.from('funnel_board_edges').delete().eq('id', id);
+    await trackSave(supabase.from('funnel_board_edges').delete().eq('id', id));
     if (before) {
       recordHistory({
         undo: async () => { await insertEdgeRow(before); },
@@ -424,10 +426,10 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
   /* ─── Shapes ────────────────────────────────────────────────── */
 
   const createShape = useCallback(async (shape: NewShape): Promise<FunnelBoardShape | null> => {
-    const { data, error } = await supabase
+    const { data, error } = await trackSave(supabase
       .from('funnel_board_shapes')
       .insert({ ...shape, funnel_id: funnelId, company_id: companyId })
-      .select().single();
+      .select().single());
     if (error) { toast.error('Failed to create shape'); return null; }
     if (data) {
       setShapes((prev) => [...prev, data]);
@@ -448,10 +450,10 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
 
   const updateShape = useCallback(async (id: string, patch: Partial<FunnelBoardShape>) => {
     setShapes((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
-    const { error } = await supabase
+    const { error } = await trackSave(supabase
       .from('funnel_board_shapes')
       .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq('id', id);
+      .eq('id', id));
     if (error) { toast.error('Failed to save shape'); loadShapes(); }
   }, [toast, loadShapes]);
 
@@ -460,7 +462,7 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
     const incidentEdges = boardEdges.filter((e) => e.source_shape_id === id || e.target_shape_id === id);
     setShapes((prev) => prev.filter((s) => s.id !== id));
     setBoardEdges((prev) => prev.filter((e) => e.source_shape_id !== id && e.target_shape_id !== id));
-    await supabase.from('funnel_board_shapes').delete().eq('id', id);
+    await trackSave(supabase.from('funnel_board_shapes').delete().eq('id', id));
     if (before) {
       recordHistory({
         undo: async () => {
@@ -488,6 +490,32 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
     []
   );
 
+  // ─── Sync status (inflight mutation tracking) ────────────────
+  const inflightRef = useRef(0);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'error'>('idle');
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const trackSave = useCallback(<T,>(promise: Promise<T>): Promise<T> => {
+    inflightRef.current++;
+    if (syncTimerRef.current) { clearTimeout(syncTimerRef.current); syncTimerRef.current = null; }
+    setSyncStatus('saving');
+    return promise.then(
+      (result) => {
+        inflightRef.current = Math.max(0, inflightRef.current - 1);
+        if (inflightRef.current === 0) {
+          syncTimerRef.current = setTimeout(() => setSyncStatus('idle'), 800);
+        }
+        return result;
+      },
+      (err) => {
+        inflightRef.current = Math.max(0, inflightRef.current - 1);
+        setSyncStatus('error');
+        syncTimerRef.current = setTimeout(() => setSyncStatus('idle'), 4000);
+        throw err;
+      },
+    );
+  }, []);
+
   const canUndo = historyRef.current.undo.length > 0;
   const canRedo = historyRef.current.redo.length > 0;
 
@@ -501,6 +529,7 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
       clearSelection,
       steps, createStep, updateStep, deleteStep,
       undo, redo, canUndo, canRedo,
+      syncStatus,
       boardNotes, addNote, updateNote, deleteNote,
       boardEdges, createEdge, updateEdge, deleteEdge,
       shapes, createShape, updateShape, deleteShape,
@@ -513,6 +542,7 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
       clearSelection,
       steps, createStep, updateStep, deleteStep,
       undo, redo, canUndo, canRedo,
+      syncStatus,
       boardNotes, addNote, updateNote, deleteNote,
       boardEdges, createEdge, updateEdge, deleteEdge,
       shapes, createShape, updateShape, deleteShape,

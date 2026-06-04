@@ -48,7 +48,7 @@ export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Pr
             onBlur={commitContent}
             rows={5}
             placeholder="Type a note…"
-            className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal resize-y"
+            className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20 resize-y"
           />
         </Field>
 
@@ -81,7 +81,7 @@ export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Pr
               const n = Number(e.target.value);
               onUpdate({ font_size: Number.isFinite(n) ? n : null });
             }}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal"
+            className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20"
           />
         </Field>
       </div>

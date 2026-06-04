@@ -367,7 +367,8 @@ function ColorSwatch({ color, active, title, onClick }: { color: string; active:
     <button
       onClick={onClick}
       title={title}
-      className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${
+      aria-label={`${title} color`}
+      className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-teal/30 ${
         active ? 'border-ink ring-2 ring-teal/40 scale-105' : 'border-edge'
       }`}
       style={{ backgroundColor: color }}

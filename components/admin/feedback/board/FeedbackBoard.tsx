@@ -19,6 +19,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Loader2, MousePointer, Undo2, Redo2 } from 'lucide-react';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import FeedbackItemNode from './nodes/FeedbackItemNode';
 import StickyNoteNode from './nodes/StickyNoteNode';
 import ShapeNode from './nodes/ShapeNode';
@@ -80,6 +81,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
   const reactFlowRef = useRef<HTMLDivElement>(null);
   const ctx = useFeedbackBoardContextOrThrow();
   const rf = useReactFlow();
+  const confirm = useConfirm();
   const [activeTool, setActiveTool] = useState<BoardTool>('select');
   const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
   const [drawCurrent, setDrawCurrent] = useState<{ x: number; y: number } | null>(null);
@@ -379,12 +381,21 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
 
   const deleteSelected = useCallback(async () => {
     const selected = rf.getNodes().filter((n) => n.selected);
+    if (selected.length === 0) return;
+    if (selected.length > 1) {
+      const ok = await confirm({
+        message: `Delete ${selected.length} selected items? Connected edges will also be removed.`,
+        destructive: true,
+        confirmLabel: `Delete ${selected.length} items`,
+      });
+      if (!ok) return;
+    }
     for (const node of selected) {
       if (node.id.startsWith('note-'))       await ctx.deleteNote(node.id.slice(5));
       else if (node.id.startsWith('shape-')) await ctx.deleteShape(node.id.slice(6));
       else                                    await ctx.removeItemFromBoard(node.id);
     }
-  }, [rf, ctx]);
+  }, [rf, ctx, confirm]);
 
   /* ── Lock / unlock ────────────────────────────────────── */
 
@@ -689,8 +700,9 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
                   type="button"
                   onClick={() => void ctx.undo()}
                   disabled={!ctx.canUndo}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-ink/70 hover:text-ink hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-ink/70 hover:text-ink hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-teal/30"
                   title="Undo (⌘Z)"
+                  aria-label="Undo"
                 >
                   <Undo2 size={14} />
                 </button>
@@ -698,8 +710,9 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
                   type="button"
                   onClick={() => void ctx.redo()}
                   disabled={!ctx.canRedo}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-ink/70 hover:text-ink hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-ink/70 hover:text-ink hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-teal/30"
                   title="Redo (⌘⇧Z)"
+                  aria-label="Redo"
                 >
                   <Redo2 size={14} />
                 </button>
