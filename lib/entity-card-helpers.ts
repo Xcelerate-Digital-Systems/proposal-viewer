@@ -27,13 +27,7 @@ export function buildCoverBg(c: CoverStyle): { backgroundColor?: string; backgro
   return { backgroundImage: `linear-gradient(${angle}deg, ${c1}, ${c2})` };
 }
 
-export function hexToRgba(hex: string, alpha: number): string {
-  const h = hex.replace('#', '');
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
+export { hexToRgba } from '@/lib/branding/color-math';
 
 export function formatDate(date: string | null): string {
   if (!date) return '—';

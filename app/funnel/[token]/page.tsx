@@ -44,7 +44,7 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  const { bgSecondary, sidebarText } = useBrandingColors(branding);
+  const { bgSecondary, sidebarText, palette } = useBrandingColors(branding);
 
   useEffect(() => {
     async function load() {
@@ -195,7 +195,7 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
       <div className="hidden lg:flex h-dvh flex-col bg-surface overflow-hidden">
         <div
           className="flex items-center justify-between px-5 py-3 shrink-0"
-          style={{ backgroundColor: bgSecondary, borderBottom: `1px solid ${sidebarText}15` }}
+          style={{ backgroundColor: bgSecondary, borderBottom: `1px solid ${palette.borderSubtle}` }}
         >
           <div className="flex items-center gap-3 min-w-0">
             {branding.logo_url ? (
@@ -223,7 +223,7 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
                 <p
                   className="text-detail mt-0.5 line-clamp-1"
                   style={{
-                    color: `${sidebarText}99`,
+                    color: palette.mutedText,
                     fontFamily: fontFamily(branding.font_sidebar),
                     fontWeight: branding.font_sidebar_weight || undefined,
                   }}

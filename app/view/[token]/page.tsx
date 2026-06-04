@@ -316,6 +316,7 @@ export default function ProposalViewerPage(props: { params: Promise<{ token: str
             onResolve={v.resolveComment}
             onUnresolve={v.unresolveComment}
             onClose={() => v.setShowComments(false)}
+            branding={v.branding}
             accentColor={v.accent}
             acceptTextColor={v.branding.accept_text_color || '#ffffff'}
             textColor={v.sidebarText}

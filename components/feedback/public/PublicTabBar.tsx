@@ -2,6 +2,8 @@
 
 import { GitBranch, Columns3, LayoutGrid } from 'lucide-react';
 import type { FeedbackSharedViews } from '@/lib/types/feedback';
+import type { BrandPalette } from '@/lib/branding';
+import { withAlpha } from '@/lib/branding';
 
 export type PublicTab = 'board' | 'kanban' | 'items';
 
@@ -9,10 +11,9 @@ interface PublicTabBarProps {
   current: PublicTab;
   views: FeedbackSharedViews;
   onChange: (tab: PublicTab) => void;
-  /** Background colour from branding (matches the board header strip). */
   bgSecondary?: string;
-  /** Foreground colour for ink/text. */
   sidebarText?: string;
+  palette?: BrandPalette;
 }
 
 const TABS: { key: PublicTab; label: string; Icon: typeof GitBranch }[] = [
@@ -21,13 +22,8 @@ const TABS: { key: PublicTab; label: string; Icon: typeof GitBranch }[] = [
   { key: 'items', label: 'Items', Icon: LayoutGrid },
 ];
 
-/**
- * Tab strip shown to public reviewers when the project share link exposes
- * more than one view. Hidden when only a single view is enabled — the
- * public viewer falls back to the standalone layout in that case.
- */
 export default function PublicTabBar({
-  current, views, onChange, bgSecondary, sidebarText,
+  current, views, onChange, bgSecondary, sidebarText, palette,
 }: PublicTabBarProps) {
   const enabled = TABS.filter((t) => views[t.key]);
   if (enabled.length < 2) return null;
@@ -38,7 +34,7 @@ export default function PublicTabBar({
   return (
     <div
       className="flex items-center gap-1 px-4 py-2 shrink-0 border-b"
-      style={{ backgroundColor: bg, borderBottomColor: `${fg}15` }}
+      style={{ backgroundColor: bg, borderBottomColor: palette?.borderSubtle ?? `${fg}15` }}
     >
       {enabled.map(({ key, label, Icon }) => {
         const active = current === key;
@@ -48,8 +44,8 @@ export default function PublicTabBar({
             onClick={() => onChange(key)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-medium transition-colors"
             style={{
-              color: active ? fg : `${fg}88`,
-              backgroundColor: active ? `${fg}10` : 'transparent',
+              color: active ? fg : (palette?.mutedText ?? `${fg}88`),
+              backgroundColor: active ? (palette ? withAlpha(palette.sidebarText, 0.06) : `${fg}10`) : 'transparent',
             }}
           >
             <Icon size={14} />

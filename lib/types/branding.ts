@@ -1,5 +1,7 @@
 // lib/types/branding.ts
 
+import { hexToOklch, oklchToHex } from '@/lib/branding/color-math';
+
 // ─── CompanyBranding ─────────────────────────────────────────────────────────
 
 export type CompanyBranding = {
@@ -78,21 +80,18 @@ export type CompanyBranding = {
 
 // ─── Color helpers ────────────────────────────────────────────────────────────
 
-/** Derive a border color by lightening the secondary bg. */
-export function deriveBorderColor(bgSecondary: string): string {
-  const hex = bgSecondary.replace('#', '');
-  const r = Math.min(255, parseInt(hex.slice(0, 2), 16) + 22);
-  const g = Math.min(255, parseInt(hex.slice(2, 4), 16) + 22);
-  const b = Math.min(255, parseInt(hex.slice(4, 6), 16) + 22);
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+export { hexToRgba } from '@/lib/branding/color-math';
+
+/** Derive a border color using OKLCH perceptual lightness. */
+export function deriveBorderColor(bg: string): string {
+  const lch = hexToOklch(bg);
+  const dir = lch.L < 0.5 ? 1 : -1;
+  return oklchToHex({ ...lch, L: lch.L + dir * 0.08 });
 }
 
-/** Derive a surface/card color between primary and secondary. */
-export function deriveSurfaceColor(bgPrimary: string, bgSecondary: string): string {
-  const p = bgPrimary.replace('#', '');
-  const s = bgSecondary.replace('#', '');
-  const r = Math.round((parseInt(p.slice(0, 2), 16) + parseInt(s.slice(0, 2), 16)) / 2 + 4);
-  const g = Math.round((parseInt(p.slice(2, 4), 16) + parseInt(s.slice(2, 4), 16)) / 2 + 4);
-  const b = Math.round((parseInt(p.slice(4, 6), 16) + parseInt(s.slice(4, 6), 16)) / 2 + 4);
-  return `#${Math.min(255, r).toString(16).padStart(2, '0')}${Math.min(255, g).toString(16).padStart(2, '0')}${Math.min(255, b).toString(16).padStart(2, '0')}`;
+/** Derive a surface/card color using OKLCH perceptual lightness. */
+export function deriveSurfaceColor(bgPrimary: string, _bgSecondary?: string): string {
+  const lch = hexToOklch(bgPrimary);
+  const dir = lch.L < 0.5 ? 1 : -1;
+  return oklchToHex({ ...lch, L: lch.L + dir * 0.035 });
 }

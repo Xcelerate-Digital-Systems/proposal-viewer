@@ -8,7 +8,8 @@ import { CheckCircle2, XCircle, PenLine } from 'lucide-react';
 // every proposal — only the terminal-state badges remain here so a client who
 // has already decided still sees their status while navigating.
 import { PageNameEntry } from '@/lib/supabase';
-import { CompanyBranding, deriveBorderColor } from '@/hooks/useProposal';
+import { CompanyBranding } from '@/hooks/useProposal';
+import { useBrandPalette } from '@/hooks/useBrandPalette';
 import { fontFamily } from '@/lib/google-fonts';
 
 interface SidebarProps {
@@ -73,8 +74,8 @@ export default function Sidebar({
 
   const accent      = branding.accent_color        || '#01434A';
   const bgSecondary = branding.bg_secondary        || '#141414';
-  const border      = deriveBorderColor(bgSecondary);
   const sidebarText = branding.sidebar_text_color  || '#ffffff';
+  const palette     = useBrandPalette(branding);
 
   // Show bottom actions only when the accept handler is wired up (proposals only)
   // Only render the bottom panel once a terminal state badge needs to show —
@@ -123,7 +124,7 @@ export default function Sidebar({
   const sidebarContent = (
     <>
       {/* Logo / company name */}
-      <div className="px-5 py-4 shrink-0 border-b flex items-center justify-between" style={{ borderColor: border }}>
+      <div className="px-5 py-4 shrink-0 border-b flex items-center justify-between" style={{ borderColor: palette.border }}>
         <div className="min-w-0">
           {branding.logo_url ? (
             <img src={branding.logo_url} alt={branding.name} className="h-6 max-w-[180px] object-contain" />
@@ -154,10 +155,10 @@ export default function Sidebar({
                 disabled={item.isGroup && !hasChildren}
                 className="w-full text-left flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors"
                 style={{
-                  backgroundColor: groupActive && !item.isGroup ? `${accent}18` : 'transparent',
+                  backgroundColor: groupActive && !item.isGroup ? palette.accentSurface : 'transparent',
                   color: groupActive
                     ? sidebarText
-                    : `${sidebarText}99`,
+                    : palette.mutedText,
                   fontFamily: fontFamily(branding.font_sidebar),
                   fontWeight: isParentActive
                     ? Math.min(Number(branding.font_sidebar_weight || 400) + 200, 900)
@@ -172,21 +173,21 @@ export default function Sidebar({
                   <span
                     className="shrink-0 w-1.5 h-1.5 rounded-full ml-2 transition-opacity"
                     style={{
-                      backgroundColor: groupActive ? accent : `${sidebarText}40`,
+                      backgroundColor: groupActive ? accent : palette.faintText,
                     }}
                   />
                 )}
               </button>
 
               {hasChildren && isExpanded && (
-                <div className="ml-5 mr-3 mb-1" style={{ borderLeft: `2px solid ${accent}40` }}>
+                <div className="ml-5 mr-3 mb-1" style={{ borderLeft: `2px solid ${palette.accentBorder}` }}>
                   {item.children.map((child) => (
                     <button
                       key={child.pageNum}
                       onClick={() => handleChildClick(child.pageNum)}
                       className="w-full text-left pl-4 pr-3 py-2 text-sm transition-colors truncate"
                       style={{
-                        color: currentPage === child.pageNum ? sidebarText : `${sidebarText}99`,
+                        color: currentPage === child.pageNum ? sidebarText : palette.mutedText,
                         fontFamily: fontFamily(branding.font_sidebar),
                         fontWeight: currentPage === child.pageNum
                           ? Math.min(Number(branding.font_sidebar_weight || 400) + 200, 900)
@@ -205,7 +206,7 @@ export default function Sidebar({
 
       {/* Bottom actions — proposals only */}
       {showActions && (
-        <div className="p-3 space-y-2 border-t" style={{ borderColor: border }}>
+        <div className="p-3 space-y-2 border-t" style={{ borderColor: palette.border }}>
           {/* ── Terminal state badges ── */}
           {accepted && (
             <div className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium bg-emerald-900/20 text-emerald-400 border border-emerald-800/30">
@@ -237,7 +238,7 @@ export default function Sidebar({
       {/* Desktop sidebar */}
       <div
         className="hidden lg:flex w-64 flex-col shrink-0 border-r"
-        style={{ backgroundColor: bgSecondary, borderColor: border }}
+        style={{ backgroundColor: bgSecondary, borderColor: palette.border }}
       >
         {sidebarContent}
       </div>

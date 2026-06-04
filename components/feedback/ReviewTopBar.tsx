@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { MessageSquare, MousePointer2, ArrowRight, Pause } from 'lucide-react';
 import CompleteFeedbackModal from './CompleteFeedbackModal';
+import { generateBrandPalette } from '@/lib/branding';
 import { fontFamily } from '@/lib/google-fonts';
 import { getFeedbackStatusDef } from '@/lib/feedback/status';
 import type { FeedbackItem, FeedbackStatus } from '@/lib/types/feedback';
@@ -70,20 +71,28 @@ export default function ReviewTopBar({
   const initials = (reviewerName.trim()[0] ?? 'R').toUpperCase();
   const statusDef = projectStatus ? getFeedbackStatusDef(projectStatus) : null;
 
+  // OKLCH brand palette — provides perceptually uniform derived colors.
+  // Falls back to null when branding is absent so downstream code can use
+  // legacy hex+opacity strings as a safe fallback.
+  const palette = useMemo(() =>
+    branding ? generateBrandPalette(branding.accent_color, branding.bg_primary, branding.bg_secondary, branding.sidebar_text_color, branding.accept_text_color) : null,
+    [branding?.accent_color, branding?.bg_primary, branding?.bg_secondary, branding?.sidebar_text_color, branding?.accept_text_color]
+  );
+
   // When full branding is provided, mirror the whiteboard header (branded
   // sidebar bg + sidebar text). Otherwise fall back to the neutral white top bar.
   const branded = !!branding?.bg_secondary || !!branding?.sidebar_text_color;
   const bgSecondary = branding?.bg_secondary || '#141414';
   const sidebarText = branding?.sidebar_text_color || '#ffffff';
   const barStyle = branded
-    ? { backgroundColor: bgSecondary, borderBottom: `1px solid ${sidebarText}15` }
+    ? { backgroundColor: bgSecondary, borderBottom: `1px solid ${palette?.borderSubtle ?? `${sidebarText}15`}` }
     : undefined;
   const titleColor = branded ? { color: sidebarText } : undefined;
-  const subtitleColor = branded ? { color: `${sidebarText}99` } : undefined;
-  const dividerColor = branded ? { backgroundColor: `${sidebarText}25` } : undefined;
-  const togglePillBg = branded ? { backgroundColor: `${sidebarText}15` } : undefined;
-  const toggleInactive = branded ? { color: `${sidebarText}99` } : undefined;
-  const toggleActive = branded ? { backgroundColor: `${sidebarText}26`, color: sidebarText } : undefined;
+  const subtitleColor = branded ? { color: palette?.mutedText ?? `${sidebarText}99` } : undefined;
+  const dividerColor = branded ? { backgroundColor: palette?.border ?? `${sidebarText}25` } : undefined;
+  const togglePillBg = branded ? { backgroundColor: palette?.borderSubtle ?? `${sidebarText}15` } : undefined;
+  const toggleInactive = branded ? { color: palette?.mutedText ?? `${sidebarText}99` } : undefined;
+  const toggleActive = branded ? { backgroundColor: palette?.borderSubtle ?? `${sidebarText}26`, color: sidebarText } : undefined;
 
   return (
     <>
@@ -130,7 +139,7 @@ export default function ReviewTopBar({
                 || statusDef.value === 'approved'
                 || statusDef.value === 'rejected';
               const neutralStyle = !clientFacing && branded
-                ? { border: `1px solid ${sidebarText}40`, color: sidebarText, backgroundColor: `${sidebarText}10` }
+                ? { border: `1px solid ${palette?.faintText ?? `${sidebarText}40`}`, color: sidebarText, backgroundColor: palette?.accentSurface ?? `${sidebarText}10` }
                 : undefined;
               const colouredClass = clientFacing ? `${statusDef.bg} ${statusDef.text}` : '';
               const neutralClass = !clientFacing && !branded ? 'border border-edge-strong bg-surface text-prose' : '';

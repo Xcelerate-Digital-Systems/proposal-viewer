@@ -166,13 +166,14 @@ function FontSelect({
             {value || 'System default'}
           </span>
           {value ? (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onChange(null); onWeightChange(null); }}
-              className="p-0.5 text-edge-hover hover:text-muted transition-colors"
+            <span
+              role="button"
+              tabIndex={0}
+              onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); onChange(null); onWeightChange(null); }}
+              className="p-0.5 text-edge-hover hover:text-muted transition-colors cursor-pointer"
             >
               <X size={14} />
-            </button>
+            </span>
           ) : (
             <Type size={14} className="text-edge-hover" />
           )}

@@ -42,39 +42,8 @@ export type CompanyData = {
   bg_image_overlay_opacity: number | null;
   brand_colors?: string[];
 };
-/**
- * Derive a border color by lightening the secondary bg.
- */
-export function deriveBorder(bgSecondary: string): string {
-  const hex = bgSecondary.replace('#', '');
-  const r = Math.min(255, parseInt(hex.slice(0, 2), 16) + 22);
-  const g = Math.min(255, parseInt(hex.slice(2, 4), 16) + 22);
-  const b = Math.min(255, parseInt(hex.slice(4, 6), 16) + 22);
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-}
-
-/**
- * Derive a surface color between primary and secondary + small offset.
- */
-export function deriveSurface(bgPrimary: string, bgSecondary: string): string {
-  const p = bgPrimary.replace('#', '');
-  const s = bgSecondary.replace('#', '');
-  const r = Math.round((parseInt(p.slice(0, 2), 16) + parseInt(s.slice(0, 2), 16)) / 2 + 4);
-  const g = Math.round((parseInt(p.slice(2, 4), 16) + parseInt(s.slice(2, 4), 16)) / 2 + 4);
-  const b = Math.round((parseInt(p.slice(4, 6), 16) + parseInt(s.slice(4, 6), 16)) / 2 + 4);
-  return `#${Math.min(255, r).toString(16).padStart(2, '0')}${Math.min(255, g).toString(16).padStart(2, '0')}${Math.min(255, b).toString(16).padStart(2, '0')}`;
-}
-
-/**
- * Convert a hex color to rgba for gradients / overlays.
- */
-export function hexToRgba(hex: string, alpha: number): string {
-  const h = hex.replace('#', '');
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
+export { deriveBorderColor as deriveBorder, deriveSurfaceColor as deriveSurface } from '@/lib/types/branding';
+export { hexToRgba } from '@/lib/branding/color-math';
 
 export const ACCENT_PRESETS = [
   '#01434A', '#ef4444', '#f59e0b', '#22c55e',
@@ -88,6 +57,10 @@ export const BG_PRESETS = [
   { label: 'Navy', primary: '#0c1222', secondary: '#162032' },
   { label: 'Forest', primary: '#0a1410', secondary: '#121f19' },
   { label: 'Wine', primary: '#1a0a0f', secondary: '#261018' },
+  { label: 'Snowdrift', primary: '#fafafa', secondary: '#ffffff' },
+  { label: 'Stone', primary: '#f1f0ee', secondary: '#faf9f7' },
+  { label: 'Cloud', primary: '#f0f4f8', secondary: '#f8fafc' },
+  { label: 'Pearl', primary: '#f5f3ff', secondary: '#faf8ff' },
 ];
 
 /** Validate a hex color string (6 or 8 digit) */

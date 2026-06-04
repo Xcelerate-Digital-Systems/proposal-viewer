@@ -2,8 +2,14 @@
 // Email content builders and HTML layout templates.
 
 import type { EventType } from './notification-types';
+import { hexToOklch, oklchToHex } from '@/lib/branding/color-math';
 
 /* ─── Utilities ──────────────────────────────────────────────────────────── */
+
+function emailHeaderBg(accent: string): string {
+  const lch = hexToOklch(accent);
+  return oklchToHex({ L: Math.min(lch.L, 0.22), C: Math.min(lch.C, 0.06), H: lch.H });
+}
 
 export function escapeHtml(str: string) {
   return str
@@ -171,6 +177,7 @@ function renderEmailHeader(branding: ProposalEmailBranding) {
 }
 
 function teamEmailTemplate(headline: string, body: string, viewerUrl: string, dashboardUrl: string, branding: ProposalEmailBranding = DEFAULT_BRANDING) {
+  const hdrBg = emailHeaderBg(branding.accentColor);
   return `
 <!DOCTYPE html>
 <html>
@@ -184,7 +191,7 @@ function teamEmailTemplate(headline: string, body: string, viewerUrl: string, da
       <td align="center">
         <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
           <tr>
-            <td style="background:#043946;padding:20px 32px;">
+            <td style="background:${hdrBg};padding:20px 32px;">
               ${renderEmailHeader(branding)}
             </td>
           </tr>
@@ -218,6 +225,7 @@ function teamEmailTemplate(headline: string, body: string, viewerUrl: string, da
 }
 
 function clientEmailTemplate(headline: string, body: string, viewerUrl: string, branding: ProposalEmailBranding) {
+  const hdrBg = emailHeaderBg(branding.accentColor);
   return `
 <!DOCTYPE html>
 <html>
@@ -231,7 +239,7 @@ function clientEmailTemplate(headline: string, body: string, viewerUrl: string, 
       <td align="center">
         <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
           <tr>
-            <td style="background:#043946;padding:20px 32px;">
+            <td style="background:${hdrBg};padding:20px 32px;">
               ${renderEmailHeader(branding)}
             </td>
           </tr>
@@ -318,6 +326,7 @@ export function buildClientConfirmationEmail(params: ClientConfirmationParams): 
     ? `<img src="${escapeHtml(companyLogo)}" alt="${escapeHtml(companyName)}" style="display:block;max-height:32px;max-width:200px;height:auto;width:auto;border:0;outline:none;text-decoration:none;" />`
     : `<span style="color:#ffffff;font-weight:700;font-size:16px;">${escapeHtml(companyName)}</span>`;
 
+  const hdrBg = emailHeaderBg(accentColor);
   const html = `
 <!DOCTYPE html>
 <html>
@@ -331,7 +340,7 @@ export function buildClientConfirmationEmail(params: ClientConfirmationParams): 
       <td align="center">
         <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
           <tr>
-            <td style="background:#043946;padding:20px 32px;">
+            <td style="background:${hdrBg};padding:20px 32px;">
               ${headerContent}
             </td>
           </tr>

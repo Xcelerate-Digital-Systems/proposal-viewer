@@ -5,6 +5,7 @@ import { ReactNode, useRef } from 'react';
 import { Check, Loader2, Palette, Upload, Trash2, ImageIcon } from 'lucide-react';
 import ColorPickerField from '@/components/ui/ColorPickerField';
 import Slider from '@/components/ui/Slider';
+import ThemePresetsStrip from './ThemePresetsStrip';
 
 interface ViewerColorsSectionProps {
   isOwner: boolean;
@@ -57,11 +58,12 @@ export default function ViewerColorsSection({
   const fileRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="bg-white border border-edge rounded-[14px] p-5 ">
+    <div className="bg-white border border-edge rounded-[14px] p-5">
+      {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Palette size={15} className="text-faint" />
-          <span className="text-sm font-medium text-muted">Viewer Colors</span>
+          <span className="text-sm font-medium text-muted">Viewer Colours</span>
         </div>
         {isOwner && saving === 'colors' && (
           <span className="flex items-center gap-1.5 text-xs text-faint">
@@ -74,31 +76,45 @@ export default function ViewerColorsSection({
           </span>
         )}
       </div>
-      <p className="text-xs text-faint mb-4">Changes save automatically.</p>
+      <p className="text-xs text-faint mb-4">Pick a theme to get started, then fine-tune. Changes save automatically.</p>
 
+      {/* Theme presets — full width */}
+      <ThemePresetsStrip
+        bgPrimary={bgPrimary}
+        setBgPrimary={setBgPrimary}
+        bgSecondary={bgSecondary}
+        setBgSecondary={setBgSecondary}
+        accentColor={accentColor}
+        setAccentColor={setAccentColor}
+        disabled={!isOwner}
+      />
+
+      {/* Controls + Preview */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: Color controls */}
         <div>
           {/* Accent color */}
           <div className="mb-4">
-            <label className="block text-xs text-faint mb-2">Accent Color</label>
-            <ColorPickerField label="Buttons, links, highlights" value={accentColor} fallback="#01434A" onChange={setAccentColor} disabled={!isOwner} />
-          </div>
-
-          {/* Background colors */}
-          <div className="mb-4">
-            <label className="block text-xs text-faint mb-2">Background Colors</label>
-            <div className="space-y-2">
-              <ColorPickerField label="Main background" value={bgPrimary} fallback="#0f0f0f" onChange={setBgPrimary} disabled={!isOwner} />
-              <ColorPickerField label="Sidebar / panels" value={bgSecondary} fallback="#141414" onChange={setBgSecondary} disabled={!isOwner} />
+            <span className="text-2xs font-semibold text-faint uppercase tracking-wider">Accent Colour</span>
+            <div className="mt-1.5">
+              <ColorPickerField label="Buttons, links, highlights" value={accentColor} fallback="#01434A" onChange={setAccentColor} disabled={!isOwner} />
             </div>
           </div>
 
-          {/* Background image */}
+          {/* Background */}
           <div className="mb-4 pt-4 border-t border-edge">
-            <label className="block text-xs text-faint mb-2">Background Image (optional)</label>
-            <p className="text-xs text-faint mb-3">
-              Upload a texture or pattern to display behind PDF pages. The main background color is overlaid on top.
+            <span className="text-2xs font-semibold text-faint uppercase tracking-wider">Background</span>
+            <div className="space-y-2 mt-1.5">
+              <ColorPickerField label="Main background" value={bgPrimary} fallback="#0f0f0f" onChange={setBgPrimary} disabled={!isOwner} />
+              <ColorPickerField label="Panels & headers" value={bgSecondary} fallback="#141414" onChange={setBgSecondary} disabled={!isOwner} />
+            </div>
+          </div>
+
+          {/* Background texture */}
+          <div className="mb-4 pt-4 border-t border-edge">
+            <span className="text-2xs font-semibold text-faint uppercase tracking-wider">Background Texture</span>
+            <p className="text-xs text-faint mt-1 mb-3">
+              Optional image or pattern behind viewer pages.
             </p>
 
             {bgImageUrl ? (
@@ -154,7 +170,6 @@ export default function ViewerColorsSection({
               }}
             />
 
-            {/* Overlay opacity — only show when image is set */}
             {bgImageUrl && (
               <div className="mt-3">
                 <Slider
@@ -169,12 +184,12 @@ export default function ViewerColorsSection({
             )}
           </div>
 
-          {/* Text colors */}
+          {/* Text on dark surfaces */}
           <div className="pt-4 border-t border-edge">
-            <label className="block text-xs text-faint mb-2">Text Colors</label>
-            <div className="space-y-2">
-              <ColorPickerField label="Sidebar nav text" value={sidebarTextColor} fallback="#ffffff" onChange={setSidebarTextColor} disabled={!isOwner} />
-              <ColorPickerField label="Accept button text" value={acceptTextColor} fallback="#ffffff" onChange={setAcceptTextColor} disabled={!isOwner} />
+            <span className="text-2xs font-semibold text-faint uppercase tracking-wider">Text on Dark Surfaces</span>
+            <div className="space-y-2 mt-1.5">
+              <ColorPickerField label="Light text" value={sidebarTextColor} fallback="#ffffff" onChange={setSidebarTextColor} disabled={!isOwner} />
+              <ColorPickerField label="Button text" value={acceptTextColor} fallback="#ffffff" onChange={setAcceptTextColor} disabled={!isOwner} />
             </div>
           </div>
         </div>

@@ -1,10 +1,12 @@
 'use client';
 
+import { useMemo } from 'react';
 import {
   ArrowLeft, ChevronLeft, ChevronRight,
   MessageSquare, MousePointer2, ArrowRight, Pencil,
 } from 'lucide-react';
 import { fontFamily } from '@/lib/google-fonts';
+import { generateBrandPalette } from '@/lib/branding';
 import VersionPicker from '@/components/feedback/VersionPicker';
 import TypeFilterTabs from '@/components/feedback/TypeFilterTabs';
 import ClientStatusControl from '@/components/feedback/ClientStatusControl';
@@ -102,6 +104,11 @@ export default function FeedbackHeaderBar({
   onOpenFinishModal,
   hasFinishHandler,
 }: FeedbackHeaderBarProps) {
+  const palette = useMemo(() =>
+    branding ? generateBrandPalette(branding.accent_color, branding.bg_primary, branding.bg_secondary, branding.sidebar_text_color, branding.accept_text_color) : null,
+    [branding?.accent_color, branding?.bg_primary, branding?.bg_secondary, branding?.sidebar_text_color, branding?.accept_text_color]
+  );
+
   return (
     <div
       className={`flex items-center gap-3 px-5 py-3 shrink-0 ${
@@ -121,7 +128,7 @@ export default function FeedbackHeaderBar({
             className={`flex items-center gap-1.5 text-sm transition-colors min-w-0 ${
               headerBranded ? '' : 'text-dim hover:text-prose'
             }`}
-            style={headerBranded ? { color: `${sidebarText}99` } : undefined}
+            style={headerBranded ? { color: palette?.mutedText ?? `${sidebarText}99` } : undefined}
           >
             <ArrowLeft size={14} className="shrink-0" />
             <span className="font-medium truncate max-w-[180px]">{backAction.label}</span>
@@ -133,7 +140,7 @@ export default function FeedbackHeaderBar({
             {backAction && (
               <span
                 className={`h-4 w-px shrink-0 ${headerBranded ? '' : 'bg-surface'}`}
-                style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
+                style={headerBranded ? { backgroundColor: palette?.border ?? `${sidebarText}25` } : undefined}
               />
             )}
             <img
@@ -148,7 +155,7 @@ export default function FeedbackHeaderBar({
             {backAction && (
               <span
                 className={`h-4 w-px shrink-0 ${headerBranded ? '' : 'bg-surface'}`}
-                style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
+                style={headerBranded ? { backgroundColor: palette?.border ?? `${sidebarText}25` } : undefined}
               />
             )}
             <span
@@ -162,7 +169,7 @@ export default function FeedbackHeaderBar({
 
         <span
           className={`h-4 w-px ${headerBranded ? '' : 'bg-surface'}`}
-          style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
+          style={headerBranded ? { backgroundColor: palette?.border ?? `${sidebarText}25` } : undefined}
         />
         <span
           className={`text-base font-semibold tracking-tight truncate max-w-[220px] ${
@@ -175,7 +182,7 @@ export default function FeedbackHeaderBar({
         {(project.client_company || project.client_name) && (
           <span
             className={`text-xs truncate hidden xl:inline ${headerBranded ? '' : 'text-faint'}`}
-            style={headerBranded ? { color: `${sidebarText}80` } : undefined}
+            style={headerBranded ? { color: palette?.mutedText ?? `${sidebarText}80` } : undefined}
           >
             · {project.client_company || project.client_name}
           </span>
@@ -187,7 +194,7 @@ export default function FeedbackHeaderBar({
         <>
           <div
             className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-surface'}`}
-            style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
+            style={headerBranded ? { backgroundColor: palette?.border ?? `${sidebarText}25` } : undefined}
           />
           <div className="shrink-0">
             <TypeFilterTabs
@@ -208,7 +215,7 @@ export default function FeedbackHeaderBar({
         <>
           <div
             className={`w-px h-6 shrink-0 ${headerBranded ? '' : 'bg-surface'}`}
-            style={headerBranded ? { backgroundColor: `${sidebarText}25` } : undefined}
+            style={headerBranded ? { backgroundColor: palette?.border ?? `${sidebarText}25` } : undefined}
           />
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -219,7 +226,7 @@ export default function FeedbackHeaderBar({
               }`}
               style={
                 headerBranded
-                  ? { border: `1px solid ${sidebarText}25`, color: sidebarText }
+                  ? { border: `1px solid ${palette?.border ?? `${sidebarText}25`}`, color: sidebarText }
                   : undefined
               }
             >
@@ -230,7 +237,7 @@ export default function FeedbackHeaderBar({
               className={`text-xs tabular-nums whitespace-nowrap ${
                 headerBranded ? '' : 'text-faint'
               }`}
-              style={headerBranded ? { color: `${sidebarText}80` } : undefined}
+              style={headerBranded ? { color: palette?.mutedText ?? `${sidebarText}80` } : undefined}
             >
               {currentIdx + 1} of {filteredItems.length}
             </span>
@@ -242,7 +249,7 @@ export default function FeedbackHeaderBar({
               }`}
               style={
                 headerBranded
-                  ? { border: `1px solid ${sidebarText}25`, color: sidebarText }
+                  ? { border: `1px solid ${palette?.border ?? `${sidebarText}25`}`, color: sidebarText }
                   : undefined
               }
             >
@@ -303,7 +310,7 @@ export default function FeedbackHeaderBar({
         {onReviewModeChange && reviewMode && (
           <div
             className="flex items-center rounded-full p-0.5 shrink-0"
-            style={{ backgroundColor: `${sidebarText}15` }}
+            style={{ backgroundColor: palette?.accentSurface ?? `${sidebarText}15` }}
           >
             <button
               type="button"
@@ -311,8 +318,8 @@ export default function FeedbackHeaderBar({
               className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors"
               style={
                 reviewMode === 'comment'
-                  ? { backgroundColor: `${sidebarText}26`, color: sidebarText }
-                  : { color: `${sidebarText}99` }
+                  ? { backgroundColor: palette?.borderSubtle ?? `${sidebarText}26`, color: sidebarText }
+                  : { color: palette?.mutedText ?? `${sidebarText}99` }
               }
             >
               <MessageSquare size={12} />
@@ -324,8 +331,8 @@ export default function FeedbackHeaderBar({
               className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors"
               style={
                 reviewMode === 'browse'
-                  ? { backgroundColor: `${sidebarText}26`, color: sidebarText }
-                  : { color: `${sidebarText}99` }
+                  ? { backgroundColor: palette?.borderSubtle ?? `${sidebarText}26`, color: sidebarText }
+                  : { color: palette?.mutedText ?? `${sidebarText}99` }
               }
             >
               <MousePointer2 size={12} />

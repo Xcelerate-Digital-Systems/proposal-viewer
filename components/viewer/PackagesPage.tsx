@@ -2,7 +2,8 @@
 'use client';
 
 import { ProposalPackages, PackageTier, PackageFeature, PackageFeatureIcon, PackageStyling, normalizePackageStyling, formatCurrency, type CurrencyCode } from '@/lib/supabase';
-import { CompanyBranding, deriveBorderColor, deriveSurfaceColor } from '@/hooks/useProposal';
+import { CompanyBranding } from '@/hooks/useProposal';
+import { useBrandPalette } from '@/hooks/useBrandPalette';
 import { fontFamily } from '@/lib/google-fonts';
 import { Check, CheckCircle2, ArrowRight, Star, Minus } from 'lucide-react';
 
@@ -57,11 +58,12 @@ export default function PackagesPage({ packages, branding, clientName, orientati
   const bgSecondary = branding.bg_secondary || '#141414';
   const accent = branding.accent_color || '#01434A';
   const textColor = branding.sidebar_text_color || '#ffffff';
-  const border = deriveBorderColor(bgSecondary);
-  const surface = deriveSurfaceColor(bgPrimary, bgSecondary);
+  const palette = useBrandPalette(branding);
+  const border = palette.border;
+  const surface = palette.surface;
 
-  const muted = `${textColor}99`;
-  const faint = `${textColor}55`;
+  const muted = palette.mutedText;
+  const faint = palette.faintText;
 
   const styling = normalizePackageStyling(packages.styling);
   const titleColor = styling.title_color || textColor;

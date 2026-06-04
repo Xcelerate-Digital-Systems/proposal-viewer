@@ -2,7 +2,8 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { useProposal, deriveBorderColor } from '@/hooks/useProposal';
+import { useProposal } from '@/hooks/useProposal';
+import { useBrandPalette } from '@/hooks/useBrandPalette';
 import { ProposalPricing, ProposalPackages } from '@/lib/supabase';
 import { exportCompositePdf } from '@/lib/compositeExport';
 
@@ -55,10 +56,11 @@ export function useViewerPage(token: string) {
 
   /* ── Derived branding ──────────────────────────────────────────────────── */
 
+  const palette     = useBrandPalette(branding);
   const bgPrimary   = branding.bg_primary   || '#0f0f0f';
   const bgSecondary = branding.bg_secondary || '#141414';
   const accent      = branding.accent_color || '#01434A';
-  const border      = deriveBorderColor(bgSecondary);
+  const border      = palette.border;
   const sidebarText = branding.sidebar_text_color || '#ffffff';
   const pageOrientation = proposal?.page_orientation === 'landscape' ? 'landscape' as const : 'portrait' as const;
   const unresolvedCommentCount = comments.filter((c) => !c.parent_id && !c.resolved_at).length;
@@ -185,6 +187,7 @@ export function useViewerPage(token: string) {
     mainRef,
 
     // Derived
+    palette,
     onTocPage, onTextPage, onPricingPage, onPackagesPage, onDecisionPage,
     currentTextPage, currentPackages, pdfPage,
     currentPageLink,

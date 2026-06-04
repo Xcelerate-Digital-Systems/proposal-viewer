@@ -8,6 +8,8 @@ import {
 import type { FeedbackItem, FeedbackComment, FeedbackStatus } from '@/lib/supabase';
 import type { CompanyBranding } from '@/hooks/useProposal';
 import { fontFamily } from '@/lib/google-fonts';
+import { useBrandPalette } from '@/hooks/useBrandPalette';
+import { withAlpha } from '@/lib/branding';
 
 /* ─── Props ────────────────────────────────────────────────────── */
 
@@ -60,8 +62,8 @@ export default function WhiteboardSidebar({
   onSelectItem,
 }: WhiteboardSidebarProps) {
   const [expandedType, setExpandedType] = useState<string | null>(null);
+  const palette = useBrandPalette(branding);
 
-  // Group items by type
   const groupedItems = useMemo(() => {
     const groups: Record<string, FeedbackItem[]> = {};
     for (const item of items) {
@@ -71,7 +73,6 @@ export default function WhiteboardSidebar({
     return groups;
   }, [items]);
 
-  // Comment counts per item (top-level only)
   const commentCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const c of comments) {
@@ -83,9 +84,8 @@ export default function WhiteboardSidebar({
   }, [comments]);
 
   const types = Object.keys(groupedItems).sort();
-
-  // If only one type, auto-expand
   const effectiveExpanded = types.length === 1 ? types[0] : expandedType;
+  const hoverBg = withAlpha(palette.sidebarText, 0.03);
 
   return (
     <div
@@ -93,25 +93,25 @@ export default function WhiteboardSidebar({
       className="w-[220px] flex flex-col shrink-0 overflow-hidden"
       style={{
         backgroundColor: bgSecondary,
-        borderRight: `1px solid ${sidebarText}15`,
+        borderRight: `1px solid ${palette.borderSubtle}`,
       }}
     >
       {/* Header */}
       <div
         className="px-4 py-3 shrink-0"
-        style={{ borderBottom: `1px solid ${sidebarText}12` }}
+        style={{ borderBottom: `1px solid ${palette.borderSubtle}` }}
       >
         <p
           className="text-xs font-semibold uppercase tracking-wider"
           style={{
-            color: `${sidebarText}99`,
+            color: palette.mutedText,
             fontFamily: fontFamily(branding.font_sidebar),
             fontWeight: branding.font_sidebar_weight || undefined,
           }}
         >
           Items
         </p>
-        <p className="text-2xs mt-0.5" style={{ color: `${sidebarText}55` }}>
+        <p className="text-2xs mt-0.5" style={{ color: palette.faintText }}>
           {items.length} item{items.length !== 1 ? 's' : ''} · {comments.filter((c) => !c.parent_comment_id).length} comments
         </p>
       </div>
@@ -125,18 +125,17 @@ export default function WhiteboardSidebar({
 
           return (
             <div key={type}>
-              {/* Type group header */}
               <button
                 onClick={() => setExpandedType(isExpanded ? null : type)}
                 className="w-full flex items-center gap-2 px-4 py-2 transition-colors"
-                style={{ color: `${sidebarText}88` }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = `${sidebarText}08`)}
+                style={{ color: palette.mutedText }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = hoverBg)}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
                 {isExpanded ? (
-                  <ChevronDown size={12} style={{ color: `${sidebarText}55` }} />
+                  <ChevronDown size={12} style={{ color: palette.faintText }} />
                 ) : (
-                  <ChevronRight size={12} style={{ color: `${sidebarText}55` }} />
+                  <ChevronRight size={12} style={{ color: palette.faintText }} />
                 )}
                 <TypeIcon size={13} />
                 <span
@@ -147,13 +146,12 @@ export default function WhiteboardSidebar({
                 </span>
                 <span
                   className="text-2xs px-1.5 py-0.5 rounded-full"
-                  style={{ backgroundColor: `${sidebarText}10`, color: `${sidebarText}66` }}
+                  style={{ backgroundColor: withAlpha(palette.sidebarText, 0.06), color: palette.faintText }}
                 >
                   {typeItems.length}
                 </span>
               </button>
 
-              {/* Items */}
               {isExpanded && (
                 <div className="pb-1">
                   {typeItems.map((item) => {
@@ -165,33 +163,28 @@ export default function WhiteboardSidebar({
                         key={item.id}
                         onClick={() => onSelectItem(item.id)}
                         className="w-full flex items-center gap-2.5 px-4 pl-8 py-2 text-left transition-colors"
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = `${sidebarText}08`)}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = hoverBg)}
                         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                       >
-                        {/* Status dot */}
                         <span
                           className="w-2 h-2 rounded-full shrink-0"
                           style={{ backgroundColor: status.color }}
                           title={status.label}
                         />
-
-                        {/* Title */}
                         <span
                           className="text-xs truncate flex-1 min-w-0"
                           style={{
-                            color: `${sidebarText}cc`,
+                            color: palette.sidebarText,
                             fontFamily: fontFamily(branding.font_sidebar),
                             fontWeight: branding.font_sidebar_weight || undefined,
                           }}
                         >
                           {item.title}
                         </span>
-
-                        {/* Comment count */}
                         {count > 0 && (
                           <span
                             className="flex items-center gap-1 text-2xs shrink-0"
-                            style={{ color: `${sidebarText}55` }}
+                            style={{ color: palette.faintText }}
                           >
                             <MessageSquare size={10} />
                             {count}

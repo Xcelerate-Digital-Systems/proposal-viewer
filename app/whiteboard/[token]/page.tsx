@@ -43,7 +43,7 @@ export default function PublicWhiteboardPage(props: { params: Promise<{ token: s
   const [notFound, setNotFound] = useState(false);
   const [brandingLoaded, setBrandingLoaded] = useState(false);
 
-  const { bgSecondary, sidebarText } = useBrandingColors(branding);
+  const { bgSecondary, sidebarText, palette } = useBrandingColors(branding);
 
   // ── Guest identity ──
   // Collect name + email on first visit so the reviewer isn't prompted again
@@ -152,7 +152,7 @@ export default function PublicWhiteboardPage(props: { params: Promise<{ token: s
         {/* Board header — branded with sidebar colors */}
         <div
           className="flex items-center justify-between px-4 py-3 shrink-0"
-          style={{ backgroundColor: bgSecondary, borderBottom: `1px solid ${sidebarText}15` }}
+          style={{ backgroundColor: bgSecondary, borderBottom: `1px solid ${palette.borderSubtle}` }}
         >
           <div className="flex items-center gap-3 min-w-0">
             {branding.logo_url ? (
@@ -166,7 +166,7 @@ export default function PublicWhiteboardPage(props: { params: Promise<{ token: s
             <span
               className="text-sm truncate"
               style={{
-                color: `${sidebarText}99`,
+                color: palette.mutedText,
                 fontFamily: fontFamily(branding.font_sidebar),
                 fontWeight: branding.font_sidebar_weight || undefined,
               }}
@@ -174,7 +174,7 @@ export default function PublicWhiteboardPage(props: { params: Promise<{ token: s
               {project?.title}
             </span>
           </div>
-          <p className="text-xs" style={{ color: `${sidebarText}55` }}>
+          <p className="text-xs" style={{ color: palette.faintText }}>
             Click any item to view details and leave feedback
           </p>
         </div>

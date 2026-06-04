@@ -38,12 +38,21 @@ export function escapeHtml(str: string) {
     .replace(/"/g, '&quot;');
 }
 
+import { hexToOklch, oklchToHex } from '@/lib/branding/color-math';
+
+/** Derive a dark header background from the accent color. */
+function headerBg(accent: string): string {
+  const lch = hexToOklch(accent);
+  return oklchToHex({ L: Math.min(lch.L, 0.22), C: Math.min(lch.C, 0.06), H: lch.H });
+}
+
 /** Header strip — logo if we have one, else the agency name. */
 function renderHeader(branding: EmailBranding) {
+  const bg = headerBg(branding.accentColor);
   const inner = branding.logoUrl
     ? `<img src="${escapeHtml(branding.logoUrl)}" alt="${escapeHtml(branding.companyName)}" style="display:block;max-height:32px;max-width:200px;height:auto;width:auto;border:0;outline:none;text-decoration:none;" />`
     : `<span style="color:#ffffff;font-weight:700;font-size:16px;">${escapeHtml(branding.companyName)}</span>`;
-  return `<tr><td style="background:#043946;padding:18px 32px;">${inner}</td></tr>`;
+  return `<tr><td style="background:${bg};padding:18px 32px;">${inner}</td></tr>`;
 }
 
 function ctaButton(href: string, label: string, accentColor: string) {

@@ -4,7 +4,8 @@
 import { useState } from 'react';
 import { X, Send, CheckCircle2, CornerDownRight, ChevronDown, ChevronRight } from 'lucide-react';
 import { ProposalComment } from '@/lib/supabase';
-import { deriveBorderColor, deriveSurfaceColor } from '@/hooks/useProposal';
+import { useBrandPalette } from '@/hooks/useBrandPalette';
+import type { CompanyBranding } from '@/lib/types/branding';
 
 interface CommentsPanelProps {
   comments: ProposalComment[];
@@ -16,6 +17,7 @@ interface CommentsPanelProps {
   onResolve: (commentId: string, resolvedBy: string) => Promise<void>;
   onUnresolve: (commentId: string) => Promise<void>;
   onClose: () => void;
+  branding: CompanyBranding;
   accentColor?: string;
   acceptTextColor?: string;
   textColor?: string;
@@ -33,12 +35,14 @@ export default function CommentsPanel({
   onResolve,
   onUnresolve,
   onClose,
+  branding,
   accentColor = '#01434A',
   acceptTextColor = '#ffffff',
   textColor = '#ffffff',
   bgPrimary = '#0f0f0f',
   bgSecondary = '#141414',
 }: CommentsPanelProps) {
+  const palette = useBrandPalette(branding);
   const [commentName, setCommentName] = useState('');
   const [commentText, setCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -48,8 +52,8 @@ export default function CommentsPanel({
   const [replySubmitting, setReplySubmitting] = useState(false);
   const [showResolved, setShowResolved] = useState(false);
 
-  const border = deriveBorderColor(bgSecondary);
-  const surface = deriveSurfaceColor(bgPrimary, bgSecondary);
+  const border = palette.border;
+  const surface = palette.surface;
 
   const topLevelComments = comments.filter((c) => !c.parent_id);
   const getReplies = (parentId: string) => comments.filter((c) => c.parent_id === parentId);

@@ -68,7 +68,7 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
   // ── Guest identity ──
   const { guestName, guestEmail, setGuestName, saveGuestIdentity, hydrated: identityHydrated } = useGuestIdentity();
   const { setPendingPin } = usePinFeedback();
-  const { bgSecondary, sidebarText } = useBrandingColors(branding);
+  const { bgSecondary, sidebarText, palette } = useBrandingColors(branding);
 
   // Show onboarding modal once storage has been read and no name is stored.
   const showOnboarding = identityHydrated && !guestName && !loading && !notFound;
@@ -512,6 +512,7 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
           onChange={setCurrentTab}
           bgSecondary={bgSecondary}
           sidebarText={sidebarText}
+          palette={palette}
         />
 
         {currentTab === 'board' && (
@@ -520,10 +521,10 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
               className="px-4 py-2 shrink-0 text-right"
               style={{
                 backgroundColor: bgSecondary,
-                borderBottom: `1px solid ${sidebarText}15`,
+                borderBottom: `1px solid ${palette.borderSubtle}`,
               }}
             >
-              <p className="text-xs" style={{ color: `${sidebarText}80` }}>
+              <p className="text-xs" style={{ color: palette.mutedText }}>
                 Click any item to view details and leave feedback
               </p>
             </div>

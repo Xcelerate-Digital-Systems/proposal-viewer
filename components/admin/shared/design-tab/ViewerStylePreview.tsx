@@ -42,27 +42,10 @@ const TABS = [
 type TabKey = typeof TABS[number]['key'];
 
 /* ------------------------------------------------------------------ */
-/*  Helpers (mirrors useProposal deriveBorderColor / deriveSurfaceColor) */
+/*  Helpers — use canonical OKLCH-based derive functions                */
 /* ------------------------------------------------------------------ */
 
-function deriveBorder(bg: string): string {
-  const hex = bg.replace('#', '');
-  if (hex.length < 6) return '#333333';
-  const r = Math.min(255, parseInt(hex.slice(0, 2), 16) + 22);
-  const g = Math.min(255, parseInt(hex.slice(2, 4), 16) + 22);
-  const b = Math.min(255, parseInt(hex.slice(4, 6), 16) + 22);
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-}
-
-function deriveSurface(p: string, s: string): string {
-  const ph = p.replace('#', '');
-  const sh = s.replace('#', '');
-  if (ph.length < 6 || sh.length < 6) return '#1e1e1e';
-  const r = Math.round((parseInt(ph.slice(0, 2), 16) + parseInt(sh.slice(0, 2), 16)) / 2 + 4);
-  const g = Math.round((parseInt(ph.slice(2, 4), 16) + parseInt(sh.slice(2, 4), 16)) / 2 + 4);
-  const b = Math.round((parseInt(ph.slice(4, 6), 16) + parseInt(sh.slice(4, 6), 16)) / 2 + 4);
-  return `#${Math.min(255, r).toString(16).padStart(2, '0')}${Math.min(255, g).toString(16).padStart(2, '0')}${Math.min(255, b).toString(16).padStart(2, '0')}`;
-}
+import { deriveBorderColor as deriveBorder, deriveSurfaceColor as deriveSurface } from '@/lib/types/branding';
 
 /** Mirrors lib/google-fonts fontFamily() */
 function ff(font: string | null | undefined, fallback = 'system-ui, sans-serif'): string {

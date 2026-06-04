@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { CheckCircle2, X, Loader2, ExternalLink } from 'lucide-react';
-import { deriveBorderColor } from '@/hooks/useProposal';
+import { deriveBorderColor } from '@/lib/types/branding';
 import { isValidHttpUrl } from '@/lib/sanitize';
 
 type PostAcceptAction = 'redirect' | 'message' | null;

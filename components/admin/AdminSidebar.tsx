@@ -56,25 +56,6 @@ function hexWithAlpha(hex: string, alpha: number): string {
   return `${hex}${a}`;
 }
 
-function lighten(hex: string, amount: number): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const nr = Math.min(255, Math.round(r + (255 - r) * amount));
-  const ng = Math.min(255, Math.round(g + (255 - g) * amount));
-  const nb = Math.min(255, Math.round(b + (255 - b) * amount));
-  return `#${nr.toString(16).padStart(2, '0')}${ng.toString(16).padStart(2, '0')}${nb.toString(16).padStart(2, '0')}`;
-}
-
-function darken(hex: string, amount: number): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const nr = Math.max(0, Math.round(r * (1 - amount)));
-  const ng = Math.max(0, Math.round(g * (1 - amount)));
-  const nb = Math.max(0, Math.round(b * (1 - amount)));
-  return `#${nr.toString(16).padStart(2, '0')}${ng.toString(16).padStart(2, '0')}${nb.toString(16).padStart(2, '0')}`;
-}
 
 export default function AdminSidebar({
   memberName,
@@ -107,16 +88,16 @@ export default function AdminSidebar({
         textMuted: '', textFaint: '', activeItemBg: '',
       };
     }
-    const { bgPrimary, bgSecondary, accentColor, sidebarTextColor } = sidebarBranding;
+    const { palette } = sidebarBranding;
     return {
-      bg: bgPrimary,
-      bgHover: lighten(bgPrimary, 0.08),
-      border: bgSecondary,
-      accent: accentColor,
-      text: sidebarTextColor,
-      textMuted: hexWithAlpha(sidebarTextColor, 0.6),
-      textFaint: hexWithAlpha(sidebarTextColor, 0.4),
-      activeItemBg: hexWithAlpha(sidebarTextColor, 0.1),
+      bg: palette.bg,
+      bgHover: palette.bgElevated,
+      border: palette.border,
+      accent: palette.accent,
+      text: palette.sidebarText,
+      textMuted: palette.mutedText,
+      textFaint: palette.faintText,
+      activeItemBg: palette.accentSurface,
     };
   }, [sidebarBranding]);
 

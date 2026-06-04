@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { X, XCircle, PenLine, CheckCircle2, Loader2 } from 'lucide-react';
-import { deriveBorderColor } from '@/hooks/useProposal';
+import { deriveBorderColor } from '@/lib/types/branding';
 
 export type FeedbackMode = 'decline' | 'revision';
 

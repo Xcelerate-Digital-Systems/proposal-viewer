@@ -3,7 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
-import { CompanyBranding, deriveBorderColor, ProposalTextPage } from '@/hooks/useProposal';
+import { CompanyBranding, ProposalTextPage } from '@/hooks/useProposal';
+import { useBrandPalette } from '@/hooks/useBrandPalette';
 import { resolveDynamicField } from '@/components/admin/text-editor/DynamicFieldExtension';
 import { fontFamily } from '@/lib/google-fonts';
 import type { MemberBadgeMap } from '@/lib/export/types';
@@ -353,14 +354,14 @@ function MemberBadge({
 
   if (!name) return null;
 
+  const palette = useBrandPalette(branding);
   const textColor = branding.text_page_text_color || branding.sidebar_text_color || '#ffffff';
   const muted = `${textColor}80`;
-  const border = deriveBorderColor(branding.text_page_bg_color || branding.bg_secondary || '#141414');
 
   return (
     <div
       className="flex items-center gap-4 pt-6 mt-8"
-      style={{ borderTop: `1px solid ${border}` }}
+      style={{ borderTop: `1px solid ${palette.border}` }}
     >
       {avatarUrl ? (
         <div
@@ -417,8 +418,9 @@ export default function TextPage({ textPage, branding, clientName, companyName, 
   const headingColor = branding.text_page_heading_color || textColor;
   const fontSize = parseInt(branding.text_page_font_size || '14', 10);
   const accent = branding.accent_color || '#01434A';
-  const border = deriveBorderColor(bgColor);
-  const muted = `${textColor}99`;
+  const palette = useBrandPalette(branding);
+  const border = palette.border;
+  const muted = palette.mutedText;
 
   const context = { clientName, companyName, userName, proposalTitle };
   const doc = textPage.content as TipTapNode;

@@ -18,6 +18,7 @@ import {
   type CurrencyCode,
 } from '@/lib/supabase';
 import type { CompanyBranding } from '@/hooks/useProposal';
+import { useBrandPalette } from '@/hooks/useBrandPalette';
 import { parseQuoteExtras } from '@/lib/types/quote-extras';
 import { formatQuoteNumber } from '@/lib/quote-number';
 import { buildGradientCss, resolveStops } from '@/lib/gradient-stops';
@@ -262,6 +263,7 @@ export default function QuoteSinglePageView({
   companyAbn,
   quoteNumberFormat,
 }: QuoteSinglePageViewProps) {
+  const palette = useBrandPalette(branding);
   const photoPaths = parsePhotos(proposal.project_photos);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [coverImgUrl, setCoverImgUrl] = useState<string | null>(resolvedBgUrl ?? null);
@@ -370,9 +372,9 @@ export default function QuoteSinglePageView({
     proposal.text_page_text_color || branding.text_page_text_color || '#1E2432';
   const headingColor =
     proposal.text_page_heading_color || branding.text_page_heading_color || bodyText;
-  const muted = withAlpha(bodyText, 0.6);
-  const faint = withAlpha(bodyText, 0.45);
-  const hairline = withAlpha(bodyText, 0.1);
+  const muted = palette.mutedText;
+  const faint = palette.faintText;
+  const hairline = palette.borderSubtle;
 
   const bodyFontFamily = fontStack(branding.font_body, 'inherit');
   const headingFontFamily = fontStack(branding.font_heading, 'inherit');
@@ -583,8 +585,8 @@ export default function QuoteSinglePageView({
         <div
           className="mx-8 sm:mx-14 mt-6 rounded-lg px-5 py-3.5 flex items-center gap-3 text-xs print:hidden"
           style={{
-            backgroundColor: withAlpha(bodyText, 0.03),
-            border: `1px solid ${withAlpha(bodyText, 0.08)}`,
+            backgroundColor: palette.accentSurface,
+            border: `1px solid ${palette.borderSubtle}`,
             color: muted,
             fontFamily: headingFontFamily,
           }}
@@ -679,7 +681,7 @@ export default function QuoteSinglePageView({
                   <tr
                     key={it.id}
                     className="align-top last:[&_td]:border-0"
-                    style={{ borderBottom: `1px solid ${withAlpha(bodyText, 0.07)}` }}
+                    style={{ borderBottom: `1px solid ${palette.borderSubtle}` }}
                   >
                     <td className="py-4 pr-6">
                       <div className="text-[15px]" style={{ color: bodyText }}>
@@ -726,7 +728,7 @@ export default function QuoteSinglePageView({
                   <div
                     key={it.id}
                     className="flex items-start justify-between gap-4 py-3"
-                    style={{ borderBottom: `1px solid ${withAlpha(bodyText, 0.07)}` }}
+                    style={{ borderBottom: `1px solid ${palette.borderSubtle}` }}
                   >
                     <div className="min-w-0">
                       <div className="text-[15px]" style={{ color: bodyText }}>

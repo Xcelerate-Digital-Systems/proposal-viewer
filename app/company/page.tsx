@@ -118,7 +118,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           onBgImageUpload={s.handleBgImageUpload}
           onBgImageRemove={s.handleBgImageRemove}
         >
-          <p className="text-xs text-faint mb-3">This is how your proposals will appear to clients.</p>
+          <p className="text-xs text-faint mb-3">Preview how your brand colours apply across client-facing surfaces.</p>
           <ViewerPreview
             accent={isValidHex6(s.accentColor) ? s.accentColor : '#01434A'}
             bgPrimary={isValidHex6(s.bgPrimary) ? s.bgPrimary : '#0f0f0f'}
@@ -165,13 +165,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
 
 /* ── Cover Image Section with live preview ───────────────────────── */
 
-function hexToRgba(hex: string, alpha: number): string {
-  const h = hex.replace('#', '');
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
+import { hexToRgba } from '@/lib/branding/color-math';
 
 function CoverImageSection({
   isOwner,

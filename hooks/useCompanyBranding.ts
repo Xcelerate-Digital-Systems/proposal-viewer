@@ -6,8 +6,9 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
+import { generateBrandPalette, type BrandPalette } from '@/lib/branding';
 
 export interface SidebarBranding {
   logoUrl: string | null;
@@ -16,24 +17,24 @@ export interface SidebarBranding {
   accentColor: string;
   sidebarTextColor: string;
   companyName: string;
+  palette: BrandPalette;
 }
 
 export function useCompanyBranding(
   companyId: string | null,
   accountType: 'agency' | 'client',
 ): SidebarBranding | null {
-  const [branding, setBranding] = useState<SidebarBranding | null>(null);
+  const [raw, setRaw] = useState<Omit<SidebarBranding, 'palette'> | null>(null);
 
   useEffect(() => {
     if (!companyId || accountType !== 'client') {
-      setBranding(null);
+      setRaw(null);
       return;
     }
 
     let cancelled = false;
 
     (async () => {
-      // Look up the parent agency for this client company.
       const { data: clientCompany } = await supabase
         .from('companies')
         .select('agency_id')
@@ -49,7 +50,7 @@ export function useCompanyBranding(
       const data = await res.json();
       if (cancelled) return;
 
-      setBranding({
+      setRaw({
         logoUrl: data.logo_url || null,
         bgPrimary: data.bg_primary || '#0f0f0f',
         bgSecondary: data.bg_secondary || '#141414',
@@ -61,6 +62,14 @@ export function useCompanyBranding(
 
     return () => { cancelled = true; };
   }, [companyId, accountType]);
+
+  const branding = useMemo(() => {
+    if (!raw) return null;
+    return {
+      ...raw,
+      palette: generateBrandPalette(raw.accentColor, raw.bgPrimary, raw.bgSecondary, raw.sidebarTextColor),
+    };
+  }, [raw]);
 
   return branding;
 }

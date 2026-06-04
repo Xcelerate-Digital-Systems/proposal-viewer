@@ -5,7 +5,8 @@ import { useState, useRef, useEffect, useCallback, useMemo, use } from 'react';
 import { FileText, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
 import Sidebar from '@/components/viewer/Sidebar';
-import { useDocument, deriveBorderColor } from '@/hooks/useDocument';
+import { useDocument } from '@/hooks/useDocument';
+import { useBrandPalette } from '@/hooks/useBrandPalette';
 import CoverPage from '@/components/viewer/CoverPage';
 import PdfViewer from '@/components/viewer/PdfViewer';
 import TextPage from '@/components/viewer/TextPage';
@@ -113,10 +114,11 @@ export default function DocumentViewerPage(props: { params: Promise<{ token: str
     return () => { document.title = 'Document Viewer'; };
   }, [doc]);
 
+  const palette = useBrandPalette(branding);
   const bgPrimary = branding.bg_primary || '#0f0f0f';
   const bgSecondary = branding.bg_secondary || '#141414';
   const accent = branding.accent_color || '#01434A';
-  const border = deriveBorderColor(bgSecondary);
+  const border = palette.border;
   const sidebarText = branding.sidebar_text_color || '#ffffff';
   const pageOrientation = doc?.page_orientation === 'landscape' ? 'landscape' as const : 'portrait' as const;
 

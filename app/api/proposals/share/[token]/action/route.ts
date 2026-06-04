@@ -103,7 +103,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       try {
         const { data: company } = await supabase
           .from('companies')
-          .select('name, logo_url, custom_domain, domain_verified, accent_color')
+          .select('name, logo_path, custom_domain, domain_verified, accent_color')
           .eq('id', proposal.company_id)
           .single();
 
@@ -116,7 +116,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
           action: decisionAction,
           proposalTitle: proposal.title,
           companyName,
-          companyLogo: company?.logo_url || null,
+          companyLogo: company?.logo_path
+          ? supabase.storage.from('company-assets').getPublicUrl(company.logo_path).data?.publicUrl || null
+          : null,
           viewerUrl,
           entityType: proposal.entity_type ?? undefined,
           accentColor: company?.accent_color || '#017C87',

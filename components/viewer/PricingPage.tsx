@@ -6,7 +6,8 @@ import {
   formatAUD, pricingEffectiveSubtotal, pricingSubtotal, pricingTotalDiscount, pricingTax,
   normalizePaymentSchedule, milestoneAmount, effectiveItemAmount,
 } from '@/lib/supabase';
-import { CompanyBranding, deriveBorderColor, deriveSurfaceColor } from '@/hooks/useProposal';
+import { CompanyBranding } from '@/hooks/useProposal';
+import { useBrandPalette } from '@/hooks/useBrandPalette';
 import { fontFamily } from '@/lib/google-fonts';
 
 
@@ -56,8 +57,9 @@ export default function PricingPage({ pricing, branding, clientName, orientation
   const bgSecondary = branding.bg_secondary || '#141414';
   const accent = branding.accent_color || '#01434A';
   const textColor = branding.sidebar_text_color || '#ffffff';
-  const border = deriveBorderColor(bgSecondary);
-  const surface = deriveSurfaceColor(bgPrimary, bgSecondary);
+  const palette = useBrandPalette(branding);
+  const border = palette.border;
+  const surface = palette.surface;
 
   const baseSubtotal = pricingSubtotal(pricing.items);
   const totalDiscount = pricingTotalDiscount(pricing.items);
@@ -65,8 +67,8 @@ export default function PricingPage({ pricing, branding, clientName, orientation
   const tax = pricing.tax_enabled ? pricingTax(subtotal, pricing.tax_rate) : 0;
   const total = subtotal + tax;
 
-  const muted = `${textColor}99`;
-  const faint = `${textColor}55`;
+  const muted = palette.mutedText;
+  const faint = palette.faintText;
 
   // Proposal-level pricing colour overrides (set via the Design tab > Pricing
   // card). Each falls back to the current derived colour so the page keeps

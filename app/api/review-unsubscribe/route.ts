@@ -33,17 +33,19 @@ export async function GET(req: NextRequest) {
   const supabase = createServiceClient();
   const { data: project } = await supabase
     .from('review_projects')
-    .select('title')
+    .select('title, companies!inner(accent_color)')
     .eq('id', parsed.projectId)
     .maybeSingle();
 
   const projectTitle = project?.title || 'this review project';
+  const accentColor = (project?.companies as unknown as { accent_color: string } | null)?.accent_color || '#017C87';
 
   return new NextResponse(
     renderPage(
       `Unsubscribe from "${escapeHtml(projectTitle)}"?`,
       `<b>${escapeHtml(parsed.email)}</b> will stop receiving all email notifications for this project.`,
       token,
+      accentColor,
     ),
     { headers: { 'Content-Type': 'text/html; charset=utf-8' } },
   );
@@ -88,11 +90,11 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function renderPage(heading: string, body: string | null, token: string | null): string {
+function renderPage(heading: string, body: string | null, token: string | null, accentColor = '#017C87'): string {
   const formHtml = token
     ? `<form method="POST" style="margin-top:24px;">
          <input type="hidden" name="token" value="${escapeHtml(token)}" />
-         <button type="submit" style="background:#017C87;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">
+         <button type="submit" style="background:${escapeHtml(accentColor)};color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">
            Unsubscribe
          </button>
        </form>`
