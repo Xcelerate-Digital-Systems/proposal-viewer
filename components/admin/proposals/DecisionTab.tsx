@@ -11,6 +11,8 @@ import { ListOrdered, FileText, Plus, X, RotateCcw, MessageSquare, PenTool } fro
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
+import { useEditorUndo } from '@/components/admin/EditorUndoContext';
+import { inputClassName } from '@/components/ui/FormField';
 import Toggle from '@/components/ui/Toggle';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import DecisionPageCard from '@/components/admin/proposals/DecisionPageCard';
@@ -76,16 +78,39 @@ export default function DecisionTab({
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   useReportSaveStatus(saveStatus);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const undo = useEditorUndo();
+  const lastSavedExtrasRef = useRef<DecisionExtras>(parsed);
 
   const persist = useCallback(
     async (next: DecisionExtras) => {
       setSaveStatus('saving');
+      const prev = { ...lastSavedExtrasRef.current };
       try {
         const { error } = await supabase
           .from(table)
           .update({ decision_extras: next })
           .eq('id', entityId);
         if (error) throw error;
+
+        undo?.push('Edit decision page', async () => {
+          setSteps(prev.next_steps);
+          setTerms(prev.terms);
+          setAcceptHeading(prev.accept_heading);
+          setAcceptSubtitle(prev.accept_subtitle);
+          setAgreementText(prev.agreement_text);
+          setAcceptButtonLabel(prev.accept_button_label);
+          setDeclineButtonLabel(prev.decline_button_label);
+          setRevisionButtonLabel(prev.revision_button_label);
+          setDeclineHeading(prev.decline_heading);
+          setDeclineSubtitle(prev.decline_subtitle);
+          setRevisionHeading(prev.revision_heading);
+          setRevisionSubtitle(prev.revision_subtitle);
+          lastSavedExtrasRef.current = prev;
+          await supabase.from(table).update({ decision_extras: prev }).eq('id', entityId);
+          onSaved?.();
+        });
+
+        lastSavedExtrasRef.current = next;
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 2000);
         onSaved?.();
@@ -94,7 +119,7 @@ export default function DecisionTab({
         toast.error('Failed to save Decision page content');
       }
     },
-    [entityId, table, toast, onSaved],
+    [entityId, table, toast, onSaved, undo],
   );
 
   const schedule = useCallback(
@@ -252,7 +277,7 @@ export default function DecisionTab({
                   setStepsAndSave(steps.map((s, idx) => (idx === i ? e.target.value : s)))
                 }
                 placeholder={DEFAULT_DECISION_NEXT_STEPS[i] ?? 'Add a step…'}
-                className="flex-1 px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+                className="flex-1 px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
               />
               <button
                 type="button"
@@ -312,7 +337,7 @@ export default function DecisionTab({
               value={acceptHeading}
               onChange={(e) => setAcceptHeadingAndSave(e.target.value)}
               placeholder={DEFAULT_DECISION_ACCEPT_HEADING}
-              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className={inputClassName}
             />
           </div>
           <div className="space-y-1.5">
@@ -322,7 +347,7 @@ export default function DecisionTab({
               onChange={(e) => setAcceptSubtitleAndSave(e.target.value)}
               placeholder={DEFAULT_DECISION_ACCEPT_SUBTITLE}
               rows={2}
-              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
+              className={`${inputClassName} resize-none`}
             />
           </div>
           <div className="space-y-1.5">
@@ -332,7 +357,7 @@ export default function DecisionTab({
               onChange={(e) => setAgreementTextAndSave(e.target.value)}
               placeholder={DEFAULT_DECISION_AGREEMENT_TEXT}
               rows={2}
-              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
+              className={`${inputClassName} resize-none`}
             />
           </div>
         </div>
@@ -373,7 +398,7 @@ export default function DecisionTab({
               value={declineHeading}
               onChange={(e) => setDeclineHeadingAndSave(e.target.value)}
               placeholder={DEFAULT_DECISION_DECLINE_HEADING}
-              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className={inputClassName}
             />
           </div>
           <div className="space-y-1.5">
@@ -383,7 +408,7 @@ export default function DecisionTab({
               onChange={(e) => setDeclineSubtitleAndSave(e.target.value)}
               placeholder={DEFAULT_DECISION_DECLINE_SUBTITLE}
               rows={2}
-              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
+              className={`${inputClassName} resize-none`}
             />
           </div>
           <div className="space-y-1.5">
@@ -393,7 +418,7 @@ export default function DecisionTab({
               value={revisionHeading}
               onChange={(e) => setRevisionHeadingAndSave(e.target.value)}
               placeholder={DEFAULT_DECISION_REVISION_HEADING}
-              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className={inputClassName}
             />
           </div>
           <div className="space-y-1.5">
@@ -403,7 +428,7 @@ export default function DecisionTab({
               onChange={(e) => setRevisionSubtitleAndSave(e.target.value)}
               placeholder={DEFAULT_DECISION_REVISION_SUBTITLE}
               rows={2}
-              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
+              className={`${inputClassName} resize-none`}
             />
           </div>
         </div>
@@ -442,7 +467,7 @@ export default function DecisionTab({
               value={acceptButtonLabel}
               onChange={(e) => setAcceptButtonLabelAndSave(e.target.value)}
               placeholder={DEFAULT_DECISION_ACCEPT_BUTTON_LABEL}
-              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className={inputClassName}
             />
           </div>
           <div className="space-y-1.5">
@@ -452,7 +477,7 @@ export default function DecisionTab({
               value={revisionButtonLabel}
               onChange={(e) => setRevisionButtonLabelAndSave(e.target.value)}
               placeholder={DEFAULT_DECISION_REVISION_BUTTON_LABEL}
-              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className={inputClassName}
             />
           </div>
           <div className="space-y-1.5">
@@ -462,7 +487,7 @@ export default function DecisionTab({
               value={declineButtonLabel}
               onChange={(e) => setDeclineButtonLabelAndSave(e.target.value)}
               placeholder={DEFAULT_DECISION_DECLINE_BUTTON_LABEL}
-              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className={inputClassName}
             />
           </div>
         </div>
@@ -488,7 +513,7 @@ export default function DecisionTab({
           value={terms}
           onChange={(e) => setTermsAndSave(e.target.value)}
           rows={6}
-          className="w-full px-3 py-2.5 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
+          className={`${inputClassName} resize-none`}
         />
       </SectionCard>
       </div>

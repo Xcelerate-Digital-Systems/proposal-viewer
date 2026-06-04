@@ -12,17 +12,17 @@ interface ProposalTabsProps {
 
 type TabGroup = 'content' | 'setup';
 
-const tabs: { key: string; label: string; icon: typeof Pencil; path: string; group: TabGroup }[] = [
-  { key: 'cover',      label: 'Cover',    icon: ImageIcon,    path: 'cover',      group: 'content' },
-  { key: 'pages',      label: 'Pages',    icon: Pencil,       path: 'pages',      group: 'content' },
-  { key: 'text-pages', label: 'Content',   icon: PenLine,      path: 'text-pages', group: 'content' },
-  { key: 'pricing',    label: 'Quote',    icon: DollarSign,   path: 'pricing',    group: 'content' },
-  { key: 'packages',   label: 'Packages', icon: Package,      path: 'packages',   group: 'content' },
-  { key: 'decision',   label: 'Decision', icon: CheckCircle2, path: 'decision',   group: 'content' },
+const tabs: { key: string; label: string; icon: typeof Pencil; path: string; group: TabGroup; hint?: string }[] = [
+  { key: 'cover',      label: 'Cover',    icon: ImageIcon,    path: 'cover',      group: 'content', hint: 'Cover page layout and content' },
+  { key: 'pages',      label: 'Pages',    icon: Pencil,       path: 'pages',      group: 'content', hint: 'Add, remove, and reorder pages' },
+  { key: 'text-pages', label: 'Content',  icon: PenLine,      path: 'text-pages', group: 'content', hint: 'Write and edit text page content' },
+  { key: 'pricing',    label: 'Quote',    icon: DollarSign,   path: 'pricing',    group: 'content', hint: 'Line items and pricing' },
+  { key: 'packages',   label: 'Packages', icon: Package,      path: 'packages',   group: 'content', hint: 'Tiered pricing packages for clients to choose from' },
+  { key: 'decision',   label: 'Decision', icon: CheckCircle2, path: 'decision',   group: 'content', hint: 'Accept, decline, and revision form shown to clients' },
 
-  { key: 'design',     label: 'Design',   icon: Paintbrush,   path: 'design',     group: 'setup' },
-  { key: 'details',    label: 'Details',  icon: Settings,     path: 'details',    group: 'setup' },
-  { key: 'analytics',  label: 'Analytics',icon: BarChart3,    path: 'analytics',  group: 'setup' },
+  { key: 'design',     label: 'Design',   icon: Paintbrush,   path: 'design',     group: 'setup', hint: 'Fonts, colours, and page styling' },
+  { key: 'details',    label: 'Details',  icon: Settings,     path: 'details',    group: 'setup', hint: 'Title, client name, and post-acceptance settings' },
+  { key: 'analytics',  label: 'Analytics',icon: BarChart3,    path: 'analytics',  group: 'setup', hint: 'View engagement and session data' },
 ];
 
 function activeKeyFromPath(pathname: string | null): string {
@@ -74,6 +74,7 @@ export default function ProposalTabs({ proposalId }: ProposalTabsProps) {
             {showDivider && <div className="w-px h-5 bg-edge mx-2" aria-hidden />}
             <Link
               href={`/proposals/${proposalId}/${tab.path}`}
+              title={tab.hint}
               className={`relative flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${isActive
                 ? 'border-teal text-teal'
                 : 'border-transparent text-dim hover:text-prose hover:border-edge-hover'

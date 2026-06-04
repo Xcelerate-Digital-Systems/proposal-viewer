@@ -6,6 +6,7 @@ import { Loader2, RotateCcw, ShieldCheck } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { parseQuoteExtras, DEFAULT_QUOTE_BADGES } from '@/lib/types/quote-extras';
+import { inputClassName } from '@/components/ui/FormField';
 import SectionCard from '../SectionCard';
 import { Button } from '@/components/ui/Button';
 
@@ -68,7 +69,7 @@ export default function BadgesSection({ proposal, onSaved }: Props) {
             }
             placeholder={DEFAULT_QUOTE_BADGES[i]}
             maxLength={32}
-            className="px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+            className={`${inputClassName} !w-auto`}
           />
         ))}
       </div>

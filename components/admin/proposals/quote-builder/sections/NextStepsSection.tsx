@@ -6,6 +6,7 @@ import { RotateCcw, ListOrdered, Plus, X } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { parseQuoteExtras, DEFAULT_QUOTE_NEXT_STEPS } from '@/lib/types/quote-extras';
+import { inputClassName } from '@/components/ui/FormField';
 import SectionCard from '../SectionCard';
 import { Button } from '@/components/ui/Button';
 
@@ -71,7 +72,7 @@ export default function NextStepsSection({ proposal, onSaved }: Props) {
                 setSteps((prev) => prev.map((s, idx) => (idx === i ? e.target.value : s)))
               }
               placeholder={DEFAULT_QUOTE_NEXT_STEPS[i] ?? 'Add a step…'}
-              className="flex-1 px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+              className={`${inputClassName} !w-auto flex-1`}
             />
             <button
               type="button"

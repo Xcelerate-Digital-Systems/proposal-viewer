@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { inputClassName } from '@/components/ui/FormField';
 import { isValidHttpUrl } from '@/lib/sanitize';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
+import { useEditorUndo } from '@/components/admin/EditorUndoContext';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 
 type PostAcceptAction = 'redirect' | 'message' | null;
@@ -55,12 +56,14 @@ export default function PostAcceptSection({
 }: PostAcceptSectionProps) {
   const toast = useToast();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const undo = useEditorUndo();
 
   const [action, setAction] = useState<PostAcceptAction>(initialAction);
   const [redirectUrl, setRedirectUrl] = useState(initialRedirectUrl ?? '');
   const [message, setMessage] = useState(initialMessage ?? '');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   useReportSaveStatus(saveStatus);
+  const lastSavedRef = useRef({ action: initialAction, url: initialRedirectUrl ?? '', message: initialMessage ?? '' });
 
   const isTemplate = table === 'proposal_templates';
 
@@ -70,6 +73,7 @@ export default function PostAcceptSection({
     currentMessage: string,
   ) => {
     setSaveStatus('saving');
+    const prev = { ...lastSavedRef.current };
     try {
       const trimmedUrl = currentUrl.trim() || null;
       if (currentAction === 'redirect' && trimmedUrl && !isValidHttpUrl(trimmedUrl)) {
@@ -88,13 +92,27 @@ export default function PostAcceptSection({
         .eq('id', entityId);
 
       if (error) throw error;
+
+      undo?.push('Edit post-acceptance', async () => {
+        setAction(prev.action);
+        setRedirectUrl(prev.url);
+        setMessage(prev.message);
+        lastSavedRef.current = prev;
+        await supabase.from(table).update({
+          post_accept_action: prev.action,
+          post_accept_redirect_url: prev.action === 'redirect' ? (prev.url.trim() || null) : null,
+          post_accept_message: prev.action === 'message' ? (prev.message.trim() || null) : null,
+        }).eq('id', entityId);
+      });
+
+      lastSavedRef.current = { action: currentAction, url: currentUrl, message: currentMessage };
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
     } catch {
       setSaveStatus('idle');
       toast.error('Failed to save post-acceptance settings');
     }
-  }, [entityId, table, toast]);
+  }, [entityId, table, toast, undo]);
 
   const scheduleSave = useCallback((
     newAction: PostAcceptAction,

@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
+import { inputClassName } from '@/components/ui/FormField';
 import SectionCard from '../SectionCard';
 import { Button } from '@/components/ui/Button';
 
@@ -60,7 +61,7 @@ export default function ProjectDetailsSection({
             onChange={(e) => setTitle(e.target.value)}
             onBlur={() => dirty && save()}
             placeholder="e.g. Full Bathroom Renovation"
-            className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+            className={inputClassName}
           />
           <p className="text-xs text-faint mt-1">
             The main heading shown on the customer&apos;s quote.
@@ -77,7 +78,7 @@ export default function ProjectDetailsSection({
             onBlur={() => dirty && save()}
             rows={6}
             placeholder="Describe what's included in this quote. This appears prominently on the customer's quote."
-            className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y"
+            className={`${inputClassName} resize-y`}
           />
         </div>
 

@@ -21,6 +21,25 @@ interface PreviewProps {
   entityKey: 'proposal_id' | 'template_id';
 }
 
+/** Live design-tab font overrides so custom font changes reflect immediately
+ *  in previews without waiting for the debounced save to land. */
+export interface FontLiveOverrides {
+  title_font_family?: string | null;
+  title_font_weight?: string | null;
+  title_font_size?: string | null;
+  font_heading?: string | null;
+  font_heading_weight?: string | null;
+  font_heading_size?: string | null;
+  font_body?: string | null;
+  font_body_weight?: string | null;
+  font_body_size?: string | null;
+  font_button?: string | null;
+  font_button_weight?: string | null;
+  title_font_transform?: string | null;
+  font_heading_transform?: string | null;
+  font_body_transform?: string | null;
+}
+
 /** Live design-tab colour overrides that take precedence over whatever was
  *  last saved to the entity row. Without this, the preview only refreshes
  *  after the debounced save lands (or never, if the parent doesn't re-fetch),
@@ -41,7 +60,7 @@ async function loadBranding(entityId: string, entityKey: 'proposal_id' | 'templa
   const table = entityKey === 'template_id' ? 'proposal_templates' : 'proposals';
   const { data: ent } = await supabase
     .from(table)
-    .select('company_id, text_page_bg_color, text_page_text_color, text_page_heading_color, title_font_family, title_font_weight, title_font_size, page_num_circle_color, page_num_text_color, bg_image_path, bg_image_overlay_opacity, bg_image_blur')
+    .select('company_id, text_page_bg_color, text_page_text_color, text_page_heading_color, title_font_family, title_font_weight, title_font_size, font_heading_family, font_heading_weight, font_heading_size, font_body_family, font_body_weight, font_button_family, font_button_weight, title_font_transform, font_heading_transform, font_body_transform, text_page_font_size, page_num_circle_color, page_num_text_color, bg_image_path, bg_image_overlay_opacity, bg_image_blur')
     .eq('id', entityId)
     .single();
   const cid = (ent?.company_id as string | undefined) ?? null;
@@ -58,6 +77,17 @@ async function loadBranding(entityId: string, entityKey: 'proposal_id' | 'templa
     if (ent.title_font_family) merged.title_font_family = ent.title_font_family;
     if (ent.title_font_weight) merged.title_font_weight = ent.title_font_weight;
     if (ent.title_font_size) merged.title_font_size = ent.title_font_size;
+    if (ent.font_heading_family) merged.font_heading = ent.font_heading_family;
+    if (ent.font_heading_weight) merged.font_heading_weight = ent.font_heading_weight;
+    if (ent.font_heading_size) merged.font_heading_size = ent.font_heading_size;
+    if (ent.font_body_family) merged.font_body = ent.font_body_family;
+    if (ent.font_body_weight) merged.font_body_weight = ent.font_body_weight;
+    if (ent.font_button_family) merged.font_button = ent.font_button_family;
+    if (ent.font_button_weight) merged.font_button_weight = ent.font_button_weight;
+    if (ent.title_font_transform) merged.title_font_transform = ent.title_font_transform;
+    if (ent.font_heading_transform) merged.font_heading_transform = ent.font_heading_transform;
+    if (ent.font_body_transform) merged.font_body_transform = ent.font_body_transform;
+    if (ent.text_page_font_size) merged.text_page_font_size = ent.text_page_font_size;
     if (ent.bg_image_path) {
       const { data: url } = supabase.storage.from('company-assets').getPublicUrl(ent.bg_image_path);
       if (url?.publicUrl) merged.bg_image_url = url.publicUrl;
@@ -68,6 +98,26 @@ async function loadBranding(entityId: string, entityKey: 'proposal_id' | 'templa
   return merged;
 }
 
+function applyFontOverrides(branding: CompanyBranding, fonts?: FontLiveOverrides): CompanyBranding {
+  if (!fonts) return branding;
+  const b = { ...branding };
+  if (fonts.title_font_family !== undefined) b.title_font_family = fonts.title_font_family;
+  if (fonts.title_font_weight !== undefined) b.title_font_weight = fonts.title_font_weight;
+  if (fonts.title_font_size !== undefined) b.title_font_size = fonts.title_font_size;
+  if (fonts.font_heading !== undefined) b.font_heading = fonts.font_heading;
+  if (fonts.font_heading_weight !== undefined) b.font_heading_weight = fonts.font_heading_weight;
+  if (fonts.font_heading_size !== undefined) b.font_heading_size = fonts.font_heading_size;
+  if (fonts.font_body !== undefined) b.font_body = fonts.font_body;
+  if (fonts.font_body_weight !== undefined) b.font_body_weight = fonts.font_body_weight;
+  if (fonts.font_body_size !== undefined) b.text_page_font_size = fonts.font_body_size ?? b.text_page_font_size;
+  if (fonts.font_button !== undefined) b.font_button = fonts.font_button;
+  if (fonts.font_button_weight !== undefined) b.font_button_weight = fonts.font_button_weight;
+  if (fonts.title_font_transform !== undefined) b.title_font_transform = fonts.title_font_transform;
+  if (fonts.font_heading_transform !== undefined) b.font_heading_transform = fonts.font_heading_transform;
+  if (fonts.font_body_transform !== undefined) b.font_body_transform = fonts.font_body_transform;
+  return b;
+}
+
 /* ============================================================
    Pricing Design Preview
    ============================================================ */
@@ -76,7 +126,8 @@ export function PricingDesignPreview({
   entityId,
   entityKey,
   live,
-}: PreviewProps & { live?: PricingPreviewLive }) {
+  liveFonts,
+}: PreviewProps & { live?: PricingPreviewLive; liveFonts?: FontLiveOverrides }) {
   const [loaded, setLoaded] = useState(false);
   const [pricing, setPricing] = useState<Record<string, unknown> | null>(null);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
@@ -123,10 +174,7 @@ export function PricingDesignPreview({
     );
   }
 
-  // Merge live colour edits over the fetched branding so adjusting a picker
-  // updates the preview on the next keystroke instead of waiting for save +
-  // refetch (which never happens — the parent doesn't re-mount us).
-  const mergedBranding: CompanyBranding = {
+  const mergedBranding: CompanyBranding = applyFontOverrides({
     ...branding,
     ...(live?.pricing_header_text_color !== undefined
       ? { pricing_header_text_color: live.pricing_header_text_color }
@@ -152,7 +200,7 @@ export function PricingDesignPreview({
     ...(live?.pricing_dot_color !== undefined
       ? { pricing_dot_color: live.pricing_dot_color }
       : {}),
-  };
+  }, liveFonts);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return <PricingPreview pricing={pricing as any} branding={mergedBranding} />;
@@ -282,7 +330,8 @@ export function DecisionDesignPreview({
   entityId,
   entityKey,
   live,
-}: PreviewProps & { live?: DecisionPreviewLive }) {
+  liveFonts,
+}: PreviewProps & { live?: DecisionPreviewLive; liveFonts?: FontLiveOverrides }) {
   const [loaded, setLoaded] = useState(false);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [requireSignature, setRequireSignature] = useState(false);
@@ -310,32 +359,34 @@ export function DecisionDesignPreview({
     );
   }
 
+  const b = applyFontOverrides(branding, liveFonts);
+
   const bodyBg =
     live?.decision_bg_color ??
-    branding.decision_action_bg_color ??
-    branding.text_page_bg_color ??
+    b.decision_action_bg_color ??
+    b.text_page_bg_color ??
     '#ffffff';
   const bodyText =
     live?.decision_text_color ??
-    branding.decision_action_text_color ??
-    branding.text_page_text_color ??
+    b.decision_action_text_color ??
+    b.text_page_text_color ??
     '#1E2432';
   const headingColor =
     live?.decision_heading_color ??
-    branding.decision_action_heading_color ??
-    branding.text_page_heading_color ??
+    b.decision_action_heading_color ??
+    b.text_page_heading_color ??
     bodyText;
   const muted = withAlpha(bodyText, 0.6);
   const faint = withAlpha(bodyText, 0.45);
   const hairline = withAlpha(bodyText, 0.1);
-  const headingFontFamily = fontStack(branding.font_heading, 'inherit');
-  const bodyFontFamily = fontStack(branding.font_body, 'inherit');
-  const bodyFontWeight = branding.font_body_weight ? Number(branding.font_body_weight) || undefined : undefined;
+  const headingFontFamily = fontStack(b.font_heading, 'inherit');
+  const bodyFontFamily = fontStack(b.font_body, 'inherit');
+  const bodyFontWeight = b.font_body_weight ? Number(b.font_body_weight) || undefined : undefined;
   const titleFontFamily = fontStack(
-    branding.title_font_family || branding.font_heading,
+    b.title_font_family || b.font_heading,
     'inherit',
   );
-  const titleFontWeight = branding.title_font_weight || '600';
+  const titleFontWeight = b.title_font_weight || '600';
   const titleStyle: React.CSSProperties = {
     fontFamily: titleFontFamily,
     fontWeight: Number(titleFontWeight) || 600,
@@ -348,7 +399,7 @@ export function DecisionDesignPreview({
 
   return (
     <ViewerPagePreview
-      branding={branding}
+      branding={b}
       label="Decision"
       icon={<CheckSquare size={11} />}
       footer="Live preview · decision page colours"
@@ -402,12 +453,12 @@ export function DecisionDesignPreview({
               titleStyle,
               mutedStyle: { color: muted },
             }}
-            acceptButtonColor={live?.decision_accept_button_color ?? branding.decision_action_accent_color}
-            declineButtonColor={live?.decision_decline_button_color ?? branding.decision_decline_button_color}
-            revisionButtonColor={live?.decision_revision_button_color ?? branding.decision_revision_button_color}
-            checkboxColor={live?.decision_checkbox_color ?? branding.decision_checkbox_color}
-            buttonFontFamily={branding.font_button || branding.font_heading}
-            buttonFontWeight={branding.font_button_weight || branding.font_heading_weight}
+            acceptButtonColor={live?.decision_accept_button_color ?? b.decision_action_accent_color}
+            declineButtonColor={live?.decision_decline_button_color ?? b.decision_decline_button_color}
+            revisionButtonColor={live?.decision_revision_button_color ?? b.decision_revision_button_color}
+            checkboxColor={live?.decision_checkbox_color ?? b.decision_checkbox_color}
+            buttonFontFamily={b.font_button || b.font_heading}
+            buttonFontWeight={b.font_button_weight || b.font_heading_weight}
           />
         </div>
       </div>

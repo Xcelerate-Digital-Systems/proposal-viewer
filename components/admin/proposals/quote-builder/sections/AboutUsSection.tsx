@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { parseQuoteExtras } from '@/lib/types/quote-extras';
+import { inputClassName } from '@/components/ui/FormField';
 import SectionCard from '../SectionCard';
 import { Button } from '@/components/ui/Button';
 
@@ -46,7 +47,7 @@ export default function AboutUsSection({ proposal, onSaved }: Props) {
         onBlur={() => dirty && save()}
         rows={5}
         placeholder="We are a fully licensed renovation company with…"
-        className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y"
+        className={`${inputClassName} resize-y`}
       />
       <div className="flex items-center justify-end mt-3">
         <Button

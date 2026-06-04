@@ -25,7 +25,7 @@ import ColorPickerField from '@/components/ui/ColorPickerField';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import CoverDesignPanel from '@/components/admin/builder-sections/CoverDesignPanel';
 import PackagesDesignPanel from '@/components/admin/builder-sections/PackagesDesignPanel';
-import { PricingDesignPreview, DecisionDesignPreview } from '@/components/admin/builder-sections/DesignPreviews';
+import { PricingDesignPreview, DecisionDesignPreview, type FontLiveOverrides } from '@/components/admin/builder-sections/DesignPreviews';
 import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
 import type { CoverEditorEntity } from '@/components/admin/shared/cover-editor/CoverEditorTypes';
 import {
@@ -332,9 +332,23 @@ export default function ViewerStyleSection({
 }: ViewerStyleSectionProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Pull a plain-text snippet from the entity's first text page so the
-  // Globals live preview shows the user's actual body copy instead of
-  // canned "Body text on a proposal page" filler. Falls back to a sample.
+  const liveFonts: FontLiveOverrides = {
+    title_font_family: titleFontFamily,
+    title_font_weight: titleFontWeight,
+    title_font_size: titleFontSize || null,
+    font_heading: fontHeadingFamily,
+    font_heading_weight: fontHeadingWeight,
+    font_heading_size: fontHeadingSize || null,
+    font_body: fontBodyFamily,
+    font_body_weight: fontBodyWeight,
+    font_body_size: fontBodySize || null,
+    font_button: fontButtonFamily,
+    font_button_weight: fontButtonWeight,
+    title_font_transform: titleFontTransform,
+    font_heading_transform: fontHeadingTransform,
+    font_body_transform: fontBodyTransform,
+  };
+
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(['Globals']));
   const toggleGroup = (name: string) =>
     setOpenGroups((prev) => {
@@ -669,7 +683,7 @@ export default function ViewerStyleSection({
               style={{
                 color: tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color,
                 fontFamily: fontFamily(titleFontFamily || fontHeadingFamily || companyDefaults.font_heading, 'system-ui, sans-serif'),
-                fontWeight: Number(titleFontWeight || fontHeadingWeight || '700'),
+                fontWeight: Number(titleFontWeight || fontHeadingWeight || '600'),
                 fontSize: titleFontSize ? `${titleFontSize}px` : '36px',
                 textTransform: (titleFontTransform || fontHeadingTransform || 'none') as React.CSSProperties['textTransform'],
               }}
@@ -681,7 +695,7 @@ export default function ViewerStyleSection({
               style={{
                 color: tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color,
                 fontFamily: fontFamily(fontHeadingFamily || companyDefaults.font_heading, 'system-ui, sans-serif'),
-                fontWeight: Number(fontHeadingWeight || '600'),
+                fontWeight: fontHeadingWeight ? Number(fontHeadingWeight) : undefined,
                 fontSize: fontHeadingSize ? `${fontHeadingSize}px` : '22px',
                 textTransform: (fontHeadingTransform || 'none') as React.CSSProperties['textTransform'],
               }}
@@ -849,6 +863,7 @@ export default function ViewerStyleSection({
                   pricing_accent_bar_color: pricingAccentBarColor,
                   pricing_dot_color: pricingDotColor,
                 }}
+                liveFonts={liveFonts}
               />
             </StickyPreviewAside>
           </div>}
@@ -972,6 +987,7 @@ export default function ViewerStyleSection({
                   decision_revision_button_color: decisionRevisionButtonColor,
                   decision_checkbox_color: decisionCheckboxColor,
                 }}
+                liveFonts={liveFonts}
               />
             </StickyPreviewAside>
           </div>}

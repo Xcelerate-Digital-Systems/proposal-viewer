@@ -6,6 +6,7 @@ import { RotateCcw } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { parseQuoteExtras, DEFAULT_QUOTE_TERMS } from '@/lib/types/quote-extras';
+import { inputClassName } from '@/components/ui/FormField';
 import SectionCard from '../SectionCard';
 import { Button } from '@/components/ui/Button';
 
@@ -57,7 +58,7 @@ export default function TermsSection({ proposal, onSaved }: Props) {
         onBlur={() => dirty && save()}
         rows={6}
         placeholder="Payment is due within…"
-        className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y"
+        className={`${inputClassName} resize-y`}
       />
       <div className="flex items-center justify-between mt-3">
         <span className="text-xs text-faint">{text.length} characters</span>

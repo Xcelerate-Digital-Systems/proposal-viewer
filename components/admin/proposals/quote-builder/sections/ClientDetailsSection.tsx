@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { ChevronDown, Loader2, FlaskConical, User } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
+import { inputClassName } from '@/components/ui/FormField';
 import SectionCard from '../SectionCard';
 import { Button } from '@/components/ui/Button';
 
@@ -265,7 +266,7 @@ export default function ClientDetailsSection({
               onChange={(e) => update(f.key, e.target.value)}
               placeholder={f.placeholder}
               disabled={mode === 'test'}
-              className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 disabled:bg-surface disabled:text-dim"
+              className={`${inputClassName} disabled:bg-surface disabled:text-dim`}
             />
           </div>
         ))}

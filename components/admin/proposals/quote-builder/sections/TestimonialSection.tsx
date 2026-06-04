@@ -6,6 +6,7 @@ import { Quote } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { parseQuoteExtras } from '@/lib/types/quote-extras';
+import { inputClassName } from '@/components/ui/FormField';
 import SectionCard from '../SectionCard';
 import { Button } from '@/components/ui/Button';
 
@@ -50,7 +51,7 @@ export default function TestimonialSection({ proposal, onSaved }: Props) {
         onBlur={() => dirty && save()}
         rows={4}
         placeholder='"They turned up exactly when they said…"'
-        className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y mb-3"
+        className={`${inputClassName} resize-y mb-3`}
       />
       <input
         type="text"
@@ -58,7 +59,7 @@ export default function TestimonialSection({ proposal, onSaved }: Props) {
         onChange={(e) => setAuthor(e.target.value)}
         onBlur={() => dirty && save()}
         placeholder="— Sarah T., Mosman NSW"
-        className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+        className={inputClassName}
       />
       <div className="flex items-center justify-end mt-3">
         <Button
