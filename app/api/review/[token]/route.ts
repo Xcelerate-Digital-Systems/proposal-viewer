@@ -5,7 +5,7 @@ import {
 } from '@/lib/feedback/visibility';
 
 // Explicit column allowlists — never SELECT * on public endpoints.
-const PROJECT_COLUMNS = 'id, company_id, title, client_name, status, share_mode, shared_views, pause_new_comments, show_thread_numbers, show_version_selector, cover_image_path, reviewer_note, reviewer_note_show, reviewer_note_updated_at, created_at, updated_at';
+const PROJECT_COLUMNS = 'id, company_id, title, client_name, status, share_mode, shared_views, pause_new_comments, reviewer_note, reviewer_note_show, reviewer_note_updated_at, created_at, updated_at';
 const ITEM_COLUMNS = 'id, review_project_id, title, type, status, sort_order, url, content, share_token, ad_platform, ad_headline, ad_primary_text, ad_description, ad_cta, ad_display_link, thumbnail_url, preview_image_url, screenshot_url, ad_headline_variations, ad_primary_text_variations, ad_description_variations, sms_content, sender_name, has_variations, meta_data, created_at, updated_at';
 const COMMENT_COLUMNS = 'id, review_item_id, parent_comment_id, thread_number, author_name, author_email, author_type, content, comment_type, pin_x, pin_y, attachments, annotation_data, screenshot_url, highlight_start, highlight_end, highlight_text, highlight_element_path, resolved, resolved_by, resolved_at, priority, video_url, version_id, ad_copy_variation_id, stage_at_creation, created_at, updated_at';
 const VERSION_COLUMNS = 'id, review_item_id, version_number, file_url, notes, uploaded_by_name, uploaded_by_email, url, content, ad_headline, ad_primary_text, ad_description, ad_cta, ad_display_link, thumbnail_url, sms_content, ad_headline_variations, ad_primary_text_variations, ad_description_variations, created_at';
