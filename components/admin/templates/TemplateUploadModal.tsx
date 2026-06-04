@@ -38,13 +38,19 @@ export default function TemplateUploadModal({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [status, setStatus] = useState('');
 
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
+    if (file && file.size > MAX_FILE_SIZE) {
+      toast.error(`File is too large (${formatSize(file.size)}). Maximum size is 50 MB.`);
+      return;
+    }
+
     setUploading(true);
 
-    // No PDF — create a blank template and navigate to it
     if (!file) {
       setStatus('Creating template...');
       const res = await authedFetch('/api/templates', {
@@ -58,7 +64,8 @@ export default function TemplateUploadModal({
       });
 
       if (!res.ok) {
-        toast.error('Failed to create template.');
+        const errBody = await res.json().catch(() => null);
+        toast.error(errBody?.error || 'Failed to create template. Check your connection and try again.');
         setUploading(false);
         setStatus('');
         return;
@@ -97,8 +104,9 @@ export default function TemplateUploadModal({
         xhr.setRequestHeader('x-upsert', 'true');
         xhr.send(file);
       });
-    } catch {
-      toast.error('Upload failed. Please try again.');
+    } catch (uploadErr) {
+      const msg = uploadErr instanceof Error ? uploadErr.message : 'Network error';
+      toast.error(`Upload failed: ${msg}. Check your connection and try again.`);
       setStatus('');
       setUploading(false);
       return;
@@ -120,7 +128,8 @@ export default function TemplateUploadModal({
     });
 
     if (!res.ok) {
-      toast.error('Failed to process template. Please try again.');
+      const errBody = await res.json().catch(() => null);
+      toast.error(errBody?.error || 'Failed to split PDF into pages. The file may be corrupted or password-protected.');
       setStatus('');
       setUploading(false);
       return;

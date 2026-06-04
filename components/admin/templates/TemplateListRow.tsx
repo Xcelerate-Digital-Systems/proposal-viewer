@@ -85,7 +85,7 @@ if (pages && pages.length > 0) {
       {/* Name + description */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 min-w-0">
-          <h3 className="text-sm font-medium text-ink truncate group-hover:text-teal transition-colors">
+          <h3 className="text-sm font-medium text-ink truncate">
             {t.name}
           </h3>
           {t.entity_type === 'quote' && (
@@ -110,7 +110,7 @@ if (pages && pages.length > 0) {
       </span>
 
       {/* Actions */}
-      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
         {onCreateProposal && (
           <button
             onClick={(e) => { e.stopPropagation(); onCreateProposal(t.id); }}

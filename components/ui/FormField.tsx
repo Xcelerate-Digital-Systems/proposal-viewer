@@ -31,6 +31,8 @@ export interface FieldConfig {
   half?: boolean;
   /** Number of textarea rows — defaults to 2 */
   rows?: number;
+  /** Max character length */
+  maxLength?: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -51,7 +53,7 @@ interface FormFieldProps {
 }
 
 export function FormField({ config, value, onChange, disabled, className }: FormFieldProps) {
-  const { key, label, required, type = 'text', placeholder, optional, rows = 2 } = config;
+  const { key, label, required, type = 'text', placeholder, optional, rows = 2, maxLength } = config;
 
   return (
     <div className={className}>
@@ -65,6 +67,7 @@ export function FormField({ config, value, onChange, disabled, className }: Form
           value={value}
           onChange={(e) => onChange(e.target.value)}
           rows={rows}
+          maxLength={maxLength}
           placeholder={placeholder}
           disabled={disabled}
           className={`${inputClassName} resize-none`}
@@ -76,6 +79,7 @@ export function FormField({ config, value, onChange, disabled, className }: Form
           required={required}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          maxLength={maxLength}
           placeholder={placeholder}
           disabled={disabled}
           className={inputClassName}
@@ -162,7 +166,7 @@ export const fieldsByType: Record<EntityType, FieldConfig[]> = {
     { key: 'description', label: 'Description', type: 'textarea', placeholder: 'Brief note about this proposal...', optional: true },
   ],
   template: [
-    { key: 'name', label: 'Template Name', required: true, placeholder: 'e.g. Standard Proposal Template' },
+    { key: 'name', label: 'Template Name', required: true, placeholder: 'e.g. Standard Proposal Template', maxLength: 120 },
     { key: 'description', label: 'Description', placeholder: 'Brief description of this template', optional: true },
   ],
   document: [

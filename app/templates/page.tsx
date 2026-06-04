@@ -6,10 +6,10 @@
 //                   builder's "From Library" button)
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Plus, FileText, Upload, LayoutGrid, List, Search, Trash2, Pencil,
-  Type, Image, DollarSign, Package, ListOrdered, Check, X, Loader2,
+  Type, Image, DollarSign, Package, ListOrdered, Check, X, Loader2, ArrowUpDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
@@ -78,6 +78,32 @@ export default function TemplatesPage() {
   );
 }
 
+type SortKey = 'updated' | 'newest' | 'oldest' | 'name_asc' | 'name_desc';
+
+function sortItems<T extends { name?: string; title?: string; created_at: string; updated_at?: string }>(
+  items: T[],
+  sortBy: SortKey,
+): T[] {
+  return [...items].sort((a, b) => {
+    switch (sortBy) {
+      case 'updated':
+        return ((b as { updated_at?: string }).updated_at || b.created_at).localeCompare(
+          (a as { updated_at?: string }).updated_at || a.created_at,
+        );
+      case 'newest':
+        return b.created_at.localeCompare(a.created_at);
+      case 'oldest':
+        return a.created_at.localeCompare(b.created_at);
+      case 'name_asc':
+        return (a.name || a.title || '').localeCompare(b.name || b.title || '');
+      case 'name_desc':
+        return (b.name || b.title || '').localeCompare(a.name || a.title || '');
+      default:
+        return 0;
+    }
+  });
+}
+
 function TemplatesContent({ companyId }: { companyId: string }) {
   const toast = useToast();
   const [templates, setTemplates] = useState<ProposalTemplate[]>([]);
@@ -88,6 +114,8 @@ function TemplatesContent({ companyId }: { companyId: string }) {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortKey>('updated');
+  const searchRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<TabKey>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('agencyviz-templates-tab') as TabKey | null;
@@ -218,38 +246,61 @@ function TemplatesContent({ companyId }: { companyId: string }) {
     refetch();
   }, [refetch]);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   // For proposal/quote tabs: filter proposal_templates by entity_type.
   const scoped = activeTab === 'line_items' || activeTab === 'packages'
     ? []
     : templates.filter((t) => (t.entity_type ?? 'proposal') === activeTab);
 
-  const filteredProposalTemplates = searchQuery
-    ? scoped.filter((t) =>
-        (t.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-        (t.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
-      )
-    : scoped;
+  const filteredProposalTemplates = sortItems(
+    searchQuery
+      ? scoped.filter((t) =>
+          (t.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+          (t.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+        )
+      : scoped,
+    sortBy,
+  );
 
-  const filteredLineItemTemplates = searchQuery
-    ? lineItemTemplates.filter((t) =>
-        (t.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-        (t.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
-      )
-    : lineItemTemplates;
+  const filteredLineItemTemplates = sortItems(
+    searchQuery
+      ? lineItemTemplates.filter((t) =>
+          (t.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+          (t.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+        )
+      : lineItemTemplates,
+    sortBy,
+  );
 
-  const filteredPackageTemplates = searchQuery
-    ? packageTemplates.filter((t) =>
-        (t.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-        (t.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
-      )
-    : packageTemplates;
+  const filteredPackageTemplates = sortItems(
+    searchQuery
+      ? packageTemplates.filter((t) =>
+          (t.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+          (t.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+        )
+      : packageTemplates,
+    sortBy,
+  );
 
-  const filteredLibraryPages = searchQuery
-    ? libraryPages.filter((p) =>
-        (p.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-        (p.label?.toLowerCase() || '').includes(searchQuery.toLowerCase())
-      )
-    : libraryPages;
+  const filteredLibraryPages = sortItems(
+    searchQuery
+      ? libraryPages.filter((p) =>
+          (p.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+          (p.label?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+        )
+      : libraryPages,
+    sortBy,
+  );
 
   const showRecent = !searchQuery && activeTab !== 'line_items' && activeTab !== 'packages' && activeTab !== 'pages' && scoped.length >= 8;
   const recent = showRecent
@@ -350,20 +401,37 @@ function TemplatesContent({ companyId }: { companyId: string }) {
             </div>
           )}
 
+          {/* Sort */}
+          <div className="hidden md:flex items-center gap-1.5 bg-surface rounded-full px-3 py-2 text-caption text-dim">
+            <ArrowUpDown size={14} className="text-faint shrink-0" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortKey)}
+              className="bg-transparent outline-none cursor-pointer text-caption text-ink"
+            >
+              <option value="updated">Recently edited</option>
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="name_asc">Name A–Z</option>
+              <option value="name_desc">Name Z–A</option>
+            </select>
+          </div>
+
           {/* Search */}
           <div className="hidden md:flex items-center gap-2 bg-surface rounded-full px-4 py-2 w-[200px] focus-within:ring-2 focus-within:ring-teal/20 transition-all">
             <Search size={16} className="text-faint shrink-0" />
             <input
+              ref={searchRef}
               type="text"
-              placeholder={`Search ${
+              placeholder={`Search${
                 activeTab === 'line_items'
-                  ? 'line-item templates'
+                  ? ' line-item templates'
                   : activeTab === 'packages'
-                  ? 'package templates'
+                  ? ' package templates'
                   : activeTab === 'pages'
-                  ? 'saved pages'
-                  : 'templates'
-              }...`}
+                  ? ' saved pages'
+                  : ''
+              }... ⌘K`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-transparent text-caption text-ink placeholder-faint outline-none w-full"
@@ -667,23 +735,23 @@ function LineItemTemplatesView({
         >
           <div className="flex items-start justify-between gap-2 mb-2">
             <h3 className="text-sm font-semibold text-ink truncate">{t.name}</h3>
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-              <span
-                role="button"
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition">
+              <button
+                type="button"
                 onClick={(e) => { e.stopPropagation(); onEdit(t); }}
                 className="p-1 text-faint hover:text-teal"
                 title="Edit"
               >
                 <Pencil size={13} />
-              </span>
-              <span
-                role="button"
+              </button>
+              <button
+                type="button"
                 onClick={(e) => { e.stopPropagation(); onDelete(t); }}
                 className="p-1 text-faint hover:text-red-500"
                 title="Delete"
               >
                 <Trash2 size={13} />
-              </span>
+              </button>
             </div>
           </div>
           {t.description && (
@@ -716,25 +784,15 @@ function PackageTemplatesView({
   onEdit: (t: PackageTemplateRow) => void;
 }) {
   if (templates.length === 0 && searchQuery) {
-    return (
-      <div className="text-center py-20">
-        <Search size={28} className="text-faint mx-auto mb-3" />
-        <p className="text-sm text-muted">No package templates matching &ldquo;{searchQuery}&rdquo;</p>
-      </div>
-    );
+    return <NoResults message={`No package templates matching "${searchQuery}"`} />;
   }
   if (allCount === 0) {
     return (
-      <div className="text-center py-20">
-        <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <FileText size={28} className="text-faint" />
-        </div>
-        <h3 className="text-lg font-semibold text-muted mb-1">No package templates yet</h3>
-        <p className="text-sm text-faint max-w-md mx-auto">
-          Click &ldquo;New Package&rdquo; to create one, or save from any
-          proposal&rsquo;s packages page using the bookmark icon.
-        </p>
-      </div>
+      <EmptyState
+        icon={Package}
+        title="No package templates yet"
+        description={'Click "New Package" to create one, or save from any quote’s packages page using the bookmark icon.'}
+      />
     );
   }
   return (
@@ -750,23 +808,23 @@ function PackageTemplatesView({
           >
             <div className="flex items-start justify-between gap-2 mb-2">
               <h3 className="text-sm font-semibold text-ink truncate">{t.name}</h3>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-                <span
-                  role="button"
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition">
+                <button
+                  type="button"
                   onClick={(e) => { e.stopPropagation(); onEdit(t); }}
                   className="p-1 text-faint hover:text-teal"
                   title="Edit"
                 >
                   <Pencil size={13} />
-                </span>
-                <span
-                  role="button"
+                </button>
+                <button
+                  type="button"
                   onClick={(e) => { e.stopPropagation(); onDelete(t); }}
                   className="p-1 text-faint hover:text-red-500"
                   title="Delete"
                 >
                   <Trash2 size={13} />
-                </span>
+                </button>
               </div>
             </div>
             {t.description && (
@@ -849,7 +907,7 @@ function PageLibraryView({
   };
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 stagger-children">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 stagger-children">
       {pages.map((p) => {
         const Icon = PAGE_TYPE_ICONS[p.type] ?? FileText;
         const typeLabel = PAGE_TYPE_LABELS[p.type] ?? p.type;
@@ -876,6 +934,8 @@ function PageLibraryView({
                       if (e.key === 'Escape') setEditingId(null);
                     }}
                     autoFocus
+                    aria-label="Page name"
+                    maxLength={120}
                     className="flex-1 min-w-0 px-1.5 py-0.5 rounded border border-edge bg-surface text-xs text-ink focus:outline-none focus:ring-1 focus:ring-teal/20"
                   />
                   <button onClick={() => { if (editValue.trim()) { onRename(p, editValue.trim()); setEditingId(null); } }} className="p-0.5 text-teal"><Check size={12} /></button>
@@ -885,13 +945,13 @@ function PageLibraryView({
                 <>
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     <div className="shrink-0 w-6 h-6 rounded bg-surface flex items-center justify-center">
-                      <Icon size={12} className="text-dim" />
+                      <Icon size={14} className="text-dim" />
                     </div>
                     <p className="text-xs font-semibold text-ink truncate">
                       {p.label || p.title}
                     </p>
                   </div>
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition shrink-0">
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition shrink-0">
                     {p.type === 'pdf' && (
                       <label
                         className={`p-0.5 text-faint hover:text-teal cursor-pointer ${isReplacing ? 'pointer-events-none' : ''}`}
@@ -911,13 +971,13 @@ function PageLibraryView({
                         />
                       </label>
                     )}
-                    <button onClick={() => { setEditingId(p.id); setEditValue(p.label || p.title); }} className="p-0.5 text-faint hover:text-teal" title="Rename"><Pencil size={11} /></button>
-                    <button onClick={() => onDelete(p)} className="p-0.5 text-faint hover:text-red-500" title="Delete"><Trash2 size={11} /></button>
+                    <button onClick={() => { setEditingId(p.id); setEditValue(p.label || p.title); }} className="p-0.5 text-faint hover:text-teal" title="Rename" aria-label={`Rename ${p.label || p.title}`}><Pencil size={13} /></button>
+                    <button onClick={() => onDelete(p)} className="p-0.5 text-faint hover:text-red-500" title="Delete" aria-label={`Delete ${p.label || p.title}`}><Trash2 size={13} /></button>
                   </div>
                 </>
               )}
             </div>
-            <div className="flex items-center justify-between text-2xs text-faint">
+            <div className="flex items-center justify-between text-detail text-faint">
               <span>{typeLabel}</span>
               <span>{new Date(p.created_at).toLocaleDateString()}</span>
             </div>

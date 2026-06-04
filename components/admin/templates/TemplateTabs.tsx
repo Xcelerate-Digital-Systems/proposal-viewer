@@ -7,6 +7,7 @@ import { Pencil, DollarSign, Package, Settings, Paintbrush, FileText, PenLine, I
 
 interface TemplateTabsProps {
   templateId: string;
+  entityType?: 'proposal' | 'quote';
 }
 
 type TabGroup = 'content' | 'setup';
@@ -31,16 +32,20 @@ function activeKeyFromPath(pathname: string | null): string {
   return segments[2] ?? '';
 }
 
-export default function TemplateTabs({ templateId }: TemplateTabsProps) {
+export default function TemplateTabs({ templateId, entityType }: TemplateTabsProps) {
   const pathname = usePathname();
   const activeKey = activeKeyFromPath(pathname);
 
+  const visibleTabs = entityType === 'proposal'
+    ? tabs.filter((t) => t.key !== 'pricing' && t.key !== 'packages')
+    : tabs;
+
   return (
     <div className="flex items-center gap-1 -mb-px">
-      {tabs.map((tab, i) => {
+      {visibleTabs.map((tab, i) => {
         const isActive = activeKey === tab.key;
         const Icon = tab.icon;
-        const showDivider = i > 0 && tabs[i - 1].group !== tab.group;
+        const showDivider = i > 0 && visibleTabs[i - 1].group !== tab.group;
 
         return (
           <div key={tab.key} className="flex items-center">
