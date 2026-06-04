@@ -102,6 +102,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
   const [completions, setCompletions] = useState<ReviewCompletion[]>([]);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [showAddItem, setShowAddItem] = useState(false);
+  const [showTasks, setShowTasks] = useState(false);
   const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([]);
   const [memberNameMap, setMemberNameMap] = useState<Record<string, string>>({});
 
@@ -506,7 +507,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
         ) : (
           <div className="flex gap-6 h-full -mx-1">
             {/* Left column — comments */}
-            <div className="w-[55%] min-w-0 overflow-y-auto space-y-4 px-1">
+            <div className={`min-w-0 overflow-y-auto space-y-4 px-1 ${showTasks ? 'hidden lg:block lg:w-[55%]' : 'w-full lg:w-[55%]'}`}>
               {/* Open / Resolved toggle + comment list */}
               <div className="bg-white rounded-2xl shadow-card overflow-hidden">
                 {/* Filter bar */}
@@ -560,11 +561,26 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
                           active ? 'text-ink' : 'text-faint hover:text-prose'
                         }`}
                       >
-                        <Icon size={12} className={p.iconClass} />
+                        <Icon size={14} className={p.iconClass} />
                         {p.label}
                       </button>
                     );
                   })}
+
+                  <button
+                    onClick={() => setShowTasks((s) => !s)}
+                    className={`lg:hidden ml-auto flex items-center gap-1.5 text-xs font-medium transition-colors ${
+                      showTasks ? 'text-teal' : 'text-faint hover:text-prose'
+                    }`}
+                  >
+                    <ListTodo size={14} />
+                    Tasks
+                    {allProjectTasks.total > 0 && (
+                      <span className="px-1.5 py-0.5 rounded bg-surface text-2xs font-semibold">
+                        {allProjectTasks.openTasks.length}
+                      </span>
+                    )}
+                  </button>
                 </div>
 
                 {/* List */}
@@ -573,7 +589,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
                     {tab === 'open' ? 'No open feedback' : 'No resolved feedback'}
                   </div>
                 ) : (
-                  <div className="divide-y divide-gray-100">
+                  <div className="divide-y divide-edge">
                     {displayed.map((comment) => (
                       <FeedbackRow
                         key={comment.id}
@@ -595,7 +611,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
             </div>
 
             {/* Right column — tasks panel */}
-            <div className="w-[45%] min-w-0 overflow-y-auto hidden lg:block px-1">
+            <div className={`min-w-0 overflow-y-auto px-1 ${showTasks ? 'w-full lg:w-[45%]' : 'hidden lg:block lg:w-[45%]'}`}>
               <div className="bg-white rounded-2xl shadow-card overflow-hidden">
                 <div className="px-5 py-3 border-b border-edge">
                   <div className="flex items-center gap-2">
@@ -616,7 +632,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
                     <p className="text-xs text-faint mt-1">Create tasks from comments</p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-gray-100">
+                  <div className="divide-y divide-edge">
                     {allProjectTasks.openTasks.map((task) => (
                       <TaskRow
                         key={task.id}
@@ -734,6 +750,9 @@ function TaskRow({ task, memberNameMap, onToggleComplete, onViewComment }: {
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onViewComment(); } }}
       className={`px-4 py-3 hover:bg-surface/50 transition-colors cursor-pointer ${done ? 'opacity-60' : ''}`}
       onClick={onViewComment}
     >

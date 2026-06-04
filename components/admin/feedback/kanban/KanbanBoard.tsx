@@ -37,6 +37,17 @@ interface KanbanBoardProps {
  */
 const COLUMN_ORDER: FeedbackStatus[] = REVIEW_STATUS_ORDER;
 
+const STAGE_DESCRIPTIONS: Record<FeedbackStatus, string> = {
+  draft: 'Work in progress, not yet ready for review',
+  in_progress: 'Being worked on by your team',
+  internal_review: 'Team members are reviewing before client sees it',
+  client_review: 'Shared with the client for feedback',
+  revision_needed: 'Client or team requested changes',
+  approved: 'Signed off and ready to go live',
+  rejected: 'Not approved, will not be used',
+  archived: 'Completed or no longer active',
+};
+
 export default function KanbanBoard({
   items, commentCounts, onOpen, onItemsChange, projectId, companyId,
 }: KanbanBoardProps) {
@@ -227,6 +238,41 @@ export default function KanbanBoard({
 
   const activeItem = activeId ? items.find((i) => i.id === activeId) ?? null : null;
 
+  const moveItemToStatus = useCallback(
+    async (itemId: string, targetStatus: FeedbackStatus) => {
+      const current = items.find((i) => i.id === itemId);
+      if (!current || current.status === targetStatus) return;
+
+      const previousStatus = current.status;
+      const previousItems = items;
+      const targetDef = getFeedbackStatusDef(targetStatus);
+
+      const optimistic = items.map((i) => (i.id === itemId ? { ...i, status: targetStatus } : i));
+      onItemsChange(optimistic);
+
+      const res = await authFetch(`/api/campaigns/${projectId}/items/${itemId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: targetStatus }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        toast.error(body?.error || `Could not move to ${targetDef.label}. Check your connection and try again.`);
+        onItemsChange(previousItems);
+        return;
+      }
+
+      toast.success(`Moved to ${targetDef.label}`, {
+        action: {
+          label: 'Undo',
+          onClick: () => moveItemToStatus(itemId, previousStatus),
+        },
+      });
+    },
+    [items, onItemsChange, toast, projectId],
+  );
+
   const handleDragStart = useCallback((ev: DragStartEvent) => {
     setActiveId(String(ev.active.id));
   }, []);
@@ -238,31 +284,14 @@ export default function KanbanBoard({
       const overId = ev.over?.id ? String(ev.over.id) : null;
       if (!overId) return;
 
-      // Drop zones are column containers identified by `column-<status>`.
       const targetStatus = overId.startsWith('column-')
         ? (overId.slice('column-'.length) as FeedbackStatus)
         : null;
       if (!targetStatus) return;
 
-      const current = items.find((i) => i.id === itemId);
-      if (!current || current.status === targetStatus) return;
-
-      // Optimistic update — roll back if the write fails.
-      const optimistic = items.map((i) => (i.id === itemId ? { ...i, status: targetStatus } : i));
-      onItemsChange(optimistic);
-
-      const res = await authFetch(`/api/campaigns/${projectId}/items/${itemId}/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: targetStatus }),
-      });
-
-      if (!res.ok) {
-        toast.error('Failed to update status');
-        onItemsChange(items);
-      }
+      await moveItemToStatus(itemId, targetStatus);
     },
-    [items, onItemsChange, toast]
+    [moveItemToStatus],
   );
 
   return (
@@ -276,6 +305,7 @@ export default function KanbanBoard({
             commentCounts={commentCounts}
             decisionTallies={decisionTallies}
             onOpen={onOpen}
+            onMoveToStatus={moveItemToStatus}
             projectId={projectId}
             stageMembers={assigneesByStage[status].members}
             stageGuests={assigneesByStage[status].guests}
@@ -306,7 +336,7 @@ export default function KanbanBoard({
 /* ─── Column ───────────────────────────────────────────────────── */
 
 function KanbanColumn({
-  status, items, commentCounts, decisionTallies, onOpen,
+  status, items, commentCounts, decisionTallies, onOpen, onMoveToStatus,
   projectId, stageMembers, stageGuests, companyMembers, projectGuests, onAssigneesChanged,
 }: {
   status: FeedbackStatus;
@@ -314,6 +344,7 @@ function KanbanColumn({
   commentCounts: Record<string, { total: number; unresolved: number }>;
   decisionTallies: Record<string, ItemDecisionTally>;
   onOpen: (itemId: string) => void;
+  onMoveToStatus: (itemId: string, status: FeedbackStatus) => void;
   projectId?: string;
   stageMembers: StageMember[];
   stageGuests: StageGuest[];
@@ -325,11 +356,11 @@ function KanbanColumn({
   const def = getFeedbackStatusDef(status);
 
   return (
-    <div className="shrink-0 w-[280px] flex flex-col h-full min-h-0">
+    <div className="shrink-0 w-[280px] flex flex-col h-full min-h-0" role="group" aria-label={`${def.label} column, ${items.length} items`}>
       {/* Column header */}
       <div className="flex items-center gap-2 mb-3 shrink-0">
         <span className={`w-2 h-2 rounded-full ${def.dot}`} />
-        <h3 className="text-caption font-semibold text-ink">{def.label}</h3>
+        <h3 className="text-caption font-semibold text-ink" title={STAGE_DESCRIPTIONS[status]}>{def.label}</h3>
         <span className="text-detail font-medium text-faint">{items.length}</span>
         {projectId && (
           <div className="ml-auto">
@@ -366,6 +397,7 @@ function KanbanColumn({
               unresolvedCount={commentCounts[item.id]?.unresolved ?? 0}
               decisionTally={decisionTallies[item.id]}
               onOpen={onOpen}
+              onMoveToStatus={onMoveToStatus}
             />
           ))
         )}

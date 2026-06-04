@@ -1,15 +1,15 @@
 'use client';
 
 import { useEffect, useState, useCallback, use } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, CalendarDays, Send } from 'lucide-react';
+import { CalendarDays, Send } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
+import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHeader';
 import ProjectAssigneesPanel from '@/components/admin/feedback/ProjectAssigneesPanel';
 import { supabase, type FeedbackProject } from '@/lib/supabase';
 import { authFetch } from '@/lib/auth-fetch';
 import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 export default function FeedbackProjectSettingsPage(
   props: {
@@ -41,8 +41,10 @@ function SettingsContent({
 }) {
   const router = useRouter();
   const toast = useToast();
+  const confirm = useConfirm();
   const [project, setProject] = useState<FeedbackProject | null>(null);
   const [hasWebpages, setHasWebpages] = useState(false);
+  const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [dueDate, setDueDate] = useState('');
@@ -75,9 +77,21 @@ function SettingsContent({
     setLoading(false);
   }, [projectId, companyId, router]);
 
+  const fetchCustomDomain = useCallback(async () => {
+    const { data } = await supabase
+      .from('companies')
+      .select('custom_domain, domain_verified')
+      .eq('id', companyId)
+      .single();
+    if (data?.domain_verified && data.custom_domain) {
+      setCustomDomain(data.custom_domain);
+    }
+  }, [companyId]);
+
   useEffect(() => {
     fetchProject();
-  }, [fetchProject]);
+    fetchCustomDomain();
+  }, [fetchProject, fetchCustomDomain]);
 
   const saveDueDate = async (value: string) => {
     setDueDate(value);
@@ -96,6 +110,12 @@ function SettingsContent({
   };
 
   const sendReminder = async () => {
+    const ok = await confirm({
+      title: 'Send reminder?',
+      message: 'This will email all guests assigned to this project. Continue?',
+      confirmLabel: 'Send Reminder',
+    });
+    if (!ok) return;
     setReminding(true);
     try {
       const res = await authFetch(`/api/campaigns/${projectId}/remind?company_id=${companyId}`, {
@@ -124,32 +144,16 @@ function SettingsContent({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="sticky top-0 z-10 bg-white px-6 lg:px-10 pt-5">
-        {project && (
-          <>
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0 flex items-center gap-3">
-                <Link
-                  href="/campaigns"
-                  className="text-faint hover:text-prose transition-colors shrink-0"
-                  title="All Projects"
-                >
-                  <ArrowLeft size={16} />
-                </Link>
-                <div className="min-w-0">
-                  <h1 className="text-[17px] font-semibold tracking-tight text-ink font-[family-name:var(--font-display)] truncate">
-                    {project.title}
-                  </h1>
-                  {project.client_name && (
-                    <p className="text-xs text-faint truncate">{project.client_name}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-            <ProjectTabs projectId={projectId} activeTab="settings" hasWebpages={hasWebpages} />
-          </>
-        )}
-      </div>
+      {project && (
+        <FeedbackProjectHeader
+          projectId={projectId}
+          project={project}
+          setProject={setProject}
+          customDomain={customDomain}
+          hasWebpages={hasWebpages}
+          activeTab="settings"
+        />
+      )}
 
       <div className="flex-1 px-6 lg:px-10 pb-8 pt-6">
         {loading || !project ? (

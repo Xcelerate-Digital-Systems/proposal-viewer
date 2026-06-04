@@ -29,7 +29,7 @@ interface Props {
   setProject: (updater: (prev: FeedbackProject | null) => FeedbackProject | null) => void;
   customDomain: string | null;
   hasWebpages: boolean;
-  activeTab: 'board' | 'kanban' | 'assets' | 'comments';
+  activeTab: 'board' | 'kanban' | 'assets' | 'comments' | 'setup' | 'settings';
   onAddItem?: () => void;
 }
 

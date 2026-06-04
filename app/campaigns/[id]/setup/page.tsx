@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Globe, Code2, Copy, Check, CheckCircle2, Clock, ExternalLink, Power } from 'lucide-react';
-import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
+import { Plus, Globe, Code2, Copy, Check, CheckCircle2, Clock, ExternalLink, Power } from 'lucide-react';
+import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHeader';
 import { supabase, type FeedbackProject, type FeedbackItem } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { buttonClasses } from '@/components/ui/Button';
@@ -51,6 +51,7 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
   const router = useRouter();
   const [project, setProject] = useState<FeedbackProject | null>(null);
   const [items, setItems] = useState<FeedbackItem[]>([]);
+  const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchProject = useCallback(async () => {
@@ -77,10 +78,22 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
     setLoading(false);
   }, [projectId]);
 
+  const fetchCustomDomain = useCallback(async () => {
+    const { data } = await supabase
+      .from('companies')
+      .select('custom_domain, domain_verified')
+      .eq('id', companyId)
+      .single();
+    if (data?.domain_verified && data.custom_domain) {
+      setCustomDomain(data.custom_domain);
+    }
+  }, [companyId]);
+
   useEffect(() => {
     fetchProject();
     fetchItems();
-  }, [fetchProject, fetchItems]);
+    fetchCustomDomain();
+  }, [fetchProject, fetchItems, fetchCustomDomain]);
 
   // Poll for install state if not yet connected
   useEffect(() => {
@@ -95,33 +108,16 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
 
   return (
     <div className="flex flex-col h-full">
-      {/* Sticky header — compact */}
-      <div className="sticky top-0 z-10 bg-white px-6 lg:px-10 pt-5">
-        {project && (
-          <>
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0 flex items-center gap-3">
-                <Link
-                  href="/campaigns"
-                  className="text-faint hover:text-prose transition-colors shrink-0"
-                  title="All Projects"
-                >
-                  <ArrowLeft size={16} />
-                </Link>
-                <div className="min-w-0">
-                  <h1 className="text-[17px] font-semibold tracking-tight text-ink font-[family-name:var(--font-display)] truncate">
-                    {project.title}
-                  </h1>
-                  {project.client_name && (
-                    <p className="text-xs text-faint truncate">{project.client_name}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-            <ProjectTabs projectId={projectId} activeTab="setup" hasWebpages />
-          </>
-        )}
-      </div>
+      {project && (
+        <FeedbackProjectHeader
+          projectId={projectId}
+          project={project}
+          setProject={setProject}
+          customDomain={customDomain}
+          hasWebpages
+          activeTab="setup"
+        />
+      )}
 
       {/* Scrollable content */}
       <div className="flex-1 px-6 lg:px-10 pb-8 pt-6">
@@ -205,16 +201,7 @@ function StatusCard({
 <!-- End AgencyViz Code -->`;
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(scriptTag);
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = scriptTag;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-    }
+    await navigator.clipboard.writeText(scriptTag);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

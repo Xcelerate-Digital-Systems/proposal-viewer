@@ -1,13 +1,16 @@
 'use client';
 
+import { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import {
   MessageSquareText, ExternalLink, Globe, Mail, Smartphone,
   Image as ImageIcon, Video, FileText, Megaphone, Search, RectangleHorizontal, ClipboardList,
-  Check, RefreshCw,
+  Check, RefreshCw, ArrowRight,
 } from 'lucide-react';
-import { type FeedbackItem, type FeedbackItemType } from '@/lib/supabase';
+import { type FeedbackItem, type FeedbackItemType, type FeedbackStatus } from '@/lib/supabase';
+import { REVIEW_STATUS_ORDER, getFeedbackStatusDef } from '@/lib/feedback/status';
 
 export type ItemDecisionTally = {
   approved: number;
@@ -20,6 +23,7 @@ interface KanbanCardProps {
   unresolvedCount: number;
   decisionTally?: ItemDecisionTally;
   onOpen: (itemId: string) => void;
+  onMoveToStatus?: (itemId: string, status: FeedbackStatus) => void;
 }
 
 const TYPE_META: Record<FeedbackItemType, { label: string; Icon: typeof Globe; iconBg: string; iconColor: string }> = {
@@ -36,12 +40,15 @@ const TYPE_META: Record<FeedbackItemType, { label: string; Icon: typeof Globe; i
 };
 
 export default function KanbanCard({
-  item, commentCount, unresolvedCount, decisionTally, onOpen,
+  item, commentCount, unresolvedCount, decisionTally, onOpen, onMoveToStatus,
 }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: item.id,
     data: { kind: 'item' },
   });
+  const [showMoveMenu, setShowMoveMenu] = useState(false);
+  const moveBtnRef = useRef<HTMLButtonElement>(null);
+  const [moveMenuPos, setMoveMenuPos] = useState<{ top: number; left: number } | null>(null);
 
   const meta = TYPE_META[item.type];
   const isWebpage = item.type === 'webpage';
@@ -50,6 +57,14 @@ export default function KanbanCard({
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.4 : 1,
+  };
+
+  const openMoveMenu = () => {
+    if (moveBtnRef.current) {
+      const r = moveBtnRef.current.getBoundingClientRect();
+      setMoveMenuPos({ top: r.bottom + 4, left: r.left });
+    }
+    setShowMoveMenu(true);
   };
 
   return (
@@ -65,7 +80,8 @@ export default function KanbanCard({
         {...listeners}
         {...attributes}
         className="flex items-start gap-2.5 cursor-grab active:cursor-grabbing -m-3.5 p-3.5 rounded-t-2xl"
-        aria-label={`Drag ${item.title}`}
+        aria-roledescription="draggable item"
+        aria-label={`${item.title}. Drag to move between stages, or use the Move button.`}
       >
         <div className={`shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center ${meta.iconBg}`}>
           <Icon size={15} className={meta.iconColor} />
@@ -128,17 +144,65 @@ export default function KanbanCard({
             </>
           )}
         </div>
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpen(item.id);
-          }}
-          className="relative z-10 inline-flex items-center gap-1 text-detail font-medium text-teal hover:text-teal-hover"
-        >
-          {isWebpage ? <ExternalLink size={11} /> : null}
-          Open
-        </button>
+        <div className="flex items-center gap-2">
+          {onMoveToStatus && (
+            <>
+              <button
+                ref={moveBtnRef}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); openMoveMenu(); }}
+                className="relative z-10 inline-flex items-center gap-1 text-detail font-medium text-faint hover:text-ink transition-colors"
+                aria-label={`Move ${item.title} to another stage`}
+                aria-haspopup="listbox"
+              >
+                <ArrowRight size={11} />
+                Move
+              </button>
+              {showMoveMenu && moveMenuPos && createPortal(
+                <>
+                  <div className="fixed inset-0 z-[9998]" onClick={() => setShowMoveMenu(false)} />
+                  <div
+                    role="listbox"
+                    aria-label="Move to stage"
+                    className="fixed z-[9999] bg-white rounded-xl border border-edge shadow-popover py-1 min-w-[160px]"
+                    style={{ top: moveMenuPos.top, left: moveMenuPos.left }}
+                  >
+                    {REVIEW_STATUS_ORDER.filter((s) => s !== item.status).map((s) => {
+                      const def = getFeedbackStatusDef(s);
+                      return (
+                        <button
+                          key={s}
+                          role="option"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowMoveMenu(false);
+                            onMoveToStatus(item.id, s);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-prose hover:bg-surface transition-colors"
+                        >
+                          <span className={`w-2 h-2 rounded-full ${def.dot}`} />
+                          {def.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>,
+                document.body,
+              )}
+            </>
+          )}
+          <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen(item.id);
+            }}
+            className="relative z-10 inline-flex items-center gap-1 text-detail font-medium text-teal hover:text-teal-hover"
+          >
+            {isWebpage ? <ExternalLink size={11} /> : null}
+            Open
+          </button>
+        </div>
       </div>
     </div>
   );

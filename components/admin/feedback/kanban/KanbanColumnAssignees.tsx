@@ -72,7 +72,6 @@ function Avatar({
   size?: number;
   ring?: boolean;
 }) {
-  const sizeClass = `w-[${size}px] h-[${size}px]`;
   const ringClass = ring ? 'ring-2 ring-white' : '';
   if (imageUrl) {
     // eslint-disable-next-line @next/next/no-img-element
@@ -80,7 +79,7 @@ function Avatar({
       <img
         src={imageUrl}
         alt={name || email}
-        className={`${sizeClass} rounded-full object-cover ${ringClass}`}
+        className={`rounded-full object-cover ${ringClass}`}
         style={{ width: size, height: size }}
       />
     );

@@ -6,17 +6,27 @@ import { CheckCircle2, XCircle, Info, X } from 'lucide-react';
 
 type ToastType = 'success' | 'error' | 'info';
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
+interface ToastOptions {
+  action?: ToastAction;
+}
+
 interface Toast {
   id: string;
   message: string;
   type: ToastType;
+  action?: ToastAction;
 }
 
 interface ToastContextType {
   toast: {
-    success: (message: string) => void;
-    error: (message: string) => void;
-    info: (message: string) => void;
+    success: (message: string, opts?: ToastOptions) => void;
+    error: (message: string, opts?: ToastOptions) => void;
+    info: (message: string, opts?: ToastOptions) => void;
   };
 }
 
@@ -43,12 +53,13 @@ const borders: Record<ToastType, string> = {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const addToast = useCallback((message: string, type: ToastType) => {
+  const addToast = useCallback((message: string, type: ToastType, opts?: ToastOptions) => {
     const id = `${Date.now()}-${Math.random()}`;
-    setToasts((prev) => [...prev, { id, message, type }]);
+    setToasts((prev) => [...prev, { id, message, type, action: opts?.action }]);
+    const duration = opts?.action ? 6000 : 4000;
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
+    }, duration);
   }, []);
 
   const removeToast = useCallback((id: string) => {
@@ -56,9 +67,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const toast = {
-    success: (message: string) => addToast(message, 'success'),
-    error: (message: string) => addToast(message, 'error'),
-    info: (message: string) => addToast(message, 'info'),
+    success: (message: string, opts?: ToastOptions) => addToast(message, 'success', opts),
+    error: (message: string, opts?: ToastOptions) => addToast(message, 'error', opts),
+    info: (message: string, opts?: ToastOptions) => addToast(message, 'info', opts),
   };
 
   return (
@@ -74,6 +85,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           >
             {icons[t.type]}
             <span className="text-sm text-ink flex-1">{t.message}</span>
+            {t.action && (
+              <button
+                onClick={() => { removeToast(t.id); t.action!.onClick(); }}
+                className="text-xs font-semibold text-teal hover:text-teal-hover transition-colors shrink-0"
+              >
+                {t.action.label}
+              </button>
+            )}
             <button
               onClick={() => removeToast(t.id)}
               className="text-faint hover:text-dim transition-colors shrink-0"
