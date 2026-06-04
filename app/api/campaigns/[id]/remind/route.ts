@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
-import { getResend, fromEmail } from '@/lib/resend';
+import { fromEmail } from '@/lib/resend';
+import { sendAndLogEmail } from '@/lib/email-log';
 import { buildReviewUrl } from '@/lib/proposal-url';
 import { buildReminderEmail, withUnsubscribeLink, type EmailBranding } from '@/lib/review-notification-emails';
 import { buildUnsubscribeUrl } from '@/lib/feedback/unsubscribe-token';
@@ -108,11 +109,16 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
         totalItems,
       });
       const unsub = buildUnsubscribeUrl(appUrl, project.id, email);
-      await getResend().emails.send({
+      await sendAndLogEmail({
         from: fromEmail(companyName),
         to: email,
         subject,
         html: withUnsubscribeLink(html, unsub),
+        companyId: project.company_id,
+        category: 'campaign_reminder',
+        eventType: 'reminder',
+        entityType: 'campaign',
+        entityId: project.id,
       });
       sent++;
     } catch (err) {

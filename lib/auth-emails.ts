@@ -1,12 +1,14 @@
 // lib/auth-emails.ts
 // Email content + sending for auth flows (team invites, etc).
 
-import { getResend, FROM_EMAIL } from './resend';
+import { FROM_EMAIL } from './resend';
+import { sendAndLogEmail } from './email-log';
 import { escapeHtml } from './notification-emails';
 
 interface InviteEmailParams {
   to: string;
   companyName: string;
+  companyId?: string;
   inviterName: string;
   role: 'owner' | 'admin' | 'member';
   inviteUrl: string;
@@ -14,7 +16,7 @@ interface InviteEmailParams {
 }
 
 export async function sendInviteEmail(params: InviteEmailParams) {
-  const { to, companyName, inviterName, role, inviteUrl, expiresAt } = params;
+  const { to, companyName, companyId, inviterName, role, inviteUrl, expiresAt } = params;
   const expiryLabel = new Date(expiresAt).toLocaleDateString('en-AU', {
     day: 'numeric', month: 'short', year: 'numeric',
   });
@@ -28,8 +30,7 @@ export async function sendInviteEmail(params: InviteEmailParams) {
     expiryLabel,
   });
 
-  const resend = getResend();
-  return resend.emails.send({ from: FROM_EMAIL, to, subject, html });
+  return sendAndLogEmail({ from: FROM_EMAIL, to, subject, html, companyId, category: 'auth', eventType: 'invite' });
 }
 
 interface ResetEmailParams {
@@ -41,27 +42,26 @@ export async function sendPasswordResetEmail(params: ResetEmailParams) {
   const { to, resetUrl } = params;
   const subject = 'Reset your AgencyViz password';
   const html = resetEmailTemplate({ resetUrl });
-  const resend = getResend();
-  return resend.emails.send({ from: FROM_EMAIL, to, subject, html });
+  return sendAndLogEmail({ from: FROM_EMAIL, to, subject, html, category: 'auth', eventType: 'password_reset' });
 }
 
 interface WelcomeEmailParams {
   to: string;
   firstName: string;
   companyName: string;
+  companyId?: string;
   appUrl: string;
 }
 
 export async function sendWelcomeEmail(params: WelcomeEmailParams) {
-  const { to, firstName, companyName, appUrl } = params;
+  const { to, firstName, companyName, companyId, appUrl } = params;
   const subject = `Welcome to AgencyViz, ${firstName}`;
   const html = welcomeEmailTemplate({
     firstName: escapeHtml(firstName),
     companyName: escapeHtml(companyName),
     appUrl,
   });
-  const resend = getResend();
-  return resend.emails.send({ from: FROM_EMAIL, to, subject, html });
+  return sendAndLogEmail({ from: FROM_EMAIL, to, subject, html, companyId, category: 'auth', eventType: 'welcome' });
 }
 
 function resetEmailTemplate(opts: { resetUrl: string }) {

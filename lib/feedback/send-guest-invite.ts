@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase-server';
-import { getResend, fromEmail } from '@/lib/resend';
+import { fromEmail } from '@/lib/resend';
+import { sendAndLogEmail } from '@/lib/email-log';
 import { buildReviewUrl } from '@/lib/proposal-url';
 import { buildGuestInviteEmail, withUnsubscribeLink, type EmailBranding } from '@/lib/review-notification-emails';
 import { buildUnsubscribeUrl } from '@/lib/feedback/unsubscribe-token';
@@ -55,5 +56,13 @@ export async function sendGuestInviteEmail(opts: {
   });
 
   const unsub = buildUnsubscribeUrl(appUrl, projectId, guestEmail);
-  await getResend().emails.send({ from: fromEmail(companyName), to: guestEmail, subject, html: withUnsubscribeLink(html, unsub) });
+  await sendAndLogEmail({
+    from: fromEmail(companyName), to: guestEmail, subject,
+    html: withUnsubscribeLink(html, unsub),
+    companyId: project.company_id,
+    category: 'campaign_invite',
+    eventType: 'guest_invite',
+    entityType: 'campaign',
+    entityId: projectId,
+  });
 }

@@ -1,7 +1,8 @@
 // app/api/review-notify/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
-import { getResend, fromEmail } from '@/lib/resend';
+import { fromEmail } from '@/lib/resend';
+import { sendAndLogEmail } from '@/lib/email-log';
 import { buildReviewUrl } from '@/lib/proposal-url';
 import crypto from 'crypto';
 import { isValidWebhookUrl } from '@/lib/sanitize';
@@ -256,7 +257,15 @@ export async function POST(req: NextRequest) {
             mentionedName: m.displayName,
           });
           const unsub = buildUnsubscribeUrl(appUrl, project.id, m.targetEmail);
-          await getResend().emails.send({ from: fromEmail(companyName), to: m.targetEmail, subject, html: withUnsubscribeLink(html, unsub) });
+          await sendAndLogEmail({
+            from: fromEmail(companyName), to: m.targetEmail, subject,
+            html: withUnsubscribeLink(html, unsub),
+            companyId: project.company_id,
+            category: 'campaign_mention',
+            eventType: 'mention',
+            entityType: 'campaign',
+            entityId: project.id,
+          });
           mentioned++;
           // Don't double-email this person via the digest queue.
           recipientEmails.delete(m.targetEmail);
@@ -399,7 +408,15 @@ export async function POST(req: NextRequest) {
         for (const email of Array.from(recipientEmails)) {
           try {
             const unsub = buildUnsubscribeUrl(appUrl, project.id, email);
-            await getResend().emails.send({ from: fromEmail(companyName), to: email, subject, html: withUnsubscribeLink(html, unsub) });
+            await sendAndLogEmail({
+              from: fromEmail(companyName), to: email, subject,
+              html: withUnsubscribeLink(html, unsub),
+              companyId: project.company_id,
+              category: 'campaign_notification',
+              eventType: event_type,
+              entityType: 'campaign',
+              entityId: project.id,
+            });
             sent++;
           } catch (err) {
             console.error(`Failed to notify ${email}:`, err);

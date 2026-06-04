@@ -2,7 +2,8 @@
 // Orchestrator — routes events to team/client emails and webhooks.
 
 import { createServiceClient } from './supabase-server';
-import { getResend, fromEmail } from './resend';
+import { fromEmail } from './resend';
+import { sendAndLogEmail } from './email-log';
 import { buildProposalUrl } from './proposal-url';
 import type { EventType, NotifyPayload } from './notification-types';
 import { PREF_MAP } from './notification-types';
@@ -195,7 +196,14 @@ async function notifyTeamMembers(params: TeamNotifyParams): Promise<number> {
   let sent = 0;
   for (const member of toNotify) {
     try {
-      await getResend().emails.send({ from: fromEmail(branding.companyName), to: member.email, subject, html });
+      await sendAndLogEmail({
+        from: fromEmail(branding.companyName), to: member.email, subject, html,
+        companyId: proposal.company_id,
+        category: 'proposal_notification',
+        eventType: event_type,
+        entityType: 'proposal',
+        entityId: proposal.id,
+      });
 
       await supabase.from('notification_log').insert({
         proposal_id:    proposal.id,
@@ -296,7 +304,14 @@ async function notifyClient(params: ClientNotifyParams): Promise<number> {
   if (existingClientLog && existingClientLog.length > 0) return 0;
 
   try {
-    await getResend().emails.send({ from: fromEmail(companyName), to: proposal.client_email, subject, html });
+    await sendAndLogEmail({
+      from: fromEmail(companyName), to: proposal.client_email, subject, html,
+      companyId: proposal.company_id,
+      category: 'proposal_notification',
+      eventType: `client_${event_type}`,
+      entityType: 'proposal',
+      entityId: proposal.id,
+    });
 
     try {
       await supabase.from('notification_log').insert({

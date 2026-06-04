@@ -12,7 +12,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
 import { createServiceClient } from '@/lib/supabase-server';
-import { getResend, fromEmail } from '@/lib/resend';
+import { fromEmail } from '@/lib/resend';
+import { sendAndLogEmail } from '@/lib/email-log';
 import { buildReviewUrl } from '@/lib/proposal-url';
 import {
   buildCommentDigestEmail,
@@ -168,11 +169,16 @@ async function handle(req: NextRequest) {
 
     try {
       const unsub = buildUnsubscribeUrl(appUrl, first.review_project_id, first.recipient_email);
-      await getResend().emails.send({
+      await sendAndLogEmail({
         from: fromEmail(branding.companyName),
         to: first.recipient_email,
         subject,
         html: withUnsubscribeLink(html, unsub),
+        companyId: first.company_id,
+        category: 'campaign_digest',
+        eventType: 'review_comment_digest',
+        entityType: 'campaign',
+        entityId: first.review_project_id,
       });
       digestsSent++;
 

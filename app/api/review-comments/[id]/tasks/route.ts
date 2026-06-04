@@ -102,7 +102,8 @@ async function notifyTaskAssignee(params: {
 
     // Email
     try {
-      const { getResend, fromEmail } = await import('@/lib/resend');
+      const { fromEmail } = await import('@/lib/resend');
+      const { sendAndLogEmail } = await import('@/lib/email-log');
       const { buildTaskEmail } = await import('@/lib/review-notification-emails');
       const { subject, html } = buildTaskEmail({
         branding: { companyName, accentColor, logoUrl },
@@ -114,7 +115,14 @@ async function notifyTaskAssignee(params: {
         commentContent: plainComment,
         instructions: params.instructions,
       });
-      await getResend().emails.send({ from: fromEmail(companyName), to: assignee.email, subject, html });
+      await sendAndLogEmail({
+        from: fromEmail(companyName), to: assignee.email, subject, html,
+        companyId: project.company_id,
+        category: 'campaign_task',
+        eventType: 'task_assigned',
+        entityType: 'campaign',
+        entityId: project.id,
+      });
     } catch (err) {
       console.error('Task email failed:', err);
     }

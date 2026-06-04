@@ -2,12 +2,14 @@
 // Transactional emails for the Stripe billing lifecycle. Same shape as
 // lib/auth-emails.ts so the templates stay consistent across the product.
 
-import { getResend, FROM_EMAIL } from './resend';
+import { FROM_EMAIL } from './resend';
+import { sendAndLogEmail } from './email-log';
 import { escapeHtml } from './notification-emails';
 
 type Common = {
   to: string;
   companyName: string;
+  companyId?: string;
   manageUrl: string;
 };
 
@@ -15,7 +17,7 @@ export async function sendTrialStartedEmail(params: Common & {
   trialEndsAt: string;
   planName: string;
 }) {
-  const { to, companyName, manageUrl, trialEndsAt, planName } = params;
+  const { to, companyName, companyId, manageUrl, trialEndsAt, planName } = params;
   const subject = `Your AgencyViz trial has started`;
   const html = trialStartedTemplate({
     companyName: escapeHtml(companyName),
@@ -23,46 +25,46 @@ export async function sendTrialStartedEmail(params: Common & {
     trialEndsLabel: formatDate(trialEndsAt),
     manageUrl,
   });
-  return getResend().emails.send({ from: FROM_EMAIL, to, subject, html });
+  return sendAndLogEmail({ from: FROM_EMAIL, to, subject, html, companyId, category: 'billing', eventType: 'trial_started' });
 }
 
 export async function sendTrialEndingEmail(params: Common & {
   trialEndsAt: string;
 }) {
-  const { to, companyName, manageUrl, trialEndsAt } = params;
+  const { to, companyName, companyId, manageUrl, trialEndsAt } = params;
   const subject = `Your AgencyViz trial ends in 3 days`;
   const html = trialEndingTemplate({
     companyName: escapeHtml(companyName),
     trialEndsLabel: formatDate(trialEndsAt),
     manageUrl,
   });
-  return getResend().emails.send({ from: FROM_EMAIL, to, subject, html });
+  return sendAndLogEmail({ from: FROM_EMAIL, to, subject, html, companyId, category: 'billing', eventType: 'trial_ending' });
 }
 
 export async function sendPaymentFailedEmail(params: Common & {
   amountLabel: string;
 }) {
-  const { to, companyName, manageUrl, amountLabel } = params;
+  const { to, companyName, companyId, manageUrl, amountLabel } = params;
   const subject = `We couldn't process your AgencyViz payment`;
   const html = paymentFailedTemplate({
     companyName: escapeHtml(companyName),
     amountLabel: escapeHtml(amountLabel),
     manageUrl,
   });
-  return getResend().emails.send({ from: FROM_EMAIL, to, subject, html });
+  return sendAndLogEmail({ from: FROM_EMAIL, to, subject, html, companyId, category: 'billing', eventType: 'payment_failed' });
 }
 
 export async function sendSubscriptionCanceledEmail(params: Common & {
   endsAt: string | null;
 }) {
-  const { to, companyName, manageUrl, endsAt } = params;
+  const { to, companyName, companyId, manageUrl, endsAt } = params;
   const subject = `Your AgencyViz subscription has been canceled`;
   const html = canceledTemplate({
     companyName: escapeHtml(companyName),
     endsLabel: endsAt ? formatDate(endsAt) : null,
     manageUrl,
   });
-  return getResend().emails.send({ from: FROM_EMAIL, to, subject, html });
+  return sendAndLogEmail({ from: FROM_EMAIL, to, subject, html, companyId, category: 'billing', eventType: 'subscription_canceled' });
 }
 
 /* ── Templates ────────────────────────────────────────────────────────── */

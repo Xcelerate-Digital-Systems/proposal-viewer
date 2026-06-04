@@ -11,7 +11,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit';
 import { enqueueGhlSync, buildProposalSyncPayload } from '@/lib/connectors/ghl/sync';
-import { getResend, fromEmail } from '@/lib/resend';
+import { fromEmail } from '@/lib/resend';
+import { sendAndLogEmail } from '@/lib/email-log';
 import { buildProposalUrl } from '@/lib/proposal-url';
 import { buildClientConfirmationEmail, type ClientDecisionAction } from '@/lib/notification-emails';
 
@@ -124,7 +125,14 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
           accentColor: company?.accent_color || '#017C87',
         });
 
-        await getResend().emails.send({ from: fromEmail(companyName), to: clientEmail, subject, html });
+        await sendAndLogEmail({
+          from: fromEmail(companyName), to: clientEmail, subject, html,
+          companyId: proposal.company_id,
+          category: 'proposal_confirmation',
+          eventType: decisionAction,
+          entityType: proposal.entity_type === 'quote' ? 'quote' : 'proposal',
+          entityId: proposal.id,
+        });
       } catch (err) {
         console.error('[api/proposals/share/[token]/action] confirmation email error:', err);
       }
