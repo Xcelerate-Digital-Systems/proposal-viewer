@@ -4,11 +4,11 @@
 // field so quotes built with the old builder still render their scope.
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
+import { useEditorUndo } from '@/components/admin/EditorUndoContext';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
-import { Button } from '@/components/ui/Button';
 
 interface Props {
   proposal: Proposal;
@@ -17,10 +17,11 @@ interface Props {
 
 export default function ScopeOfWorksSection({ proposal, onSaved }: Props) {
   const toast = useToast();
-  // Prefer the new column; fall back to legacy `description` until next save.
+  const editorUndo = useEditorUndo();
   const initial = proposal.scope_of_works ?? proposal.description ?? '';
   const [value, setValue] = useState(initial);
   const [saving, setSaving] = useState(false);
+  const snapshotRef = useRef(initial);
 
   const dirty = value !== initial;
 
@@ -46,7 +47,14 @@ export default function ScopeOfWorksSection({ proposal, onSaved }: Props) {
       <textarea
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        onBlur={() => dirty && save()}
+        onFocus={() => { snapshotRef.current = value; }}
+        onBlur={() => {
+          if (dirty) {
+            const prev = snapshotRef.current;
+            editorUndo?.push('Scope of works', () => setValue(prev));
+            save();
+          }
+        }}
         rows={6}
         placeholder={
           'Supply and install new shower, vanity, and tapware\n' +
@@ -56,17 +64,9 @@ export default function ScopeOfWorksSection({ proposal, onSaved }: Props) {
         }
         className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30 resize-y"
       />
-      <div className="flex items-center justify-end pt-3 mt-3 border-t border-edge">
-        <Button
-          type="button"
-          size="sm"
-          loading={saving}
-          disabled={!dirty}
-          onClick={save}
-        >
-          Save Scope
-        </Button>
-      </div>
+      {saving && (
+        <p className="text-detail text-faint text-right pt-3 mt-3 border-t border-edge">Saving…</p>
+      )}
     </SectionCard>
   );
 }

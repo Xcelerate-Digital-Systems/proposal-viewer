@@ -7,7 +7,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { supabase, type Proposal, formatCurrency, pricingEffectiveSubtotal, SUPPORTED_CURRENCIES, type CurrencyCode } from '@/lib/supabase';
 import { authFetch } from '@/lib/auth-fetch';
 import { useToast } from '@/components/ui/Toast';
@@ -17,6 +17,7 @@ import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard'
 interface Props {
   proposal: Proposal;
   onSaved: () => void;
+  refreshKey?: number;
 }
 
 function ToggleRow({
@@ -36,7 +37,7 @@ function ToggleRow({
   );
 }
 
-export default function PricingSettingsSection({ proposal, onSaved }: Props) {
+export default function PricingSettingsSection({ proposal, onSaved, refreshKey = 0 }: Props) {
   const toast = useToast();
   const [currency, setCurrency] = useState<CurrencyCode>((proposal as Record<string, unknown>).currency as CurrencyCode || 'AUD');
   const [includeGst, setIncludeGst] = useState(proposal.include_gst ?? true);
@@ -64,7 +65,7 @@ export default function PricingSettingsSection({ proposal, onSaved }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [proposal.id, proposal.updated_at]);
+  }, [proposal.id, proposal.updated_at, refreshKey]);
 
   const gstAmount = includeGst ? Math.round(subtotal * gstRate * 100) / 100 : 0;
   const total = subtotal + gstAmount;
@@ -102,7 +103,7 @@ export default function PricingSettingsSection({ proposal, onSaved }: Props) {
   const gstPct = Math.round(gstRate * 100);
 
   return (
-    <SectionCard title="Pricing">
+    <SectionCard title="Tax & Deposit">
       <div className="space-y-4">
         {/* Currency */}
         <div>
@@ -174,7 +175,10 @@ export default function PricingSettingsSection({ proposal, onSaved }: Props) {
                   min={0}
                   max={100}
                   value={depositPercent}
-                  onChange={(e) => setDepositPercent(Number(e.target.value) || 0)}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    setDepositPercent(Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : 0);
+                  }}
                   onBlur={() => dirty && save()}
                   className="w-24 px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
                 />
@@ -188,15 +192,13 @@ export default function PricingSettingsSection({ proposal, onSaved }: Props) {
 
         {dirty && (
           <div className="flex items-center justify-end pt-3 border-t border-edge">
-            <button
-              type="button"
+            <Button
+              size="sm"
+              loading={saving}
               onClick={save}
-              disabled={saving}
-              className="flex items-center gap-1.5 px-4 py-2 bg-teal text-white rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50"
             >
-              {saving && <Loader2 size={14} className="animate-spin" />}
-              {saving ? 'Saving…' : 'Save Pricing Settings'}
-            </button>
+              Save Pricing Settings
+            </Button>
           </div>
         )}
       </div>

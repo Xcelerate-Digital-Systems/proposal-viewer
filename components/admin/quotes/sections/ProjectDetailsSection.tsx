@@ -4,12 +4,11 @@
 // it can sit prominently in the builder, matching QuoteWin's layout.
 'use client';
 
-import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
+import { useEditorUndo } from '@/components/admin/EditorUndoContext';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
-import { Button } from '@/components/ui/Button';
 
 interface Props {
   proposal: Proposal;
@@ -26,10 +25,25 @@ function defaultValidUntil(): string {
 
 export default function QuoteProjectDetailsSection({ proposal, onSaved }: Props) {
   const toast = useToast();
+  const editorUndo = useEditorUndo();
   const [title, setTitle] = useState(proposal.title ?? '');
   const [category, setCategory] = useState(proposal.category ?? '');
   const [validUntil, setValidUntil] = useState(proposal.valid_until ?? defaultValidUntil());
   const [saving, setSaving] = useState(false);
+  const snapshotRef = useRef({ title, category, validUntil });
+
+  const captureSnapshot = () => {
+    snapshotRef.current = { title, category, validUntil };
+  };
+
+  const pushUndo = () => {
+    const snap = { ...snapshotRef.current };
+    editorUndo?.push('Project details', () => {
+      setTitle(snap.title);
+      setCategory(snap.category);
+      setValidUntil(snap.validUntil);
+    });
+  };
 
   const dirty =
     title !== (proposal.title ?? '') ||
@@ -69,7 +83,8 @@ export default function QuoteProjectDetailsSection({ proposal, onSaved }: Props)
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            onBlur={() => dirty && save()}
+            onFocus={captureSnapshot}
+            onBlur={() => { if (dirty) { pushUndo(); save(); } }}
             placeholder="e.g. Full Bathroom Renovation — 12 Oak St"
             className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
           />
@@ -84,7 +99,8 @@ export default function QuoteProjectDetailsSection({ proposal, onSaved }: Props)
             type="text"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            onBlur={() => dirty && save()}
+            onFocus={captureSnapshot}
+            onBlur={() => { if (dirty) { pushUndo(); save(); } }}
             placeholder="e.g. Bathroom, Kitchen, Landscaping"
             className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
           />
@@ -99,22 +115,15 @@ export default function QuoteProjectDetailsSection({ proposal, onSaved }: Props)
             type="date"
             value={validUntil}
             onChange={(e) => setValidUntil(e.target.value)}
-            onBlur={() => dirty && save()}
+            onFocus={captureSnapshot}
+            onBlur={() => { if (dirty) { pushUndo(); save(); } }}
             className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
           />
         </div>
 
-        <div className="flex items-center justify-end pt-2 border-t border-edge">
-          <Button
-            type="button"
-            size="sm"
-            loading={saving}
-            disabled={!dirty}
-            onClick={save}
-          >
-            Save Project Details
-          </Button>
-        </div>
+        {saving && (
+          <p className="text-detail text-faint text-right pt-2 border-t border-edge">Saving…</p>
+        )}
       </div>
     </SectionCard>
   );

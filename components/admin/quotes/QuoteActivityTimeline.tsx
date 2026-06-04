@@ -147,6 +147,7 @@ export default function QuoteActivityTimeline({ proposal }: Props) {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
           className="flex items-center gap-1 text-xs text-dim hover:text-prose transition-colors"
         >
           {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}

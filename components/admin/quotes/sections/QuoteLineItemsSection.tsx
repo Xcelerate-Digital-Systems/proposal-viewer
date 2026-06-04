@@ -6,7 +6,7 @@
 // header bar via LineItemsLibraryBar.
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import {
   type Proposal,
@@ -35,6 +35,14 @@ export default function QuoteLineItemsSection({ proposal, companyId, onApplied }
     companyId: null,
   });
   useReportSaveStatus(editor.saveStatus);
+
+  const prevSaveStatus = useRef(editor.saveStatus);
+  useEffect(() => {
+    if (prevSaveStatus.current === 'saving' && editor.saveStatus === 'saved') {
+      onApplied();
+    }
+    prevSaveStatus.current = editor.saveStatus;
+  }, [editor.saveStatus, onApplied]);
 
   // Quotes always use quantity-based pricing — there's no UI to turn it off.
   // Snap the underlying flag once the pricing page is loaded so rows saved
@@ -92,6 +100,26 @@ export default function QuoteLineItemsSection({ proposal, companyId, onApplied }
     editor.updateForm({ items: items.filter((it) => it.id !== id) });
   };
 
+  const tableRef = useRef<HTMLDivElement>(null);
+
+  const handleRowKeyDown = useCallback(
+    (e: React.KeyboardEvent, index: number) => {
+      if (e.key !== 'Enter') return;
+      const isLast = index === items.length - 1;
+      if (!isLast) return;
+      e.preventDefault();
+      addItem();
+      requestAnimationFrame(() => {
+        const rows = tableRef.current?.querySelectorAll('[role="row"]');
+        const lastRow = rows?.[rows.length - 1];
+        const firstInput = lastRow?.querySelector('input');
+        firstInput?.focus();
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items.length],
+  );
+
   return (
     <SectionCard
       title="Line Items"
@@ -102,69 +130,91 @@ export default function QuoteLineItemsSection({ proposal, companyId, onApplied }
         />
       }
     >
-      {/* Table head */}
-      <div className="grid grid-cols-[1.4fr_1.6fr_72px_120px_88px_28px] gap-2 px-2 pb-2 border-b border-edge text-detail font-medium uppercase tracking-wider text-faint">
-        <div>Item</div>
-        <div>Description</div>
-        <div className="text-right">Qty</div>
-        <div className="text-right">Unit $</div>
-        <div className="text-right">Total</div>
-        <div />
-      </div>
-
-      {/* Rows */}
-      <div className="divide-y divide-gray-50">
-        {items.length === 0 && (
-          <div className="py-6 text-center text-xs text-faint">
-            No line items yet — click <span className="text-teal font-medium">Add Line Item</span> to start.
+      {/* Table */}
+      <div role="table" aria-label="Line items" ref={tableRef}>
+        <div role="rowgroup">
+          <div role="row" className="grid grid-cols-[1.4fr_1.6fr_72px_120px_88px_28px] gap-2 px-2 pb-2 border-b border-edge text-detail font-medium uppercase tracking-wider text-faint">
+            <div role="columnheader">Item</div>
+            <div role="columnheader">Description</div>
+            <div role="columnheader" className="text-right">Qty</div>
+            <div role="columnheader" className="text-right">Unit $</div>
+            <div role="columnheader" className="text-right">Total</div>
+            <div role="columnheader"><span className="sr-only">Actions</span></div>
           </div>
-        )}
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className="grid grid-cols-[1.4fr_1.6fr_72px_120px_88px_28px] gap-2 items-center px-2 py-2"
-          >
-            <input
-              type="text"
-              value={item.label}
-              onChange={(e) => updateItem(item.id, { label: e.target.value })}
-              placeholder="Item name"
-              className="w-full px-2 py-1.5 rounded border border-transparent hover:border-edge-strong focus:border-edge-strong focus:bg-white text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
-            />
-            <input
-              type="text"
-              value={item.description}
-              onChange={(e) => updateItem(item.id, { description: e.target.value })}
-              placeholder="Optional"
-              className="w-full px-2 py-1.5 rounded border border-transparent hover:border-edge-strong focus:border-edge-strong focus:bg-white text-sm text-dim focus:outline-none focus:ring-1 focus:ring-teal/30"
-            />
-            <input
-              type="number"
-              min={0}
-              step="any"
-              value={item.qty ?? 1}
-              onChange={(e) => updateItem(item.id, { qty: parseFloat(e.target.value) || 0 })}
-              className="w-full px-2 py-1.5 rounded border border-edge-strong text-sm text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-teal/30"
-            />
-            <CurrencyInput
-              value={item.unit_price ?? 0}
-              onChange={(val) => updateItem(item.id, { unit_price: val })}
-              size="sm"
-              className="w-full"
-            />
-            <div className="text-sm text-right font-medium tabular-nums text-ink px-2">
+        </div>
+
+        <div role="rowgroup" className="divide-y divide-edge">
+          {items.length === 0 && (
+            <div role="row" className="py-6 text-center text-xs text-faint">
+              <div role="cell">No line items yet. Click <span className="text-teal font-medium">Add Line Item</span> to start.</div>
+            </div>
+          )}
+          {items.map((item, idx) => (
+            <div
+              key={item.id}
+              role="row"
+              className="grid grid-cols-[1.4fr_1.6fr_72px_120px_88px_28px] gap-2 items-center px-2 py-2"
+              onKeyDown={(e) => handleRowKeyDown(e, idx)}
+            >
+            <div role="cell">
+              <input
+                type="text"
+                value={item.label}
+                onChange={(e) => updateItem(item.id, { label: e.target.value })}
+                placeholder="Item name"
+                aria-label="Item name"
+                className="w-full px-2 py-1.5 rounded border border-transparent hover:border-edge-strong focus:border-edge-strong focus:bg-white text-sm focus:outline-none focus:ring-1 focus:ring-teal/30"
+              />
+            </div>
+            <div role="cell">
+              <input
+                type="text"
+                value={item.description}
+                onChange={(e) => updateItem(item.id, { description: e.target.value })}
+                placeholder="Optional"
+                aria-label="Description"
+                className="w-full px-2 py-1.5 rounded border border-transparent hover:border-edge-strong focus:border-edge-strong focus:bg-white text-sm text-dim focus:outline-none focus:ring-1 focus:ring-teal/30"
+              />
+            </div>
+            <div role="cell">
+              <input
+                type="number"
+                min={0}
+                step="any"
+                value={item.qty ?? 1}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  updateItem(item.id, { qty: Number.isFinite(v) && v >= 0 ? v : 0 });
+                }}
+                aria-label="Quantity"
+                className="w-full px-2 py-1.5 rounded border border-edge-strong text-sm text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-teal/30"
+              />
+            </div>
+            <div role="cell">
+              <CurrencyInput
+                value={item.unit_price ?? 0}
+                onChange={(val) => updateItem(item.id, { unit_price: val })}
+                size="sm"
+                className="w-full"
+              />
+            </div>
+            <div role="cell" className="text-sm text-right font-medium tabular-nums text-ink px-2">
               {formatAUD(item.amount)}
             </div>
-            <button
-              type="button"
-              onClick={() => removeItem(item.id)}
-              className="p-1 rounded text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
-              title="Remove line"
-            >
-              <Trash2 size={12} />
-            </button>
+            <div role="cell">
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => removeItem(item.id)}
+                className="p-1 rounded text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
+                aria-label={`Remove ${item.label || 'line item'}`}
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
           </div>
         ))}
+        </div>
       </div>
 
       {/* Footer: Add Line Item + running subtotal */}

@@ -13,7 +13,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Copy, Check, ExternalLink, Trash2, Download, BookmarkPlus,
-  PenLine, Paintbrush, SlidersHorizontal, Files, Loader2,
+  PenLine, Paintbrush, SlidersHorizontal, Files,
 } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
@@ -79,6 +79,15 @@ export default function QuoteShellHeader({
   };
 
   const handleStatusChange = async (newStatus: ProposalStatus) => {
+    if (newStatus === 'draft' && proposal.status !== 'draft') {
+      const ok = await confirm({
+        title: 'Revert to Draft?',
+        message: 'This will reset the sent date and view tracking for this quote. This cannot be undone.',
+        confirmLabel: 'Revert to Draft',
+        destructive: true,
+      });
+      if (!ok) return;
+    }
     const updates: Record<string, unknown> = { status: newStatus };
     if (newStatus === 'sent' && proposal.status === 'draft') updates.sent_at = new Date().toISOString();
     if (newStatus === 'draft') {
@@ -241,28 +250,32 @@ export default function QuoteShellHeader({
             <Download size={14} />
             PDF
           </a>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
+            leftIcon={BookmarkPlus}
+            loading={savingTemplate}
             onClick={saveAsTemplate}
-            disabled={savingTemplate}
-            className="p-2 rounded-lg text-faint hover:text-prose hover:bg-surface transition-colors disabled:opacity-50"
-            title="Save as quote template"
-          >
-            {savingTemplate ? <Loader2 size={16} className="animate-spin" /> : <BookmarkPlus size={16} />}
-          </button>
-          <button
+            aria-label="Save as template"
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
+            leftIcon={Files}
             onClick={duplicateQuote}
-            className="p-2 rounded-lg text-faint hover:text-prose hover:bg-surface transition-colors"
-            title="Duplicate quote"
-          >
-            <Files size={16} />
-          </button>
-          <button
+            aria-label="Duplicate quote"
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
+            leftIcon={Trash2}
             onClick={deleteQuote}
-            className="p-2 rounded-lg text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
-            title="Delete quote"
-          >
-            <Trash2 size={16} />
-          </button>
+            aria-label="Delete quote"
+            className="hover:!text-red-500 hover:!bg-red-50"
+          />
         </div>
       </div>
 
