@@ -9,8 +9,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
-  AlertTriangle, BarChart3, CheckCircle2, Copy, Check,
-  ExternalLink, Settings,
+  AlertTriangle, CheckCircle2, Copy, Check, Settings,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import PageHeader from '@/components/ui/PageHeader';
@@ -21,6 +20,19 @@ import Link from 'next/link';
 
 const META_DEPLOYMENT_ID = process.env.NEXT_PUBLIC_LOOKER_DEPLOYMENT_ID_META || '';
 const GHL_DEPLOYMENT_ID = process.env.NEXT_PUBLIC_LOOKER_DEPLOYMENT_ID_GHL || '';
+
+function humanizeError(raw: string): string {
+  const decoded = decodeURIComponent(raw);
+  if (/token|auth|expired|revoked/i.test(decoded))
+    return 'Your Meta connection has expired or was revoked. Reconnect in Settings → Integrations, then try again.';
+  if (/permission|scope|access/i.test(decoded))
+    return 'The connection is missing required permissions. Disconnect and reconnect with the correct ad account scopes.';
+  if (/rate.?limit|too many/i.test(decoded))
+    return 'Too many requests. Wait a minute, then try again.';
+  if (/network|timeout|fetch/i.test(decoded))
+    return 'Could not reach the server. Check your connection and try again.';
+  return 'Something went wrong connecting your account. Try again, or contact support if the problem persists.';
+}
 
 function Banners() {
   const search = useSearchParams();
@@ -41,7 +53,7 @@ function Banners() {
   return (
     <div className="mb-6 space-y-3">
       {connected && !dismissed && (
-        <div className="flex items-start gap-3 p-4 bg-teal-tint border border-teal/30 rounded-2xl">
+        <div className="flex items-start gap-3 p-4 bg-teal-tint border border-teal/30 rounded-2xl" role="status">
           <CheckCircle2 size={18} className="text-teal mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-ink">Connection updated</p>
@@ -50,11 +62,13 @@ function Banners() {
         </div>
       )}
       {error && (
-        <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl">
+        <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl" role="alert">
           <AlertTriangle size={18} className="text-red-500 mt-0.5 shrink-0" />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-ink">Something went wrong</p>
-            <p className="text-xs text-faint break-all">{decodeURIComponent(error)}</p>
+            <p className="text-sm font-semibold text-ink">Connection failed</p>
+            <p className="text-xs text-prose">
+              {humanizeError(error)}
+            </p>
           </div>
         </div>
       )}
@@ -64,22 +78,36 @@ function Banners() {
 
 function CopyDeploymentButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setFailed(false);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setFailed(true);
+      setTimeout(() => setFailed(false), 3000);
+    }
   };
 
   return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-teal text-white hover:bg-teal-hover transition-colors"
-    >
-      {copied ? <Check size={13} /> : <Copy size={13} />}
-      {copied ? 'Deployment ID copied' : 'Copy deployment ID'}
-    </button>
+    <div className="space-y-1.5">
+      <Button
+        variant="primary"
+        size="sm"
+        onClick={handleCopy}
+        leftIcon={copied ? Check : Copy}
+      >
+        <span aria-live="polite">{copied ? 'Deployment ID copied' : 'Copy deployment ID'}</span>
+      </Button>
+      {failed && (
+        <p className="text-xs text-red-500" role="alert">
+          Could not copy. Select and copy manually: <code className="text-2xs bg-red-50 px-1.5 py-0.5 rounded">{text}</code>
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -122,7 +150,7 @@ function ConnectorSetupCard({
           </div>
         </div>
         {!isAvailable && (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-wash text-faint font-medium">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-edge text-faint font-medium">
             Coming soon
           </span>
         )}
@@ -189,11 +217,36 @@ function ConnectorSetupCard({
             <p className="text-xs text-faint ml-7 mb-3">
               Paste the deployment ID into the input field, click <strong>Validate</strong>, then select the <strong>AgencyViz Connector</strong> and follow the setup from there.
             </p>
-            {deploymentId && (
+            {deploymentId ? (
               <div className="ml-7">
                 <CopyDeploymentButton text={deploymentId} />
               </div>
+            ) : (
+              <div className="ml-7 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-xs text-amber-800">
+                  Deployment ID not configured. Contact your admin to set up the Looker Studio connector.
+                </p>
+              </div>
             )}
+          </div>
+
+          {/* Step 5 — What to expect */}
+          <div className="ml-7 mt-2 px-4 py-3 bg-surface rounded-xl border border-edge/50">
+            <p className="text-xs font-semibold text-ink mb-1.5">What to expect in Looker Studio</p>
+            <ul className="text-xs text-muted space-y-1">
+              <li className="flex items-start gap-2">
+                <CheckCircle2 size={12} className="text-teal shrink-0 mt-0.5" />
+                The connector appears as <strong className="text-ink">AgencyViz — Meta Ads</strong> after validation.
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 size={12} className="text-teal shrink-0 mt-0.5" />
+                You will be prompted to authorize with your AgencyViz account (OAuth).
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 size={12} className="text-teal shrink-0 mt-0.5" />
+                Once authorized, choose your ad account and date range to start pulling data.
+              </li>
+            </ul>
           </div>
         </div>
       )}

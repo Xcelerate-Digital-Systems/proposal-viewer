@@ -293,7 +293,7 @@ function DeveloperSection({
     <div className="bg-surface border border-edge rounded-2xl overflow-hidden">
       <div className="px-6 py-4 border-b border-edge">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-wash flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-paper flex items-center justify-center">
             <Icon size={16} className="text-muted" />
           </div>
           <div>

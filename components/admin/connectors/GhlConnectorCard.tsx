@@ -1,16 +1,15 @@
 // components/admin/connectors/GhlConnectorCard.tsx
 //
-// GoHighLevel integration configuration card for Settings > Developer tab.
-// Handles: token input, connection test, pipeline selection, stage mapping,
-// workflow trigger toggle, and sync activity display.
+// GoHighLevel integration configuration card for Settings > Integrations tab.
+// Wizard flow: Pipeline → Proposal Mapping → Quote Mapping → Automation & Save.
 
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Check, ChevronDown, ChevronUp, ExternalLink, Eye, EyeOff,
-  Loader2, Plug, PlugZap, RefreshCw, ToggleLeft, ToggleRight,
-  Trash2, Workflow, Zap,
+  Check, ChevronDown, ChevronUp, Eye, EyeOff,
+  Loader2, Plug, ToggleLeft, ToggleRight,
+  Trash2, Workflow,
 } from 'lucide-react';
 import Image from 'next/image';
 import { authFetch } from '@/lib/auth-fetch';
@@ -90,6 +89,8 @@ const OPP_STATUS_OPTIONS = [
   { value: 'abandoned', label: 'Abandoned' },
 ];
 
+const WIZARD_LABELS = ['Pipeline', 'Proposals', 'Quotes', 'Automation'];
+
 // ── Component ───────────────────────────────────────────────────────────
 
 export default function GhlConnectorCard() {
@@ -124,6 +125,7 @@ export default function GhlConnectorCard() {
   // UI state
   const [saving, setSaving] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
 
   // ── Load existing configuration ──────────────────────────────────────
 
@@ -142,7 +144,6 @@ export default function GhlConnectorCard() {
         setMasterEnabled(data.connection.enabled);
         setLocationId(data.connection.location_id);
 
-        // Load mappings into lookup objects
         const pm: Record<string, StageMapping> = {};
         const qm: Record<string, StageMapping> = {};
         (data.mappings || []).forEach((m: StageMapping) => {
@@ -309,6 +310,7 @@ export default function GhlConnectorCard() {
       setProposalMappings({});
       setQuoteMappings({});
       setMasterEnabled(false);
+      setWizardStep(1);
       toast.success('GoHighLevel disconnected');
     } catch {
       toast.error('Failed to disconnect');
@@ -355,46 +357,48 @@ export default function GhlConnectorCard() {
   // ── Render ───────────────────────────────────────────────────────────
 
   return (
-    <div className="bg-surface border border-edge rounded-2xl overflow-hidden">
+    <section className="bg-white rounded-2xl shadow-card overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-edge">
-        <div className="flex items-center gap-3">
+      <header className="flex items-start justify-between gap-4 px-6 py-5 border-b border-edge">
+        <div className="flex items-start gap-3 min-w-0">
           <Image
             src="/integrations/go-high-level-icon.svg"
             alt="GoHighLevel"
-            width={36}
-            height={36}
-            className="rounded-xl"
+            width={40}
+            height={40}
+            className="rounded-2xl shrink-0"
           />
-          <div>
-            <h3 className="text-sm font-semibold text-ink">GoHighLevel</h3>
-            <p className="text-xs text-faint">Pipeline sync for proposals & quotes</p>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base font-semibold text-ink">GoHighLevel</h2>
+              {connected && (
+                <span className={`inline-flex items-center px-2 py-0.5 text-detail font-medium rounded-full ${
+                  connection?.token_valid
+                    ? 'bg-teal-tint text-teal'
+                    : 'bg-amber-50 text-amber-700 border border-amber-200'
+                }`}>
+                  {connection?.token_valid ? 'Connected' : 'Token invalid'}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-faint mt-1 leading-relaxed max-w-[58ch]">
+              Two-way pipeline sync for proposals and quotes. Stage changes push to GHL as opportunity updates.
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {connected && (
-            <span className={`text-xs px-2 py-0.5 rounded-full ${
-              connection?.token_valid
-                ? 'bg-teal-tint text-teal'
-                : 'bg-amber-50 text-amber-700 border border-amber-200'
-            }`}>
-              {connection?.token_valid ? 'Connected' : 'Token invalid'}
-            </span>
-          )}
-          {connected && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDisconnect}
-              loading={disconnecting}
-              leftIcon={Trash2}
-              className="text-faint hover:text-red-600"
-            >
-              Disconnect
-            </Button>
-          )}
-        </div>
-      </div>
+        {connected && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDisconnect}
+            loading={disconnecting}
+            leftIcon={Trash2}
+            className="text-faint hover:text-red-600 shrink-0"
+          >
+            Disconnect
+          </Button>
+        )}
+      </header>
 
       <div className="px-6 py-5 space-y-6">
         {/* ── Connection Section ─────────────────────────────────────── */}
@@ -404,15 +408,15 @@ export default function GhlConnectorCard() {
               <p className="text-xs text-faint">
                 Connect your GoHighLevel account using a Private Integration token.
               </p>
-              <div className="bg-wash border border-edge rounded-lg px-3 py-2.5 space-y-1.5">
+              <div className="bg-surface border border-edge rounded-lg px-3 py-2.5 space-y-1.5">
                 <p className="text-xs font-medium text-muted">Setup steps:</p>
-                <ol className="text-[11px] text-faint list-decimal list-inside space-y-0.5">
+                <ol className="text-detail text-faint list-decimal list-inside space-y-0.5">
                   <li>In GHL, go to <span className="text-ink font-medium">Settings → Private Integrations → Create</span></li>
                   <li>
                     Add these scopes:
                     <span className="inline-flex flex-wrap gap-1 ml-1">
                       {['Locations (Read)', 'Opportunities (Read/Write)', 'Contacts (Read/Write)'].map(s => (
-                        <span key={s} className="px-1.5 py-0.5 bg-surface border border-edge rounded text-[10px] text-muted font-medium">{s}</span>
+                        <span key={s} className="px-1.5 py-0.5 bg-surface border border-edge rounded text-2xs text-muted font-medium">{s}</span>
                       ))}
                     </span>
                   </li>
@@ -435,6 +439,7 @@ export default function GhlConnectorCard() {
                   type="button"
                   onClick={() => setShowToken(!showToken)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-faint hover:text-muted"
+                  aria-label={showToken ? 'Hide token' : 'Show token'}
                 >
                   {showToken ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -450,7 +455,7 @@ export default function GhlConnectorCard() {
                 placeholder="GHL Location / Sub-Account ID"
                 className="w-full px-3 py-2 text-sm border border-edge rounded-lg bg-surface text-ink placeholder:text-faint/50 focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
               />
-              <p className="text-[11px] text-faint mt-1">
+              <p className="text-detail text-faint mt-1">
                 Found in GHL → Settings → Business Profile → look for the Location ID (starts with a long string of characters)
               </p>
             </div>
@@ -465,147 +470,219 @@ export default function GhlConnectorCard() {
           </div>
         )}
 
-        {/* ── Pipeline & Stage Mapping ───────────────────────────────── */}
+        {/* ── Wizard (connected state) ──────────────────────────────── */}
         {connected && (
           <>
-            {/* Master toggle */}
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-ink">Sync enabled</p>
-                <p className="text-xs text-faint">When enabled, stage changes push to GHL automatically</p>
-              </div>
-              <button
-                onClick={() => setMasterEnabled(!masterEnabled)}
-                className="text-2xl transition-colors"
-              >
-                {masterEnabled
-                  ? <ToggleRight size={32} className="text-teal" />
-                  : <ToggleLeft size={32} className="text-faint" />}
-              </button>
-            </div>
+            <WizardSteps current={wizardStep} onStepClick={setWizardStep} />
 
-            <hr className="border-edge" />
-
-            {/* Pipeline selector */}
-            <div>
-              <label className="block text-xs font-medium text-muted mb-1">Pipeline</label>
-              {loadingPipelines ? (
-                <div className="flex items-center gap-2 text-sm text-faint">
-                  <Loader2 size={14} className="animate-spin" /> Loading pipelines…
+            {/* Step 1: Pipeline */}
+            {wizardStep === 1 && (
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-semibold text-ink mb-1">Select a pipeline</h4>
+                  <p className="text-xs text-faint mb-3">
+                    Choose which GHL pipeline to sync with AgencyViz proposal and quote stages.
+                  </p>
+                  {loadingPipelines ? (
+                    <div className="flex items-center gap-2 text-sm text-faint">
+                      <Loader2 size={14} className="animate-spin" /> Loading pipelines…
+                    </div>
+                  ) : pipelines.length === 0 ? (
+                    <div className="px-4 py-3 bg-surface rounded-lg text-xs text-muted leading-relaxed">
+                      No pipelines found. Create a pipeline in GoHighLevel first, then return here.
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedPipelineId}
+                      onChange={e => {
+                        setSelectedPipelineId(e.target.value);
+                        setProposalMappings({});
+                        setQuoteMappings({});
+                      }}
+                      className="w-full px-3 py-2 text-sm border border-edge rounded-lg bg-surface text-ink focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                    >
+                      <option value="">Select a pipeline…</option>
+                      {pipelines.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
-              ) : (
-                <select
-                  value={selectedPipelineId}
-                  onChange={e => {
-                    setSelectedPipelineId(e.target.value);
-                    setProposalMappings({});
-                    setQuoteMappings({});
-                  }}
-                  className="w-full px-3 py-2 text-sm border border-edge rounded-lg bg-surface text-ink focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
-                >
-                  <option value="">Select a pipeline…</option>
-                  {pipelines.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            {/* Stage mapping tables */}
-            {selectedPipelineId && pipelineStages.length > 0 && (
-              <>
-                <StageMappingTable
-                  title="Proposal Stages"
-                  stages={PROPOSAL_STAGES}
-                  entityType="proposal"
-                  pipelineStages={pipelineStages}
-                  mappings={proposalMappings}
-                  workflowEnabled={workflowEnabled}
-                  onStageSelect={handleStageSelect}
-                  onStatusChange={(stage, val) => updateMapping('proposal', stage, 'ghl_opp_status', val || null)}
-                  onWorkflowToggle={(stage, val) => updateMapping('proposal', stage, 'trigger_workflow', val)}
-                />
-
-                <StageMappingTable
-                  title="Quote Stages"
-                  stages={QUOTE_STAGES}
-                  entityType="quote"
-                  pipelineStages={pipelineStages}
-                  mappings={quoteMappings}
-                  workflowEnabled={workflowEnabled}
-                  onStageSelect={handleStageSelect}
-                  onStatusChange={(stage, val) => updateMapping('quote', stage, 'ghl_opp_status', val || null)}
-                  onWorkflowToggle={(stage, val) => updateMapping('quote', stage, 'trigger_workflow', val)}
-                />
-              </>
+              </div>
             )}
 
-            <hr className="border-edge" />
-
-            {/* Workflow trigger */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Workflow size={16} className="text-faint" />
-                  <div>
-                    <p className="text-sm font-medium text-ink">Workflow trigger</p>
-                    <p className="text-xs text-faint">Add contact to a GHL workflow on mapped stage changes</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setWorkflowEnabled(!workflowEnabled)}
-                  className="text-2xl transition-colors"
-                >
-                  {workflowEnabled
-                    ? <ToggleRight size={28} className="text-teal" />
-                    : <ToggleLeft size={28} className="text-faint" />}
-                </button>
-              </div>
-              {workflowEnabled && (
+            {/* Step 2: Proposal stage mapping */}
+            {wizardStep === 2 && (
+              <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-muted mb-1">Workflow ID</label>
-                  <input
-                    type="text"
-                    value={workflowId}
-                    onChange={e => setWorkflowId(e.target.value)}
-                    placeholder="GHL Workflow ID"
-                    className="w-full px-3 py-2 text-sm border border-edge rounded-lg bg-surface text-ink placeholder:text-faint/50 focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
-                  />
-                  <p className="text-[11px] text-faint mt-1">
-                    Find in GHL → Automation → Workflows → click workflow → copy ID from URL
+                  <h4 className="text-sm font-semibold text-ink mb-1">Proposal stage mapping</h4>
+                  <p className="text-xs text-faint mb-3">
+                    When a proposal changes stage in AgencyViz, move the GHL opportunity to the mapped stage.
                   </p>
                 </div>
+                {selectedPipelineId && pipelineStages.length > 0 ? (
+                  <StageMappingTable
+                    stages={PROPOSAL_STAGES}
+                    entityType="proposal"
+                    pipelineStages={pipelineStages}
+                    mappings={proposalMappings}
+                    workflowEnabled={workflowEnabled}
+                    onStageSelect={handleStageSelect}
+                    onStatusChange={(stage, val) => updateMapping('proposal', stage, 'ghl_opp_status', val || null)}
+                    onWorkflowToggle={(stage, val) => updateMapping('proposal', stage, 'trigger_workflow', val)}
+                  />
+                ) : (
+                  <div className="px-4 py-3 bg-surface rounded-lg text-xs text-muted">
+                    Select a pipeline in Step 1 first.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 3: Quote stage mapping */}
+            {wizardStep === 3 && (
+              <div className="space-y-3">
+                <div>
+                  <h4 className="text-sm font-semibold text-ink mb-1">Quote stage mapping</h4>
+                  <p className="text-xs text-faint mb-3">
+                    When a quote changes stage in AgencyViz, move the GHL opportunity to the mapped stage.
+                  </p>
+                </div>
+                {selectedPipelineId && pipelineStages.length > 0 ? (
+                  <StageMappingTable
+                    stages={QUOTE_STAGES}
+                    entityType="quote"
+                    pipelineStages={pipelineStages}
+                    mappings={quoteMappings}
+                    workflowEnabled={workflowEnabled}
+                    onStageSelect={handleStageSelect}
+                    onStatusChange={(stage, val) => updateMapping('quote', stage, 'ghl_opp_status', val || null)}
+                    onWorkflowToggle={(stage, val) => updateMapping('quote', stage, 'trigger_workflow', val)}
+                  />
+                ) : (
+                  <div className="px-4 py-3 bg-surface rounded-lg text-xs text-muted">
+                    Select a pipeline in Step 1 first.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 4: Automation & save */}
+            {wizardStep === 4 && (
+              <div className="space-y-5">
+                <div>
+                  <h4 className="text-sm font-semibold text-ink mb-3">Automation settings</h4>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-ink">Sync enabled</p>
+                    <p className="text-xs text-faint">When enabled, stage changes push to GHL automatically</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={masterEnabled}
+                    aria-label="Toggle sync"
+                    onClick={() => setMasterEnabled(!masterEnabled)}
+                    className="text-2xl transition-colors"
+                  >
+                    {masterEnabled
+                      ? <ToggleRight size={28} className="text-teal" />
+                      : <ToggleLeft size={28} className="text-faint" />}
+                  </button>
+                </div>
+
+                <hr className="border-edge" />
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Workflow size={16} className="text-faint" />
+                      <div>
+                        <p className="text-sm font-medium text-ink">Workflow trigger</p>
+                        <p className="text-xs text-faint">Add contact to a GHL workflow on mapped stage changes</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={workflowEnabled}
+                      aria-label="Toggle workflow trigger"
+                      onClick={() => setWorkflowEnabled(!workflowEnabled)}
+                      className="text-2xl transition-colors"
+                    >
+                      {workflowEnabled
+                        ? <ToggleRight size={28} className="text-teal" />
+                        : <ToggleLeft size={28} className="text-faint" />}
+                    </button>
+                  </div>
+                  {workflowEnabled && (
+                    <div>
+                      <label className="block text-xs font-medium text-muted mb-1">Workflow ID</label>
+                      <input
+                        type="text"
+                        value={workflowId}
+                        onChange={e => setWorkflowId(e.target.value)}
+                        placeholder="GHL Workflow ID"
+                        className="w-full px-3 py-2 text-sm border border-edge rounded-lg bg-surface text-ink placeholder:text-faint/50 focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                      />
+                      <p className="text-detail text-faint mt-1">
+                        Find in GHL → Automation → Workflows → click workflow → copy ID from URL
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-ink">Sync monetary value</p>
+                    <p className="text-xs text-faint">Push quote totals as opportunity value in GHL</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={syncMonetary}
+                    aria-label="Toggle monetary sync"
+                    onClick={() => setSyncMonetary(!syncMonetary)}
+                    className="text-2xl transition-colors"
+                  >
+                    {syncMonetary
+                      ? <ToggleRight size={28} className="text-teal" />
+                      : <ToggleLeft size={28} className="text-faint" />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Wizard navigation */}
+            <div className="flex items-center justify-between pt-2">
+              {wizardStep > 1 ? (
+                <Button variant="outline" size="sm" onClick={() => setWizardStep(s => s - 1)}>
+                  Back
+                </Button>
+              ) : <div />}
+              {wizardStep < 4 ? (
+                <Button
+                  size="sm"
+                  onClick={() => setWizardStep(s => s + 1)}
+                  disabled={wizardStep === 1 && !selectedPipelineId}
+                >
+                  Next
+                </Button>
+              ) : (
+                <Button onClick={handleSave} loading={saving} leftIcon={Check}>
+                  Save Settings
+                </Button>
               )}
             </div>
 
-            {/* Monetary sync toggle */}
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-ink">Sync monetary value</p>
-                <p className="text-xs text-faint">Push quote totals as opportunity value in GHL</p>
-              </div>
-              <button
-                onClick={() => setSyncMonetary(!syncMonetary)}
-                className="text-2xl transition-colors"
-              >
-                {syncMonetary
-                  ? <ToggleRight size={28} className="text-teal" />
-                  : <ToggleLeft size={28} className="text-faint" />}
-              </button>
-            </div>
-
             <hr className="border-edge" />
 
-            {/* Save button */}
-            <div className="flex items-center gap-3">
-              <Button onClick={handleSave} loading={saving} leftIcon={Check}>
-                Save Settings
-              </Button>
-            </div>
-
-            {/* Sync activity */}
+            {/* Sync activity (outside wizard) */}
             <div>
               <button
+                type="button"
                 onClick={() => {
                   setShowActivity(!showActivity);
                   if (!showActivity) loadActivity();
@@ -623,13 +700,14 @@ export default function GhlConnectorCard() {
                     recentJobs.map(job => (
                       <div
                         key={job.id}
-                        className="flex items-center justify-between px-3 py-2 rounded-lg bg-wash text-xs"
+                        className="flex items-center justify-between px-3 py-2 rounded-lg bg-surface text-xs"
                       >
                         <div className="flex items-center gap-2">
                           <StatusDot status={job.status} />
-                          <span className="text-muted capitalize">{job.entity_type}</span>
+                          <span className="text-faint">·</span>
+                          <span className="text-ink capitalize">{job.entity_type}</span>
                           <span className="text-faint">→</span>
-                          <span className="text-ink">{job.to_stage}</span>
+                          <span className="text-ink font-medium">{job.to_stage}</span>
                         </div>
                         <div className="flex items-center gap-3">
                           {job.last_error && (
@@ -650,14 +728,54 @@ export default function GhlConnectorCard() {
           </>
         )}
       </div>
-    </div>
+    </section>
   );
 }
 
 // ── Sub-components ──────────────────────────────────────────────────────
 
+function WizardSteps({ current, onStepClick }: { current: number; onStepClick: (step: number) => void }) {
+  return (
+    <nav aria-label="Setup progress" className="flex items-center gap-1">
+      {WIZARD_LABELS.map((label, i) => {
+        const step = i + 1;
+        const done = step < current;
+        const active = step === current;
+        return (
+          <div key={label} className="flex items-center gap-1 flex-1">
+            <button
+              type="button"
+              onClick={() => onStepClick(step)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors w-full ${
+                active
+                  ? 'bg-teal-tint text-teal'
+                  : done
+                    ? 'text-teal hover:bg-teal-tint/50'
+                    : 'text-faint hover:text-muted'
+              }`}
+            >
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-2xs font-bold shrink-0 ${
+                done
+                  ? 'bg-teal text-white'
+                  : active
+                    ? 'bg-teal text-white'
+                    : 'bg-surface text-faint'
+              }`}>
+                {done ? <Check size={10} /> : step}
+              </span>
+              <span className="hidden sm:inline">{label}</span>
+            </button>
+            {i < WIZARD_LABELS.length - 1 && (
+              <div className={`w-4 h-px shrink-0 ${done ? 'bg-teal/40' : 'bg-edge'}`} />
+            )}
+          </div>
+        );
+      })}
+    </nav>
+  );
+}
+
 function StageMappingTable({
-  title,
   stages,
   entityType,
   pipelineStages,
@@ -667,7 +785,6 @@ function StageMappingTable({
   onStatusChange,
   onWorkflowToggle,
 }: {
-  title: string;
   stages: Array<{ key: string; label: string }>;
   entityType: 'proposal' | 'quote';
   pipelineStages: PipelineStage[];
@@ -678,76 +795,79 @@ function StageMappingTable({
   onWorkflowToggle: (avStage: string, value: boolean) => void;
 }) {
   return (
-    <div>
-      <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">{title}</p>
-      <div className="border border-edge rounded-lg overflow-hidden">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="bg-wash border-b border-edge">
-              <th className="text-left px-3 py-2 font-medium text-faint">AgencyViz Stage</th>
-              <th className="text-left px-3 py-2 font-medium text-faint">→ GHL Pipeline Stage</th>
-              <th className="text-left px-3 py-2 font-medium text-faint">Opp. Status</th>
-              {workflowEnabled && (
-                <th className="text-center px-3 py-2 font-medium text-faint w-20">Workflow</th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {stages.map(s => {
-              const m = mappings[s.key];
-              return (
-                <tr key={s.key} className="border-b border-edge last:border-0">
-                  <td className="px-3 py-2 text-ink font-medium">{s.label}</td>
-                  <td className="px-3 py-2">
-                    <select
-                      value={m?.ghl_stage_id || ''}
-                      onChange={e => onStageSelect(entityType, s.key, e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-edge rounded bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-teal/30"
-                    >
-                      <option value="">Do nothing</option>
-                      {pipelineStages.map(ps => (
-                        <option key={ps.id} value={ps.id}>{ps.name}</option>
-                      ))}
-                    </select>
+    <div className="border border-edge rounded-lg overflow-hidden">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="bg-surface border-b border-edge">
+            <th className="text-left px-3 py-2 font-medium text-faint">AgencyViz Stage</th>
+            <th className="text-left px-3 py-2 font-medium text-faint">→ GHL Pipeline Stage</th>
+            <th className="text-left px-3 py-2 font-medium text-faint">Opp. Status</th>
+            {workflowEnabled && (
+              <th className="text-center px-3 py-2 font-medium text-faint w-20">Workflow</th>
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {stages.map(s => {
+            const m = mappings[s.key];
+            return (
+              <tr key={s.key} className="border-b border-edge last:border-0">
+                <td className="px-3 py-2 text-ink font-medium">{s.label}</td>
+                <td className="px-3 py-2">
+                  <select
+                    value={m?.ghl_stage_id || ''}
+                    onChange={e => onStageSelect(entityType, s.key, e.target.value)}
+                    className="w-full px-2 py-1 text-xs border border-edge rounded bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-teal/30"
+                  >
+                    <option value="">Do nothing</option>
+                    {pipelineStages.map(ps => (
+                      <option key={ps.id} value={ps.id}>{ps.name}</option>
+                    ))}
+                  </select>
+                </td>
+                <td className="px-3 py-2">
+                  <select
+                    value={m?.ghl_opp_status || ''}
+                    onChange={e => onStatusChange(s.key, e.target.value)}
+                    className="w-full px-2 py-1 text-xs border border-edge rounded bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-teal/30"
+                  >
+                    {OPP_STATUS_OPTIONS.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </td>
+                {workflowEnabled && (
+                  <td className="px-3 py-2 text-center">
+                    <input
+                      type="checkbox"
+                      checked={m?.trigger_workflow ?? false}
+                      onChange={e => onWorkflowToggle(s.key, e.target.checked)}
+                      className="rounded border-edge text-teal focus:ring-teal/30"
+                    />
                   </td>
-                  <td className="px-3 py-2">
-                    <select
-                      value={m?.ghl_opp_status || ''}
-                      onChange={e => onStatusChange(s.key, e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-edge rounded bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-teal/30"
-                    >
-                      {OPP_STATUS_OPTIONS.map(o => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
-                  </td>
-                  {workflowEnabled && (
-                    <td className="px-3 py-2 text-center">
-                      <input
-                        type="checkbox"
-                        checked={m?.trigger_workflow ?? false}
-                        onChange={e => onWorkflowToggle(s.key, e.target.checked)}
-                        className="rounded border-edge text-teal focus:ring-teal/30"
-                      />
-                    </td>
-                  )}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
 
 function StatusDot({ status }: { status: string }) {
-  const color =
-    status === 'completed' ? 'bg-teal' :
-    status === 'failed' ? 'bg-amber-500' :
-    status === 'dead' ? 'bg-red-500' :
-    status === 'processing' ? 'bg-blue-500' :
-    'bg-gray-400';
+  const config: Record<string, { color: string; label: string }> = {
+    completed: { color: 'bg-teal', label: 'Completed' },
+    failed: { color: 'bg-amber-500', label: 'Failed' },
+    dead: { color: 'bg-red-500', label: 'Dead' },
+    processing: { color: 'bg-blue-500', label: 'Processing' },
+  };
+  const { color, label } = config[status] || { color: 'bg-gray-400', label: status };
 
-  return <span className={`w-2 h-2 rounded-full ${color} inline-block`} />;
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={`w-2 h-2 rounded-full ${color} inline-block shrink-0`} />
+      <span className="text-muted capitalize">{label}</span>
+    </span>
+  );
 }
