@@ -78,7 +78,7 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
     async function load() {
       try {
         const res = await fetch(`/api/review/${params.token}`);
-        if (!res.ok) { setNotFound(true); setLoading(false); return; }
+        if (!res.ok) { setNotFound(true); setLoading(false); setBrandingLoaded(true); return; }
 
         const data = await res.json();
         setProject(data.project);
