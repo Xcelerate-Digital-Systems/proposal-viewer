@@ -11,6 +11,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import InboxItem, { type InboxComment } from '@/components/admin/dashboard/InboxItem';
 import FeedbackActionWidgets from '@/components/admin/dashboard/FeedbackActionWidgets';
 import PipelineSummary from '@/components/admin/dashboard/PipelineSummary';
+import EmailActivityWidget from '@/components/admin/dashboard/EmailActivityWidget';
 import ClientPipeline from '@/components/admin/dashboard/ClientPipeline';
 import ErrorState from '@/components/ui/ErrorState';
 import PageHeader from '@/components/ui/PageHeader';
@@ -413,6 +414,8 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
                 total={pipeline.length}
               />
             </div>
+
+            <EmailActivityWidget />
           </div>
         </div>
       </div>
