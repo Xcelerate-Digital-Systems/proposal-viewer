@@ -235,17 +235,26 @@ export default function FontSelect({
             {value || 'System default'}
           </span>
           {value ? (
-            <button
-              type="button"
+            <span
+              role="button"
+              tabIndex={0}
               onClick={(e) => {
                 e.stopPropagation();
                 onChange(null);
                 onWeightChange(null);
               }}
-              className="p-0.5 text-faint hover:text-dim transition-colors"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onChange(null);
+                  onWeightChange(null);
+                }
+              }}
+              className="p-0.5 text-faint hover:text-dim transition-colors cursor-pointer"
             >
               <X size={14} />
-            </button>
+            </span>
           ) : (
             <Type size={14} className="text-faint" />
           )}
