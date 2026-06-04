@@ -34,16 +34,23 @@ export default function SwipeBulkUploadModal({ typeId, uploadMedia, createFile, 
   const [finished, setFinished] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
+
   const handleSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(e.target.files || []);
     if (picked.length === 0) return;
-    setRows(picked.map((f) => ({ file: f, status: 'pending' as const })));
+    setRows(picked.map((f) => ({
+      file: f,
+      status: f.size > MAX_FILE_SIZE ? 'error' as const : 'pending' as const,
+      ...(f.size > MAX_FILE_SIZE ? { error: `Exceeds 100 MB limit (${(f.size / 1024 / 1024).toFixed(0)} MB)` } : {}),
+    })));
     setFinished(false);
   };
 
   const runUploads = async () => {
     setRunning(true);
     for (let i = 0; i < rows.length; i++) {
+      if (rows[i].status === 'error') continue;
       setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, status: 'uploading' } : r)));
       try {
         const upload = await uploadMedia(rows[i].file);
@@ -68,6 +75,11 @@ export default function SwipeBulkUploadModal({ typeId, uploadMedia, createFile, 
     setRunning(false);
     setFinished(true);
     onComplete();
+  };
+
+  const retryFailed = async () => {
+    setRows((prev) => prev.map((r) => r.status === 'error' && r.file.size <= MAX_FILE_SIZE ? { ...r, status: 'pending', error: undefined } : r));
+    setFinished(false);
   };
 
   const successCount = rows.filter((r) => r.status === 'done').length;
@@ -114,17 +126,26 @@ export default function SwipeBulkUploadModal({ typeId, uploadMedia, createFile, 
             </div>
             <div className="space-y-1.5 max-h-80 overflow-y-auto">
               {rows.map((row, i) => (
-                <div key={i} className="flex items-center gap-3 px-3 py-2 bg-surface rounded-lg text-xs">
-                  <span className="flex-1 truncate text-ink">{row.file.name}</span>
+                <div key={i} className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs ${row.status === 'error' ? 'bg-red-50' : 'bg-surface'}`}>
+                  <span className="flex-1 min-w-0">
+                    <span className="truncate block text-ink">{row.file.name}</span>
+                    {row.status === 'error' && row.error && (
+                      <span className="text-red-600 text-2xs">{row.error}</span>
+                    )}
+                  </span>
                   <span className="text-faint whitespace-nowrap">{(row.file.size / 1024 / 1024).toFixed(1)} MB</span>
                   <StatusIcon status={row.status} />
                 </div>
               ))}
             </div>
-            {errorCount > 0 && (
-              <p className="text-detail text-red-600">
-                {rows.filter((r) => r.status === 'error').map((r) => `${r.file.name}: ${r.error}`).join(' · ')}
-              </p>
+            {finished && errorCount > 0 && rows.some((r) => r.status === 'error' && r.file.size <= MAX_FILE_SIZE) && (
+              <button
+                type="button"
+                onClick={retryFailed}
+                className="text-xs font-medium text-teal hover:text-teal-hover"
+              >
+                Retry {rows.filter((r) => r.status === 'error' && r.file.size <= MAX_FILE_SIZE).length} failed upload{rows.filter((r) => r.status === 'error' && r.file.size <= MAX_FILE_SIZE).length !== 1 ? 's' : ''}
+              </button>
             )}
           </>
         )}
@@ -147,10 +168,10 @@ export default function SwipeBulkUploadModal({ typeId, uploadMedia, createFile, 
           <Button
             size="sm"
             loading={running}
-            disabled={running}
+            disabled={running || rows.every((r) => r.status === 'error')}
             onClick={runUploads}
           >
-            {running ? 'Uploading…' : `Upload ${rows.length} file${rows.length !== 1 ? 's' : ''}`}
+            {running ? 'Uploading…' : `Upload ${rows.filter((r) => r.status === 'pending').length} file${rows.filter((r) => r.status === 'pending').length !== 1 ? 's' : ''}`}
           </Button>
         )}
       </Modal.Footer>

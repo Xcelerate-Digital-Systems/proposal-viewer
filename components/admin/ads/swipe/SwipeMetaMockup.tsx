@@ -29,6 +29,20 @@ function hostFromUrl(url: string | null | undefined): string | null {
   }
 }
 
+const AVATAR_PALETTE = [
+  '#2563eb', '#0891b2', '#0d9488', '#059669',
+  '#ca8a04', '#c2410c', '#be123c', '#7c3aed',
+  '#4f46e5', '#0284c7', '#15803d', '#b45309',
+] as const;
+
+function avatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
+  }
+  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
+}
+
 /**
  * Meta Facebook feed-style mockup for a swipe file. Handles both image and
  * video media, and gracefully hides empty copy fields.
@@ -64,7 +78,7 @@ export default function SwipeMetaMockup({ file, compact = false, onShare }: Prop
             width: compact ? 32 : 40,
             height: compact ? 32 : 40,
             fontSize: (compact ? 32 : 40) * 0.4,
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            backgroundColor: avatarColor(pageName),
           }}
         >
           {pageName.charAt(0).toUpperCase()}

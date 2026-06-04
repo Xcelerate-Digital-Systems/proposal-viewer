@@ -50,8 +50,14 @@ export default function SwipeFileForm({ file, knownTags = [], uploadMedia, onClo
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
+
   const processFile = async (selected: File) => {
     setError(null);
+    if (selected.size > MAX_FILE_SIZE) {
+      setError(`File exceeds 100 MB limit (${(selected.size / 1024 / 1024).toFixed(0)} MB). Choose a smaller file.`);
+      return;
+    }
     setUploading(true);
     const result = await uploadMedia(selected, file?.id);
     setUploading(false);

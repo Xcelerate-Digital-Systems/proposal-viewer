@@ -1,5 +1,5 @@
 // app/ads/swipe/[typeId]/page.tsx
-'use client';;
+'use client';
 import { use } from "react";
 
 import AdminLayout from '@/components/admin/AdminLayout';

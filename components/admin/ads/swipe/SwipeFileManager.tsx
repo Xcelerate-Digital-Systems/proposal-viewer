@@ -7,6 +7,7 @@ import { Plus, Upload, Bookmark, X } from 'lucide-react';
 import { useSwipeFileContext } from './SwipeFileContext';
 import type { SwipeFile } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
+import { Button } from '@/components/ui/Button';
 import SwipeFileForm from './SwipeFileForm';
 import SwipeFileCard from './SwipeFileCard';
 import SwipeBulkUploadModal from './SwipeBulkUploadModal';
@@ -25,6 +26,7 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [activeTags, setActiveTags] = useState<string[]>([]);
+  const [tagExpanded, setTagExpanded] = useState(false);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
 
   useEffect(() => {
@@ -37,6 +39,7 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
     if (typeId) {
       swipe.fetchFilesForType(typeId);
       setActiveTags([]);
+      setTagExpanded(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [typeId]);
@@ -84,22 +87,23 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={Upload}
               onClick={() => setBulkOpen(true)}
               disabled={!currentType}
-              className="flex items-center gap-2 bg-white border border-edge hover:border-teal/40 text-ink text-caption font-semibold rounded-[10px] px-4 py-2.5 disabled:opacity-40"
             >
-              <Upload size={16} />
               Bulk Upload
-            </button>
-            <button
+            </Button>
+            <Button
+              size="sm"
+              leftIcon={Plus}
               onClick={() => setFileForm({ open: true })}
               disabled={!currentType}
-              className="flex items-center gap-2 bg-teal hover:bg-teal-hover text-white text-caption font-semibold rounded-[10px] px-4 py-2.5 disabled:opacity-40"
             >
-              <Plus size={16} />
               Add Swipe
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -116,7 +120,7 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
             {availableTags.length > 0 && (
               <div className="flex items-center flex-wrap gap-1.5 mb-6">
                 <span className="text-detail font-semibold uppercase tracking-wider text-faint mr-1">Tags:</span>
-                {availableTags.map((t) => {
+                {availableTags.slice(0, tagExpanded ? undefined : 8).map((t) => {
                   const on = activeTags.includes(t);
                   return (
                     <button
@@ -130,12 +134,20 @@ export default function SwipeFileManager({ companyId, typeId }: Props) {
                     </button>
                   );
                 })}
+                {!tagExpanded && availableTags.length > 8 && (
+                  <button
+                    onClick={() => setTagExpanded(true)}
+                    className="text-detail px-2.5 py-1 rounded-full border border-edge text-muted hover:border-teal/50"
+                  >
+                    +{availableTags.length - 8} more
+                  </button>
+                )}
                 {activeTags.length > 0 && (
                   <button
                     onClick={() => setActiveTags([])}
-                    className="text-detail text-faint hover:text-ink flex items-center gap-1 ml-1"
+                    className="text-detail text-faint hover:text-ink flex items-center gap-1 ml-1 p-1"
                   >
-                    <X size={11} /> Clear
+                    <X size={12} /> Clear
                   </button>
                 )}
               </div>

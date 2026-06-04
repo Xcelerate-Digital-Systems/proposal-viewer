@@ -10,6 +10,7 @@ import {
 import type { SwipeFile, SwipeType } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
 import { buildSwipeUrl } from '@/lib/proposal-url';
+import { Button } from '@/components/ui/Button';
 import SwipeMetaMockup from './SwipeMetaMockup';
 import AccordionSection from './AccordionSection';
 
@@ -56,11 +57,13 @@ export default function SwipeFileDetailModal({
   const [transcriptDraft, setTranscriptDraft] = useState(file?.transcription || '');
   const [promptDraft, setPromptDraft] = useState(file?.ai_prompt || '');
   const [savingField, setSavingField] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [openSection, setOpenSection] = useState<string>('details');
 
   useEffect(() => {
     setTranscriptDraft(file?.transcription || '');
     setPromptDraft(file?.ai_prompt || '');
+    setSaveError(null);
     setOpenSection('details');
   }, [file?.id, file?.transcription, file?.ai_prompt]);
 
@@ -84,7 +87,7 @@ export default function SwipeFileDetailModal({
       if (!res.ok) throw new Error(json.error || 'Transcription failed');
       setTranscriptDraft(json.data.transcription || '');
     } catch (err) {
-      console.error('Transcribe error:', err);
+      setSaveError(err instanceof Error ? err.message : 'Transcription failed. Try again.');
     } finally {
       setTranscribing(false);
     }
@@ -96,8 +99,11 @@ export default function SwipeFileDetailModal({
     const current = field === 'transcription' ? file.transcription : file.ai_prompt;
     if (trimmed === (current || null)) return;
     setSavingField(field);
+    setSaveError(null);
     try {
       await onFieldUpdate(file, field, trimmed);
+    } catch {
+      setSaveError(`Failed to save ${field === 'transcription' ? 'transcript' : 'prompt'}. Try again.`);
     } finally {
       setSavingField(null);
     }
@@ -152,60 +158,58 @@ export default function SwipeFileDetailModal({
     >
       {/* Top toolbar */}
       <div
-        className="flex items-center justify-between px-4 py-3 bg-white border-b border-edge shrink-0"
+        className="flex items-center justify-between px-4 py-2.5 bg-white border-b border-edge shrink-0"
         onClick={(e) => e.stopPropagation()}
       >
         {readOnly ? (
           <div className="text-sm font-semibold text-ink">Swipe Vault</div>
         ) : (
-          <button
-            onClick={() => canPrev && onNavigate(currentIndex - 1)}
-            disabled={!canPrev}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-edge text-caption text-ink hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <ChevronLeft size={16} /> Previous
-          </button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={ChevronLeft}
+              onClick={() => canPrev && onNavigate(currentIndex - 1)}
+              disabled={!canPrev}
+            >
+              Previous
+            </Button>
+            <span className="text-xs text-muted tabular-nums">
+              {currentIndex + 1} / {files.length}
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
+              rightIcon={ChevronRight}
+              onClick={() => canNext && onNavigate(currentIndex + 1)}
+              disabled={!canNext}
+            >
+              Next
+            </Button>
+          </div>
         )}
 
-        <div className="flex items-center gap-3">
-          {!readOnly && (
-            <span className="text-xs text-faint">
-              {currentIndex + 1} of {files.length}
-            </span>
-          )}
-          {!readOnly && (
-            <button
+        {!readOnly && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant={copied ? 'outline' : 'secondary'}
+              size="sm"
+              leftIcon={copied ? Check : Share2}
               onClick={handleShare}
               disabled={sharing}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-caption font-medium ${
-                copied ? 'border-teal text-teal' : 'border-edge text-ink hover:bg-surface'
-              }`}
             >
-              {copied ? <Check size={14} /> : <Share2 size={14} />}
               {copied ? 'Copied!' : 'Share'}
-            </button>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {!readOnly && (
-            <>
-              <button
-                onClick={() => canNext && onNavigate(currentIndex + 1)}
-                disabled={!canNext}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-edge text-caption text-ink hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Next <ChevronRight size={16} />
-              </button>
-              <button
-                onClick={onClose}
-                className="p-2 rounded-lg border border-edge text-ink hover:bg-surface"
-              >
-                <X size={16} />
-              </button>
-            </>
-          )}
-        </div>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              leftIcon={X}
+              onClick={onClose}
+              aria-label="Close"
+            />
+          </div>
+        )}
       </div>
 
       {/* Body */}
@@ -349,6 +353,9 @@ export default function SwipeFileDetailModal({
                     {savingField === 'transcription' && (
                       <p className="text-detail text-faint">Saving…</p>
                     )}
+                    {saveError && savingField !== 'transcription' && openSection === 'transcript' && (
+                      <p className="text-detail text-red-600">{saveError}</p>
+                    )}
                     <button
                       type="button"
                       onClick={handleTranscribe}
@@ -390,6 +397,9 @@ export default function SwipeFileDetailModal({
                     {savingField === 'ai_prompt' && (
                       <p className="text-detail text-faint">Saving…</p>
                     )}
+                    {saveError && savingField !== 'ai_prompt' && openSection === 'prompt' && (
+                      <p className="text-detail text-red-600">{saveError}</p>
+                    )}
                   </div>
                 )}
               </AccordionSection>
@@ -404,46 +414,53 @@ export default function SwipeFileDetailModal({
                   <p className="text-xs text-red-700 font-medium mb-2">Delete this swipe?</p>
                   <p className="text-detail text-red-600 mb-3">This can&apos;t be undone.</p>
                   <div className="flex items-center gap-2">
-                    <button
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      fullWidth
+                      loading={deleting}
                       onClick={handleDelete}
-                      disabled={deleting}
-                      className="flex-1 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold disabled:opacity-50"
                     >
                       {deleting ? 'Deleting…' : 'Yes, delete'}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setConfirmingDelete(false)}
                       disabled={deleting}
-                      className="px-3 py-1.5 rounded-lg border border-edge text-xs text-ink hover:bg-white"
                     >
                       Cancel
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    leftIcon={Pencil}
                     onClick={() => onEdit(file)}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-edge text-caption font-medium text-ink hover:bg-surface"
+                    className="flex-1"
                   >
-                    <Pencil size={13} /> Edit
-                  </button>
+                    Edit
+                  </Button>
                   {file.has_been_shared ? (
                     <div
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-edge text-detail text-faint cursor-not-allowed"
-                      title="This swipe has been shared — delete disabled to avoid breaking the link"
+                      className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-edge text-detail text-faint cursor-not-allowed"
+                      title="This swipe has been shared; delete disabled to avoid breaking the link"
                     >
                       <Trash2 size={13} />
                       <span>Shared</span>
                     </div>
                   ) : (
-                    <button
+                    <Button
+                      variant="danger-outline"
+                      size="sm"
+                      iconOnly
+                      leftIcon={Trash2}
                       onClick={() => setConfirmingDelete(true)}
-                      className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-edge text-caption font-medium text-red-600 hover:bg-red-50 hover:border-red-200"
-                      title="Delete"
-                    >
-                      <Trash2 size={13} />
-                    </button>
+                      aria-label="Delete swipe"
+                    />
                   )}
                 </div>
               )}

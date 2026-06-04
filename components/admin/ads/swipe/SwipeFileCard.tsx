@@ -1,6 +1,7 @@
 // components/admin/ads/swipe/SwipeFileCard.tsx
 'use client';
 
+import { Share2 } from 'lucide-react';
 import type { SwipeFile } from '@/lib/supabase';
 import { buildSwipeUrl } from '@/lib/proposal-url';
 import SwipeMetaMockup from './SwipeMetaMockup';
@@ -22,15 +23,18 @@ export default function SwipeFileCard({ file, customDomain, onShared }: Props) {
     <div className="flex flex-col gap-2">
       <SwipeMetaMockup file={file} compact onShare={handleShare} />
 
-      {file.tags && file.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {file.tags.map((t) => (
-            <span key={t} className="text-2xs bg-teal/10 text-teal px-2 py-0.5 rounded-full">
-              {t}
-            </span>
-          ))}
-        </div>
-      )}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {file.has_been_shared && (
+          <span className="inline-flex items-center gap-1 text-2xs text-muted" title="Shared via link">
+            <Share2 size={10} />
+          </span>
+        )}
+        {file.tags?.map((t) => (
+          <span key={t} className="text-2xs bg-teal/10 text-teal px-2 py-0.5 rounded-full">
+            {t}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
