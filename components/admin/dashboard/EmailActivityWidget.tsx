@@ -91,7 +91,7 @@ export default function EmailActivityWidget() {
           )}
         </div>
         <Link
-          href="/settings"
+          href="/settings?tab=activity"
           className="text-xs font-medium text-primary hover:text-primary-hover inline-flex items-center gap-1"
         >
           View all <ArrowRight size={12} />

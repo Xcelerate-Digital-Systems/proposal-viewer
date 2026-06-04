@@ -5,7 +5,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
   Settings, Building2, Users, Code2, CreditCard, KeyRound, Plug,
-  Webhook, Key, AppWindow,
+  Webhook, Key, AppWindow, Mail,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import BusinessDetailsCard from '@/components/admin/company/BusinessDetailsCard';
@@ -19,9 +19,10 @@ import MetaConnectorCard from '@/components/admin/connectors/MetaConnectorCard';
 import MembersTab from '@/components/admin/settings/MembersTab';
 import BillingTab from '@/components/admin/settings/BillingTab';
 import RolesTab from '@/components/admin/settings/RolesTab';
+import ActivityTab from '@/components/admin/settings/ActivityTab';
 import { type TeamMember } from '@/lib/supabase';
 
-type TabKey = 'profile' | 'members' | 'roles' | 'billing' | 'integrations' | 'developer';
+type TabKey = 'profile' | 'members' | 'roles' | 'billing' | 'integrations' | 'developer' | 'activity';
 
 interface TabDef {
   key: TabKey;
@@ -37,6 +38,7 @@ const TABS: TabDef[] = [
   { key: 'billing',      label: 'Billing',      icon: CreditCard,  description: 'Plan, payment, invoices' },
   { key: 'integrations', label: 'Integrations', icon: Plug,        description: 'Connect third-party services' },
   { key: 'developer',    label: 'Developer',    icon: Code2,       description: 'API keys, webhooks, and OAuth apps' },
+  { key: 'activity',     label: 'Activity',     icon: Mail,        description: 'Email send log and delivery tracking' },
 ];
 
 export default function SettingsPage() {
@@ -110,7 +112,7 @@ function SettingsContent({ auth }: {
         <nav className="lg:w-60 shrink-0">
           <ul className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible">
             {TABS.map(tab => {
-              if ((tab.key === 'developer' || tab.key === 'integrations') && !canSeeDeveloper) return null;
+              if ((tab.key === 'developer' || tab.key === 'integrations' || tab.key === 'activity') && !canSeeDeveloper) return null;
               if (tab.key === 'billing' && !canSeeBilling) return null;
               const Icon = tab.icon;
               const active = activeTab === tab.key;
@@ -198,6 +200,17 @@ function SettingsContent({ auth }: {
                 <GhlConnectorCard />
                 <MetaConnectorCard />
               </div>
+            </section>
+          )}
+
+          {/* ── Activity tab ───────────────────────────────────────── */}
+          {activeTab === 'activity' && canSeeDeveloper && companyId && (
+            <section>
+              <SectionHeader
+                title="Agency Activity"
+                description="Full log of every outbound email with delivery and open tracking."
+              />
+              <ActivityTab />
             </section>
           )}
 
