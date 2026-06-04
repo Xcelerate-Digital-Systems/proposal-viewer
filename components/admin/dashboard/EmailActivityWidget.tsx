@@ -64,19 +64,19 @@ function entityHref(entry: EmailLogEntry): string | null {
   return null;
 }
 
-export default function EmailActivityWidget() {
+export default function EmailActivityWidget({ companyId }: { companyId: string }) {
   const [entries, setEntries] = useState<EmailLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    authFetch('/api/admin/email-log?limit=8')
+    authFetch(`/api/admin/email-log?limit=8&company_id=${companyId}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.emails) setEntries(data.emails);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [companyId]);
 
   return (
     <div className="bg-white rounded-2xl shadow-card overflow-hidden">

@@ -210,7 +210,7 @@ function SettingsContent({ auth }: {
                 title="Agency Activity"
                 description="Full log of every outbound email with delivery and open tracking."
               />
-              <ActivityTab />
+              <ActivityTab companyId={companyId} />
             </section>
           )}
 

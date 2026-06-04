@@ -415,7 +415,7 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
               />
             </div>
 
-            <EmailActivityWidget />
+            <EmailActivityWidget companyId={companyId} />
           </div>
         </div>
       </div>

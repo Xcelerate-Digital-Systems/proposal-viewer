@@ -100,7 +100,7 @@ function categoryLabel(category: string): string {
   return CATEGORY_OPTIONS.find((o) => o.value === category)?.label || category;
 }
 
-export default function ActivityTab() {
+export default function ActivityTab({ companyId }: { companyId: string }) {
   const [entries, setEntries] = useState<EmailLogEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -116,6 +116,7 @@ export default function ActivityTab() {
     const params = new URLSearchParams({
       limit: String(PAGE_SIZE),
       offset: String(page * PAGE_SIZE),
+      company_id: companyId,
     });
     if (search) params.set('to', search);
     if (category) params.set('category', category);
@@ -133,7 +134,7 @@ export default function ActivityTab() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, category, status]);
+  }, [page, search, category, status, companyId]);
 
   useEffect(() => {
     fetchData();
