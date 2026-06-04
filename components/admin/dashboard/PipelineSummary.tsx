@@ -52,7 +52,11 @@ export default function PipelineSummary({
       ) : (
         <div className="px-5 pb-4 space-y-3">
           {/* Status distribution bar */}
-          <div className="flex h-2 rounded-full overflow-hidden bg-edge">
+          <div
+            className="flex h-2 rounded-full overflow-hidden bg-edge"
+            role="img"
+            aria-label={segments.filter(s => s.count > 0).map(s => `${s.label}: ${s.count}`).join(', ')}
+          >
             {segments
               .filter((s) => s.count > 0)
               .map((s) => (
@@ -78,7 +82,7 @@ export default function PipelineSummary({
                     className="w-2 h-2 rounded-full shrink-0"
                     style={{ backgroundColor: s.hex }}
                   />
-                  <span className="text-detail text-dim">
+                  <span className="text-detail text-muted">
                     {s.label} <span className="text-ink font-medium">{s.count}</span>
                   </span>
                 </div>

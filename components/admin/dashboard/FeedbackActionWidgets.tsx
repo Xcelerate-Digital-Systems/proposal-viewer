@@ -104,14 +104,14 @@ export default function FeedbackActionWidgets({ companyId, teamMemberId }: Feedb
   }, [companyId, teamMemberId]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <div className="flex flex-col gap-4">
       <WidgetCard
         icon={Eye}
         accentClass="bg-amber-100 text-amber-700"
         title="Awaiting my review"
         emptyHint={teamMemberId
-          ? 'Nothing in a stage assigned to you right now.'
-          : 'Assign yourself to a Kanban column to see items here.'}
+          ? 'Nothing assigned to you right now.'
+          : 'You\'ll see items here when you\'re assigned as a reviewer on a campaign.'}
         loading={loading}
         rows={awaiting}
       />
@@ -149,7 +149,7 @@ function WidgetCard({
           <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${accentClass}`}>
             <Icon size={14} />
           </div>
-          <h2 className="text-base font-semibold text-ink">{title}</h2>
+          <h2 className="text-sm font-semibold text-ink">{title}</h2>
           <span className="text-detail text-muted">
             {loading ? '' : rows.length === 0 ? '' : `${rows.length}`}
           </span>
@@ -197,8 +197,13 @@ function WidgetCard({
             );
           })}
           {overflow > 0 && (
-            <li className="px-5 py-3 text-center text-detail text-muted">
-              Plus {overflow} more — open them from their campaign project.
+            <li className="px-5 py-3 text-center">
+              <Link
+                href="/campaigns"
+                className="text-detail font-medium text-primary hover:text-primary-hover inline-flex items-center gap-1"
+              >
+                View {overflow} more <ArrowRight size={10} />
+              </Link>
             </li>
           )}
         </ul>

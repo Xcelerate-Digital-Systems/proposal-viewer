@@ -1,10 +1,10 @@
 // app/dashboard/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
-  FileText, CheckCircle2, Timer, Reply, ArrowRight, MessageSquareText,
+  FileText, CheckCircle2, Timer, Reply, ArrowRight, MessageSquareText, Check,
 } from 'lucide-react';
 import { supabase, type Proposal, type FeedbackProject } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -131,8 +131,55 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
     fetchData();
   }, [fetchData]);
 
-  const dismissInboxItem = (commentId: string) =>
-    setInbox((prev) => prev.filter((c) => c.commentId !== commentId));
+  /* ── Undo-on-resolve ──────────────────────────────────── */
+
+  const [undoItem, setUndoItem] = useState<InboxComment | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const undoItemRef = useRef<InboxComment | null>(null);
+
+  const persistResolve = useCallback((commentId: string) => {
+    supabase
+      .from('review_comments')
+      .update({ resolved: true, resolved_at: new Date().toISOString(), resolved_by: memberName })
+      .eq('id', commentId)
+      .then(() => {});
+  }, [memberName]);
+
+  const handleResolve = useCallback((item: InboxComment) => {
+    setInbox(prev => prev.filter(c => c.commentId !== item.commentId));
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    if (undoItemRef.current) persistResolve(undoItemRef.current.commentId);
+    undoItemRef.current = item;
+    setUndoItem(item);
+    undoTimerRef.current = setTimeout(() => {
+      persistResolve(item.commentId);
+      undoItemRef.current = null;
+      setUndoItem(null);
+    }, 5000);
+  }, [persistResolve]);
+
+  const handleUndo = useCallback(() => {
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    const pending = undoItemRef.current;
+    if (pending) {
+      setInbox(prev =>
+        [pending, ...prev].sort((a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+      );
+    }
+    undoItemRef.current = null;
+    setUndoItem(null);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+      if (undoItemRef.current) persistResolve(undoItemRef.current.commentId);
+    };
+  }, [persistResolve]);
+
+  /* ── Helpers ──────────────────────────────────────────── */
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -181,7 +228,6 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
         />
         <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-6">
           <div className="flex flex-col gap-5">
-            {/* Summary stats */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard icon={Timer} iconClass="text-amber-500" label="Awaiting Review" value={awaitingAction} />
               <StatCard icon={CheckCircle2} iconClass="text-emerald-600" label="Accepted" value={acceptedCount} />
@@ -189,7 +235,6 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
               <StatCard icon={FileText} iconClass="text-muted" label="Quotes" value={quotes.length} />
             </div>
 
-            {/* Pipeline (read-only) */}
             <section className="bg-white rounded-2xl shadow-card overflow-hidden flex flex-col">
               <header className="flex items-center justify-between px-5 py-4 border-b border-edge">
                 <div className="flex items-center gap-2.5">
@@ -216,7 +261,7 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
                   <p className="text-xs text-muted mt-1">When your agency sends you a proposal or quote, it will appear here.</p>
                 </div>
               ) : (
-                <div className="pb-5 h-[520px]">
+                <div className="pb-5 h-[60vh] min-h-[320px]">
                   <ClientPipeline items={nonDraft} />
                 </div>
               )}
@@ -228,9 +273,6 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
   }
 
   /* ── Agency view ──────────────────────────────────────── */
-
-  const proposalCount = pipeline.filter((p) => p.entity_type === 'proposal').length;
-  const quoteCount = pipeline.length - proposalCount;
 
   const proposalSegments = PROPOSAL_STATUS_ORDER.map((s) => ({
     key: s,
@@ -261,11 +303,8 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
       />
 
       <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-6">
-        <div className="flex flex-col gap-5">
-          {/* ── Row 1: Action widgets ────────────────────── */}
-          <FeedbackActionWidgets companyId={companyId} teamMemberId={teamMemberId} />
-
-          {/* ── Row 2: Inbox (standalone, primary triage surface) ── */}
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6 items-start">
+          {/* ── Primary: Inbox ────────────────────────────── */}
           <section
             data-tour="dashboard-feedback"
             className="bg-white rounded-2xl shadow-card overflow-hidden"
@@ -289,6 +328,21 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
                 All campaigns <ArrowRight size={12} />
               </Link>
             </header>
+
+            {undoItem && (
+              <div className="flex items-center gap-3 px-5 py-2.5 bg-surface border-b border-edge">
+                <Check size={14} className="text-emerald-600 shrink-0" />
+                <span className="text-caption text-ink flex-1">
+                  Comment by {undoItem.clientName} resolved
+                </span>
+                <button
+                  onClick={handleUndo}
+                  className="text-caption font-semibold text-primary hover:text-primary-hover"
+                >
+                  Undo
+                </button>
+              </div>
+            )}
 
             {loading ? (
               <div className="px-5 py-4 space-y-4">
@@ -317,7 +371,7 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
                     item={c}
                     memberName={memberName}
                     isLast={i === Math.min(arr.length, 10) - 1}
-                    onDismiss={() => dismissInboxItem(c.commentId)}
+                    onResolve={handleResolve}
                   />
                 ))}
                 {inbox.length > 10 && (
@@ -334,27 +388,31 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
             )}
           </section>
 
-          {/* ── Row 3: Pipeline summaries (compact, no kanbans) ── */}
-          <div
-            data-tour="dashboard-proposals"
-            className="grid grid-cols-1 md:grid-cols-2 gap-5"
-          >
-            <PipelineSummary
-              icon={MessageSquareText}
-              title="Campaigns"
-              href="/campaigns"
-              linkLabel="View pipeline"
-              segments={feedbackSegments}
-              total={feedbackProjects.length}
-            />
-            <PipelineSummary
-              icon={FileText}
-              title={`Proposals & Quotes`}
-              href="/proposals"
-              linkLabel="View pipeline"
-              segments={proposalSegments}
-              total={pipeline.length}
-            />
+          {/* ── Sidebar: action widgets + pipeline ─────── */}
+          <div className="flex flex-col gap-4">
+            <FeedbackActionWidgets companyId={companyId} teamMemberId={teamMemberId} />
+
+            <div
+              data-tour="dashboard-proposals"
+              className="flex flex-col gap-4"
+            >
+              <PipelineSummary
+                icon={MessageSquareText}
+                title="Campaigns"
+                href="/campaigns"
+                linkLabel="View pipeline"
+                segments={feedbackSegments}
+                total={feedbackProjects.length}
+              />
+              <PipelineSummary
+                icon={FileText}
+                title="Proposals & Quotes"
+                href="/proposals"
+                linkLabel="View pipeline"
+                segments={proposalSegments}
+                total={pipeline.length}
+              />
+            </div>
           </div>
         </div>
       </div>
