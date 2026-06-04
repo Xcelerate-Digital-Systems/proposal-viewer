@@ -23,7 +23,6 @@ import {
 import { useToast } from '@/components/ui/Toast';
 import { FUNNEL_STEP_DEFAULTS } from '@/lib/types/funnel';
 import { NOTE_COLORS } from '@/components/admin/feedback/board/nodes/StickyNoteNode';
-import { computeForecast, type Forecast } from '@/lib/funnel/forecast';
 
 export type NewStep = Omit<FunnelStep, 'id' | 'funnel_id' | 'company_id' | 'created_at' | 'updated_at'>;
 export type NewShape = Omit<FunnelBoardShape, 'id' | 'funnel_id' | 'company_id' | 'created_at' | 'updated_at'>;
@@ -48,18 +47,11 @@ interface ContextValue {
   selectNote: (id: string | null) => void;
   clearSelection: () => void;
 
-  // Display toggles
-  showMetrics: boolean;
-  setShowMetrics: (v: boolean) => void;
-
   // Steps
   steps: FunnelStep[];
   createStep: (stepType: FunnelStepType, position: { x: number; y: number }) => Promise<FunnelStep | null>;
   updateStep: (id: string, patch: Partial<FunnelStep>) => Promise<void>;
   deleteStep: (id: string) => Promise<void>;
-
-  // Forecast — derived from steps + edges; re-computed on every change.
-  forecast: Forecast;
 
   // Undo/redo. Wired into create/update/delete for steps and edges.
   undo: () => Promise<void>;
@@ -118,8 +110,6 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
-  const [showMetrics, setShowMetricsState] = useState(false);
-
   const selectStep = useCallback((id: string | null) => {
     setSelectedStepId(id);
     if (id) { setSelectedShapeId(null); setSelectedNoteId(null); }
@@ -135,8 +125,6 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
   const clearSelection = useCallback(() => {
     setSelectedStepId(null); setSelectedShapeId(null); setSelectedNoteId(null);
   }, []);
-  const setShowMetrics = useCallback((v: boolean) => setShowMetricsState(v), []);
-
   // ─── Undo/redo facility ─────────────────────────────────────────
   //
   // Each undoable mutation pushes an inverse pair { undo, redo } onto the
@@ -500,11 +488,6 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
     []
   );
 
-  const forecast = useMemo(
-    () => computeForecast(steps, boardEdges, funnel?.forecast_period ?? 'total'),
-    [steps, boardEdges, funnel?.forecast_period]
-  );
-
   const canUndo = historyRef.current.undo.length > 0;
   const canRedo = historyRef.current.redo.length > 0;
 
@@ -516,9 +499,7 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
       selectedShapeId, selectShape,
       selectedNoteId, selectNote,
       clearSelection,
-      showMetrics, setShowMetrics,
       steps, createStep, updateStep, deleteStep,
-      forecast,
       undo, redo, canUndo, canRedo,
       boardNotes, addNote, updateNote, deleteNote,
       boardEdges, createEdge, updateEdge, deleteEdge,
@@ -530,8 +511,7 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
       selectedShapeId, selectShape,
       selectedNoteId, selectNote,
       clearSelection,
-      showMetrics, setShowMetrics,
-      steps, createStep, updateStep, deleteStep, forecast,
+      steps, createStep, updateStep, deleteStep,
       undo, redo, canUndo, canRedo,
       boardNotes, addNote, updateNote, deleteNote,
       boardEdges, createEdge, updateEdge, deleteEdge,

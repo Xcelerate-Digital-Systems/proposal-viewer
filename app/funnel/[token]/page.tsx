@@ -7,7 +7,7 @@ import {
   MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Monitor, Workflow } from 'lucide-react';
+import { Monitor, RefreshCw, Workflow } from 'lucide-react';
 import type {
   Funnel, FunnelStep, FunnelBoardEdge, FunnelBoardNote, FunnelBoardShape,
   FeedbackBoardShape, FeedbackBoardNote,
@@ -22,8 +22,6 @@ import FunnelStepNode from '@/components/admin/funnels/board/nodes/FunnelStepNod
 import StickyNoteNode from '@/components/admin/feedback/board/nodes/StickyNoteNode';
 import ShapeNode from '@/components/admin/feedback/board/nodes/ShapeNode';
 import LabeledEdge from '@/components/admin/feedback/board/edges/LabeledEdge';
-import BoardSummary from '@/components/admin/funnels/board/BoardSummary';
-import { computeForecast, formatCount } from '@/lib/funnel/forecast';
 
 const nodeTypes: NodeTypes = {
   funnelStep: FunnelStepNode,
@@ -43,6 +41,7 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
   const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [networkError, setNetworkError] = useState(false);
 
   const { bgSecondary, sidebarText, palette } = useBrandingColors(branding);
 
@@ -68,7 +67,7 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
         setBrandingLoaded(true);
         setLoading(false);
       } catch {
-        setNotFound(true);
+        setNetworkError(true);
         setLoading(false);
         setBrandingLoaded(true);
       }
@@ -81,11 +80,6 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
     return () => { document.title = 'Funnel'; };
   }, [funnel]);
 
-  const forecast = useMemo(
-    () => computeForecast(steps, boardEdges, funnel?.forecast_period ?? 'total'),
-    [steps, boardEdges, funnel?.forecast_period]
-  );
-
   const nodes: Node[] = useMemo(() => {
     const stepNodes: Node[] = steps.map((step) => ({
       id: `step-${step.id}`,
@@ -94,9 +88,6 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
       data: {
         step,
         readOnly: true,
-        forecastVisitors: forecast.visitorsByStep.get(step.id) ?? 0,
-        forecastConversions: forecast.conversionsByStep.get(step.id) ?? 0,
-        showMetricsOverride: false,
       },
       draggable: false, selectable: false, connectable: false,
     }));
@@ -115,7 +106,7 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
       draggable: false, selectable: false, connectable: false,
     }));
     return [...stepNodes, ...noteNodes, ...shapeNodes];
-  }, [steps, boardNotes, boardShapes, forecast]);
+  }, [steps, boardNotes, boardShapes]);
 
   const edges: Edge[] = useMemo(() => boardEdges.map((e) => {
     const style = (e.style || {}) as Record<string, unknown>;
@@ -128,16 +119,6 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
     const source = e.source_shape_id ? `shape-${e.source_shape_id}` : `step-${e.source_step_id}`;
     const target = e.target_shape_id ? `shape-${e.target_shape_id}` : `step-${e.target_step_id}`;
 
-    // Same composite-label rule as the editor (minus the selection guard since
-    // the public view doesn't allow editing).
-    const flowCount = forecast.flowByEdge.get(e.id) ?? 0;
-    const isStepEdge = !!e.source_step_id && !!e.target_step_id;
-    const labelParts: string[] = [];
-    if (e.label) labelParts.push(e.label);
-    if (isStepEdge) {
-      if (e.split_percent != null) labelParts.push(`${Math.round(e.split_percent)}%`);
-      if (flowCount > 0) labelParts.push(formatCount(flowCount));
-    }
     return {
       id: e.id,
       source, target,
@@ -148,27 +129,51 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
       style: { stroke: strokeColor, strokeWidth },
       markerEnd: { type: MarkerType.ArrowClosed, color: strokeColor, width: 16, height: 16 },
       data: {
-        label: labelParts.join(' · ') || undefined,
+        label: e.label || undefined,
         color: strokeColor, strokeWidth, dashed,
         animated: e.animated || false, arrowDir,
         labelFontSize: Number(style.labelFontSize) || 16,
         labelColor: (style.labelColor as string) || '#2B2B2B',
       },
     } as Edge;
-  }), [boardEdges, forecast]);
+  }), [boardEdges]);
 
   if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: 'transparent' }} />;
   if (loading) return <ViewerLoader branding={branding} loading={true} label="Loading funnel…" />;
 
+  if (networkError) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-surface">
+        <div className="text-center max-w-xs">
+          <div className="w-14 h-14 rounded-2xl bg-surface flex items-center justify-center mx-auto mb-4">
+            <RefreshCw size={24} className="text-faint" />
+          </div>
+          <h2 className="text-base font-semibold text-prose">Something went wrong</h2>
+          <p className="text-sm text-dim mt-2 leading-relaxed">
+            We couldn&apos;t load this funnel. Check your connection and try refreshing the page.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 text-sm font-medium text-teal hover:text-teal-hover transition-colors"
+          >
+            Refresh
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (notFound || !funnel) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-surface">
-        <div className="text-center">
+        <div className="text-center max-w-xs">
           <div className="w-14 h-14 rounded-2xl bg-surface flex items-center justify-center mx-auto mb-4">
             <Workflow size={24} className="text-faint" />
           </div>
           <h2 className="text-base font-semibold text-prose">Funnel not found</h2>
-          <p className="text-sm text-dim mt-2">This link may have expired or been revoked.</p>
+          <p className="text-sm text-dim mt-2 leading-relaxed">
+            This link may have expired or been revoked. Contact your agency to request a new link.
+          </p>
         </div>
       </div>
     );
@@ -235,14 +240,7 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 bg-notebook relative">
-          <div className="absolute top-3 left-3 z-10">
-            <BoardSummary
-              forecast={forecast}
-              currency={funnel?.currency ?? 'USD'}
-              period={funnel?.forecast_period ?? 'total'}
-            />
-          </div>
+        <div className="flex-1 min-h-0 bg-notebook relative" role="region" aria-label={`${funnel.name} funnel canvas`}>
           <ReactFlowProvider>
             <ReactFlow
               nodes={nodes}
@@ -265,16 +263,16 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
             >
               <Controls
                 showInteractive={false}
-                className="!bg-white !border !border-edge !shadow-sm !rounded-lg"
+                className="!bg-white/90 !border !border-edge/50 !shadow-none !rounded-lg !backdrop-blur-sm"
               />
               <MiniMap
                 nodeClassName={(node) => {
                   if (node.type === 'stickyNote') return 'fill-sticky-yellow';
                   if (node.type === 'shape') return 'fill-ink/40';
-                  return 'fill-white stroke-ink/40';
+                  return 'fill-teal/15 stroke-teal/30';
                 }}
-                className="!bg-surface !border !border-edge !rounded-lg"
-                style={{ width: 140, height: 90 }}
+                className="!bg-surface/90 !border !border-edge/50 !rounded-lg !backdrop-blur-sm"
+                style={{ width: 180, height: 110 }}
                 zoomable
                 pannable
               />

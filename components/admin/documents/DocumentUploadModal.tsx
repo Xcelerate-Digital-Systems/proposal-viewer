@@ -1,9 +1,10 @@
 // components/admin/documents/DocumentUploadModal.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, FileText, X, Loader2 } from 'lucide-react';
+import { Upload, FileText, X, Loader2, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { FormFields, fieldsByType } from '@/components/ui/FormField';
 import { authedFetch } from '@/lib/api-fetch';
@@ -13,6 +14,8 @@ interface DocumentUploadModalProps {
   onClose: () => void;
   onSuccess: () => void;
 }
+
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
 const formatSize = (bytes: number | null) => {
   if (!bytes) return '—';
@@ -28,14 +31,62 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [status, setStatus] = useState('');
+  const [splitFailed, setSplitFailed] = useState(false);
+  const [createdDocId, setCreatedDocId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !uploading) onClose();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [uploading, onClose]);
+
+  const handleRetrySplit = async () => {
+    if (!createdDocId) return;
+    setUploading(true);
+    setStatus('Splitting into pages...');
+    setSplitFailed(false);
+
+    try {
+      const splitRes = await authedFetch('/api/proposals/split', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entity_id: createdDocId, entity_type: 'document' }),
+      });
+
+      if (!splitRes.ok) {
+        setSplitFailed(true);
+        setUploading(false);
+        setStatus('');
+        return;
+      }
+
+      const splitData = await splitRes.json();
+      toast.success(`Doc created with ${splitData.page_count} pages!`);
+      onSuccess();
+      onClose();
+      router.push(`/documents/${createdDocId}/pages`);
+    } catch {
+      setSplitFailed(true);
+      setUploading(false);
+      setStatus('');
+    }
+  };
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) return;
 
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('PDF must be under 100 MB.');
+      return;
+    }
+
     setUploading(true);
     setUploadProgress(0);
     setStatus('Uploading PDF...');
+    setSplitFailed(false);
 
     // ── Step 1: Upload PDF to storage ──────────────────────────────
     try {
@@ -91,11 +142,10 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
       });
 
       if (!splitRes.ok) {
-        toast.error('Doc created but page splitting failed. Try re-uploading.');
+        setSplitFailed(true);
+        setCreatedDocId(insertedDocId);
         setUploading(false);
-        onSuccess();
-        onClose();
-        router.push(`/documents/${insertedDocId}/pages`);
+        setStatus('');
         return;
       }
 
@@ -114,7 +164,10 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={(e) => { if (e.target === e.currentTarget && !uploading) onClose(); }}
+    >
       <div className="bg-white rounded-2xl shadow-modal w-full max-w-lg border border-edge-strong">
         <div className="flex items-center justify-between px-6 py-4 border-b border-edge">
           <h2 className="text-lg font-semibold font-[family-name:var(--font-display)] text-ink">
@@ -124,73 +177,104 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
             onClick={onClose}
             disabled={uploading}
             className="text-faint hover:text-prose disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Close modal"
           >
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleUpload} className="p-6 space-y-4">
-          <FormFields
-            fields={fieldsByType.document}
-            values={form}
-            onChange={(key, value) => setForm({ ...form, [key]: value })}
-            disabled={uploading}
-          />
-
-          <div>
-            <label className="block text-sm font-medium text-prose mb-1">PDF File</label>
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-edge-hover rounded-2xl cursor-pointer hover:border-teal/40 hover:bg-teal/5 transition-colors">
-              {file ? (
-                <div className="flex items-center gap-2 text-sm text-dim">
-                  <FileText size={20} className="text-teal" />
-                  <span className="font-medium text-ink">{file.name}</span>
-                  <span className="text-faint">({formatSize(file.size)})</span>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-2">
-                  <Upload size={24} className="text-faint" />
-                  <span className="text-sm text-faint">Click to upload PDF</span>
-                  <span className="text-xs text-faint">Each page becomes individually editable</span>
-                </div>
-              )}
-              <input
-                type="file"
-                accept=".pdf"
-                className="hidden"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-                disabled={uploading}
-              />
-            </label>
-          </div>
-
-          {uploading && (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-dim flex items-center gap-1.5">
-                  <Loader2 size={12} className="animate-spin text-teal" />
-                  {status}
-                </span>
-                {status === 'Uploading PDF...' && (
-                  <span className="text-teal font-medium">{uploadProgress}%</span>
-                )}
-              </div>
-              <div className="w-full h-2 bg-surface rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-teal rounded-full transition-all duration-300 ease-out"
-                  style={{ width: status === 'Uploading PDF...' ? `${uploadProgress}%` : '100%' }}
-                />
+        {splitFailed ? (
+          <div className="p-6 space-y-4">
+            <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <AlertCircle size={20} className="text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-900">Page splitting failed</p>
+                <p className="text-sm text-amber-700 mt-1">
+                  Your document was uploaded but couldn&apos;t be split into pages. You can retry or skip and split later.
+                </p>
               </div>
             </div>
-          )}
+            <div className="flex items-center gap-3">
+              <Button onClick={handleRetrySplit} disabled={uploading} leftIcon={uploading ? Loader2 : undefined}>
+                {uploading ? 'Splitting...' : 'Retry split'}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  onSuccess();
+                  onClose();
+                  router.push(`/documents/${createdDocId}/pages`);
+                }}
+              >
+                Skip for now
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleUpload} className="p-6 space-y-4">
+            <FormFields
+              fields={fieldsByType.document}
+              values={form}
+              onChange={(key, value) => setForm({ ...form, [key]: value })}
+              disabled={uploading}
+            />
 
-          <button
-            type="submit"
-            disabled={uploading || !file}
-            className="w-full bg-teal text-white py-3 rounded-lg text-sm font-medium hover:bg-[#01434A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {uploading ? 'Processing...' : 'Create Document'}
-          </button>
-        </form>
+            <div>
+              <label className="block text-sm font-medium text-prose mb-1">PDF File</label>
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-edge-hover rounded-2xl cursor-pointer hover:border-teal/40 hover:bg-teal/5 focus-within:ring-2 focus-within:ring-teal/30 transition-colors">
+                {file ? (
+                  <div className="flex items-center gap-2 text-sm text-dim">
+                    <FileText size={20} className="text-teal" />
+                    <span className="font-medium text-ink">{file.name}</span>
+                    <span className="text-dim">({formatSize(file.size)})</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <Upload size={24} className="text-dim" />
+                    <span className="text-sm text-dim">Click to upload PDF</span>
+                    <span className="text-xs text-dim">Each page becomes individually editable</span>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept=".pdf"
+                  className="hidden"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  disabled={uploading}
+                />
+              </label>
+            </div>
+
+            {uploading && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-dim flex items-center gap-1.5">
+                    <Loader2 size={12} className="animate-spin text-teal" />
+                    {status}
+                  </span>
+                  {status === 'Uploading PDF...' && (
+                    <span className="text-teal font-medium">{uploadProgress}%</span>
+                  )}
+                </div>
+                <div className="w-full h-2 bg-surface rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-teal rounded-full transition-all duration-300 ease-out"
+                    style={{ width: status === 'Uploading PDF...' ? `${uploadProgress}%` : '100%' }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <Button
+              variant="primary"
+              type="submit"
+              disabled={uploading || !file || !form.title.trim()}
+              className="w-full"
+            >
+              {uploading ? 'Processing...' : 'Create Document'}
+            </Button>
+          </form>
+        )}
       </div>
     </div>
   );

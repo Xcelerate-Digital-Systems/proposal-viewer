@@ -91,7 +91,7 @@ export default function DocumentListCard({ document: doc, onRefresh, customDomai
             onClick={copyLink}
             className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-ink hover:bg-surface transition-colors"
           >
-            {copied ? <Check size={12} className="text-[#2E7D32]" /> : <Copy size={12} />}
+            {copied ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
             {copied ? 'Copied' : 'Link'}
           </button>
           <a

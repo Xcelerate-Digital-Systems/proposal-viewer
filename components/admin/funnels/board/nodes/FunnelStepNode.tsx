@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import type { FunnelStep } from '@/lib/supabase';
 import { FUNNEL_STEP_DEFAULTS } from '@/lib/types/funnel';
-import { formatCount, formatMoney } from '@/lib/funnel/forecast';
 import { useFunnelBoardContext } from '../FunnelBoardContext';
 import PageMockup, { PAGE_MOCKUP_W, PAGE_MOCKUP_H } from './PageMockup';
 
@@ -23,8 +22,7 @@ export interface FunnelStepNodeData extends Record<string, unknown> {
   readOnly?: boolean;
   onUpdate?: (id: string, patch: Partial<FunnelStep>) => void;
   onDelete?: (id: string) => void;
-  /** Public viewer passes pre-computed forecast values (visitors / conversions
-   *  / revenue / cost) per step since it can't access the editor context. */
+  /** @deprecated Metrics layer removed. Kept for type compat only. */
   forecastVisitors?: number;
   forecastConversions?: number;
   showMetricsOverride?: boolean;
@@ -204,7 +202,6 @@ function PageHandles({ readOnly }: { readOnly?: boolean }) {
 function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   const {
     step, readOnly, onUpdate, onDelete,
-    forecastVisitors, forecastConversions, showMetricsOverride,
   } = data as FunnelStepNodeData;
   const defaults = FUNNEL_STEP_DEFAULTS[step.step_type] ?? FUNNEL_STEP_DEFAULTS.generic;
   const iconSlug = step.icon || defaults.icon;
@@ -212,11 +209,6 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
 
   const ctx = useFunnelBoardContext();
   const isSelected = selected || ctx?.selectedStepId === step.id;
-  const showMetrics = showMetricsOverride ?? ctx?.showMetrics ?? true;
-  const visitors = forecastVisitors ?? ctx?.forecast.visitorsByStep.get(step.id) ?? 0;
-  const conversions = forecastConversions ?? ctx?.forecast.conversionsByStep.get(step.id) ?? 0;
-  const value = step.metrics?.value ?? 0;
-  const revenue = conversions * value;
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(step.label || defaults.label);
@@ -273,7 +265,7 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
         <span
           onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
           className="block text-detail text-ink/80 text-center truncate max-w-[180px] leading-tight"
-          title={readOnly ? undefined : 'Double-click to rename'}
+          title={readOnly ? (step.label || defaults.label) : 'Double-click to rename'}
         >
           {step.label || defaults.label}
         </span>
@@ -335,31 +327,14 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
     </div>
   );
 
-  // Funnelytics-style "People" card. Shows whenever the Numbers Layer is on
-  // — renders "n/a" with no data so the card stays as a visual anchor.
-  // Sentence-case "People" + tight padding matches their subtle pill treatment.
-  const peopleLabel = visitors > 0 ? formatCount(visitors) : 'n/a';
-  const metricsEl = showMetrics && (
-    <div className="mt-2 px-2.5 py-1 rounded-[5px] bg-white border border-edge/70 shadow-[0_1px_2px_rgba(20,20,40,0.06)] leading-tight whitespace-nowrap flex items-center justify-center gap-2 text-2xs">
-      <span className="flex items-center gap-1">
-        <span className="text-muted/80">People</span>
-        <span className={`font-semibold ${visitors > 0 ? 'text-ink' : 'text-muted'}`}>{peopleLabel}</span>
-      </span>
-      {conversions > 0 && (
-        <span className="text-ink/70">{formatCount(conversions)} conv</span>
-      )}
-      {revenue > 0 && (
-        <span className="text-emerald-600 font-semibold">{formatMoney(revenue)}</span>
-      )}
-    </div>
-  );
-
   return (
     <>
       {isPage ? <PageHandles readOnly={readOnly} /> : <StepHandles readOnly={readOnly} />}
       <div
         className={`flex flex-col items-center ${!readOnly ? 'cursor-grab active:cursor-grabbing' : ''}`}
         style={{ width: FRAME_W, height: frameH }}
+        role="group"
+        aria-label={step.label || defaults.label}
       >
         {/* Pages: body at top (centre at Y=100), label + metrics below.
             Discs: 56px empty space above keeps disc centred at Y=100,
@@ -370,14 +345,14 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
             {pageBody}
             <div style={{ height: LABEL_GAP }} aria-hidden />
             {labelEl}
-            {metricsEl}
+
           </>
         ) : (
           <>
             {discBody}
             <div style={{ height: LABEL_GAP }} aria-hidden />
             {labelEl}
-            {metricsEl}
+
           </>
         )}
       </div>

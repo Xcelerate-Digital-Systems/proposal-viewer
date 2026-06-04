@@ -7,7 +7,7 @@ import {
   SelectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Loader2, MousePointer, Undo2, Redo2, BarChart3 } from 'lucide-react';
+import { Loader2, MousePointer, Undo2, Redo2 } from 'lucide-react';
 import FunnelStepNode from './nodes/FunnelStepNode';
 import StickyNoteNode from '@/components/admin/feedback/board/nodes/StickyNoteNode';
 import ShapeNode from '@/components/admin/feedback/board/nodes/ShapeNode';
@@ -17,7 +17,6 @@ import NodePalette, { PALETTE_DRAG_MIME } from './NodePalette';
 import StepSideDrawer from './StepSideDrawer';
 import ShapeSideDrawer from './ShapeSideDrawer';
 import NoteSideDrawer from './NoteSideDrawer';
-import BoardSummary from './BoardSummary';
 import EdgeSplitEditor from './EdgeSplitEditor';
 import ExportMenu from './ExportMenu';
 import CanvasContextMenu, { type ContextTarget } from './CanvasContextMenu';
@@ -429,8 +428,7 @@ function FunnelBoardInner() {
       (e) => e.id !== selectedDbEdge.id && e.source_step_id === selectedDbEdge.source_step_id
     );
     if (siblings.length === 0) return null;
-    const flowThrough = ctx.forecast.flowByEdge.get(selectedDbEdge.id) ?? 0;
-    return { edge: selectedDbEdge, siblings, flowThrough };
+    return { edge: selectedDbEdge, siblings, flowThrough: 0 };
   })();
 
   const selectionCount = rf.getNodes().filter((n) => n.selected).length;
@@ -512,11 +510,6 @@ function FunnelBoardInner() {
 
           <Panel position="top-left">
             <div className="flex items-start gap-2">
-              <BoardSummary
-                forecast={ctx.forecast}
-                currency={ctx.funnel?.currency ?? 'USD'}
-                period={ctx.funnel?.forecast_period ?? 'total'}
-              />
               <div className="flex items-center gap-1 bg-white border border-edge shadow-sm rounded-lg px-1.5 py-1">
                 <button
                   type="button"
@@ -535,20 +528,6 @@ function FunnelBoardInner() {
                   title="Redo (⌘⇧Z)"
                 >
                   <Redo2 size={14} />
-                </button>
-                <div className="w-px h-5 bg-edge mx-0.5" />
-                <button
-                  type="button"
-                  onClick={() => ctx.setShowMetrics(!ctx.showMetrics)}
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
-                    ctx.showMetrics
-                      ? 'bg-teal/10 text-teal'
-                      : 'text-ink/70 hover:text-ink hover:bg-surface'
-                  }`}
-                  title={ctx.showMetrics ? 'Turn off Numbers Layer' : 'Turn on Numbers Layer'}
-                  aria-pressed={ctx.showMetrics}
-                >
-                  <BarChart3 size={14} />
                 </button>
               </div>
               <ExportMenu containerRef={containerRef} funnelName={ctx.funnel?.name || 'funnel'} />
@@ -634,14 +613,6 @@ function FunnelBoardInner() {
         {selectedStep && (
           <StepSideDrawer
             step={selectedStep}
-            forecastVisitors={ctx.forecast.visitorsByStep.get(selectedStep.id) ?? 0}
-            forecastConversions={ctx.forecast.conversionsByStep.get(selectedStep.id) ?? 0}
-            forecastRevenue={(ctx.forecast.conversionsByStep.get(selectedStep.id) ?? 0) * (selectedStep.metrics?.value ?? 0)}
-            forecastCost={
-              selectedStep.step_type.startsWith('traffic_')
-                ? (ctx.forecast.visitorsByStep.get(selectedStep.id) ?? 0) * (selectedStep.metrics?.cost ?? 0)
-                : (ctx.forecast.conversionsByStep.get(selectedStep.id) ?? 0) * (selectedStep.metrics?.cost ?? 0)
-            }
             onUpdate={(patch) => ctx.updateStep(selectedStep.id, patch)}
             onDelete={() => ctx.deleteStep(selectedStep.id)}
             onClose={() => ctx.selectStep(null)}

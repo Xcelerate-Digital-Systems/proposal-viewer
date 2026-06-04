@@ -8,6 +8,7 @@ import { supabase, type Document as DocType } from '@/lib/supabase';
 import { buildDocumentUrl } from '@/lib/proposal-url';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
+import { pageCountFromPageNames } from '@/lib/entity-card-helpers';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -28,15 +29,6 @@ const formatDate = (date: string | null) => {
   return new Date(date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
 };
 
-const getPageCount = (doc: DocType): number => {
-  if (Array.isArray(doc.page_names)) {
-    return doc.page_names.filter((pn) =>
-      typeof pn === 'string' || (typeof pn === 'object' && pn.type !== 'group')
-    ).length;
-  }
-  return 0;
-};
-
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
@@ -47,7 +39,7 @@ export default function DocumentListRow({ document: doc, onRefresh, customDomain
   const toast = useToast();
   const [copied, setCopied] = useState(false);
 
-  const pageCount = getPageCount(doc);
+  const pageCount = pageCountFromPageNames(doc.page_names);
 
   const copyLink = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -82,13 +74,23 @@ export default function DocumentListRow({ document: doc, onRefresh, customDomain
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      router.push(`/documents/${doc.id}/pages`);
+    }
+  };
+
   return (
     <div
       onClick={() => router.push(`/documents/${doc.id}/pages`)}
-      className="flex items-center gap-4 px-4 py-3 bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_8px_rgba(20,20,40,0.06)] cursor-pointer transition-shadow group"
+      onKeyDown={handleKeyDown}
+      role="link"
+      tabIndex={0}
+      className="flex items-center gap-4 px-4 py-3 bg-white rounded-2xl shadow-card hover:shadow-card-hover cursor-pointer transition-shadow group focus-visible:ring-2 focus-visible:ring-teal/40 focus-visible:outline-none"
     >
       {/* Document badge */}
-      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium shrink-0 bg-surface text-muted">
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium shrink-0 bg-surface text-dim">
         <FileText size={12} />
         Document
       </span>
@@ -99,17 +101,17 @@ export default function DocumentListRow({ document: doc, onRefresh, customDomain
           {doc.title}
         </h3>
         {doc.description && (
-          <p className="text-xs text-faint truncate">{doc.description}</p>
+          <p className="text-xs text-dim truncate">{doc.description}</p>
         )}
       </div>
 
       {/* Page count */}
-      <span className="text-xs text-faint shrink-0 hidden sm:block w-16 text-right">
+      <span className="text-xs text-dim shrink-0 hidden sm:block w-16 text-right">
         {pageCount} page{pageCount !== 1 ? 's' : ''}
       </span>
 
       {/* Date */}
-      <span className="text-xs text-faint shrink-0 hidden md:block w-16 text-right">
+      <span className="text-xs text-dim shrink-0 hidden md:block w-16 text-right">
         {formatDate(doc.created_at)}
       </span>
 
@@ -118,15 +120,17 @@ export default function DocumentListRow({ document: doc, onRefresh, customDomain
         <button
           onClick={copyLink}
           className="p-1.5 rounded-lg text-faint hover:text-ink hover:bg-surface transition-colors"
+          aria-label={copied ? 'Link copied' : 'Copy share link'}
           title="Copy share link"
         >
-          {copied ? <Check size={14} className="text-[#2E7D32]" /> : <Copy size={14} />}
+          {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
         </button>
         <a
           href={`/doc/${doc.share_token}`}
           target="_blank"
           onClick={(e) => e.stopPropagation()}
           className="p-1.5 rounded-lg text-faint hover:text-ink hover:bg-surface transition-colors"
+          aria-label="Preview document"
           title="Preview"
         >
           <ExternalLink size={14} />
@@ -134,6 +138,7 @@ export default function DocumentListRow({ document: doc, onRefresh, customDomain
         <button
           onClick={deleteDocument}
           className="p-1.5 rounded-lg text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
+          aria-label="Delete document"
           title="Delete"
         >
           <Trash2 size={14} />

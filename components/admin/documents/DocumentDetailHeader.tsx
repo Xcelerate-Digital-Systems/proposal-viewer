@@ -101,7 +101,7 @@ export default function DocumentDetailHeader({
             onClick={copyLink}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-dim hover:text-prose hover:bg-surface border border-edge-strong transition-colors"
           >
-            {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+            {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
             {copied ? 'Copied!' : 'Copy Link'}
           </button>
 
@@ -119,6 +119,7 @@ export default function DocumentDetailHeader({
           <button
             onClick={deleteDocument}
             className="p-2 rounded-lg text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
+            aria-label="Delete document"
             title="Delete document"
           >
             <Trash2 size={16} />

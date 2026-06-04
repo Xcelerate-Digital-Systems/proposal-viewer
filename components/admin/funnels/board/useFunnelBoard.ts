@@ -11,7 +11,6 @@ import { type FunnelStepNodeData } from './nodes/FunnelStepNode';
 import { type StickyNoteNodeData } from '@/components/admin/feedback/board/nodes/StickyNoteNode';
 import { type ShapeNodeData } from '@/components/admin/feedback/board/nodes/ShapeNode';
 import { useFunnelBoardContextOrThrow } from './FunnelBoardContext';
-import { formatCount } from '@/lib/funnel/forecast';
 
 function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, delay: number) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -36,7 +35,6 @@ export function useFunnelBoard() {
     updateStep, deleteStep, deleteNote,
     updateNote, updateShape,
     createEdge, updateEdge, deleteEdge,
-    showMetrics, forecast,
   } = ctx;
 
   const [nodes, setNodes] = useNodesState<Node>([]);
@@ -115,22 +113,9 @@ export function useFunnelBoard() {
       const source = e.source_shape_id ? `shape-${e.source_shape_id}` : `step-${e.source_step_id}`;
       const target = e.target_shape_id ? `shape-${e.target_shape_id}` : `step-${e.target_step_id}`;
 
-      // Composite label: user label + optional split % + optional computed
-      // flow count. Shown only when metrics are visible AND this isn't the
-      // selected edge (so the user edits the raw label, not the composite).
       const isSelected = selectedEdge?.id === e.id;
-      const flowCount = forecast.flowByEdge.get(e.id) ?? 0;
-      const isStepEdge = !!e.source_step_id && !!e.target_step_id;
       const userLabel = e.label || '';
-      const labelParts: string[] = [];
-      if (userLabel) labelParts.push(userLabel);
-      if (showMetrics && isStepEdge && !isSelected) {
-        if (e.split_percent != null) labelParts.push(`${Math.round(e.split_percent)}%`);
-        if (flowCount > 0) labelParts.push(formatCount(flowCount));
-      }
-      const displayLabel = isSelected
-        ? (userLabel || undefined)
-        : (labelParts.join(' · ') || undefined);
+      const displayLabel = userLabel || undefined;
 
       return {
         id: e.id,
@@ -154,7 +139,7 @@ export function useFunnelBoard() {
       } as Edge;
     });
     setEdges(flow);
-  }, [boardEdges, handleEdgeClickFromData, setEdges, showMetrics, forecast, selectedEdge?.id]);
+  }, [boardEdges, handleEdgeClickFromData, setEdges, selectedEdge?.id]);
 
   /* ── Drag save ─────────────────────────────────────────────── */
 

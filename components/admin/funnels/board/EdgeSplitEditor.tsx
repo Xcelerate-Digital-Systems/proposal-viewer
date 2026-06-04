@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react';
 import { Split } from 'lucide-react';
 import type { FunnelBoardEdge } from '@/lib/supabase';
-import { formatCount } from '@/lib/funnel/forecast';
-
 interface Props {
   edge: FunnelBoardEdge;
   /** Other outgoing edges from the same source step (excluding this one). */
@@ -51,11 +49,6 @@ export default function EdgeSplitEditor({ edge, siblings, flowThrough, onUpdate 
         />
         <span className="text-detail text-muted pr-2">%</span>
       </div>
-      {flowThrough > 0 && (
-        <span className="text-detail text-muted">
-          → <span className="font-semibold text-ink">{formatCount(flowThrough)}</span>
-        </span>
-      )}
       {siblings.length > 0 && remaining > 0 && (
         <span className="text-2xs text-muted">{remaining.toFixed(0)}% remaining</span>
       )}

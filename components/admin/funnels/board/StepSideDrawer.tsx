@@ -1,20 +1,14 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { X, ExternalLink, Trash2, Check } from 'lucide-react';
 import type { FunnelStep, FunnelStepMetrics } from '@/lib/supabase';
 import {
   FUNNEL_STEP_DEFAULTS, FUNNEL_ICON_LIBRARY, FUNNEL_COLOR_PRESETS,
 } from '@/lib/types/funnel';
 import { StepIcon } from './nodes/FunnelStepNode';
-import { formatCount, formatMoney } from '@/lib/funnel/forecast';
-
 interface Props {
   step: FunnelStep;
-  forecastVisitors: number;
-  forecastConversions: number;
-  forecastRevenue: number;
-  forecastCost: number;
   onUpdate: (patch: Partial<FunnelStep>) => void;
   onDelete: () => void;
   onClose: () => void;
@@ -26,7 +20,7 @@ interface Props {
  * callback (which already does optimistic local update + DB save).
  */
 export default function StepSideDrawer({
-  step, forecastVisitors, forecastConversions, forecastRevenue, forecastCost,
+  step,
   onUpdate, onDelete, onClose,
 }: Props) {
   const defaults = FUNNEL_STEP_DEFAULTS[step.step_type] ?? FUNNEL_STEP_DEFAULTS.generic;
@@ -34,10 +28,9 @@ export default function StepSideDrawer({
   // Local drafts so typing doesn't re-fire DB writes on every keystroke.
   const [label, setLabel] = useState(step.label);
   const [url, setUrl] = useState(step.url || '');
-  const [metrics, setMetrics] = useState<FunnelStepMetrics>(step.metrics || {});
 
   // Re-sync drafts when the user switches to a different step.
-  useEffect(() => { setLabel(step.label); setUrl(step.url || ''); setMetrics(step.metrics || {}); }, [step.id]);
+  useEffect(() => { setLabel(step.label); setUrl(step.url || ''); }, [step.id]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
 
   const commitLabel = () => {
@@ -49,50 +42,20 @@ export default function StepSideDrawer({
     if (next !== (step.url || null)) onUpdate({ url: next });
   };
 
-  const setMetric = (key: keyof FunnelStepMetrics, raw: string) => {
-    let parsed: number | null | undefined;
-    if (raw === '') parsed = null;
-    else {
-      const n = Number(raw);
-      parsed = Number.isFinite(n) ? n : null;
-    }
-    const next = { ...metrics, [key]: parsed };
-    setMetrics(next);
-    onUpdate({ metrics: next });
-  };
-
   const setIcon = (slug: string) => onUpdate({ icon: slug });
   const setColor = (hex: string) => onUpdate({ color: hex });
   const resetColor = () => onUpdate({ color: null });
 
-  // Field visibility mirrors Funnelytics' approach — each node type shows
-  // only the inputs that meaningfully drive its forecast contribution.
-  //   sources       → visitors + cost-per-click (CPC)
-  //   pages         → conversion %
-  //   offers        → conversion % + value per conversion (+ recurring months for subs)
-  //   generic       → all of them (catch-all)
   const isTrafficSource = step.step_type.startsWith('traffic_');
   const isPage = step.step_type.startsWith('page_');
   const isOffer = step.step_type.startsWith('offer_');
-  const isRecurring =
-    step.step_type === 'offer_subscription' ||
-    step.step_type === 'offer_saas' ||
-    step.step_type === 'offer_trial';
 
-  // Icon picker — only show icon groups that make sense for this node type.
-  // Landing pages don't need brand logos in the picker; Facebook Ads
-  // doesn't need a "Pages" set.
   const relevantIconGroups: string[] =
     isPage ? ['Pages', 'Actions'] :
     isTrafficSource ? ['Traffic', 'Brands', 'Actions'] :
     isOffer ? ['Offers', 'Actions'] :
     ['Pages', 'Traffic', 'Offers', 'Actions', 'Brands'];
   const visibleIconGroups = FUNNEL_ICON_LIBRARY.filter((g) => relevantIconGroups.includes(g.group));
-  const showVisitors = isTrafficSource;
-  const showConversion = isPage || isOffer || !isTrafficSource; // i.e. not pure sources
-  const showCost = isTrafficSource || step.step_type === 'generic';
-  const showValue = isOffer || step.step_type === 'generic';
-  const costLabel = isTrafficSource ? 'Cost per click' : 'Cost per conversion';
 
   return (
     <aside className="absolute top-0 right-0 h-full w-[340px] bg-white border-l border-edge shadow-xl flex flex-col z-30 animate-slide-in-right">
@@ -116,14 +79,6 @@ export default function StepSideDrawer({
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
-        {/* Forecast snapshot */}
-        <div className="bg-surface rounded-lg p-3 grid grid-cols-2 gap-2">
-          <Stat label="Visitors"    value={formatCount(forecastVisitors)} />
-          <Stat label="Conversions" value={formatCount(forecastConversions)} />
-          <Stat label="Revenue"     value={formatMoney(forecastRevenue)} tone="positive" />
-          <Stat label="Cost"        value={formatMoney(forecastCost)} tone={forecastCost > 0 ? 'negative' : 'neutral'} />
-        </div>
-
         {/* Label */}
         <Field label="Label">
           <input
@@ -160,64 +115,6 @@ export default function StepSideDrawer({
             )}
           </div>
         </Field>
-
-        {/* Metrics — fields scoped to the step type */}
-        <div>
-          <h4 className="text-2xs uppercase tracking-wider font-semibold text-muted mb-2">Metrics</h4>
-          <div className="space-y-2">
-            {showVisitors && (
-              <MetricInput
-                label="Visitors"
-                value={metrics.visitors}
-                onChange={(v) => setMetric('visitors', v)}
-                placeholder="e.g. 5000"
-              />
-            )}
-            {showConversion && (
-              <MetricInput
-                label="Conversion %"
-                value={metrics.conversion_rate}
-                onChange={(v) => setMetric('conversion_rate', v)}
-                placeholder="e.g. 8"
-                suffix="%"
-                max={100}
-              />
-            )}
-            {showCost && (
-              <MetricInput
-                label={costLabel}
-                value={metrics.cost}
-                onChange={(v) => setMetric('cost', v)}
-                placeholder="e.g. 0.50"
-                prefix="$"
-              />
-            )}
-            {showValue && (
-              <MetricInput
-                label="Value per conversion"
-                value={metrics.value}
-                onChange={(v) => setMetric('value', v)}
-                placeholder="e.g. 49"
-                prefix="$"
-              />
-            )}
-            {isRecurring && (
-              <MetricInput
-                label="Recurring months"
-                value={metrics.recurring_months}
-                onChange={(v) => setMetric('recurring_months', v)}
-                placeholder="e.g. 12"
-                suffix="mo"
-              />
-            )}
-          </div>
-          {isRecurring && (
-            <p className="text-2xs text-muted mt-2 leading-snug">
-              For subscriptions, the forecast multiplies the per-conversion value
-              by recurring months to model LTV.
-            </p>
-          )}
-        </div>
 
         {/* Icon picker */}
         <div>
@@ -287,10 +184,9 @@ export default function StepSideDrawer({
         {/* Notes */}
         <Field label="Notes (private)">
           <textarea
-            value={metrics.notes ?? ''}
+            value={(step.metrics?.notes as string) ?? ''}
             onChange={(e) => {
-              const next = { ...metrics, notes: e.target.value || null };
-              setMetrics(next);
+              const next: FunnelStepMetrics = { ...(step.metrics || {}), notes: e.target.value || null };
               onUpdate({ metrics: next });
             }}
             rows={3}
@@ -324,50 +220,3 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Stat({ label, value, tone = 'neutral' }: { label: string; value: string; tone?: 'positive' | 'negative' | 'neutral' }) {
-  const toneCls = tone === 'positive' ? 'text-emerald-600' : tone === 'negative' ? 'text-rose-600' : 'text-ink';
-  return (
-    <div>
-      <div className="text-2xs uppercase tracking-wider text-muted">{label}</div>
-      <div className={`text-sm font-semibold ${toneCls}`}>{value}</div>
-    </div>
-  );
-}
-
-function MetricInput({
-  label, value, onChange, placeholder, prefix, suffix, max,
-}: {
-  label: string;
-  value: number | null | undefined;
-  onChange: (raw: string) => void;
-  placeholder?: string;
-  prefix?: string;
-  suffix?: string;
-  max?: number;
-}) {
-  const [local, setLocal] = useState(value == null ? '' : String(value));
-  useEffect(() => { setLocal(value == null ? '' : String(value)); }, [value]);
-
-  return (
-    <div className="flex items-center gap-2">
-      <label className="text-detail text-muted w-[110px] shrink-0">{label}</label>
-      <div className="flex-1 flex items-center bg-white border border-edge rounded-lg focus-within:border-teal transition-colors">
-        {prefix && <span className="text-xs text-muted pl-2">{prefix}</span>}
-        <input
-          type="number"
-          inputMode="decimal"
-          step="any"
-          min={0}
-          max={max}
-          value={local}
-          placeholder={placeholder}
-          onChange={(e) => setLocal(e.target.value)}
-          onBlur={() => onChange(local)}
-          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-          className="flex-1 px-2 py-1.5 text-caption bg-transparent outline-none w-full"
-        />
-        {suffix && <span className="text-xs text-muted pr-2">{suffix}</span>}
-      </div>
-    </div>
-  );
-}

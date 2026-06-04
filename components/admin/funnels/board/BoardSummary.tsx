@@ -10,8 +10,6 @@ interface Props {
   period?: FunnelForecastPeriod;
 }
 
-/** Sticky summary chip rendered in the top-left of the canvas. Shows the
- *  rolled-up planner forecast for the entire funnel. */
 export default function BoardSummary({ forecast, currency = 'USD', period }: Props) {
   const roasLabel = !Number.isFinite(forecast.roas)
     ? '∞'
@@ -29,32 +27,61 @@ export default function BoardSummary({ forecast, currency = 'USD', period }: Pro
                      : 'Profit';
 
   return (
-    <div className="flex items-center gap-3 bg-white rounded-lg border border-edge shadow-sm px-3.5 py-2">
-      <Stat label={revenueLabel} value={formatMoney(forecast.totalRevenue, currency)} tone="positive" />
+    <div
+      className="flex items-center gap-3 bg-white rounded-lg border border-edge shadow-sm px-3.5 py-2"
+      role="group"
+      aria-label="Funnel forecast summary"
+    >
+      <span
+        className="text-detail text-muted/50 font-medium select-none"
+        title="Values are modeled projections based on your funnel configuration"
+      >
+        Forecast
+      </span>
       <Divider />
-      <Stat label={costLabel}    value={formatMoney(forecast.totalCost, currency)}    tone={forecast.totalCost > 0 ? 'negative' : 'neutral'} />
+      <Stat
+        label={revenueLabel}
+        value={formatMoney(forecast.totalRevenue, currency)}
+        tone="positive"
+        tooltip="Total projected revenue from this funnel"
+      />
+      <Divider />
+      <Stat
+        label={costLabel}
+        value={formatMoney(forecast.totalCost, currency)}
+        tone={forecast.totalCost > 0 ? 'negative' : 'neutral'}
+        tooltip="Total advertising and operational cost"
+      />
       <Divider />
       <Stat
         label={profitLabel}
         value={formatMoney(forecast.totalProfit, currency)}
         tone={forecast.totalProfit > 0 ? 'positive' : forecast.totalProfit < 0 ? 'negative' : 'neutral'}
+        tooltip="Revenue minus cost"
       />
       <Divider />
-      <Stat label="ROAS" value={roasLabel} tone={forecast.roas >= 1 ? 'positive' : 'neutral'} />
+      <Stat
+        label="ROAS"
+        value={roasLabel}
+        tone={forecast.roas >= 1 ? 'positive' : 'neutral'}
+        tooltip="Return on ad spend — revenue earned per dollar spent"
+      />
     </div>
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone: 'positive' | 'negative' | 'neutral' }) {
+function Stat({ label, value, tone, tooltip }: { label: string; value: string; tone: 'positive' | 'negative' | 'neutral'; tooltip?: string }) {
   const cls = tone === 'positive' ? 'text-emerald-600' : tone === 'negative' ? 'text-rose-600' : 'text-ink';
   return (
-    <div className="leading-tight">
+    <div className="leading-tight" title={tooltip}>
       <div className="text-detail text-muted">{label}</div>
-      <div className={`text-caption font-semibold ${cls}`}>{value}</div>
+      <div className={`text-caption font-semibold ${cls}`} aria-label={`${label}: ${value}`}>
+        {value}
+      </div>
     </div>
   );
 }
 
 function Divider() {
-  return <div className="w-px h-7 bg-edge" />;
+  return <div className="w-px h-7 bg-edge" aria-hidden />;
 }

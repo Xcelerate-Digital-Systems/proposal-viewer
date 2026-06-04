@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, FileText, LayoutGrid, List, Search } from 'lucide-react';
+import { Plus, FileText, LayoutGrid, List, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { supabase, Document as DocType } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -12,6 +12,38 @@ import DocumentListRow from '@/components/admin/documents/DocumentListRow';
 import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import { useEntitlements } from '@/hooks/useEntitlements';
+import { pageCountFromPageNames } from '@/lib/entity-card-helpers';
+
+type SortOption = 'updated' | 'newest' | 'oldest' | 'title-az' | 'title-za' | 'pages';
+
+const SORT_LABELS: Record<SortOption, string> = {
+  updated: 'Recently updated',
+  newest: 'Newest first',
+  oldest: 'Oldest first',
+  'title-az': 'Title A–Z',
+  'title-za': 'Title Z–A',
+  pages: 'Most pages',
+};
+
+function sortDocuments(docs: DocType[], sort: SortOption): DocType[] {
+  const sorted = [...docs];
+  switch (sort) {
+    case 'updated':
+      return sorted.sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at));
+    case 'newest':
+      return sorted.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    case 'oldest':
+      return sorted.sort((a, b) => a.created_at.localeCompare(b.created_at));
+    case 'title-az':
+      return sorted.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    case 'title-za':
+      return sorted.sort((a, b) => (b.title || '').localeCompare(a.title || ''));
+    case 'pages':
+      return sorted.sort((a, b) => pageCountFromPageNames(b.page_names) - pageCountFromPageNames(a.page_names));
+    default:
+      return sorted;
+  }
+}
 
 export default function DocumentsPage() {
   return (
@@ -31,6 +63,18 @@ function DocumentsContent({ companyId }: { companyId: string }) {
   const documentCheck = check('documents');
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('agencyviz-documents-sort') as SortOption) || 'updated';
+    }
+    return 'updated';
+  });
+  const [recentCollapsed, setRecentCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('agencyviz-documents-recent-collapsed') === 'true';
+    }
+    return false;
+  });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('agencyviz-documents-view') as 'grid' | 'list') || 'grid';
@@ -41,6 +85,19 @@ function DocumentsContent({ companyId }: { companyId: string }) {
   const toggleView = (mode: 'grid' | 'list') => {
     setViewMode(mode);
     localStorage.setItem('agencyviz-documents-view', mode);
+  };
+
+  const handleSortChange = (sort: SortOption) => {
+    setSortBy(sort);
+    localStorage.setItem('agencyviz-documents-sort', sort);
+  };
+
+  const toggleRecentCollapsed = () => {
+    setRecentCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('agencyviz-documents-recent-collapsed', String(next));
+      return next;
+    });
   };
 
   const fetchDocuments = useCallback(async () => {
@@ -81,7 +138,9 @@ function DocumentsContent({ companyId }: { companyId: string }) {
       )
     : documents;
 
-  const showRecent = !searchQuery && documents.length >= 8;
+  const sorted = sortDocuments(filtered, sortBy);
+
+  const showRecent = !searchQuery && documents.length >= 8 && sortBy === 'updated';
   const recent = showRecent
     ? [...documents]
         .sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at))
@@ -102,8 +161,23 @@ function DocumentsContent({ companyId }: { companyId: string }) {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Sort */}
+          <div className="relative hidden md:block">
+            <select
+              value={sortBy}
+              onChange={(e) => handleSortChange(e.target.value as SortOption)}
+              className="appearance-none bg-surface rounded-full px-3 pr-7 py-2 text-xs font-medium text-dim cursor-pointer hover:text-ink focus-visible:ring-2 focus-visible:ring-teal/30 focus-visible:outline-none transition-colors"
+              aria-label="Sort documents"
+            >
+              {(Object.entries(SORT_LABELS) as [SortOption, string][]).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+            <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-faint pointer-events-none" />
+          </div>
+
           {/* View toggle */}
-          <div className="flex items-center bg-surface rounded-full p-1 gap-0.5">
+          <div className="flex items-center bg-surface rounded-full p-1 gap-0.5" role="group" aria-label="View mode">
             <button
               onClick={() => toggleView('grid')}
               className={`w-[34px] h-[30px] rounded-lg flex items-center justify-center transition-all ${
@@ -111,7 +185,8 @@ function DocumentsContent({ companyId }: { companyId: string }) {
                   ? 'bg-white shadow-sm text-ink'
                   : 'text-faint hover:text-muted'
               }`}
-              title="Grid view"
+              aria-label="Grid view"
+              aria-pressed={viewMode === 'grid'}
             >
               <LayoutGrid size={16} />
             </button>
@@ -122,7 +197,8 @@ function DocumentsContent({ companyId }: { companyId: string }) {
                   ? 'bg-white shadow-sm text-ink'
                   : 'text-faint hover:text-muted'
               }`}
-              title="List view"
+              aria-label="List view"
+              aria-pressed={viewMode === 'list'}
             >
               <List size={16} />
             </button>
@@ -137,6 +213,7 @@ function DocumentsContent({ companyId }: { companyId: string }) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-transparent text-caption text-ink placeholder-faint outline-none w-full"
+              aria-label="Search documents"
             />
           </div>
 
@@ -173,8 +250,8 @@ function DocumentsContent({ companyId }: { companyId: string }) {
           />
         ) : filtered.length === 0 && searchQuery ? (
           <div className="text-center py-20">
-            <Search size={28} className="text-faint mx-auto mb-3" />
-            <p className="text-sm text-muted">No docs matching &ldquo;{searchQuery}&rdquo;</p>
+            <Search size={28} className="text-dim mx-auto mb-3" />
+            <p className="text-sm text-dim">No docs matching &ldquo;{searchQuery}&rdquo;</p>
           </div>
         ) : documents.length === 0 ? (
           <EmptyState
@@ -191,40 +268,46 @@ function DocumentsContent({ companyId }: { companyId: string }) {
           <>
             {showRecent && (
               <section className="mb-8">
-                <h2 className="text-xs font-semibold text-faint uppercase tracking-wide mb-3">
+                <button
+                  onClick={toggleRecentCollapsed}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-dim uppercase tracking-wide mb-3 hover:text-ink transition-colors"
+                >
+                  {recentCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
                   Recently edited
-                </h2>
-                {viewMode === 'grid' ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 stagger-children">
-                    {recent.map((doc) => (
-                      <DocumentListCard
-                        key={`recent-${doc.id}`}
-                        document={doc}
-                        onRefresh={fetchDocuments}
-                        customDomain={customDomain}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {recent.map((doc) => (
-                      <DocumentListRow
-                        key={`recent-${doc.id}`}
-                        document={doc}
-                        onRefresh={fetchDocuments}
-                        customDomain={customDomain}
-                      />
-                    ))}
-                  </div>
+                </button>
+                {!recentCollapsed && (
+                  viewMode === 'grid' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 stagger-children">
+                      {recent.map((doc) => (
+                        <DocumentListCard
+                          key={`recent-${doc.id}`}
+                          document={doc}
+                          onRefresh={fetchDocuments}
+                          customDomain={customDomain}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {recent.map((doc) => (
+                        <DocumentListRow
+                          key={`recent-${doc.id}`}
+                          document={doc}
+                          onRefresh={fetchDocuments}
+                          customDomain={customDomain}
+                        />
+                      ))}
+                    </div>
+                  )
                 )}
-                <h2 className="text-xs font-semibold text-faint uppercase tracking-wide mt-8 mb-3">
+                <h2 className="text-xs font-semibold text-dim uppercase tracking-wide mt-8 mb-3">
                   All docs · {documents.length}
                 </h2>
               </section>
             )}
             {viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 stagger-children">
-                {filtered.map((doc) => (
+                {sorted.map((doc) => (
                   <DocumentListCard
                     key={doc.id}
                     document={doc}
@@ -235,7 +318,7 @@ function DocumentsContent({ companyId }: { companyId: string }) {
               </div>
             ) : (
               <div className="space-y-2">
-                {filtered.map((doc) => (
+                {sorted.map((doc) => (
                   <DocumentListRow
                     key={doc.id}
                     document={doc}
