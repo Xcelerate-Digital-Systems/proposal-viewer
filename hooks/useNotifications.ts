@@ -76,9 +76,12 @@ export function useNotifications(userId: string | null, companyId: string | null
 
   const markAllRead = useCallback(async () => {
     const now = new Date().toISOString();
-    setNotifications((prev) => prev.map((n) => (n.read_at ? n : { ...n, read_at: now })));
-    await authFetch('/api/notifications/read-all', { method: 'POST' });
-  }, []);
+    const prev = notifications;
+    setNotifications((p) => p.map((n) => (n.read_at ? n : { ...n, read_at: now })));
+    const params = companyId ? `?company_id=${companyId}` : '';
+    const res = await authFetch(`/api/notifications/read-all${params}`, { method: 'POST' });
+    if (!res.ok) setNotifications(prev);
+  }, [companyId, notifications]);
 
   return { notifications, unreadCount, loading, refresh, markRead, markAllRead };
 }
