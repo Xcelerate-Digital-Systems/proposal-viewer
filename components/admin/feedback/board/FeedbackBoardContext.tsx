@@ -373,8 +373,9 @@ export function FeedbackBoardProvider({
           await supabase.from('review_board_notes').delete().eq('id', noteId);
         },
       });
+      toast.info('Note deleted', { action: { label: 'Undo', onClick: () => void undo() } });
     }
-  }, [boardNotes, recordHistory]);
+  }, [boardNotes, recordHistory, toast, undo]);
 
   /* ─── Board edges ──────────────────────────────────────────── */
 
@@ -473,6 +474,7 @@ export function FeedbackBoardProvider({
       setBoardEdges((prev) => prev.filter((e) => e.source_shape_id !== id && e.target_shape_id !== id));
       await supabase.from('review_board_shapes').delete().eq('id', id);
       if (before) {
+        toast.info('Shape deleted', { action: { label: 'Undo', onClick: () => void undo() } });
         recordHistory({
           undo: async () => {
             setShapes((prev) => prev.some((s) => s.id === before.id) ? prev : [...prev, before]);
@@ -493,7 +495,7 @@ export function FeedbackBoardProvider({
         });
       }
     },
-    [shapes, boardEdges, recordHistory]
+    [shapes, boardEdges, recordHistory, toast, undo]
   );
 
   const setProject = useCallback(

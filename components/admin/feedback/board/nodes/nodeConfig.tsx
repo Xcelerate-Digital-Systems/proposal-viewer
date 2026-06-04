@@ -1,7 +1,7 @@
 'use client';
 
 import { Handle, Position } from '@xyflow/react';
-import { Eye, MessageSquareText, ChevronDown } from 'lucide-react';
+import { Eye, MessageSquareText, ChevronDown, Loader2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import type { FeedbackItem, FeedbackStatus } from '@/lib/supabase';
 import { getFeedbackStatusDef, REVIEW_STATUS_OPTIONS } from '@/lib/feedback/status';
@@ -14,6 +14,7 @@ export interface NodeItemProps {
   readOnly?: boolean;
   commentCount: number;
   unresolvedCount: number;
+  commentsLoading?: boolean;
   onNavigate?: (id: string) => void;
   onUpdateStatus?: (itemId: string, status: FeedbackStatus) => void | Promise<void>;
 }
@@ -329,7 +330,7 @@ const CARD_W = NODE_FRAME_W;
 const CARD_H = NODE_FRAME_H;
 
 export function CardShell({
-  item, selected, readOnly, commentCount, unresolvedCount, onNavigate, onUpdateStatus,
+  item, selected, readOnly, commentCount, unresolvedCount, commentsLoading, onNavigate, onUpdateStatus,
   typeIcon, typeLabel, children,
 }: NodeItemProps & {
   typeIcon: React.ReactNode;
@@ -387,8 +388,14 @@ export function CardShell({
           {/* Footer */}
           <div className="flex items-center justify-between pt-2 border-t border-edge">
             <div className="flex items-center gap-1 text-detail text-ink/60">
-              <MessageSquareText size={11} className={commentCount > 0 && unresolvedCount === 0 ? 'text-emerald-600' : ''} />
-              {commentCount === 0 ? (
+              {commentsLoading ? (
+                <Loader2 size={11} className="animate-spin text-faint" />
+              ) : (
+                <MessageSquareText size={11} className={commentCount > 0 && unresolvedCount === 0 ? 'text-emerald-600' : ''} />
+              )}
+              {commentsLoading ? (
+                <span className="text-faint">…</span>
+              ) : commentCount === 0 ? (
                 <span>0</span>
               ) : unresolvedCount > 0 ? (
                 <span className="flex items-center gap-1">
@@ -433,10 +440,8 @@ export function IconShell({
     onNavigate?.(item.id);
   };
 
-  // Label area (56) + circle (88) = 144. Diamond flow-nodes share the same
-  // label area + corner Y so a diamond ↔ circle connection renders as a
-  // straight horizontal line.
-  const ICON_SHELL_H = 56 + ICON_SIZE;
+  // Label area (56) + circle (88) + view link (20) = 164.
+  const ICON_SHELL_H = 56 + ICON_SIZE + 20;
 
   return (
     <>
@@ -457,7 +462,7 @@ export function IconShell({
         </div>
 
         <div
-          className={`group relative flex items-center justify-center rounded-full shadow-[0_3px_8px_rgba(20,20,40,0.18)] transition-shadow ${
+          className={`group relative shrink-0 flex items-center justify-center rounded-full shadow-[0_3px_8px_rgba(20,20,40,0.18)] transition-shadow ${
             selected ? 'ring-2 ring-teal ring-offset-2 ring-offset-white' : 'hover:shadow-lg'
           } ${solid ? '' : 'border border-edge'}`}
           style={{ width: ICON_SIZE, height: ICON_SIZE, backgroundColor: tint }}
@@ -486,8 +491,34 @@ export function IconShell({
           </button>
         </div>
 
+        {/* Persistent View link — mirrors CardShell footer affordance */}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onNavigate?.(item.id); }}
+          className="flex items-center gap-1 text-detail text-teal hover:text-teal-hover transition-colors mt-1"
+        >
+          <Eye size={10} />
+          View
+        </button>
       </div>
     </>
+  );
+}
+
+/* ─── Shared brand logos ──────────────────────────────────────── */
+
+export function FacebookLogo({ size = 30 }: { size?: number }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 36 36"
+      width={size}
+      height={size}
+      fill="#1877F2"
+      aria-label="Facebook"
+    >
+      <path d="M20.181 35.87C29.094 34.791 36 27.202 36 18c0-9.941-8.059-18-18-18S0 8.059 0 18c0 8.442 5.811 15.526 13.652 17.471L13.652 23.2H9.486V18h4.166v-3.51c0-5.269 3.233-7.944 7.71-7.944 2.106 0 3.88.158 4.397.228v5.26H23.11c-2.37 0-2.929 1.453-2.929 3.09V18h5.6l-.727 5.2h-4.873L20.181 35.87z" />
+    </svg>
   );
 }
 

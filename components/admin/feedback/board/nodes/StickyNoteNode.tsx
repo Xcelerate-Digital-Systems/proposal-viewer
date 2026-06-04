@@ -73,15 +73,15 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
       {/* Allow connections on all 4 sides, stacked source+target so users can
           drag from any side and drop on any side. */}
       {(() => {
-        const cls = '!w-2 !h-2 !bg-transparent !border-0 hover:!bg-ink transition-colors';
+        const cls = '!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors';
         return (
           <>
-            <Handle id="left" type="target" position={Position.Left} className={`${cls} !-left-1`} isConnectable={!readOnly} />
-            <Handle id="left-source" type="source" position={Position.Left} className={`${cls} !-left-1`} isConnectable={!readOnly} />
-            <Handle id="top" type="target" position={Position.Top} className={`${cls} !-top-1`} isConnectable={!readOnly} />
-            <Handle id="top-source" type="source" position={Position.Top} className={`${cls} !-top-1`} isConnectable={!readOnly} />
-            <Handle id="bottom" type="source" position={Position.Bottom} className={`${cls} !-bottom-1`} isConnectable={!readOnly} />
-            <Handle id="bottom-target" type="target" position={Position.Bottom} className={`${cls} !-bottom-1`} isConnectable={!readOnly} />
+            <Handle id="left" type="source" position={Position.Left} className={`${cls} !-left-1.5`} isConnectable={!readOnly} />
+            <Handle id="left-source" type="source" position={Position.Left} className={`${cls} !-left-1.5`} isConnectable={!readOnly} />
+            <Handle id="top" type="source" position={Position.Top} className={`${cls} !-top-1.5`} isConnectable={!readOnly} />
+            <Handle id="top-source" type="source" position={Position.Top} className={`${cls} !-top-1.5`} isConnectable={!readOnly} />
+            <Handle id="bottom" type="source" position={Position.Bottom} className={`${cls} !-bottom-1.5`} isConnectable={!readOnly} />
+            <Handle id="bottom-target" type="source" position={Position.Bottom} className={`${cls} !-bottom-1.5`} isConnectable={!readOnly} />
           </>
         );
       })()}
@@ -175,14 +175,14 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
         id="right"
         type="source"
         position={Position.Right}
-        className="!w-2 !h-2 !bg-transparent !border-0 hover:!bg-gray-400 transition-colors !-right-1"
+        className="!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors !-right-1.5"
         isConnectable={!readOnly}
       />
       <Handle
         id="right-target"
-        type="target"
+        type="source"
         position={Position.Right}
-        className="!w-2 !h-2 !bg-transparent !border-0 hover:!bg-gray-400 transition-colors !-right-1"
+        className="!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors !-right-1.5"
         isConnectable={!readOnly}
       />
     </>

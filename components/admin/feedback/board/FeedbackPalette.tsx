@@ -148,6 +148,11 @@ const TABS: PaletteTab[] = [
   },
 ];
 
+const SHAPE_SHORTCUTS: Partial<Record<FeedbackShapeType, string>> = {
+  decision: 'D', wait: 'W', goal: 'G',
+  call: 'C', meeting: 'M', automation: 'Z',
+};
+
 const DEFAULT_OPEN: Record<string, boolean> = {
   conversion: true, engagement: true, integration: false,
   gohighlevel: true, custom_actions: false,
@@ -422,15 +427,19 @@ function PaletteTile({ item, activeTool, onClick }: {
   if (item.kind === 'shape') {
     const Icon = item.icon;
     const tint = BOARD_ACTION_TINTS[item.shapeType as keyof typeof BOARD_ACTION_TINTS] || '#64748B';
+    const shortcut = SHAPE_SHORTCUTS[item.shapeType];
     return (
       <button
         type="button"
         draggable
         onDragStart={handleDragStart}
         onClick={onClick}
-        className="group flex flex-col items-center gap-1.5 px-1 py-2.5 rounded-lg border border-edge bg-white hover:border-teal/50 hover:shadow-sm transition-all cursor-grab active:cursor-grabbing"
-        title={`Drag to canvas or click to add: ${item.label}`}
+        className="group relative flex flex-col items-center gap-1.5 px-1 py-2.5 rounded-lg border border-edge bg-white hover:border-teal/50 hover:shadow-sm transition-all cursor-grab active:cursor-grabbing"
+        title={shortcut ? `${item.label} (${shortcut})` : `Drag to canvas or click to add: ${item.label}`}
       >
+        {shortcut && (
+          <span className="absolute top-1 right-1 text-2xs text-faint/60 font-mono pointer-events-none">{shortcut}</span>
+        )}
         <span
           className="w-11 h-11 flex items-center justify-center rounded-full pointer-events-none"
           style={{ backgroundColor: tint }}

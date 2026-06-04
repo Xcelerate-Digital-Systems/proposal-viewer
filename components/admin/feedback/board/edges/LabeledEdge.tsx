@@ -163,7 +163,7 @@ function LabeledEdgeComponent({
                   : 'bg-white border-edge hover:border-ink/30'
               }`}
               style={{
-                fontSize: edgeData.labelFontSize ?? 16,
+                fontSize: edgeData.labelFontSize ?? 14,
                 color: selected ? '#017C87' : (edgeData.labelColor ?? '#2B2B2B'),
                 backgroundColor: selected ? undefined : '#ffffff',
               }}

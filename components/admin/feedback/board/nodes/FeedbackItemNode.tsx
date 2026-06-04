@@ -46,18 +46,21 @@ function ReviewItemNodeComponent({ data, selected }: NodeProps) {
   const { item, readOnly, onNavigate, onUpdateStatus } = data as ReviewItemNodeData;
   const [commentCount, setCommentCount] = useState(0);
   const [unresolvedCount, setUnresolvedCount] = useState(0);
+  const [commentsLoading, setCommentsLoading] = useState(true);
 
   const fetchCommentStats = useCallback(async () => {
-    const { data: comments } = await supabase
+    setCommentsLoading(true);
+    const { data: comments, error } = await supabase
       .from('review_comments')
       .select('resolved')
       .eq('review_item_id', item.id)
       .is('parent_comment_id', null);
 
-    if (comments) {
+    if (!error && comments) {
       setCommentCount(comments.length);
       setUnresolvedCount(comments.filter((c: { resolved: boolean }) => !c.resolved).length);
     }
+    setCommentsLoading(false);
   }, [item.id]);
 
   useEffect(() => {
@@ -74,6 +77,7 @@ function ReviewItemNodeComponent({ data, selected }: NodeProps) {
       readOnly={readOnly}
       commentCount={commentCount}
       unresolvedCount={unresolvedCount}
+      commentsLoading={commentsLoading}
       onNavigate={onNavigate}
       onUpdateStatus={onUpdateStatus}
     />
