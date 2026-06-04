@@ -668,6 +668,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           onOpenTaskDetail={(task) => setSelectedTaskDetail({ task, comment: selectedComment })}
           teamMembers={teamMembers}
           projectId={projectId}
+          participantsUrl={`/api/campaigns/${projectId}/participants`}
         />
       )}
 

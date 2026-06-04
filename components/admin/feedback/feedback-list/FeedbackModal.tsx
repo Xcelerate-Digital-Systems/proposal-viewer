@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   CheckCircle2, ChevronDown, ChevronUp, CircleDashed, Clock, ExternalLink,
   ListTodo, MessageSquare, Paperclip, Search, Send, Trash2, UserPlus, X,
@@ -13,6 +13,8 @@ import { TYPE_ICONS, type CommentWithItem } from './types';
 import { Button } from '@/components/ui/Button';
 import PrioritySelector from '@/components/feedback/comments/PrioritySelector';
 import CommentContent from '@/components/feedback/mentions/CommentContent';
+import MentionEditor, { type MentionEditorHandle } from '@/components/feedback/mentions/MentionEditor';
+import EmojiPicker from '@/components/feedback/comments/EmojiPicker';
 
 type TeamMemberOption = { id: string; name: string; email: string };
 
@@ -33,6 +35,7 @@ interface Props {
   onOpenTaskDetail?: (task: CommentTask) => void;
   teamMembers?: TeamMemberOption[];
   projectId?: string;
+  participantsUrl?: string | null;
 }
 
 export default function FeedbackModal({
@@ -52,10 +55,13 @@ export default function FeedbackModal({
   onOpenTaskDetail,
   teamMembers = [],
   projectId,
+  participantsUrl,
 }: Props) {
   const [showReplies, setShowReplies] = useState(true);
   const [replyText, setReplyText] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
+  const replyEditorRef = useRef<MentionEditorHandle | null>(null);
+  const stripHtml = (s: string) => s.replace(/<[^>]+>/g, '').trim();
   const [showAssignForm, setShowAssignForm] = useState(false);
   const [assignSearch, setAssignSearch] = useState('');
   const [assignSelectedId, setAssignSelectedId] = useState<string | null>(null);
@@ -70,8 +76,9 @@ export default function FeedbackModal({
   const taskCount = tasks.length;
   const completedCount = tasks.filter((t) => !!t.completed_at).length;
 
+  const replyEmpty = !stripHtml(replyText);
   const handleReplySubmit = async () => {
-    if (!replyText.trim() || submittingReply) return;
+    if (replyEmpty || submittingReply) return;
     setSubmittingReply(true);
     const ok = await onSubmitReply(comment, replyText);
     setSubmittingReply(false);
@@ -245,24 +252,26 @@ export default function FeedbackModal({
 
               {/* Reply composer — full width */}
               <div className="border-t border-edge pt-4">
-                <textarea
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                      e.preventDefault();
-                      handleReplySubmit();
-                    }
-                  }}
-                  placeholder="Reply to this feedback…"
-                  rows={3}
-                  className="w-full px-3 py-2.5 border border-edge-strong rounded-lg text-sm text-ink placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-none"
-                />
+                <div className="flex items-center gap-1 rounded-lg border border-edge-strong focus-within:ring-2 focus-within:ring-teal/20 focus-within:border-teal px-3 py-2.5">
+                  <div className="flex-1 min-w-0">
+                    <MentionEditor
+                      value={replyText}
+                      onChange={setReplyText}
+                      placeholder="Reply to this feedback…"
+                      submitOnEnter
+                      onSubmit={() => { if (!replyEmpty) handleReplySubmit(); }}
+                      participantsUrl={participantsUrl ?? null}
+                      apiRef={replyEditorRef}
+                      className="w-full text-sm text-ink"
+                    />
+                  </div>
+                  <EmojiPicker onSelect={(emoji) => replyEditorRef.current?.insertText(emoji)} />
+                </div>
                 <div className="flex justify-end mt-2">
                   <Button
                     size="sm"
                     loading={submittingReply}
-                    disabled={!replyText.trim() || submittingReply}
+                    disabled={replyEmpty || submittingReply}
                     leftIcon={Send}
                     onClick={handleReplySubmit}
                   >
