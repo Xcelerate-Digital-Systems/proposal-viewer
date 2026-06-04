@@ -72,14 +72,14 @@ export default function PublicItemsGrid({
             <button
               key={item.id}
               onClick={() => onSelectItem(item.id)}
-              className="group relative bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all overflow-hidden text-left flex flex-col"
+              className="group relative bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all overflow-hidden text-left flex flex-col focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2"
             >
               <div className="aspect-[4/3] bg-surface flex items-center justify-center overflow-hidden border-b border-edge">
                 <FeedbackItemThumb item={item} />
               </div>
               <div className="p-3.5 flex-1 flex flex-col gap-2">
                 <div className="flex items-start gap-2">
-                  <h3 className="text-caption font-semibold text-ink leading-tight flex-1 min-w-0 truncate">
+                  <h3 className="text-caption font-semibold text-ink leading-tight flex-1 min-w-0 truncate" title={item.title}>
                     {item.title}
                   </h3>
                   {item.version > 1 && (

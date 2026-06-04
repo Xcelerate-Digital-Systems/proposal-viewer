@@ -33,6 +33,7 @@ export default function PublicTabBar({
 
   return (
     <div
+      role="tablist"
       className="flex items-center gap-1 px-4 py-2 shrink-0 border-b"
       style={{ backgroundColor: bg, borderBottomColor: palette?.borderSubtle ?? `${fg}15` }}
     >
@@ -41,8 +42,10 @@ export default function PublicTabBar({
         return (
           <button
             key={key}
+            role="tab"
+            aria-selected={active}
             onClick={() => onChange(key)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-medium transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-medium transition-colors focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1"
             style={{
               color: active ? fg : (palette?.mutedText ?? `${fg}88`),
               backgroundColor: active ? (palette ? withAlpha(palette.sidebarText, 0.06) : `${fg}10`) : 'transparent',

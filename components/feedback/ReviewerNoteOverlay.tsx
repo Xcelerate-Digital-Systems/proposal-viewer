@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { fontFamily } from '@/lib/google-fonts';
 
 interface ReviewerNoteOverlayProps {
@@ -38,34 +38,53 @@ export default function ReviewerNoteOverlay({
   fontHeading,
 }: ReviewerNoteOverlayProps) {
   const [open, setOpen] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!note.trim()) return;
     const key = ACK_PREFIX + shareToken;
     const stored = window.localStorage.getItem(key);
-    // stored is the updatedAt we previously ack'd; if it matches current, stay hidden.
     if (stored && stored === (updatedAt ?? '')) return;
     setOpen(true);
   }, [shareToken, note, updatedAt]);
 
-  if (!open) return null;
-
-  const headingFont = fontHeading ? fontFamily(fontHeading) : undefined;
-  const initial = (companyName?.trim()?.[0] ?? 'N').toUpperCase();
-
-  const dismiss = () => {
+  const dismiss = useCallback(() => {
     try {
       window.localStorage.setItem(ACK_PREFIX + shareToken, updatedAt ?? '');
     } catch {
       // ignore — storage may be blocked; we'll just show again next load
     }
     setOpen(false);
-  };
+  }, [shareToken, updatedAt]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { dismiss(); return; }
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+      const nodes = dialogRef.current.querySelectorAll<HTMLElement>('button:not([disabled])');
+      if (nodes.length === 0) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [open, dismiss]);
+
+  if (!open) return null;
+
+  const headingFont = fontHeading ? fontFamily(fontHeading) : undefined;
+  const initial = (companyName?.trim()?.[0] ?? 'N').toUpperCase();
 
   return (
     <div
-      className="fixed inset-0 z-[2147483646] flex items-center justify-center p-5 bg-black/60 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]"
+      className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/60 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="reviewer-note-title"
@@ -79,6 +98,7 @@ export default function ReviewerNoteOverlay({
       `}</style>
 
       <div
+        ref={dialogRef}
         className="relative w-full max-w-[480px] bg-white rounded-2xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.35)] overflow-hidden animate-[cardIn_220ms_cubic-bezier(0.22,0.61,0.36,1)]"
       >
         <div className="h-1.5 w-full" style={{ backgroundColor: accentColor }} />
@@ -124,7 +144,7 @@ export default function ReviewerNoteOverlay({
           <button
             type="button"
             onClick={dismiss}
-            className="mt-6 w-full px-4 py-3 rounded-2xl text-sm font-semibold text-white transition-all hover:brightness-110 shadow-sm"
+            className="mt-6 w-full px-4 py-3 rounded-2xl text-sm font-semibold text-white transition-all hover:brightness-110 shadow-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white/50"
             style={{ backgroundColor: accentColor }}
           >
             Got it

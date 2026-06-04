@@ -108,6 +108,7 @@ export default function ReviewTopBar({
             <span
               className={`text-sm font-semibold truncate ${branded ? '' : 'text-ink'}`}
               style={branded ? { ...titleColor, fontFamily: headingFont } : { fontFamily: headingFont }}
+              title={companyName || undefined}
             >
               {companyName}
             </span>
@@ -119,6 +120,7 @@ export default function ReviewTopBar({
             <span
               className={`text-sm font-medium truncate ${branded ? '' : 'text-ink'}`}
               style={titleColor}
+              title={projectTitle}
             >
               {projectTitle}
             </span>
@@ -126,6 +128,7 @@ export default function ReviewTopBar({
               <span
                 className={`text-xs truncate hidden md:inline ${branded ? '' : 'text-faint'}`}
                 style={subtitleColor}
+                title={clientName}
               >
                 · {clientName}
               </span>
@@ -164,7 +167,7 @@ export default function ReviewTopBar({
           <button
             type="button"
             onClick={() => onModeChange('comment')}
-            className={`flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold transition-colors ${
+            className={`flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1 ${
               branded
                 ? ''
                 : mode === 'comment'
@@ -172,6 +175,7 @@ export default function ReviewTopBar({
                   : 'text-dim hover:text-prose'
             }`}
             style={branded ? (mode === 'comment' ? toggleActive : toggleInactive) : undefined}
+            title="Leave feedback on content"
           >
             <MessageSquare size={12} />
             Comment
@@ -179,7 +183,7 @@ export default function ReviewTopBar({
           <button
             type="button"
             onClick={() => onModeChange('browse')}
-            className={`flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold transition-colors ${
+            className={`flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1 ${
               branded
                 ? ''
                 : mode === 'browse'
@@ -187,6 +191,7 @@ export default function ReviewTopBar({
                   : 'text-dim hover:text-prose'
             }`}
             style={branded ? (mode === 'browse' ? toggleActive : toggleInactive) : undefined}
+            title="Interact with content without leaving feedback"
           >
             <MousePointer2 size={12} />
             Browse
@@ -210,7 +215,7 @@ export default function ReviewTopBar({
             <button
               type="button"
               onClick={() => setShowFinish(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-semibold hover:brightness-110 transition-all shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-semibold hover:brightness-110 transition-all shadow-sm focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1"
               style={{ backgroundColor: accentColor }}
             >
               Finish reviewing
@@ -223,7 +228,7 @@ export default function ReviewTopBar({
       {commentsPaused && (
         <div className="fixed top-12 inset-x-0 z-20 bg-amber-50 border-b border-amber-200 text-amber-800 text-xs font-medium px-4 py-1.5 flex items-center justify-center gap-2">
           <Pause size={12} />
-          The team has paused new comments for this review.
+          New comments are paused for this review.
         </div>
       )}
 

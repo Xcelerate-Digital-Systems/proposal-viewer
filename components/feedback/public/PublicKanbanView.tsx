@@ -3,7 +3,7 @@
 import { useMemo, useState, useCallback } from 'react';
 import {
   DndContext, DragEndEvent, DragOverlay, DragStartEvent,
-  PointerSensor, useDraggable, useDroppable, useSensor, useSensors,
+  KeyboardSensor, PointerSensor, useDraggable, useDroppable, useSensor, useSensors,
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import {
@@ -63,7 +63,10 @@ export default function PublicKanbanView({
   items, comments, onSelectItem, onUpdateStatus, branding,
 }: PublicKanbanViewProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor),
+  );
 
   const accent = branding.accent_color || '#0f766e';
 
@@ -200,7 +203,7 @@ function KanbanColumn({
       >
         {items.length === 0 ? (
           <div className="text-detail text-faint italic text-center py-4">
-            {dragActive && !isDropAllowed ? 'Locked' : 'Empty'}
+            {dragActive && !isDropAllowed ? 'Not available' : 'No items'}
           </div>
         ) : (
           items.map((item) => (
@@ -262,7 +265,7 @@ function DraggableKanbanCard({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-start gap-1.5">
-              <h4 className="text-caption font-medium text-ink truncate leading-tight flex-1 min-w-0">
+              <h4 className="text-caption font-medium text-ink truncate leading-tight flex-1 min-w-0" title={item.title}>
                 {item.title}
               </h4>
               {item.version > 1 && (
@@ -286,7 +289,7 @@ function DraggableKanbanCard({
           <button
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); onSelectItem(item.id); }}
-            className="relative z-10 inline-flex items-center gap-1 text-detail font-medium"
+            className="relative z-10 inline-flex items-center gap-1 text-detail font-medium rounded focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1"
             style={{ color: accent }}
           >
             {isWebpage ? <ExternalLink size={11} /> : null}
@@ -320,7 +323,7 @@ function KanbanCardView({
           <Icon size={15} className={meta.iconColor} />
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="text-caption font-medium text-ink truncate leading-tight">{item.title}</h4>
+          <h4 className="text-caption font-medium text-ink truncate leading-tight" title={item.title}>{item.title}</h4>
           <p className="text-detail text-faint mt-0.5 truncate">{meta.label}</p>
         </div>
       </div>

@@ -63,12 +63,15 @@ function StatusPill({
       if (menuRef.current?.contains(t)) return;
       setOpen(false);
     };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     const onScroll = () => setOpen(false);
     document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
     window.addEventListener('scroll', onScroll, true);
     window.addEventListener('resize', onScroll);
     return () => {
       document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
       window.removeEventListener('scroll', onScroll, true);
       window.removeEventListener('resize', onScroll);
     };
@@ -80,7 +83,9 @@ function StatusPill({
         ref={btnRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-detail font-medium border transition-colors ${current.bg} ${current.text} ${current.border} hover:brightness-95`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-detail font-medium border transition-colors focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1 ${current.bg} ${current.text} ${current.border} hover:brightness-95`}
       >
         <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
         {current.label}
@@ -90,7 +95,9 @@ function StatusPill({
         createPortal(
           <div
             ref={menuRef}
-            className="fixed z-[2147483647] w-44 bg-white rounded-lg border border-edge-strong shadow-lg py-1"
+            role="listbox"
+            aria-label="Set item status"
+            className="fixed z-[60] w-44 bg-white rounded-lg border border-edge-strong shadow-lg py-1"
             style={{ top: pos.top, right: pos.right }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -100,11 +107,13 @@ function StatusPill({
                 <button
                   key={opt}
                   type="button"
+                  role="option"
+                  aria-selected={opt === value}
                   onClick={() => {
                     setOpen(false);
                     onChange(opt);
                   }}
-                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-surface transition-colors ${
+                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-surface transition-colors focus-visible:bg-surface focus-visible:outline-none ${
                     opt === value ? 'bg-surface' : ''
                   }`}
                 >
@@ -233,7 +242,7 @@ export default function CompleteFeedbackModal({
 
   return (
     <div
-      className="fixed inset-0 z-[2147483646] flex items-center justify-center p-5 bg-black/60 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]"
+      className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/60 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]"
       role="dialog"
       aria-modal="true"
       onClick={onClose}
@@ -303,7 +312,7 @@ export default function CompleteFeedbackModal({
             type="button"
             onClick={handleFinish}
             disabled={submitting}
-            className="w-full px-4 py-3 rounded-2xl text-sm font-semibold text-white transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 rounded-2xl text-sm font-semibold text-white transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white/50"
             style={{ backgroundColor: accentColor }}
           >
             {submitting ? 'Sending…' : 'Finish'}

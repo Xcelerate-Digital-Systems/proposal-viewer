@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { fontFamily } from '@/lib/google-fonts';
 
@@ -40,12 +40,34 @@ export default function GuestOnboardingModal({
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (!open) return;
     const t = setTimeout(() => nameRef.current?.focus(), 60);
     return () => clearTimeout(t);
   }, [open]);
+
+  const trapFocus = useCallback((e: KeyboardEvent) => {
+    if (e.key !== 'Tab' || !dialogRef.current) return;
+    const nodes = dialogRef.current.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), textarea:not([disabled])'
+    );
+    if (nodes.length === 0) return;
+    const first = nodes[0];
+    const last = nodes[nodes.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault(); first.focus();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    document.addEventListener('keydown', trapFocus);
+    return () => document.removeEventListener('keydown', trapFocus);
+  }, [open, trapFocus]);
 
   if (!open) return null;
 
@@ -68,7 +90,7 @@ export default function GuestOnboardingModal({
 
   return (
     <div
-      className="fixed inset-0 z-[2147483646] flex items-center justify-center p-5 bg-black/60 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]"
+      className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/60 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="guest-onboard-title"
@@ -82,6 +104,7 @@ export default function GuestOnboardingModal({
       `}</style>
 
       <form
+        ref={dialogRef}
         onSubmit={handleSubmit}
         className="relative w-full max-w-[400px] bg-white rounded-2xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.35)] overflow-hidden animate-[cardIn_220ms_cubic-bezier(0.22,0.61,0.36,1)]"
       >
@@ -186,7 +209,7 @@ export default function GuestOnboardingModal({
           <button
             type="submit"
             disabled={!canSubmit}
-            className="group mt-5 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 shadow-sm"
+            className="group mt-5 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 shadow-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white/50"
             style={{ backgroundColor: accentColor }}
           >
             Continue

@@ -125,13 +125,13 @@ export default function FeedbackHeaderBar({
         {backAction ? (
           <button
             onClick={backAction.onClick}
-            className={`flex items-center gap-1.5 text-sm transition-colors min-w-0 ${
+            className={`flex items-center gap-1.5 text-sm transition-colors min-w-0 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:rounded-md focus-visible:ring-offset-1 ${
               headerBranded ? '' : 'text-dim hover:text-prose'
             }`}
             style={headerBranded ? { color: palette?.mutedText ?? `${sidebarText}99` } : undefined}
           >
             <ArrowLeft size={14} className="shrink-0" />
-            <span className="font-medium truncate max-w-[180px]">{backAction.label}</span>
+            <span className="font-medium truncate max-w-[180px]" title={backAction.label}>{backAction.label}</span>
           </button>
         ) : null}
 
@@ -176,6 +176,7 @@ export default function FeedbackHeaderBar({
             headerBranded ? '' : 'text-ink'
           }`}
           style={headerBranded ? { color: sidebarText } : undefined}
+          title={project.title}
         >
           {project.title}
         </span>
@@ -183,6 +184,7 @@ export default function FeedbackHeaderBar({
           <span
             className={`text-xs truncate hidden xl:inline ${headerBranded ? '' : 'text-faint'}`}
             style={headerBranded ? { color: palette?.mutedText ?? `${sidebarText}80` } : undefined}
+            title={project.client_company || project.client_name || undefined}
           >
             · {project.client_company || project.client_name}
           </span>
@@ -221,7 +223,7 @@ export default function FeedbackHeaderBar({
             <button
               onClick={() => onGoToItem(currentIdx - 1)}
               disabled={currentIdx <= 0}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+              className={`flex items-center justify-center w-7 h-7 rounded-full text-xs disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1 ${
                 headerBranded ? '' : 'bg-surface text-prose hover:bg-surface'
               }`}
               style={
@@ -229,9 +231,9 @@ export default function FeedbackHeaderBar({
                   ? { border: `1px solid ${palette?.border ?? `${sidebarText}25`}`, color: sidebarText }
                   : undefined
               }
+              aria-label="Previous item"
             >
-              <ChevronLeft size={13} />
-              Previous
+              <ChevronLeft size={14} />
             </button>
             <span
               className={`text-xs tabular-nums whitespace-nowrap ${
@@ -239,12 +241,12 @@ export default function FeedbackHeaderBar({
               }`}
               style={headerBranded ? { color: palette?.mutedText ?? `${sidebarText}80` } : undefined}
             >
-              {currentIdx + 1} of {filteredItems.length}
+              {currentIdx + 1}/{filteredItems.length}
             </span>
             <button
               onClick={() => onGoToItem(currentIdx + 1)}
               disabled={currentIdx >= filteredItems.length - 1}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+              className={`flex items-center justify-center w-7 h-7 rounded-full text-xs disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1 ${
                 headerBranded ? '' : 'bg-surface text-prose hover:bg-surface'
               }`}
               style={
@@ -252,9 +254,9 @@ export default function FeedbackHeaderBar({
                   ? { border: `1px solid ${palette?.border ?? `${sidebarText}25`}`, color: sidebarText }
                   : undefined
               }
+              aria-label="Next item"
             >
-              Next
-              <ChevronRight size={13} />
+              <ChevronRight size={14} />
             </button>
           </div>
         </>
@@ -315,12 +317,13 @@ export default function FeedbackHeaderBar({
             <button
               type="button"
               onClick={() => onReviewModeChange('comment')}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1"
               style={
                 reviewMode === 'comment'
                   ? { backgroundColor: palette?.borderSubtle ?? `${sidebarText}26`, color: sidebarText }
                   : { color: palette?.mutedText ?? `${sidebarText}99` }
               }
+              title="Leave feedback on content"
             >
               <MessageSquare size={12} />
               Comment
@@ -328,12 +331,13 @@ export default function FeedbackHeaderBar({
             <button
               type="button"
               onClick={() => onReviewModeChange('browse')}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1"
               style={
                 reviewMode === 'browse'
                   ? { backgroundColor: palette?.borderSubtle ?? `${sidebarText}26`, color: sidebarText }
                   : { color: palette?.mutedText ?? `${sidebarText}99` }
               }
+              title="Interact with content without leaving feedback"
             >
               <MousePointer2 size={12} />
               Browse
@@ -360,7 +364,7 @@ export default function FeedbackHeaderBar({
             <button
               type="button"
               onClick={onOpenFinishModal}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-semibold hover:brightness-110 transition-all shadow-sm shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-semibold hover:brightness-110 transition-all shadow-sm shrink-0 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1"
               style={{ backgroundColor: branding?.accent_color || '#017C87' }}
             >
               Finish reviewing
