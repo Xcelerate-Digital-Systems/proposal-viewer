@@ -1,10 +1,9 @@
 // Shared participant resolution for @mention autocomplete and for validating
 // inbound mentions on the server. A participant is anyone who can legitimately
 // be @-mentioned in a comment on a given review_project: every team member
-// assigned to the project (and, as a fallback when no assignees are set, every
-// team member of the owning company) plus every guest recipient invited to
-// the project. The contract is the same shape across admin + public routes so
-// the editor doesn't care which one populated its suggestion list.
+// of the owning company plus every guest recipient invited to the project.
+// The contract is the same shape across admin + public routes so the editor
+// doesn't care which one populated its suggestion list.
 
 import { createServiceClient } from '@/lib/supabase-server';
 
@@ -40,53 +39,27 @@ export async function getProjectParticipants(
     .maybeSingle();
   if (!project) return [];
 
-  const [{ data: assigneeRows }, { data: guestRows }] = await Promise.all([
+  const [{ data: memberRows }, { data: guestRows }] = await Promise.all([
     supabase
-      .from('review_project_assignees')
-      .select('team_member:team_members(id, name, email)')
-      .eq('review_project_id', projectId),
+      .from('team_members')
+      .select('id, name, email')
+      .eq('company_id', project.company_id),
     supabase
       .from('review_project_guest_recipients')
       .select('email, name')
       .eq('review_project_id', projectId),
   ]);
 
-  type AssigneeRow = { team_member: { id: string; name: string | null; email: string | null } | { id: string; name: string | null; email: string | null }[] | null };
-
   const teamSet = new Map<string, Participant>();
-  for (const row of (assigneeRows ?? []) as unknown as AssigneeRow[]) {
-    const rel = row.team_member;
-    const tms = Array.isArray(rel) ? rel : rel ? [rel] : [];
-    for (const tm of tms) {
-      const email = tm.email?.trim().toLowerCase();
-      if (!email) continue;
-      teamSet.set(email, {
-        id: tm.id,
-        name: (tm.name?.trim() || tm.email || '').trim(),
-        email,
-        kind: 'team',
-      });
-    }
-  }
-
-  // If no explicit assignees, fall back to every team member of the
-  // owning company. Matches the existing /assignees endpoint shape where
-  // "members" is the full pool.
-  if (teamSet.size === 0) {
-    const { data: members } = await supabase
-      .from('team_members')
-      .select('id, name, email')
-      .eq('company_id', project.company_id);
-    for (const m of members ?? []) {
-      const email = (m as { email: string | null }).email?.trim().toLowerCase();
-      if (!email) continue;
-      teamSet.set(email, {
-        id: (m as { id: string }).id,
-        name: ((m as { name: string | null }).name?.trim() || email).trim(),
-        email,
-        kind: 'team',
-      });
-    }
+  for (const m of memberRows ?? []) {
+    const email = (m as { email: string | null }).email?.trim().toLowerCase();
+    if (!email) continue;
+    teamSet.set(email, {
+      id: (m as { id: string }).id,
+      name: ((m as { name: string | null }).name?.trim() || email).trim(),
+      email,
+      kind: 'team',
+    });
   }
 
   const guestSet = new Map<string, Participant>();

@@ -202,7 +202,7 @@ export default function FeedbackDetailView({
   // keeps "@yourself" out of the dropdown.
   const participantsUrl =
     isAdmin && project?.id
-      ? `/api/campaigns/${project.id}/participants`
+      ? `/api/campaigns/${project.id}/participants${companyId ? `?company_id=${companyId}` : ''}`
       : isClient && shareToken
       ? `/api/review/${shareToken}/participants${reviewerEmail ? `?exclude_email=${encodeURIComponent(reviewerEmail)}` : ''}`
       : null;
