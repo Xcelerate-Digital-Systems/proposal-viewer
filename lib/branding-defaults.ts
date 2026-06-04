@@ -12,6 +12,7 @@ export const DEFAULT_BRANDING: CompanyBranding = {
   website: null,
   bg_primary: '#0f0f0f',
   bg_secondary: '#141414',
+  bg_divider: null,
   sidebar_text_color: '#ffffff',
   accept_text_color: '#ffffff',
   cover_bg_style: 'gradient',

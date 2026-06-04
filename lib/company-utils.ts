@@ -9,6 +9,7 @@ export type CompanyData = {
   accent_color: string;
   bg_primary: string;
   bg_secondary: string;
+  bg_divider: string | null;
   sidebar_text_color: string;
   accept_text_color: string;
   website: string | null;

@@ -18,6 +18,7 @@ interface ViewerPreviewProps {
   accent: string;
   bgPrimary: string;
   bgSecondary: string;
+  bgDivider?: string | null;
   logoUrl: string | null;
   companyName: string;
   sidebarTextColor: string;
@@ -32,6 +33,7 @@ export default function ViewerPreview({
   accent,
   bgPrimary,
   bgSecondary,
+  bgDivider,
   logoUrl,
   companyName,
   sidebarTextColor,
@@ -42,7 +44,7 @@ export default function ViewerPreview({
   bgImageOverlayOpacity = 0.85,
 }: ViewerPreviewProps) {
   const [activeTab, setActiveTab] = useState<PreviewTab>('proposal');
-  const palette = generateBrandPalette(accent, bgPrimary, bgSecondary, sidebarTextColor, acceptTextColor);
+  const palette = generateBrandPalette(accent, bgPrimary, bgSecondary, sidebarTextColor, acceptTextColor, bgDivider);
 
   const tabs: { key: PreviewTab; label: string }[] = [
     { key: 'proposal', label: 'Proposal' },

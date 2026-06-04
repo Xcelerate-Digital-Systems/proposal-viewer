@@ -48,6 +48,7 @@ export function generateBrandPalette(
   bgSecondaryHex: string,
   sidebarTextHex: string = '#ffffff',
   acceptTextHex: string = '#ffffff',
+  bgDividerHex: string | null = null,
 ): BrandPalette {
   const accent = accentHex || '#01434A';
   const bgPrimary = bgPrimaryHex || '#0f0f0f';
@@ -81,8 +82,11 @@ export function generateBrandPalette(
   const bgElevated = adjustLightness(bgPrimary, dir * 0.025);
   const bgCard = adjustLightness(bgPrimary, dir * 0.045);
   const surface = adjustLightness(bgPrimary, dir * 0.035);
-  const border = adjustLightness(bgSecondary, dir * 0.08);
-  const borderSubtle = adjustLightness(bgSecondary, dir * 0.05);
+  const borderBase = bgDividerHex || bgSecondary;
+  const border = bgDividerHex || adjustLightness(bgSecondary, dir * 0.08);
+  const borderSubtle = bgDividerHex
+    ? adjustLightness(bgDividerHex, dir * -0.03)
+    : adjustLightness(bgSecondary, dir * 0.05);
 
   // Text shades — target absolute lightness for consistent readability
   const mutedText = isDark

@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
     const { data: company, error } = await supabase
       .from('companies')
-      .select('id ,name, slug, logo_path, accent_color, website, bg_primary, bg_secondary, sidebar_text_color, accept_text_color, cover_bg_style, cover_bg_color_1, cover_bg_color_2, cover_text_color, cover_subtitle_color, cover_button_bg, cover_button_text, cover_overlay_opacity, cover_gradient_type, cover_gradient_angle, font_heading, font_body, font_sidebar, font_heading_weight, font_body_weight, font_sidebar_weight, font_button, font_button_weight, text_page_bg_color, text_page_text_color, text_page_heading_color, text_page_font_size, text_page_border_enabled, text_page_border_color, text_page_border_radius, text_page_layout, bg_image_path, bg_image_overlay_opacity, cover_image_path')
+      .select('id ,name, slug, logo_path, accent_color, website, bg_primary, bg_secondary, bg_divider, sidebar_text_color, accept_text_color, cover_bg_style, cover_bg_color_1, cover_bg_color_2, cover_text_color, cover_subtitle_color, cover_button_bg, cover_button_text, cover_overlay_opacity, cover_gradient_type, cover_gradient_angle, font_heading, font_body, font_sidebar, font_heading_weight, font_body_weight, font_sidebar_weight, font_button, font_button_weight, text_page_bg_color, text_page_text_color, text_page_heading_color, text_page_font_size, text_page_border_enabled, text_page_border_color, text_page_border_radius, text_page_layout, bg_image_path, bg_image_overlay_opacity, cover_image_path')
       .eq('id', companyId)
       .single();
 
@@ -52,6 +52,7 @@ export async function GET(req: NextRequest) {
       website: company.website,
       bg_primary: company.bg_primary || '#0f0f0f',
       bg_secondary: company.bg_secondary || '#141414',
+      bg_divider: company.bg_divider || null,
       sidebar_text_color: company.sidebar_text_color || '#ffffff',
       accept_text_color: company.accept_text_color || '#ffffff',
       cover_bg_style: company.cover_bg_style || 'gradient',

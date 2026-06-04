@@ -35,6 +35,7 @@ export function useCompanySettings(companyId: string) {
   const [accentColor, setAccentColor]           = useState('#01434A');
   const [bgPrimary, setBgPrimary]               = useState('#0f0f0f');
   const [bgSecondary, setBgSecondary]           = useState('#141414');
+  const [bgDivider, setBgDivider]               = useState<string | null>(null);
   const [sidebarTextColor, setSidebarTextColor] = useState('#ffffff');
   const [acceptTextColor, setAcceptTextColor]   = useState('#ffffff');
   const [colorsSaved, setColorsSaved]           = useState(false);
@@ -100,6 +101,7 @@ export function useCompanySettings(companyId: string) {
         setAccentColor(data.accent_color || '#01434A');
         setBgPrimary(data.bg_primary || '#0f0f0f');
         setBgSecondary(data.bg_secondary || '#141414');
+        setBgDivider(data.bg_divider || null);
         setSidebarTextColor(data.sidebar_text_color || '#ffffff');
         setAcceptTextColor(data.accept_text_color || '#ffffff');
         setWebsite(data.website || '');
@@ -214,6 +216,7 @@ export function useCompanySettings(companyId: string) {
         accent_color: accentColor,
         bg_primary: bgPrimary,
         bg_secondary: bgSecondary,
+        bg_divider: bgDivider,
         sidebar_text_color: sidebarTextColor,
         accept_text_color: acceptTextColor,
         bg_image_overlay_opacity: bgImageOverlayOpacity,
@@ -236,6 +239,7 @@ export function useCompanySettings(companyId: string) {
     accentColor !== (company?.accent_color || '#01434A') ||
     bgPrimary !== (company?.bg_primary || '#0f0f0f') ||
     bgSecondary !== (company?.bg_secondary || '#141414') ||
+    bgDivider !== (company?.bg_divider || null) ||
     sidebarTextColor !== (company?.sidebar_text_color || '#ffffff') ||
     acceptTextColor !== (company?.accept_text_color || '#ffffff') ||
     bgImageOverlayOpacity !== (company?.bg_image_overlay_opacity ?? 0.85);
@@ -246,6 +250,7 @@ export function useCompanySettings(companyId: string) {
       !isValidHex6(accentColor) ||
       !isValidHex6(bgPrimary) ||
       !isValidHex6(bgSecondary) ||
+      (bgDivider !== null && !isValidHex6(bgDivider)) ||
       !isValidHex6(sidebarTextColor) ||
       !isValidHex6(acceptTextColor)
     ) return;
@@ -253,7 +258,7 @@ export function useCompanySettings(companyId: string) {
       handleSaveColors();
     }, 800);
     return () => clearTimeout(timer);
-  }, [accentColor, bgPrimary, bgSecondary, sidebarTextColor, acceptTextColor, bgImageOverlayOpacity]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [accentColor, bgPrimary, bgSecondary, bgDivider, sidebarTextColor, acceptTextColor, bgImageOverlayOpacity]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-contrast: when bgPrimary crosses the dark/light threshold,
   // flip text colors so they remain readable. Only fires when the
@@ -599,6 +604,7 @@ export function useCompanySettings(companyId: string) {
     accentColor, setAccentColor,
     bgPrimary, setBgPrimary,
     bgSecondary, setBgSecondary,
+    bgDivider, setBgDivider,
     sidebarTextColor, setSidebarTextColor,
     acceptTextColor, setAcceptTextColor,
     colorsChanged,

@@ -11,6 +11,8 @@ export type CompanyBranding = {
   website: string | null;
   bg_primary: string;
   bg_secondary: string;
+  /** Explicit divider/line colour. Null = auto-derived from bg_secondary. */
+  bg_divider: string | null;
   sidebar_text_color: string;
   accept_text_color: string;
   cover_bg_style: 'gradient' | 'solid';

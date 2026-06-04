@@ -105,8 +105,8 @@ export default function FeedbackHeaderBar({
   hasFinishHandler,
 }: FeedbackHeaderBarProps) {
   const palette = useMemo(() =>
-    branding ? generateBrandPalette(branding.accent_color, branding.bg_primary, branding.bg_secondary, branding.sidebar_text_color, branding.accept_text_color) : null,
-    [branding?.accent_color, branding?.bg_primary, branding?.bg_secondary, branding?.sidebar_text_color, branding?.accept_text_color]
+    branding ? generateBrandPalette(branding.accent_color, branding.bg_primary, branding.bg_secondary, branding.sidebar_text_color, branding.accept_text_color, branding.bg_divider) : null,
+    [branding?.accent_color, branding?.bg_primary, branding?.bg_secondary, branding?.sidebar_text_color, branding?.accept_text_color, branding?.bg_divider]
   );
 
   return (

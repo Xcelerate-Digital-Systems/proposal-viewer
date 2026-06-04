@@ -75,8 +75,8 @@ export default function ReviewTopBar({
   // Falls back to null when branding is absent so downstream code can use
   // legacy hex+opacity strings as a safe fallback.
   const palette = useMemo(() =>
-    branding ? generateBrandPalette(branding.accent_color, branding.bg_primary, branding.bg_secondary, branding.sidebar_text_color, branding.accept_text_color) : null,
-    [branding?.accent_color, branding?.bg_primary, branding?.bg_secondary, branding?.sidebar_text_color, branding?.accept_text_color]
+    branding ? generateBrandPalette(branding.accent_color, branding.bg_primary, branding.bg_secondary, branding.sidebar_text_color, branding.accept_text_color, branding.bg_divider) : null,
+    [branding?.accent_color, branding?.bg_primary, branding?.bg_secondary, branding?.sidebar_text_color, branding?.accept_text_color, branding?.bg_divider]
   );
 
   // When full branding is provided, mirror the whiteboard header (branded

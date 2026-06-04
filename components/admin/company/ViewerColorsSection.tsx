@@ -6,6 +6,7 @@ import { Check, Loader2, Palette, Upload, Trash2, ImageIcon } from 'lucide-react
 import ColorPickerField from '@/components/ui/ColorPickerField';
 import Slider from '@/components/ui/Slider';
 import ThemePresetsStrip from './ThemePresetsStrip';
+import { generateBrandPalette } from '@/lib/branding';
 
 interface ViewerColorsSectionProps {
   isOwner: boolean;
@@ -17,6 +18,8 @@ interface ViewerColorsSectionProps {
   setBgPrimary: (v: string) => void;
   bgSecondary: string;
   setBgSecondary: (v: string) => void;
+  bgDivider: string | null;
+  setBgDivider: (v: string | null) => void;
   sidebarTextColor: string;
   setSidebarTextColor: (v: string) => void;
   acceptTextColor: string;
@@ -42,6 +45,8 @@ export default function ViewerColorsSection({
   setBgPrimary,
   bgSecondary,
   setBgSecondary,
+  bgDivider,
+  setBgDivider,
   sidebarTextColor,
   setSidebarTextColor,
   acceptTextColor,
@@ -106,6 +111,14 @@ export default function ViewerColorsSection({
             <span className="text-2xs font-semibold text-faint uppercase tracking-wider">Background</span>
             <div className="space-y-2 mt-1.5">
               <ColorPickerField label="Main background" value={bgPrimary} fallback="#0f0f0f" onChange={setBgPrimary} disabled={!isOwner} />
+              <ColorPickerField
+                label="Dividers"
+                value={bgDivider}
+                fallback={generateBrandPalette(accentColor, bgPrimary, bgSecondary).border}
+                onChange={(v) => setBgDivider(v || null)}
+                onReset={() => setBgDivider(null)}
+                disabled={!isOwner}
+              />
               <ColorPickerField label="Panels & headers" value={bgSecondary} fallback="#141414" onChange={setBgSecondary} disabled={!isOwner} />
             </div>
           </div>
