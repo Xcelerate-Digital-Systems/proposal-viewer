@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { CompanyData, isValidHex6 } from '@/lib/company-utils';
 import { setBrandingColors } from '@/components/ui/ColorPickerField';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { hexToOklch } from '@/lib/branding/color-math';
 
 /* ─── Auth helper ────────────────────────────────────────────────────────── */
 
@@ -37,6 +38,12 @@ export function useCompanySettings(companyId: string) {
   const [sidebarTextColor, setSidebarTextColor] = useState('#ffffff');
   const [acceptTextColor, setAcceptTextColor]   = useState('#ffffff');
   const [colorsSaved, setColorsSaved]           = useState(false);
+
+  // Content page defaults
+  const [textPageBgColor, setTextPageBgColor]           = useState('#141414');
+  const [textPageTextColor, setTextPageTextColor]       = useState('#ffffff');
+  const [textPageHeadingColor, setTextPageHeadingColor] = useState<string | null>(null);
+  const [contentPageSaved, setContentPageSaved]         = useState(false);
 
   // Brand palette
   const [brandColors, setBrandColors]           = useState<string[]>([]);
@@ -105,6 +112,9 @@ export function useCompanySettings(companyId: string) {
         setBgImagePath(data.bg_image_path || null);
         setBgImageOverlayOpacity(data.bg_image_overlay_opacity ?? 0.85);
         setCoverImagePath(data.cover_image_path || null);
+        setTextPageBgColor(data.text_page_bg_color || '#141414');
+        setTextPageTextColor(data.text_page_text_color || '#ffffff');
+        setTextPageHeadingColor(data.text_page_heading_color || null);
 
         // Brand palette
         const palette: string[] = Array.isArray(data.brand_colors) ? data.brand_colors : [];
@@ -244,6 +254,71 @@ export function useCompanySettings(companyId: string) {
     }, 800);
     return () => clearTimeout(timer);
   }, [accentColor, bgPrimary, bgSecondary, sidebarTextColor, acceptTextColor, bgImageOverlayOpacity]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-contrast: when bgPrimary crosses the dark/light threshold,
+  // flip text colors so they remain readable. Only fires when the
+  // theme actually changes direction, not on every color tweak.
+  const prevIsDark = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!isOwner || !company || !isValidHex6(bgPrimary)) return;
+    const isDark = hexToOklch(bgPrimary).L < 0.5;
+    if (prevIsDark.current !== null && prevIsDark.current !== isDark) {
+      if (isDark) {
+        setSidebarTextColor('#ffffff');
+        setAcceptTextColor('#ffffff');
+        setTextPageBgColor('#141414');
+        setTextPageTextColor('#ffffff');
+        setTextPageHeadingColor(null);
+      } else {
+        setSidebarTextColor('#1a1a1a');
+        setAcceptTextColor('#ffffff');
+        setTextPageBgColor('#ffffff');
+        setTextPageTextColor('#1a1a1a');
+        setTextPageHeadingColor(null);
+      }
+      showFeedback('Text colours adjusted for ' + (isDark ? 'dark' : 'light') + ' theme');
+    }
+    prevIsDark.current = isDark;
+  }, [bgPrimary]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── Save content page defaults ────────────────────────────── */
+
+  const handleSaveContentPage = async () => {
+    if (!isOwner) return;
+    setSaving('content_page');
+    const headers = await getAuthHeaders();
+    const res = await fetch(`/api/company?company_id=${companyId}`, {
+      method: 'PATCH',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text_page_bg_color: textPageBgColor,
+        text_page_text_color: textPageTextColor,
+        text_page_heading_color: textPageHeadingColor,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showFeedback(data.error || 'Failed to save', true);
+    } else {
+      setCompany(prev => prev ? { ...prev, ...data } : prev);
+      setContentPageSaved(true);
+      setTimeout(() => setContentPageSaved(false), 2000);
+    }
+    setSaving(null);
+  };
+
+  const contentPageChanged =
+    textPageBgColor !== (company?.text_page_bg_color || '#141414') ||
+    textPageTextColor !== (company?.text_page_text_color || '#ffffff') ||
+    (textPageHeadingColor || null) !== (company?.text_page_heading_color || null);
+
+  useEffect(() => {
+    if (!contentPageChanged || !isOwner || !company) return;
+    if (!isValidHex6(textPageBgColor) || !isValidHex6(textPageTextColor)) return;
+    if (textPageHeadingColor && !isValidHex6(textPageHeadingColor)) return;
+    const timer = setTimeout(() => handleSaveContentPage(), 800);
+    return () => clearTimeout(timer);
+  }, [textPageBgColor, textPageTextColor, textPageHeadingColor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Save fonts ────────────────────────────────────────────── */
 
@@ -553,6 +628,13 @@ export function useCompanySettings(companyId: string) {
     fontsChanged,
     fontsSaved,
     handleSaveFonts,
+
+    // Content page defaults
+    textPageBgColor, setTextPageBgColor,
+    textPageTextColor, setTextPageTextColor,
+    textPageHeadingColor, setTextPageHeadingColor,
+    contentPageChanged,
+    contentPageSaved,
 
     // Brand colors
     brandColors, setBrandColors,

@@ -11,6 +11,7 @@ import ViewerPreview from '@/components/admin/company/ViewerPreview';
 import ViewerColorsSection from '@/components/admin/company/ViewerColorsSection';
 import ViewerFontsSection from '@/components/admin/company/ViewerFontsSection';
 import BrandColorsSection from '@/components/admin/company/BrandColorsSection';
+import ContentPageDefaultsSection from '@/components/admin/company/ContentPageDefaultsSection';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { fontFamily } from '@/lib/google-fonts';
 import { buildGradientCss, resolveStops } from '@/lib/gradient-stops';
@@ -133,6 +134,20 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
             bgImageOverlayOpacity={s.bgImageOverlayOpacity}
           />
         </ViewerColorsSection>
+
+        {/* Content Page Defaults */}
+        <ContentPageDefaultsSection
+          isOwner={s.isOwner}
+          saving={s.saving}
+          contentPageChanged={s.contentPageChanged}
+          textPageBgColor={s.textPageBgColor}
+          setTextPageBgColor={s.setTextPageBgColor}
+          textPageTextColor={s.textPageTextColor}
+          setTextPageTextColor={s.setTextPageTextColor}
+          textPageHeadingColor={s.textPageHeadingColor}
+          setTextPageHeadingColor={s.setTextPageHeadingColor}
+          lastSaved={s.contentPageSaved}
+        />
 
         {/* Default Cover Image */}
         <CoverImageSection
