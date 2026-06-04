@@ -31,19 +31,19 @@ function activeKeyFromPath(pathname: string | null): string {
   return segments[2] ?? '';
 }
 
+function hasPageType(pages: unknown[], type: string): boolean {
+  return pages.some(
+    (p) => typeof p === 'object' && p !== null && (p as { type?: string }).type === type,
+  );
+}
+
 function useTabCompletion(): Record<string, boolean> {
   const { proposal } = useProposalDetail();
   const pageNames = Array.isArray(proposal.page_names) ? proposal.page_names : [];
   const hasPages = pageNames.length > 0;
-  const hasTextPages = pageNames.some(
-    (p: unknown) => typeof p === 'object' && p !== null && (p as Record<string, unknown>).type === 'text',
-  );
-  const hasPricing = pageNames.some(
-    (p: unknown) => typeof p === 'object' && p !== null && (p as Record<string, unknown>).type === 'pricing',
-  );
-  const hasPackages = pageNames.some(
-    (p: unknown) => typeof p === 'object' && p !== null && (p as Record<string, unknown>).type === 'packages',
-  );
+  const hasTextPages = hasPageType(pageNames, 'text');
+  const hasPricing = hasPageType(pageNames, 'pricing');
+  const hasPackages = hasPageType(pageNames, 'packages');
 
   return {
     cover: !!proposal.cover_enabled,

@@ -385,7 +385,7 @@ export default function HeaderStyleCard({
         {/* Text colours — hidden when the consumer renders them in a separate
             SectionCard (CoverDesignPanel uses this for the unified layout). */}
         {!hideTextColors && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-edge">
+          <div className="space-y-4 pt-3 border-t border-edge">
             <ColorPickerField
               label="Header title text"
               value={coverTextColor}

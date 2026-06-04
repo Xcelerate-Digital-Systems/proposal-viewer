@@ -8,7 +8,6 @@
 
 import { forwardRef } from 'react';
 import { Loader2 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import {
   buttonClasses,
   buttonSizeMap,
@@ -21,12 +20,14 @@ import {
 // this client module into their bundle.
 export { buttonClasses };
 
+type IconComponent = React.ComponentType<{ size?: number | string; className?: string }>;
+
 interface ButtonOwnProps {
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
-  leftIcon?: LucideIcon;
-  rightIcon?: LucideIcon;
+  leftIcon?: IconComponent;
+  rightIcon?: IconComponent;
   fullWidth?: boolean;
   /** Icon-only button (square padding). Pass the icon via `leftIcon` and put
    *  the accessible label in `aria-label`. */

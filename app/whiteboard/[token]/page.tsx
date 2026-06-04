@@ -116,7 +116,7 @@ export default function PublicWhiteboardPage(props: { params: Promise<{ token: s
   }, [items, project, params.token, router]);
 
   // ── Early returns ──
-  if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
+  if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: 'transparent' }} />;
   if (loading) return <ViewerLoader branding={branding} loading={true} label="Loading board…" />;
   if (notFound) return <FeedbackNotFound type="not_found" />;
 

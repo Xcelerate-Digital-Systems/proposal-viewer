@@ -46,6 +46,16 @@ export function useCompanySettings(companyId: string) {
   const [textPageHeadingColor, setTextPageHeadingColor] = useState<string | null>(null);
   const [contentPageSaved, setContentPageSaved]         = useState(false);
 
+  // Decision design (global)
+  const [decisionBgColor, setDecisionBgColor]                     = useState<string | null>(null);
+  const [decisionTextColor, setDecisionTextColor]                 = useState<string | null>(null);
+  const [decisionHeadingColor, setDecisionHeadingColor]           = useState<string | null>(null);
+  const [decisionAcceptButtonColor, setDecisionAcceptButtonColor] = useState<string | null>(null);
+  const [decisionDeclineButtonColor, setDecisionDeclineButtonColor] = useState<string | null>(null);
+  const [decisionRevisionButtonColor, setDecisionRevisionButtonColor] = useState<string | null>(null);
+  const [decisionCheckboxColor, setDecisionCheckboxColor]         = useState<string | null>(null);
+  const [decisionDesignSaved, setDecisionDesignSaved]             = useState(false);
+
   // Brand palette
   const [brandColors, setBrandColors]           = useState<string[]>([]);
   const [brandColorsSaved, setBrandColorsSaved] = useState(false);
@@ -117,6 +127,15 @@ export function useCompanySettings(companyId: string) {
         setTextPageBgColor(data.text_page_bg_color || '#141414');
         setTextPageTextColor(data.text_page_text_color || '#ffffff');
         setTextPageHeadingColor(data.text_page_heading_color || null);
+
+        // Decision design
+        setDecisionBgColor(data.decision_action_bg_color || null);
+        setDecisionTextColor(data.decision_action_text_color || null);
+        setDecisionHeadingColor(data.decision_action_heading_color || null);
+        setDecisionAcceptButtonColor(data.decision_action_accent_color || null);
+        setDecisionDeclineButtonColor(data.decision_decline_button_color || null);
+        setDecisionRevisionButtonColor(data.decision_revision_button_color || null);
+        setDecisionCheckboxColor(data.decision_checkbox_color || null);
 
         // Brand palette
         const palette: string[] = Array.isArray(data.brand_colors) ? data.brand_colors : [];
@@ -324,6 +343,51 @@ export function useCompanySettings(companyId: string) {
     const timer = setTimeout(() => handleSaveContentPage(), 800);
     return () => clearTimeout(timer);
   }, [textPageBgColor, textPageTextColor, textPageHeadingColor]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── Save decision design ───────────────────────────────────── */
+
+  const handleSaveDecisionDesign = async () => {
+    if (!isOwner) return;
+    setSaving('decision_design');
+    const headers = await getAuthHeaders();
+    const res = await fetch(`/api/company?company_id=${companyId}`, {
+      method: 'PATCH',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        decision_action_bg_color: decisionBgColor,
+        decision_action_text_color: decisionTextColor,
+        decision_action_heading_color: decisionHeadingColor,
+        decision_action_accent_color: decisionAcceptButtonColor,
+        decision_decline_button_color: decisionDeclineButtonColor,
+        decision_revision_button_color: decisionRevisionButtonColor,
+        decision_checkbox_color: decisionCheckboxColor,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showFeedback(data.error || 'Failed to save', true);
+    } else {
+      setCompany(prev => prev ? { ...prev, ...data } : prev);
+      setDecisionDesignSaved(true);
+      setTimeout(() => setDecisionDesignSaved(false), 2000);
+    }
+    setSaving(null);
+  };
+
+  const decisionDesignChanged =
+    (decisionBgColor || null) !== (company?.decision_action_bg_color || null) ||
+    (decisionTextColor || null) !== (company?.decision_action_text_color || null) ||
+    (decisionHeadingColor || null) !== (company?.decision_action_heading_color || null) ||
+    (decisionAcceptButtonColor || null) !== (company?.decision_action_accent_color || null) ||
+    (decisionDeclineButtonColor || null) !== (company?.decision_decline_button_color || null) ||
+    (decisionRevisionButtonColor || null) !== (company?.decision_revision_button_color || null) ||
+    (decisionCheckboxColor || null) !== (company?.decision_checkbox_color || null);
+
+  useEffect(() => {
+    if (!decisionDesignChanged || !isOwner || !company) return;
+    const timer = setTimeout(() => handleSaveDecisionDesign(), 800);
+    return () => clearTimeout(timer);
+  }, [decisionBgColor, decisionTextColor, decisionHeadingColor, decisionAcceptButtonColor, decisionDeclineButtonColor, decisionRevisionButtonColor, decisionCheckboxColor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Save fonts ────────────────────────────────────────────── */
 
@@ -641,6 +705,17 @@ export function useCompanySettings(companyId: string) {
     textPageHeadingColor, setTextPageHeadingColor,
     contentPageChanged,
     contentPageSaved,
+
+    // Decision design
+    decisionBgColor, setDecisionBgColor,
+    decisionTextColor, setDecisionTextColor,
+    decisionHeadingColor, setDecisionHeadingColor,
+    decisionAcceptButtonColor, setDecisionAcceptButtonColor,
+    decisionDeclineButtonColor, setDecisionDeclineButtonColor,
+    decisionRevisionButtonColor, setDecisionRevisionButtonColor,
+    decisionCheckboxColor, setDecisionCheckboxColor,
+    decisionDesignChanged,
+    decisionDesignSaved,
 
     // Brand colors
     brandColors, setBrandColors,

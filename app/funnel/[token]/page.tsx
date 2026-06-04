@@ -157,7 +157,7 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
     } as Edge;
   }), [boardEdges, forecast]);
 
-  if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
+  if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: 'transparent' }} />;
   if (loading) return <ViewerLoader branding={branding} loading={true} label="Loading funnel…" />;
 
   if (notFound || !funnel) {

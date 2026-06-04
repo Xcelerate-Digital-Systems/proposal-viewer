@@ -240,33 +240,29 @@ export default function MetaConnectorCard({ refreshKey = 0, onChange }: Props) {
                       </p>
                     </div>
                   </div>
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => disconnect(connection)}
-                    disabled={isDisconnecting}
-                    className="px-2.5 py-1.5 text-xs font-medium text-faint hover:text-red-500 rounded-lg flex items-center gap-1.5 disabled:opacity-50 transition-colors shrink-0"
-                    title="Disconnect"
+                    loading={isDisconnecting}
+                    leftIcon={Trash2}
+                    className="text-faint hover:text-red-600 shrink-0"
                   >
-                    {isDisconnecting ? (
-                      <Loader2 size={13} className="animate-spin" />
-                    ) : (
-                      <Trash2 size={13} />
-                    )}
                     {isDisconnecting ? 'Disconnecting…' : 'Disconnect'}
-                  </button>
+                  </Button>
                 </div>
               );
             })}
             <div className="pt-1.5">
-              <button
-                type="button"
+              <Button
+                variant="link"
+                size="sm"
                 onClick={connect}
-                disabled={starting}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-teal hover:text-teal-hover disabled:opacity-50 transition-colors"
+                loading={starting}
+                leftIcon={Plus}
               >
-                {starting ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
                 Add another Facebook account
-              </button>
+              </Button>
             </div>
           </div>
         ) : (

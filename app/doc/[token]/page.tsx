@@ -163,7 +163,7 @@ export default function DocumentViewerPage(props: { params: Promise<{ token: str
   // ── Early returns AFTER all hooks ──────────────────────────────────
 
   if (!brandingLoaded) {
-    return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
+    return <div className="fixed inset-0" style={{ backgroundColor: 'transparent' }} />;
   }
 
   if (loading) {

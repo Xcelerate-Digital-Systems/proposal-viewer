@@ -51,6 +51,7 @@ export default function CommentsPanel({
   const [replyName, setReplyName] = useState('');
   const [replySubmitting, setReplySubmitting] = useState(false);
   const [showResolved, setShowResolved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const border = palette.border;
   const surface = palette.surface;
@@ -63,25 +64,41 @@ export default function CommentsPanel({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!commentText.trim() || !commentName.trim()) return;
+    if (!commentText.trim() || !commentName.trim() || submitting) return;
     setSubmitting(true);
-    await onSubmit(commentName, commentText, currentPage);
-    setCommentText('');
-    setSubmitting(false);
+    setError(null);
+    try {
+      await onSubmit(commentName, commentText, currentPage);
+      setCommentText('');
+    } catch {
+      setError('Failed to post comment. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleReply = async (parentId: string) => {
-    if (!replyText.trim() || !replyName.trim()) return;
+    if (!replyText.trim() || !replyName.trim() || replySubmitting) return;
     setReplySubmitting(true);
-    await onReply(parentId, replyName, replyText);
-    setReplyText('');
-    setReplyingTo(null);
-    setReplySubmitting(false);
+    setError(null);
+    try {
+      await onReply(parentId, replyName, replyText);
+      setReplyText('');
+      setReplyingTo(null);
+    } catch {
+      setError('Failed to post reply. Please try again.');
+    } finally {
+      setReplySubmitting(false);
+    }
   };
 
   const handleResolve = async (commentId: string) => {
     const name = commentName.trim() || 'Someone';
-    await onResolve(commentId, name);
+    try {
+      await onResolve(commentId, name);
+    } catch {
+      setError('Failed to resolve comment.');
+    }
   };
 
   const formatDate = (dateStr: string) =>
@@ -102,9 +119,9 @@ export default function CommentsPanel({
           }}
         >
           <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               {isReply && <CornerDownRight size={12} className="shrink-0" style={{ color: textColor, opacity: 0.35 }} />}
-              <span className="text-sm font-medium" style={{ color: textColor }}>{comment.author_name}</span>
+              <span className="text-sm font-medium truncate" style={{ color: textColor }}>{comment.author_name}</span>
             </div>
             {!isReply && comment.page_number && (
               <button
@@ -117,7 +134,7 @@ export default function CommentsPanel({
             )}
           </div>
 
-          <p className="text-sm leading-relaxed" style={{ color: textColor, opacity: 0.6 }}>{comment.content}</p>
+          <p className="text-sm leading-relaxed break-words" style={{ color: textColor, opacity: 0.6 }}>{comment.content}</p>
 
           <div className="flex items-center justify-between mt-2">
             <span className="text-xs" style={{ color: textColor, opacity: 0.35 }}>{formatDate(comment.created_at)}</span>
@@ -131,7 +148,7 @@ export default function CommentsPanel({
                   >Reply</button>
                 )}
                 {isResolved ? (
-                  <button onClick={() => onUnresolve(comment.id)} className="flex items-center gap-1 text-xs text-emerald-500/60 hover:text-emerald-400 transition-colors">
+                  <button onClick={async () => { try { await onUnresolve(comment.id); } catch { setError('Failed to unresolve comment.'); } }} className="flex items-center gap-1 text-xs text-emerald-500/60 hover:text-emerald-400 transition-colors">
                     <CheckCircle2 size={12} /> Resolved
                   </button>
                 ) : (
@@ -157,7 +174,7 @@ export default function CommentsPanel({
               style={{ backgroundColor: border, color: textColor, borderColor: border }} />
             <div className="flex gap-2">
               <input type="text" placeholder="Write a reply..." value={replyText} onChange={(e) => setReplyText(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply(comment.id); } }}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !replySubmitting) { e.preventDefault(); handleReply(comment.id); } }}
                 className="flex-1 px-2.5 py-1.5 rounded-lg text-base md:text-xs focus:outline-none border"
                 style={{ backgroundColor: border, color: textColor, borderColor: border }}
                 autoFocus />
@@ -173,6 +190,66 @@ export default function CommentsPanel({
     );
   };
 
+  const header = (
+    <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: border }}>
+      <h3 className="text-sm font-semibold" style={{ color: textColor }}>
+        Comments
+        {unresolvedComments.length > 0 && (
+          <span className="ml-1.5 text-xs font-normal" style={{ color: textColor, opacity: 0.4 }}>({unresolvedComments.length})</span>
+        )}
+      </h3>
+      <button onClick={onClose} aria-label="Close comments" className="hover:opacity-80 transition-opacity" style={{ color: textColor, opacity: 0.4 }}><X size={16} /></button>
+    </div>
+  );
+
+  const commentList = (
+    <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      {topLevelComments.length === 0 && (
+        <p className="text-sm text-center py-8" style={{ color: textColor, opacity: 0.35 }}>No comments yet</p>
+      )}
+      {unresolvedComments.map((c) => renderComment(c))}
+      {resolvedComments.length > 0 && (
+        <div>
+          <button onClick={() => setShowResolved(!showResolved)} className="flex items-center gap-1.5 text-xs hover:opacity-80 transition-colors w-full py-2" style={{ color: textColor, opacity: 0.35 }}>
+            {showResolved ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            {resolvedComments.length} resolved comment{resolvedComments.length !== 1 ? 's' : ''}
+          </button>
+          {showResolved && (
+            <div className="space-y-3">{resolvedComments.map((c) => renderComment(c))}</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  const composeForm = (mobile?: boolean) => (
+    <form onSubmit={handleSubmit} className={`p-3 space-y-2 border-t${mobile ? ' pb-safe' : ''}`} style={{ borderColor: border }}>
+      {error && (
+        <div
+          className="rounded-lg px-3 py-2 text-xs"
+          role="alert"
+          style={{ backgroundColor: 'rgba(220, 38, 38, 0.08)', color: '#b91c1c', border: '1px solid rgba(220, 38, 38, 0.2)' }}
+        >
+          {error}
+        </div>
+      )}
+      <input type="text" placeholder="Your name" value={commentName} onChange={(e) => setCommentName(e.target.value)}
+        className={`w-full px-3 py-2 rounded-lg focus:outline-none border ${mobile ? 'text-base' : 'text-base md:text-sm'}`}
+        style={{ backgroundColor: border, color: textColor, borderColor: border }} />
+      <div className="flex gap-2">
+        <input type="text" placeholder="Add a comment..." value={commentText} onChange={(e) => setCommentText(e.target.value)}
+          className={`flex-1 px-3 py-2 rounded-lg focus:outline-none border ${mobile ? 'text-base' : 'text-base md:text-sm'}`}
+          style={{ backgroundColor: border, color: textColor, borderColor: border }} />
+        <button type="submit" disabled={submitting || !commentText.trim() || !commentName.trim()}
+          className="px-3 py-2 rounded-lg disabled:opacity-40 transition-opacity hover:opacity-90"
+          style={{ backgroundColor: accentColor, color: acceptTextColor }}>
+          <Send size={15} />
+        </button>
+      </div>
+      <p className="text-xs" style={{ color: textColor, opacity: 0.35 }}>Commenting on: {getPageName(currentPage)}</p>
+    </form>
+  );
+
   return (
     <>
       {/* Desktop: side panel */}
@@ -180,50 +257,9 @@ export default function CommentsPanel({
         className="hidden lg:flex w-80 flex-col shrink-0 border-l"
         style={{ backgroundColor: bgSecondary, borderColor: border }}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: border }}>
-          <h3 className="text-sm font-semibold" style={{ color: textColor }}>
-            Comments
-            {unresolvedComments.length > 0 && (
-              <span className="ml-1.5 text-xs font-normal" style={{ color: textColor, opacity: 0.4 }}>({unresolvedComments.length})</span>
-            )}
-          </h3>
-          <button onClick={onClose} className="hover:opacity-80 transition-opacity" style={{ color: textColor, opacity: 0.4 }}><X size={16} /></button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          {topLevelComments.length === 0 && (
-            <p className="text-sm text-center py-8" style={{ color: textColor, opacity: 0.35 }}>No comments yet</p>
-          )}
-          {unresolvedComments.map((c) => renderComment(c))}
-          {resolvedComments.length > 0 && (
-            <div>
-              <button onClick={() => setShowResolved(!showResolved)} className="flex items-center gap-1.5 text-xs hover:opacity-80 transition-colors w-full py-2" style={{ color: textColor, opacity: 0.35 }}>
-                {showResolved ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                {resolvedComments.length} resolved comment{resolvedComments.length !== 1 ? 's' : ''}
-              </button>
-              {showResolved && (
-                <div className="space-y-3">{resolvedComments.map((c) => renderComment(c))}</div>
-              )}
-            </div>
-          )}
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-3 space-y-2 border-t" style={{ borderColor: border }}>
-          <input type="text" placeholder="Your name" value={commentName} onChange={(e) => setCommentName(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg text-base md:text-sm focus:outline-none border"
-            style={{ backgroundColor: border, color: textColor, borderColor: border }} />
-          <div className="flex gap-2">
-            <input type="text" placeholder="Add a comment..." value={commentText} onChange={(e) => setCommentText(e.target.value)}
-              className="flex-1 px-3 py-2 rounded-lg text-base md:text-sm focus:outline-none border"
-              style={{ backgroundColor: border, color: textColor, borderColor: border }} />
-            <button type="submit" disabled={submitting || !commentText.trim() || !commentName.trim()}
-              className="px-3 py-2 rounded-lg disabled:opacity-40 transition-opacity hover:opacity-90"
-              style={{ backgroundColor: accentColor, color: acceptTextColor }}>
-              <Send size={15} />
-            </button>
-          </div>
-          <p className="text-xs" style={{ color: textColor, opacity: 0.35 }}>Commenting on: {getPageName(currentPage)}</p>
-        </form>
+        {header}
+        {commentList}
+        {composeForm()}
       </div>
 
       {/* Mobile: full-screen overlay */}
@@ -233,50 +269,9 @@ export default function CommentsPanel({
           className="absolute inset-x-0 bottom-0 top-12 flex flex-col rounded-t-2xl shadow-2xl animate-in slide-in-from-bottom duration-200"
           style={{ backgroundColor: bgSecondary }}
         >
-          <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: border }}>
-            <h3 className="text-sm font-semibold" style={{ color: textColor }}>
-              Comments
-              {unresolvedComments.length > 0 && (
-                <span className="ml-1.5 text-xs font-normal" style={{ color: textColor, opacity: 0.4 }}>({unresolvedComments.length})</span>
-              )}
-            </h3>
-            <button onClick={onClose} className="hover:opacity-80 transition-opacity" style={{ color: textColor, opacity: 0.4 }}><X size={16} /></button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-3 space-y-3">
-            {topLevelComments.length === 0 && (
-              <p className="text-sm text-center py-8" style={{ color: textColor, opacity: 0.35 }}>No comments yet</p>
-            )}
-            {unresolvedComments.map((c) => renderComment(c))}
-            {resolvedComments.length > 0 && (
-              <div>
-                <button onClick={() => setShowResolved(!showResolved)} className="flex items-center gap-1.5 text-xs hover:opacity-80 transition-colors w-full py-2" style={{ color: textColor, opacity: 0.35 }}>
-                  {showResolved ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                  {resolvedComments.length} resolved comment{resolvedComments.length !== 1 ? 's' : ''}
-                </button>
-                {showResolved && (
-                  <div className="space-y-3">{resolvedComments.map((c) => renderComment(c))}</div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <form onSubmit={handleSubmit} className="p-3 space-y-2 border-t pb-safe" style={{ borderColor: border }}>
-            <input type="text" placeholder="Your name" value={commentName} onChange={(e) => setCommentName(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg text-base focus:outline-none border"
-              style={{ backgroundColor: border, color: textColor, borderColor: border }} />
-            <div className="flex gap-2">
-              <input type="text" placeholder="Add a comment..." value={commentText} onChange={(e) => setCommentText(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg text-base focus:outline-none border"
-                style={{ backgroundColor: border, color: textColor, borderColor: border }} />
-              <button type="submit" disabled={submitting || !commentText.trim() || !commentName.trim()}
-                className="px-3 py-2 rounded-lg disabled:opacity-40 transition-opacity hover:opacity-90"
-                style={{ backgroundColor: accentColor, color: acceptTextColor }}>
-                <Send size={15} />
-              </button>
-            </div>
-            <p className="text-xs" style={{ color: textColor, opacity: 0.35 }}>Commenting on: {getPageName(currentPage)}</p>
-          </form>
+          {header}
+          {commentList}
+          {composeForm(true)}
         </div>
       </div>
     </>

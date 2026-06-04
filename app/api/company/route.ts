@@ -139,6 +139,14 @@ export async function PATCH(req: NextRequest) {
       'address',
       'quote_number_prefix',
       'quote_number_pad_width',
+      // Decision page design (global, applies to proposals + quotes)
+      'decision_action_bg_color',
+      'decision_action_text_color',
+      'decision_action_heading_color',
+      'decision_action_accent_color',
+      'decision_decline_button_color',
+      'decision_revision_button_color',
+      'decision_checkbox_color',
     ];
     const updates: Record<string, unknown> = {};
 

@@ -37,6 +37,30 @@ export default function SignatureCapture({
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
 
+  // Re-init canvas on window resize (device rotation)
+  useEffect(() => {
+    if (mode !== 'drawn') return;
+    const handleResize = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      const imageData = hasDrawn ? ctx.getImageData(0, 0, canvas.width, canvas.height) : null;
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      ctx.strokeStyle = inputColor;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      if (imageData) ctx.putImageData(imageData, 0, 0);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [mode, hasDrawn, inputColor]);
+
   useEffect(() => {
     if (mode === 'typed' && signerName.trim()) {
       onSignatureChange({ mode: 'typed', typed_name: signerName.trim() });
@@ -62,11 +86,11 @@ export default function SignatureCapture({
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
     ctx.scale(dpr, dpr);
-    ctx.strokeStyle = '#1f2937';
+    ctx.strokeStyle = inputColor;
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-  }, [getCanvasContext]);
+  }, [getCanvasContext, inputColor]);
 
   useEffect(() => {
     if (mode === 'drawn') {
@@ -131,13 +155,18 @@ export default function SignatureCapture({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-1 p-1 bg-black/5 rounded-lg w-fit">
+      <div
+        className="flex items-center gap-1 p-1 rounded-lg w-fit"
+        style={{ backgroundColor: `${inputColor}0d` }}
+      >
         <button
           type="button"
           onClick={() => { setMode('typed'); onSignatureChange(signerName.trim() ? { mode: 'typed', typed_name: signerName.trim() } : null); }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-            mode === 'typed' ? 'bg-white shadow-sm text-gray-900' : 'text-dim hover:text-prose'
-          }`}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+          style={mode === 'typed'
+            ? { backgroundColor: inputBg, color: inputColor, boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }
+            : { color: `${inputColor}80` }
+          }
         >
           <Type size={13} />
           Type
@@ -145,9 +174,11 @@ export default function SignatureCapture({
         <button
           type="button"
           onClick={() => { setMode('drawn'); onSignatureChange(null); }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-            mode === 'drawn' ? 'bg-white shadow-sm text-gray-900' : 'text-dim hover:text-prose'
-          }`}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+          style={mode === 'drawn'
+            ? { backgroundColor: inputBg, color: inputColor, boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }
+            : { color: `${inputColor}80` }
+          }
         >
           <PenTool size={13} />
           Draw
@@ -166,7 +197,7 @@ export default function SignatureCapture({
           />
           <div
             className="h-16 rounded-xl border-2 border-dashed flex items-center justify-center px-6"
-            style={{ borderColor: signerName.trim() ? accentColor : '#d1d5db' }}
+            style={{ borderColor: signerName.trim() ? accentColor : hairlineColor }}
           >
             {signerName.trim() ? (
               <span
@@ -176,7 +207,7 @@ export default function SignatureCapture({
                 {signerName}
               </span>
             ) : (
-              <span className="text-sm" style={{ color: '#9ca3af' }}>Your signature will appear here</span>
+              <span className="text-sm" style={{ color: `${inputColor}50` }}>Your signature will appear here</span>
             )}
           </div>
         </div>
@@ -195,8 +226,10 @@ export default function SignatureCapture({
           <div className="relative">
           <canvas
             ref={canvasRef}
-            className="w-full h-28 rounded-xl border-2 border-dashed cursor-crosshair touch-none"
-            style={{ borderColor: hasDrawn ? accentColor : '#d1d5db' }}
+            role="img"
+            aria-label="Signature drawing area"
+            className="w-full h-36 sm:h-28 rounded-xl border-2 border-dashed cursor-crosshair touch-none"
+            style={{ borderColor: hasDrawn ? accentColor : hairlineColor }}
             onMouseDown={startDrawing}
             onMouseMove={draw}
             onMouseUp={stopDrawing}
@@ -209,7 +242,12 @@ export default function SignatureCapture({
             <button
               type="button"
               onClick={clearCanvas}
-              className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-md bg-white/90 text-xs text-dim hover:text-prose shadow-sm border border-edge"
+              className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-md text-xs shadow-sm"
+              style={{
+                backgroundColor: `${inputBg}e6`,
+                color: `${inputColor}99`,
+                border: `1px solid ${hairlineColor}`,
+              }}
             >
               <Eraser size={12} />
               Clear
@@ -217,14 +255,14 @@ export default function SignatureCapture({
           )}
           {!hasDrawn && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="text-sm text-dim">Draw your signature here</span>
+              <span className="text-sm" style={{ color: `${inputColor}60` }}>Draw your signature here</span>
             </div>
           )}
           </div>
         </div>
       )}
 
-      <p className="text-xs text-dim text-center">
+      <p className="text-xs text-center" style={{ color: `${inputColor}60` }}>
         By signing, you confirm your identity and agree to the terms above.
       </p>
     </div>

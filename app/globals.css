@@ -327,3 +327,9 @@ body {
 .press-scale:active {
   transform: scale(0.97);
 }
+
+/* ── Orbital animation (OrbitalTools component) ─────────────────────────── */
+@keyframes orbit-tool {
+  from { transform: rotate(0deg) translateX(84px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(84px) rotate(-360deg); }
+}

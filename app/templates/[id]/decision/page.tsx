@@ -15,6 +15,7 @@ export default function TemplateDecisionPage() {
         initialEnabled={template.decision_page_enabled}
         initialTitle={template.decision_page_title}
         initialExtras={template.decision_extras}
+        initialRequireSignature={template.require_signature ?? false}
         onSaved={refetch}
       />
     </div>

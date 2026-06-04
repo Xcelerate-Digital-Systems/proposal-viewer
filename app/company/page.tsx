@@ -12,6 +12,7 @@ import ViewerColorsSection from '@/components/admin/company/ViewerColorsSection'
 import ViewerFontsSection from '@/components/admin/company/ViewerFontsSection';
 import BrandColorsSection from '@/components/admin/company/BrandColorsSection';
 import ContentPageDefaultsSection from '@/components/admin/company/ContentPageDefaultsSection';
+import DecisionDesignSection from '@/components/admin/company/DecisionDesignSection';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { fontFamily } from '@/lib/google-fonts';
 import { buildGradientCss, resolveStops } from '@/lib/gradient-stops';
@@ -150,6 +151,31 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           textPageHeadingColor={s.textPageHeadingColor}
           setTextPageHeadingColor={s.setTextPageHeadingColor}
           lastSaved={s.contentPageSaved}
+        />
+
+        {/* Decision Design */}
+        <DecisionDesignSection
+          isOwner={s.isOwner}
+          saving={s.saving}
+          lastSaved={s.decisionDesignSaved}
+          decisionBgColor={s.decisionBgColor}
+          setDecisionBgColor={s.setDecisionBgColor}
+          decisionTextColor={s.decisionTextColor}
+          setDecisionTextColor={s.setDecisionTextColor}
+          decisionHeadingColor={s.decisionHeadingColor}
+          setDecisionHeadingColor={s.setDecisionHeadingColor}
+          decisionAcceptButtonColor={s.decisionAcceptButtonColor}
+          setDecisionAcceptButtonColor={s.setDecisionAcceptButtonColor}
+          decisionDeclineButtonColor={s.decisionDeclineButtonColor}
+          setDecisionDeclineButtonColor={s.setDecisionDeclineButtonColor}
+          decisionRevisionButtonColor={s.decisionRevisionButtonColor}
+          setDecisionRevisionButtonColor={s.setDecisionRevisionButtonColor}
+          decisionCheckboxColor={s.decisionCheckboxColor}
+          setDecisionCheckboxColor={s.setDecisionCheckboxColor}
+          textPageBgColor={s.textPageBgColor}
+          textPageTextColor={s.textPageTextColor}
+          textPageHeadingColor={s.textPageHeadingColor}
+          accentColor={s.accentColor}
         />
 
         {/* Default Cover Image */}

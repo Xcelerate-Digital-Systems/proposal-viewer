@@ -148,20 +148,18 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
         icon={<Layers size={14} className="text-faint" />}
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <ColorPickerField
-              label="Page background (around the card)"
-              value={pageBg}
-              fallback="#eeece6"
-              onChange={(v) => { setPageBg(v); persist({ quote_page_bg_color: v }); }}
-            />
-            <ColorPickerField
-              label="Quote body background"
-              value={bodyBg}
-              fallback={BODY_BG_FALLBACK}
-              onChange={(v) => { setBodyBg(v); persist({ text_page_bg_color: v }); }}
-            />
-          </div>
+          <ColorPickerField
+            label="Page background (around the card)"
+            value={pageBg}
+            fallback="#eeece6"
+            onChange={(v) => { setPageBg(v); persist({ quote_page_bg_color: v }); }}
+          />
+          <ColorPickerField
+            label="Quote body background"
+            value={bodyBg}
+            fallback={BODY_BG_FALLBACK}
+            onChange={(v) => { setBodyBg(v); persist({ text_page_bg_color: v }); }}
+          />
 
           <div className="pt-3 border-t border-edge">
             <label className="block text-xs font-medium text-prose mb-2">Background image (optional)</label>
@@ -243,20 +241,18 @@ export default function QuoteSettingsPanel({ proposal, companyId, onSaved }: Pro
         icon={<Type size={14} className="text-faint" />}
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <ColorPickerField
-              label="Body text"
-              value={bodyText}
-              fallback={BODY_TEXT_FALLBACK}
-              onChange={(v) => { setBodyText(v); persist({ text_page_text_color: v }); }}
-            />
-            <ColorPickerField
-              label="Headings"
-              value={headingColor}
-              fallback={BODY_TEXT_FALLBACK}
-              onChange={(v) => { setHeadingColor(v); persist({ text_page_heading_color: v }); }}
-            />
-          </div>
+          <ColorPickerField
+            label="Body text"
+            value={bodyText}
+            fallback={BODY_TEXT_FALLBACK}
+            onChange={(v) => { setBodyText(v); persist({ text_page_text_color: v }); }}
+          />
+          <ColorPickerField
+            label="Headings"
+            value={headingColor}
+            fallback={BODY_TEXT_FALLBACK}
+            onChange={(v) => { setHeadingColor(v); persist({ text_page_heading_color: v }); }}
+          />
 
           <div className="pt-3 border-t border-edge space-y-3">
             <label className="block text-xs font-medium text-prose">Headline font (cover + price figures)</label>

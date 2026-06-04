@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-04T10:15:00Z",
+  "title": "Design System: AgencyViz",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Teal",
+        "canonical": "#017C87",
+        "tonalRamp": ["#01282e", "#013036", "#043946", "#016670", "#017C87", "#3A9DA5", "#8AD9D1", "#E6F5F3"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#1E2432",
+        "tonalRamp": ["#0D1017", "#1E2432", "#4B5563", "#6B7280", "#8C8C8C", "#D5D5D5", "#E5E7EB", "#F5F5F5"]
+      },
+      "surface-dark": {
+        "role": "neutral",
+        "displayName": "Sidebar Dark",
+        "canonical": "#043946",
+        "tonalRamp": ["#01282e", "#013036", "#043946", "#01434A", "#1A5A66", "#3A8090", "#8AD9D1", "#E6F5F3"]
+      },
+      "accent-feedback": {
+        "role": "secondary",
+        "displayName": "Feedback Purple",
+        "canonical": "#9333EA",
+        "tonalRamp": ["#3B0764", "#6B21A8", "#7C3AED", "#9333EA", "#A855F7", "#C084FC", "#E9D5FF", "#FAF5FF"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page titles and project names." },
+      "body": { "displayName": "Body", "purpose": "Prose, descriptions, form labels." },
+      "caption": { "displayName": "Caption", "purpose": "Secondary labels, tab text, card metadata." },
+      "detail": { "displayName": "Detail", "purpose": "Timestamps, badge counts, inline metadata." },
+      "label": { "displayName": "Label", "purpose": "Pill badges, status indicators, tiny uppercase labels." }
+    },
+    "shadows": [
+      { "name": "card", "value": "0 1px 2px rgba(20,20,40,0.04), 0 4px 16px rgba(20,20,40,0.04)", "purpose": "Default card resting state." },
+      { "name": "card-soft", "value": "0 1px 2px rgba(20,20,40,0.04), 0 2px 8px rgba(20,20,40,0.04)", "purpose": "Lighter card variant." },
+      { "name": "card-hover", "value": "0 2px 4px rgba(20,20,40,0.06), 0 8px 20px rgba(20,20,40,0.06)", "purpose": "Hover/focus lift." },
+      { "name": "modal", "value": "0 24px 48px rgba(20,20,40,0.18)", "purpose": "Floating dialogs and modals." },
+      { "name": "divider", "value": "0 1px 0 rgba(20,20,40,0.05)", "purpose": "Hairline under sticky headers." },
+      { "name": "popover", "value": "0 10px 40px -12px rgba(15,23,42,0.25), 0 4px 12px -4px rgba(15,23,42,0.08)", "purpose": "Dropdown menus and floating UI." }
+    ],
+    "motion": [
+      { "name": "transition-colors", "value": "color 150ms, background-color 150ms, border-color 150ms", "purpose": "Default state transition for interactive elements." },
+      { "name": "transition-all", "value": "all 150ms ease", "purpose": "Card hover lift + shadow transition." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" },
+      { "name": "2xl", "value": "1536px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main CTA button. Teal background, white text, 8px radius.",
+      "html": "<button class=\"ds-btn-primary\">Add Asset</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; font-family: Manrope, sans-serif; font-size: 14px; font-weight: 500; color: #fff; background: #017C87; border: none; border-radius: 8px; cursor: pointer; transition: background 150ms; } .ds-btn-primary:hover { background: #016670; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(1,124,135,0.4), 0 0 0 3px #fff; } .ds-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "White background with border. For secondary actions alongside primary.",
+      "html": "<button class=\"ds-btn-secondary\">Cancel</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; font-family: Manrope, sans-serif; font-size: 14px; font-weight: 500; color: #1E2432; background: #fff; border: 1px solid #EFEFEF; border-radius: 8px; cursor: pointer; transition: background 150ms, border-color 150ms; } .ds-btn-secondary:hover { background: #FAFAFA; border-color: #D5D5D5; } .ds-btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(1,124,135,0.4), 0 0 0 3px #fff; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Transparent background, ink text. For toolbar and inline actions.",
+      "html": "<button class=\"ds-btn-ghost\">View</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; font-family: Manrope, sans-serif; font-size: 14px; font-weight: 500; color: #1E2432; background: transparent; border: none; border-radius: 8px; cursor: pointer; transition: background 150ms; } .ds-btn-ghost:hover { background: #EFEFEF; } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(1,124,135,0.4), 0 0 0 3px #fff; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Red background for destructive actions. Delete, remove, discard.",
+      "html": "<button class=\"ds-btn-danger\">Delete Item</button>",
+      "css": ".ds-btn-danger { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; font-family: Manrope, sans-serif; font-size: 14px; font-weight: 500; color: #fff; background: #DC2626; border: none; border-radius: 8px; cursor: pointer; transition: background 150ms; } .ds-btn-danger:hover { background: #B91C1C; } .ds-btn-danger:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(220,38,38,0.4), 0 0 0 3px #fff; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Standard form input. White bg, edge-strong border, teal focus ring.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Enter value\" />",
+      "css": ".ds-input { width: 100%; height: 40px; padding: 8px 12px; font-family: Manrope, sans-serif; font-size: 14px; color: #1E2432; background: #fff; border: 1px solid #E5E7EB; border-radius: 8px; outline: none; transition: border-color 150ms, box-shadow 150ms; } .ds-input::placeholder { color: #8C8C8C; } .ds-input:focus { border-color: #017C87; box-shadow: 0 0 0 2px rgba(1,124,135,0.3); } .ds-input:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Standard content card. White, 16px radius, earned shadow on hover.",
+      "html": "<div class=\"ds-card\"><h4 class=\"ds-card-title\">Campaign Asset</h4><p class=\"ds-card-meta\">Image · 3 comments</p></div>",
+      "css": ".ds-card { background: #fff; border-radius: 16px; padding: 12px; box-shadow: 0 1px 2px rgba(20,20,40,0.04), 0 4px 16px rgba(20,20,40,0.04); transition: box-shadow 150ms, transform 150ms; } .ds-card:hover { box-shadow: 0 2px 4px rgba(20,20,40,0.06), 0 8px 20px rgba(20,20,40,0.06); transform: translateY(-1px); } .ds-card-title { font-family: Manrope, sans-serif; font-size: 13px; font-weight: 500; color: #1E2432; margin: 0 0 4px; } .ds-card-meta { font-family: Manrope, sans-serif; font-size: 11px; color: #8C8C8C; margin: 0; }"
+    },
+    {
+      "name": "Tab Bar",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "Horizontal tab navigation with teal active indicator.",
+      "html": "<nav class=\"ds-tabs\"><a class=\"ds-tab ds-tab--active\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\"/></svg> Assets</a><a class=\"ds-tab\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"/></svg> Comments</a></nav>",
+      "css": ".ds-tabs { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid #EFEFEF; } .ds-tab { display: flex; align-items: center; gap: 6px; padding: 10px 16px; font-family: Manrope, sans-serif; font-size: 13px; font-weight: 500; color: #8C8C8C; text-decoration: none; border-bottom: 2px solid transparent; transition: color 150ms, border-color 150ms; } .ds-tab:hover { color: #1E2432; border-bottom-color: #E5E7EB; } .ds-tab--active { color: #017C87; border-bottom-color: #017C87; }"
+    },
+    {
+      "name": "Status Pill",
+      "kind": "chip",
+      "refersTo": null,
+      "description": "Colored status indicator pill. Background tint, colored text, subtle border.",
+      "html": "<span class=\"ds-pill ds-pill--approved\">Approved</span>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; font-family: Manrope, sans-serif; font-size: 11px; font-weight: 500; border-radius: 9999px; border: 1px solid transparent; } .ds-pill--approved { background: #D1FAE5; color: #065F46; border-color: #A7F3D0; } .ds-pill--draft { background: #F3F4F6; color: #4B5563; border-color: #E5E7EB; } .ds-pill--client-review { background: #FEF3C7; color: #92400E; border-color: #FDE68A; } .ds-pill--rejected { background: #FEE2E2; color: #991B1B; border-color: #FECACA; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Precision Instrument",
+    "overview": "AgencyViz is a tool that disappears into the work. Every element is calibrated; nothing is decorative. The interface exists to make an agency's deliverables look good, not to show off its own UI. Chrome recedes; content commands attention.\n\nThe system speaks with the confidence of a tool that knows what it does. Copy is direct, surfaces are clean, and every element earns its pixel. Density follows the task: a campaign board with 30 assets needs tight rows; an empty proposal editor needs breathing room.\n\nThis is not a generic SaaS dashboard. It is not assembled from a kit. It is not playful. It is not enterprise-dense. It sits in the narrow band between authored minimalism and functional density, matching the quality agencies sell to their own clients.",
+    "keyCharacteristics": [
+      "Restrained color strategy: tinted neutrals with one teal accent at 10% or less",
+      "Single font family (Manrope) in multiple weights for all hierarchy",
+      "Flat surfaces at rest; shadows earned by state changes",
+      "Desktop-first admin; mobile only for public-facing viewers",
+      "Semantic token vocabulary over arbitrary values"
+    ],
+    "rules": [
+      { "name": "The One Voice Rule", "body": "The teal primary is used on 10% or less of any given screen. Its rarity is what makes it a signal. When everything is teal, nothing is.", "section": "colors" },
+      { "name": "The Neutral Default Rule", "body": "Every new surface starts neutral (white, Surface, Edge). Color is added only when it carries meaning: a status, an action, a selection. Decorative color is prohibited.", "section": "colors" },
+      { "name": "The Single Family Rule", "body": "Manrope carries everything: headings, body, labels, buttons, data. Weight contrast (400 vs 600 vs 700) creates hierarchy, not font-family switching.", "section": "typography" },
+      { "name": "The Earned Shadow Rule", "body": "No surface has a shadow at rest unless it is a card or a floating element. Shadows appear on hover (card-hover), on float (modal, popover), or on sticky position (divider).", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use the teal primary (#017C87) exclusively for interactive elements: buttons, links, focus rings, active indicators.",
+      "Do use the semantic token vocabulary (text-ink, text-dim, text-faint, bg-surface, border-edge) instead of arbitrary Tailwind colors.",
+      "Do use the <Button> primitive from @/components/ui/Button with its defined variants instead of inline <button> elements.",
+      "Do pair card shadows with -translate-y-0.5 on hover for the lift effect.",
+      "Do use rounded-2xl (16px) for cards and modals, rounded-lg (8px) for buttons and inputs.",
+      "Do use confirmation dialogs (useConfirm) before any destructive or irreversible action.",
+      "Do provide undo toasts for optimistic state changes that affect visible layout."
+    ],
+    "donts": [
+      "Don't use teal as a background fill on large surfaces.",
+      "Don't introduce a second accent color beyond the scoped Feedback Purple.",
+      "Don't use generic SaaS dashboard patterns: white panels with blue accents, Bootstrap/Material defaults.",
+      "Don't use playful or illustration-heavy UI.",
+      "Don't use enterprise-dense layouts with cramped tables and tiny text.",
+      "Don't add AI claims or 'AI-powered' language anywhere in the UI.",
+      "Don't use border-left or border-right greater than 1px as a colored accent stripe.",
+      "Don't use gradient text, glassmorphism, or decorative motion.",
+      "Don't add fonts beyond Manrope (UI) and Caveat (annotations)."
+    ]
+  }
+}

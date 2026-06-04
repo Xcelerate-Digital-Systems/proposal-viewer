@@ -325,7 +325,7 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
   );
 
   // ── Early returns ──
-  if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
+  if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: 'transparent' }} />;
   if (loading) return <ViewerLoader branding={branding} loading={true} label="Loading review…" />;
 
   if (notFound) {

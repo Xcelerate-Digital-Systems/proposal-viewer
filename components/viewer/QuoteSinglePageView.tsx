@@ -23,6 +23,7 @@ import { parseQuoteExtras } from '@/lib/types/quote-extras';
 import { formatQuoteNumber } from '@/lib/quote-number';
 import { buildGradientCss, resolveStops } from '@/lib/gradient-stops';
 import ProposalDecisionPanel from '@/components/viewer/ProposalDecisionPanel';
+import { parseDecisionExtras } from '@/lib/types/decision-extras';
 import { Clock, AlertTriangle } from 'lucide-react';
 
 interface QuoteSinglePageViewProps {
@@ -264,6 +265,9 @@ export default function QuoteSinglePageView({
   quoteNumberFormat,
 }: QuoteSinglePageViewProps) {
   const palette = useBrandPalette(branding);
+  const decisionExtras = parseDecisionExtras(
+    (proposal as { decision_extras?: unknown }).decision_extras,
+  );
   const photoPaths = parsePhotos(proposal.project_photos);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [coverImgUrl, setCoverImgUrl] = useState<string | null>(resolvedBgUrl ?? null);
@@ -999,6 +1003,32 @@ export default function QuoteSinglePageView({
             companyName={displayCompanyName}
             companyEmail={companyEmail ?? undefined}
             companyPhone={companyPhone ?? undefined}
+            acceptHeading={decisionExtras.accept_heading}
+            acceptSubtitle={decisionExtras.accept_subtitle}
+            agreementText={decisionExtras.agreement_text}
+            acceptButtonLabel={decisionExtras.accept_button_label}
+            declineHeading={decisionExtras.decline_heading}
+            declineSubtitle={decisionExtras.decline_subtitle}
+            declineButtonLabel={decisionExtras.decline_button_label}
+            revisionHeading={decisionExtras.revision_heading}
+            revisionSubtitle={decisionExtras.revision_subtitle}
+            revisionButtonLabel={decisionExtras.revision_button_label}
+            acceptButtonColor={
+              (proposal as Record<string, string | null | undefined>)?.decision_action_accent_color ||
+              branding.decision_action_accent_color
+            }
+            declineButtonColor={
+              (proposal as Record<string, string | null | undefined>)?.decision_decline_button_color ||
+              branding.decision_decline_button_color
+            }
+            revisionButtonColor={
+              (proposal as Record<string, string | null | undefined>)?.decision_revision_button_color ||
+              branding.decision_revision_button_color
+            }
+            checkboxColor={
+              (proposal as Record<string, string | null | undefined>)?.decision_checkbox_color ||
+              branding.decision_checkbox_color
+            }
             tokens={{
               bodyBg,
               bodyText,

@@ -13,6 +13,7 @@ import PackagesPage from './PackagesPage';
 import ViewerBackground from './ViewerBackground';
 import ProposalDecisionPanel, { type DecisionPanelTokens } from './ProposalDecisionPanel';
 import { parseDecisionExtras } from '@/lib/types/decision-extras';
+import { withAlpha } from '@/lib/branding/with-alpha';
 
 interface ViewerPageContentProps {
   branding: CompanyBranding;
@@ -50,22 +51,6 @@ interface ViewerPageContentProps {
   onDecline?: (name: string, reason: string) => Promise<void>;
   onRequestRevision?: (name: string, notes: string) => Promise<void>;
   requireSignature?: boolean;
-}
-
-/** Convert a CSS colour to rgba with explicit alpha. */
-function withAlpha(color: string, alpha: number): string {
-  const hex = color.trim();
-  if (hex.startsWith('#')) {
-    const h = hex.slice(1);
-    const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
-    if (full.length === 6) {
-      const r = parseInt(full.slice(0, 2), 16);
-      const g = parseInt(full.slice(2, 4), 16);
-      const b = parseInt(full.slice(4, 6), 16);
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    }
-  }
-  return color;
 }
 
 function fontStack(name: string | null | undefined, fallback: string): string {
@@ -184,7 +169,7 @@ export default function ViewerPageContent({
                           className="shrink-0 tabular-nums text-xs font-medium mt-0.5"
                           style={{ color: tokens.muted }}
                         >
-                          0{i + 1}
+                          {i + 1}
                         </span>
                         <span style={{ color: tokens.bodyText }}>{step}</span>
                       </li>

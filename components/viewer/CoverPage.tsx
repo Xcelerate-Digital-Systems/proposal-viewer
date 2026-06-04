@@ -12,6 +12,8 @@ interface CoverPageProps {
   proposal: Proposal;
   branding: CompanyBranding;
   onStart: () => void;
+  /** Used to derive the default CTA text when the proposal has no override. */
+  entityType?: 'proposal' | 'quote';
   /** Hide the CTA button (used for PDF export capture) */
   hideButton?: boolean;
   /** Pre-resolved cover image URL (bypasses async fetch for export) */
@@ -30,6 +32,7 @@ export default function CoverPage({
   proposal,
   branding,
   onStart,
+  entityType,
   hideButton,
   resolvedBgUrl,
   resolvedClientLogoUrl,
@@ -151,7 +154,8 @@ export default function CoverPage({
   }, [bgUrl, proposal.cover_image_path, hideButton]);
 
   const subtitle = proposal.cover_subtitle || `Prepared for ${proposal.client_name}`;
-  const buttonText = proposal.cover_button_text || 'START READING PROPOSAL';
+  const defaultCta = entityType === 'quote' ? 'VIEW QUOTE' : 'START READING PROPOSAL';
+  const buttonText = proposal.cover_button_text || defaultCta;
 
   // Cover colors: read from proposal first, fall back to company branding
   const bgStyle = proposal.cover_bg_style || branding.cover_bg_style || 'gradient';

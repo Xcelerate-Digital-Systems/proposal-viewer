@@ -50,6 +50,9 @@ function SettingsContent({
   const [dueDate, setDueDate] = useState('');
   const [savingDue, setSavingDue] = useState(false);
   const [reminding, setReminding] = useState(false);
+  const [reminderMode, setReminderMode] = useState<'all' | 'select'>('all');
+  const [selectedGuests, setSelectedGuests] = useState<Set<string>>(new Set());
+  const [guests, setGuests] = useState<{ email: string; name: string; removed: boolean }[]>([]);
 
   const fetchProject = useCallback(async () => {
     const [{ data: p }, { data: items }] = await Promise.all([
@@ -88,10 +91,22 @@ function SettingsContent({
     }
   }, [companyId]);
 
+  const fetchGuests = useCallback(async () => {
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
+    const res = await fetch(`/api/campaigns/${projectId}/guests?company_id=${companyId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setGuests(data.guests || []);
+    }
+  }, [projectId, companyId]);
+
   useEffect(() => {
     fetchProject();
     fetchCustomDomain();
-  }, [fetchProject, fetchCustomDomain]);
+    fetchGuests();
+  }, [fetchProject, fetchCustomDomain, fetchGuests]);
 
   const saveDueDate = async (value: string) => {
     setDueDate(value);
@@ -109,23 +124,32 @@ function SettingsContent({
     }
   };
 
-  const sendReminder = async () => {
+  const activeGuests = guests.filter((g) => !g.removed);
+
+  const sendReminder = async (targetEmails?: string[]) => {
+    const count = targetEmails ? targetEmails.length : activeGuests.length;
+    const label = targetEmails
+      ? `${count} selected guest${count !== 1 ? 's' : ''}`
+      : 'all guests assigned to this project';
     const ok = await confirm({
       title: 'Send reminder?',
-      message: 'This will email all guests assigned to this project. Continue?',
+      message: `This will email ${label}. Continue?`,
       confirmLabel: 'Send Reminder',
     });
     if (!ok) return;
     setReminding(true);
     try {
+      const body = targetEmails ? { emails: targetEmails } : {};
       const res = await authFetch(`/api/campaigns/${projectId}/remind?company_id=${companyId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (res.ok) {
         toast.success(`Reminder sent to ${data.sent} guest${data.sent !== 1 ? 's' : ''}`);
+        setSelectedGuests(new Set());
+        setReminderMode('all');
       } else {
         toast.error(data.error || 'Failed to send reminders');
       }
@@ -162,58 +186,129 @@ function SettingsContent({
           </div>
         ) : (
           <div className="space-y-8">
-            {/* ── Due Date & Reminder ─────────────────────────── */}
-            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <CalendarDays size={15} className="text-faint" />
-                  <h3 className="text-sm font-semibold text-ink">Due Date</h3>
-                </div>
-                <p className="text-caption text-dim mb-3">
-                  Set a deadline for this review. Shown in reminder emails sent to guests.
-                </p>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => saveDueDate(e.target.value)}
-                    className="px-3 py-1.5 text-caption border border-edge-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
-                  />
-                  {dueDateLabel && (
-                    <span className={`text-caption font-medium ${isOverdue ? 'text-red-600' : 'text-dim'}`}>
-                      {isOverdue ? 'Overdue — ' : ''}{dueDateLabel}
-                    </span>
-                  )}
-                  {savingDue && (
-                    <div className="w-4 h-4 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
-                  )}
-                  {dueDate && (
-                    <button
-                      type="button"
-                      onClick={() => saveDueDate('')}
-                      className="text-xs text-faint hover:text-red-500 transition-colors"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
+            {/* ── Due Date ────────────────────────────────────── */}
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <CalendarDays size={15} className="text-faint" />
+                <h3 className="text-sm font-semibold text-ink">Due Date</h3>
               </div>
+              <p className="text-caption text-dim mb-3">
+                Set a deadline for this review. Shown in reminder emails sent to guests.
+              </p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => saveDueDate(e.target.value)}
+                  className="px-3 py-1.5 text-caption border border-edge-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                />
+                {dueDateLabel && (
+                  <span className={`text-caption font-medium ${isOverdue ? 'text-red-600' : 'text-dim'}`}>
+                    {isOverdue ? 'Overdue — ' : ''}{dueDateLabel}
+                  </span>
+                )}
+                {savingDue && (
+                  <div className="w-4 h-4 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
+                )}
+                {dueDate && (
+                  <button
+                    type="button"
+                    onClick={() => saveDueDate('')}
+                    className="text-xs text-faint hover:text-red-500 transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
 
-              <div className="sm:ml-auto">
+            {/* ── Email Reminders ─────────────────────────────── */}
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Send size={15} className="text-faint" />
+                <h3 className="text-sm font-semibold text-ink">Email Reminders</h3>
+              </div>
+              <p className="text-caption text-dim mb-3">
+                Send a reminder email to guests prompting them to review.
+              </p>
+
+              <div className="flex items-center gap-1 mb-3">
                 <button
                   type="button"
-                  onClick={sendReminder}
-                  disabled={reminding}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-caption font-medium bg-teal text-white rounded-lg hover:bg-teal/90 transition-colors disabled:opacity-50"
+                  onClick={() => { setReminderMode('all'); setSelectedGuests(new Set()); }}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                    reminderMode === 'all'
+                      ? 'bg-teal/10 text-teal'
+                      : 'text-dim hover:text-prose hover:bg-surface'
+                  }`}
                 >
-                  {reminding ? (
-                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <Send size={14} />
-                  )}
-                  Send Reminder to All Guests
+                  All Guests
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReminderMode('select')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                    reminderMode === 'select'
+                      ? 'bg-teal/10 text-teal'
+                      : 'text-dim hover:text-prose hover:bg-surface'
+                  }`}
+                >
+                  Select Guests
                 </button>
               </div>
+
+              {reminderMode === 'select' && (
+                <div className="border border-edge rounded-xl bg-white divide-y divide-gray-100 mb-3 max-h-60 overflow-y-auto">
+                  {activeGuests.length === 0 ? (
+                    <div className="px-4 py-4 text-caption text-faint text-center">
+                      No active guests on this project.
+                    </div>
+                  ) : (
+                    activeGuests.map((g) => (
+                      <label key={g.email} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-surface/50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={selectedGuests.has(g.email)}
+                          onChange={() => {
+                            setSelectedGuests((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(g.email)) next.delete(g.email);
+                              else next.add(g.email);
+                              return next;
+                            });
+                          }}
+                          className="h-3.5 w-3.5 rounded border-edge-strong text-teal focus:ring-teal/30 accent-teal"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-caption font-medium text-ink truncate">{g.name || g.email}</p>
+                          {g.name && <p className="text-xs text-faint truncate">{g.email}</p>}
+                        </div>
+                      </label>
+                    ))
+                  )}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() =>
+                  reminderMode === 'select' && selectedGuests.size > 0
+                    ? sendReminder(Array.from(selectedGuests))
+                    : sendReminder()
+                }
+                disabled={reminding || (reminderMode === 'select' && selectedGuests.size === 0)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-caption font-medium bg-teal text-white rounded-lg hover:bg-teal/90 transition-colors disabled:opacity-50"
+              >
+                {reminding ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Send size={14} />
+                )}
+                {reminderMode === 'select' && selectedGuests.size > 0
+                  ? `Send Reminder to ${selectedGuests.size} Guest${selectedGuests.size !== 1 ? 's' : ''}`
+                  : 'Send Reminder to All Guests'
+                }
+              </button>
             </div>
 
             {/* ── Assignees ───────────────────────────────────── */}

@@ -73,7 +73,7 @@ export default function ProposalViewerPage(props: { params: Promise<{ token: str
   // ── Early returns (after all hooks) ──────────────────────────────────
 
   if (!v.brandingLoaded) {
-    return <div className="fixed inset-0" style={{ backgroundColor: '#0f0f0f' }} />;
+    return <div className="fixed inset-0" style={{ backgroundColor: 'transparent' }} />;
   }
 
   if (v.loading) {
@@ -83,12 +83,12 @@ export default function ProposalViewerPage(props: { params: Promise<{ token: str
   if (v.notFound) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: v.bgPrimary }}>
-        <div className="text-center">
+        <div className="text-center max-w-sm px-6">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: v.bgSecondary }}>
             <FileText size={28} className="text-[#444]" />
           </div>
-          <h2 className="text-xl font-semibold text-white mb-2">Proposal Not Found</h2>
-          <p className="text-[#666] text-sm">This link may have expired or been removed.</p>
+          <h2 className="text-xl font-semibold text-white mb-2">Document Not Found</h2>
+          <p className="text-[#666] text-sm">This link may have expired or been removed. Please contact the sender for an updated link.</p>
         </div>
       </div>
     );
@@ -113,7 +113,7 @@ export default function ProposalViewerPage(props: { params: Promise<{ token: str
             ]}
           />
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <CoverPage proposal={v.proposal as any} branding={v.branding} onStart={() => v.setShowCover(false)} />
+          <CoverPage proposal={v.proposal as any} branding={v.branding} entityType="quote" onStart={() => v.setShowCover(false)} />
         </div>
       );
     }
@@ -176,7 +176,7 @@ export default function ProposalViewerPage(props: { params: Promise<{ token: str
         <button
           type="button"
           onClick={() => window.print()}
-          className="fixed bottom-5 right-5 z-30 inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/95 backdrop-blur border border-edge-strong shadow-md text-xs font-medium text-prose hover:text-ink hover:shadow-lg transition-all print:hidden"
+          className="fixed bottom-8 right-5 z-30 inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/95 backdrop-blur border border-edge-strong shadow-md text-xs font-medium text-prose hover:text-ink hover:shadow-lg transition-all print:hidden"
         >
           <Download size={13} />
           Download PDF
@@ -209,19 +209,19 @@ export default function ProposalViewerPage(props: { params: Promise<{ token: str
         className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b shrink-0 z-20"
         style={{ backgroundColor: v.bgSecondary, borderColor: v.border }}
       >
-        <button onClick={() => v.setMobileSidebar(true)} className="p-2 transition-opacity hover:opacity-70 rounded-lg" style={{ color: v.sidebarText }}>
+        <button onClick={() => v.setMobileSidebar(true)} aria-label="Open navigation" className="p-2 transition-opacity hover:opacity-70 rounded-lg" style={{ color: v.sidebarText }}>
           <Menu size={20} />
         </button>
         <div className="flex-1 min-w-0 mx-1 flex items-center justify-center gap-1">
-          <button onClick={() => v.currentPage > 1 && v.goToPage(v.currentPage - 1)} disabled={v.currentPage <= 1} className="p-1.5 rounded-lg transition-opacity disabled:opacity-20" style={{ color: v.sidebarText }}>
-            <ChevronLeft size={18} />
+          <button onClick={() => v.currentPage > 1 && v.goToPage(v.currentPage - 1)} disabled={v.currentPage <= 1} aria-label="Previous page" className="p-2.5 -m-1 rounded-lg transition-opacity disabled:opacity-20" style={{ color: v.sidebarText }}>
+            <ChevronLeft size={20} />
           </button>
           <span className="text-xs truncate px-1" style={{ color: v.sidebarText, opacity: 0.55 }}>
             {v.getPageName(v.currentPage)}
             {v.numPages > 0 && ` · ${v.currentPage}/${v.numPages}`}
           </span>
-          <button onClick={() => v.currentPage < v.pageUrls.length && v.goToPage(v.currentPage + 1)} disabled={v.currentPage >= v.pageUrls.length} className="p-1.5 rounded-lg transition-opacity disabled:opacity-20" style={{ color: v.sidebarText }}>
-            <ChevronRight size={18} />
+          <button onClick={() => v.currentPage < v.pageUrls.length && v.goToPage(v.currentPage + 1)} disabled={v.currentPage >= v.pageUrls.length} aria-label="Next page" className="p-2.5 -m-1 rounded-lg transition-opacity disabled:opacity-20" style={{ color: v.sidebarText }}>
+            <ChevronRight size={20} />
           </button>
         </div>
         <div className="w-10" />

@@ -362,6 +362,8 @@ export type ProposalTemplate = {
   decision_decline_button_color: string | null;
   decision_revision_button_color: string | null;
   decision_checkbox_color: string | null;
+  /** Whether proposals from this template default to requiring e-signature. */
+  require_signature: boolean;
   /** Decision page defaults copied onto proposals created from this template. */
   decision_page_enabled: boolean | null;
   decision_page_title: string | null;

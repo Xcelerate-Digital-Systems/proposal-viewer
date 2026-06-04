@@ -13,7 +13,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Copy, Check, ExternalLink, Trash2, Download, BookmarkPlus,
-  PenLine, Paintbrush, SlidersHorizontal, Files,
+  PenLine, Paintbrush, SlidersHorizontal, Files, CheckSquare,
 } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
@@ -41,6 +41,7 @@ const tabs = [
   { key: 'cover',    label: 'Cover',    icon: Paintbrush,        segment: 'cover' },
   { key: '',         label: 'Builder',  icon: PenLine,           segment: '' },
   { key: 'settings', label: 'Design',   icon: SlidersHorizontal, segment: 'settings' },
+  { key: 'decision', label: 'Decision', icon: CheckSquare,       segment: 'decision' },
 ];
 
 function activeKeyFromPath(pathname: string | null): string {

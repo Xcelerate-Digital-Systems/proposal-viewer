@@ -89,7 +89,7 @@ export default function ProposalAnalytics({ proposalId }: Props) {
     (async () => {
       try {
         const res = await authFetch(`/api/proposals/${proposalId}/analytics`);
-        if (!res.ok) throw new Error();
+        if (!res.ok) throw new Error(`Analytics fetch failed: ${res.status}`);
         const data = await res.json();
         if (cancelled) return;
         setSummary(data.summary);
@@ -146,7 +146,7 @@ export default function ProposalAnalytics({ proposalId }: Props) {
           <CalendarDays size={14} className="text-faint shrink-0" />
           <span>First viewed <strong className="text-ink">{formatDate(summary.firstViewedAt)}</strong></span>
           <span className="text-edge-hover">·</span>
-          <span>Last viewed <strong className="text-ink">{formatRelative(summary.lastViewedAt!)}</strong></span>
+          <span>Last viewed <strong className="text-ink">{summary.lastViewedAt ? formatRelative(summary.lastViewedAt) : 'Unknown'}</strong></span>
           <span className="text-edge-hover">·</span>
           <span>Total time <strong className="text-ink">{formatDuration(summary.totalTimeSeconds)}</strong></span>
         </div>

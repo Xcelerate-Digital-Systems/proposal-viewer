@@ -15,6 +15,7 @@ import CommandPalette from '@/components/admin/CommandPalette';
 import { BillingGuard } from '@/components/auth/BillingGuard';
 import { AnalyticsIdentifier } from '@/components/analytics/AnalyticsIdentifier';
 import { CrispWidget } from '@/components/support/CrispWidget';
+import SupportWidget from '@/components/support/SupportWidget';
 import { supabase } from '@/lib/supabase';
 import { setBrandingColors } from '@/components/ui/ColorPickerField';
 import { useCompanyBranding } from '@/hooks/useCompanyBranding';
@@ -103,6 +104,7 @@ function AdminLayoutInner({
             userEmail={auth.session.user.email}
             userName={auth.teamMember.name}
           />
+          <SupportWidget />
         </>
       )}
       {auth.companyId && <BrandPaletteLoader companyId={auth.companyId} />}

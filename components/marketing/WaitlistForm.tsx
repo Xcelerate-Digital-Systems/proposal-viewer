@@ -5,7 +5,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/Button';
 import { useAnalytics } from '@/hooks/useAnalytics';
 
@@ -41,14 +41,14 @@ export function WaitlistForm({ source }: WaitlistFormProps) {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(json.error || 'Something went wrong — try again.');
+        setError(json.error || 'Something went wrong. Try again.');
         setSubmitting(false);
         return;
       }
       track('waitlist_joined', { source, has_agency_name: agencyName.trim().length > 0 });
       setDone(true);
     } catch {
-      setError('Network error — try again.');
+      setError('Network error. Try again.');
       setSubmitting(false);
     }
   };
@@ -57,7 +57,7 @@ export function WaitlistForm({ source }: WaitlistFormProps) {
     return (
       <div className="bg-teal/5 border border-teal/20 rounded-2xl p-6 text-center">
         <div className="w-12 h-12 rounded-full bg-teal/10 flex items-center justify-center mx-auto mb-3">
-          <Check size={20} className="text-teal" />
+          <Check size={20} weight="duotone" className="text-teal" />
         </div>
         <h3 className="text-base font-semibold text-ink mb-1">You&apos;re on the list</h3>
         <p className="text-sm text-muted">

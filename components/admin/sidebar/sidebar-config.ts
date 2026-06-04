@@ -4,7 +4,7 @@
 import {
   LayoutDashboard, MessageSquareText, FileText, Files, LayoutTemplate,
   Palette, Settings as SettingsIcon, Bookmark, Plug, ReceiptText,
-  Workflow, LifeBuoy,
+  Workflow,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -81,7 +81,6 @@ export const WORKSPACE_ITEMS: NavItem[] = [
 
 export const STANDALONE_ITEMS: NavItem[] = [
   { href: '/company',  label: 'Brand Kit', icon: Palette },
-  { href: '/support',  label: 'Support',   icon: LifeBuoy },
   { href: '/settings', label: 'Settings',  icon: SettingsIcon },
 ];
 

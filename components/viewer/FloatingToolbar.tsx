@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronUp, ChevronDown, Share2, Download, Printer, Loader2 } from 'lucide-react';
+import { ChevronUp, ChevronDown, Share2, Download, Check, Loader2, X } from 'lucide-react';
 
 interface FloatingToolbarProps {
   pdfUrl: string | null;
@@ -31,9 +31,13 @@ export default function FloatingToolbar({
   onCompositeDownload,
 }: FloatingToolbarProps) {
   const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState(false);
+  const [shared, setShared] = useState(false);
 
   const handleDownload = async () => {
     if (downloading) return;
+
+    setDownloadError(false);
 
     // Use composite download if available, otherwise fall back to raw PDF
     if (onCompositeDownload) {
@@ -48,8 +52,9 @@ export default function FloatingToolbar({
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-      } catch (err) {
-        console.error('Composite download failed:', err);
+      } catch {
+        setDownloadError(true);
+        setTimeout(() => setDownloadError(false), 3000);
       } finally {
         setDownloading(false);
       }
@@ -60,6 +65,7 @@ export default function FloatingToolbar({
     setDownloading(true);
     try {
       const response = await fetch(pdfUrl);
+      if (!response.ok) throw new Error('Download failed');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -69,8 +75,9 @@ export default function FloatingToolbar({
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Download failed:', err);
+    } catch {
+      setDownloadError(true);
+      setTimeout(() => setDownloadError(false), 3000);
     } finally {
       setDownloading(false);
     }
@@ -79,14 +86,12 @@ export default function FloatingToolbar({
   const handleShare = async () => {
     const url = window.location.href;
     if (navigator.share) {
-      try { await navigator.share({ title, url }); } catch {}
+      try { await navigator.share({ title, url }); } catch { /* user cancelled */ }
     } else {
       await navigator.clipboard.writeText(url);
+      setShared(true);
+      setTimeout(() => setShared(false), 2000);
     }
-  };
-
-  const handlePrint = () => {
-    if (pdfUrl) window.open(pdfUrl, '_blank');
   };
 
   if (numPages <= 1) return null;
@@ -124,16 +129,16 @@ export default function FloatingToolbar({
         style={btnStyle}
         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = btnHoverBg}
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-        title="Share">
-        <Share2 size={18} />
+        title={shared ? 'Copied!' : 'Share'}>
+        {shared ? <Check size={18} /> : <Share2 size={18} />}
       </button>
       <button onClick={handleDownload} disabled={downloading}
         className="p-1.5 sm:p-2 transition-colors rounded-lg disabled:opacity-50"
-        style={btnStyle}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = btnHoverBg}
+        style={downloadError ? { color: '#dc2626' } : btnStyle}
+        onMouseEnter={(e) => { if (!downloadError) e.currentTarget.style.backgroundColor = btnHoverBg; }}
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-        title="Download">
-        {downloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+        title={downloadError ? 'Download failed — try again' : 'Download'}>
+        {downloading ? <Loader2 size={18} className="animate-spin" /> : downloadError ? <X size={18} /> : <Download size={18} />}
       </button>
     </div>
   );
