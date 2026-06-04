@@ -343,6 +343,12 @@ export default function QuoteSinglePageView({
         : null)
     : deriveDeposit(pricing, total);
 
+  // Full milestone schedule (when more than one payment exists)
+  const milestones = (!useFlatDeposit && pricing?.payment_schedule?.milestones?.enabled
+    && pricing.payment_schedule.milestones.payments.length > 1)
+    ? pricing.payment_schedule.milestones.payments
+    : [];
+
   const validUntil = proposal.valid_until
     ? new Date(proposal.valid_until).toLocaleDateString('en-AU', {
         day: 'numeric', month: 'long', year: 'numeric',
@@ -350,6 +356,12 @@ export default function QuoteSinglePageView({
     : formatValidUntil(pricing);
 
   const expiryState = computeExpiryState(proposal, pricing);
+
+  const quoteDate = (pricing?.proposal_date || proposal.created_at)
+    ? new Date(pricing?.proposal_date || proposal.created_at).toLocaleDateString('en-AU', {
+        day: 'numeric', month: 'long', year: 'numeric',
+      })
+    : null;
 
   // Prefer the new scope_of_works field; fall back to legacy description.
   const scopeOfWorks = proposal.scope_of_works || proposal.description || '';
@@ -386,10 +398,14 @@ export default function QuoteSinglePageView({
 
   /* ── Style snippets, applied inline so they take precedence over Tailwind ─ */
 
+  const bodyFontWeight = branding.font_body_weight ? Number(branding.font_body_weight) : undefined;
+  const headingFontWeight = branding.font_heading_weight ? Number(branding.font_heading_weight) : undefined;
+
   const articleStyle: React.CSSProperties = {
     backgroundColor: bodyBg,
     color: bodyText,
     fontFamily: bodyFontFamily,
+    fontWeight: bodyFontWeight,
     ...TABULAR,
   };
   const labelStyle: React.CSSProperties = {
@@ -514,12 +530,13 @@ export default function QuoteSinglePageView({
             >
               {fmt(total)}
             </div>
-            {validUntil && (
+            {(quoteDate || validUntil) && (
               <div
-                className="text-2xs tracking-[0.18em] uppercase mt-2 opacity-60"
+                className="text-2xs tracking-[0.18em] uppercase mt-2 opacity-60 space-y-0.5"
                 style={{ color: headerSubtle, fontFamily: headingFontFamily }}
               >
-                Valid until {validUntil}
+                {quoteDate && <div>Issued {quoteDate}</div>}
+                {validUntil && <div>Valid until {validUntil}</div>}
               </div>
             )}
           </div>
@@ -677,33 +694,48 @@ export default function QuoteSinglePageView({
                 </tr>
               </thead>
               <tbody>
-                {items.map((it) => (
-                  <tr
-                    key={it.id}
-                    className="align-top last:[&_td]:border-0"
-                    style={{ borderBottom: `1px solid ${palette.borderSubtle}` }}
-                  >
-                    <td className="py-4 pr-6">
-                      <div className="text-[15px]" style={{ color: bodyText }}>
-                        {it.label || '—'}
-                      </div>
-                      {it.description && (
-                        <div className="text-xs mt-1 leading-relaxed" style={{ color: muted }}>
-                          {it.description}
+                {items.map((it) => {
+                  const hasDiscount = (it.discount_pct ?? 0) > 0;
+                  const effectiveAmount = hasDiscount
+                    ? Math.round(it.amount * (1 - (it.discount_pct! / 100)) * 100) / 100
+                    : it.amount;
+                  return (
+                    <tr
+                      key={it.id}
+                      className="align-top last:[&_td]:border-0"
+                      style={{ borderBottom: `1px solid ${palette.borderSubtle}` }}
+                    >
+                      <td className="py-4 pr-6">
+                        <div className="text-[15px]" style={{ color: bodyText }}>
+                          {it.label || '—'}
                         </div>
-                      )}
-                    </td>
-                    <td className="py-4 text-right text-sm" style={{ color: muted }}>
-                      {it.qty ?? 1}
-                    </td>
-                    <td className="py-4 text-right text-sm" style={{ color: muted }}>
-                      {it.unit_price != null ? fmt(it.unit_price) : '—'}
-                    </td>
-                    <td className="py-4 text-right text-[15px]" style={{ color: bodyText }}>
-                      {fmt(it.amount)}
-                    </td>
-                  </tr>
-                ))}
+                        {it.description && (
+                          <div className="text-xs mt-1 leading-relaxed" style={{ color: muted }}>
+                            {it.description}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-4 text-right text-sm" style={{ color: muted }}>
+                        {it.qty ?? 1}
+                      </td>
+                      <td className="py-4 text-right text-sm" style={{ color: muted }}>
+                        {it.unit_price != null ? fmt(it.unit_price) : '—'}
+                      </td>
+                      <td className="py-4 text-right text-[15px]" style={{ color: bodyText }}>
+                        {hasDiscount ? (
+                          <div>
+                            <div>{fmt(effectiveAmount)}</div>
+                            <div className="text-xs line-through mt-0.5" style={{ color: faint }}>
+                              {fmt(it.amount)}
+                            </div>
+                          </div>
+                        ) : (
+                          fmt(it.amount)
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             </div>
@@ -722,6 +754,7 @@ export default function QuoteSinglePageView({
             </p>
             <div className="space-y-3">
               {optionalItems.map((it) => {
+                const hasDiscount = (it.discount_pct ?? 0) > 0;
                 const eff =
                   (it.amount ?? 0) * (1 - ((it.discount_pct ?? 0) / 100));
                 return (
@@ -740,8 +773,17 @@ export default function QuoteSinglePageView({
                         </div>
                       )}
                     </div>
-                    <div className="text-[15px] shrink-0" style={{ color: bodyText, ...TABULAR }}>
-                      {fmt(eff)}
+                    <div className="text-[15px] shrink-0 text-right" style={{ color: bodyText, ...TABULAR }}>
+                      {hasDiscount ? (
+                        <>
+                          <div>{fmt(eff)}</div>
+                          <div className="text-xs line-through mt-0.5" style={{ color: faint }}>
+                            {fmt(it.amount)}
+                          </div>
+                        </>
+                      ) : (
+                        fmt(eff)
+                      )}
                     </div>
                   </div>
                 );
@@ -753,10 +795,6 @@ export default function QuoteSinglePageView({
       )}
 
       {/* ── Investment ────────────────────────────────────────── */}
-      {/* Takes the header fill so the total reads as the document's hero
-          figure. Deposit is intentionally a smaller chip in the corner so it
-          doesn't compete with the headline total. Valid-until sits below the
-          row in the same dark card. */}
       <Section>
         <SectionLabel style={labelStyle}>Investment</SectionLabel>
         <div
@@ -764,13 +802,60 @@ export default function QuoteSinglePageView({
           style={{
             background: headerBg,
             color: headerText,
-            // Faint inner border so the card edge stays visible against a
-            // matching body background.
             boxShadow: `inset 0 0 0 1px ${withAlpha(headerText, 0.08)}`,
           }}
         >
-          <div className="flex items-start justify-between gap-6 flex-wrap">
-            <div className="min-w-0">
+          {/* ── Summary rows ─────────────────────────────────── */}
+          <div className="space-y-2 text-sm tabular-nums mb-5" style={{ color: withAlpha(headerText, 0.7) }}>
+            {gstEnabled && (
+              <>
+                <div className="flex items-center justify-between">
+                  <span>Subtotal</span>
+                  <span>{fmt(subtotal)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>GST ({gstRatePct}%)</span>
+                  <span>{fmt(taxAmount)}</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* ── Total ────────────────────────────────────────── */}
+          {gstEnabled && (
+            <div className="mb-5" style={{ borderTop: `1px solid ${withAlpha(headerText, 0.12)}`, paddingTop: '1.25rem' }} />
+          )}
+          <div>
+            <div
+              style={{
+                ...labelStyle,
+                color: withAlpha(headerText, 0.55),
+                marginBottom: '0.5rem',
+              }}
+            >
+              Total{gstEnabled ? ' (incl. GST)' : ''}
+            </div>
+            <div
+              className="tracking-tight"
+              style={{
+                fontSize: 'clamp(2.25rem, 4vw, 3rem)',
+                color: headerText,
+                fontFamily: titleFontFamily,
+                fontWeight: Number(titleFontWeight) || 600,
+                lineHeight: 1.05,
+                ...TABULAR,
+              }}
+            >
+              {fmt(total)}
+            </div>
+          </div>
+
+          {/* ── Payment schedule / Deposit ────────────────────── */}
+          {(deposit || milestones.length > 0) && (
+            <div
+              className="mt-6 pt-5 space-y-3"
+              style={{ borderTop: `1px solid ${withAlpha(headerText, 0.12)}` }}
+            >
               <div
                 style={{
                   ...labelStyle,
@@ -778,65 +863,57 @@ export default function QuoteSinglePageView({
                   marginBottom: '0.5rem',
                 }}
               >
-                Total Amount
+                Payment Schedule
               </div>
-              <div
-                className="tracking-tight"
-                style={{
-                  fontSize: 'clamp(2.25rem, 4vw, 3rem)',
-                  color: headerText,
-                  fontFamily: titleFontFamily,
-                  fontWeight: Number(titleFontWeight) || 600,
-                  lineHeight: 1.05,
-                  ...TABULAR,
-                }}
-              >
-                {fmt(total)}
-              </div>
-              {gstEnabled && (
-                <div className="text-xs mt-2" style={{ color: withAlpha(headerText, 0.6) }}>
-                  Incl. GST ({fmt(taxAmount)})
+
+              {milestones.length > 0 ? (
+                milestones.map((ms, i) => {
+                  const msAmount = ms.type === 'percentage'
+                    ? Math.round(total * (ms.value / 100) * 100) / 100
+                    : ms.value;
+                  return (
+                    <div
+                      key={ms.id || i}
+                      className="flex items-center justify-between text-sm"
+                      style={{ color: withAlpha(headerText, 0.8) }}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="shrink-0 tabular-nums text-xs" style={{ color: withAlpha(headerText, 0.5) }}>
+                          {i + 1}
+                        </span>
+                        <span className="truncate">{ms.label || `Payment ${i + 1}`}</span>
+                        {ms.type === 'percentage' && (
+                          <span className="shrink-0 text-xs tabular-nums" style={{ color: withAlpha(headerText, 0.5) }}>
+                            {ms.value}%
+                          </span>
+                        )}
+                      </div>
+                      <span className="shrink-0 font-medium tabular-nums" style={{ color: headerText }}>
+                        {fmt(msAmount)}
+                      </span>
+                    </div>
+                  );
+                })
+              ) : deposit ? (
+                <div className="flex items-center justify-between text-sm" style={{ color: withAlpha(headerText, 0.8) }}>
+                  <div className="flex items-center gap-2">
+                    <span>{deposit.label}</span>
+                    <span className="text-xs tabular-nums" style={{ color: withAlpha(headerText, 0.5) }}>
+                      {deposit.pct}%
+                    </span>
+                  </div>
+                  <span className="font-medium tabular-nums" style={{ color: headerText }}>
+                    {fmt(deposit.amount)}
+                  </span>
                 </div>
-              )}
+              ) : null}
             </div>
+          )}
 
-            {deposit && (
-              <div
-                className="rounded-lg px-4 py-3 shrink-0"
-                style={{
-                  backgroundColor: withAlpha(headerText, 0.08),
-                  boxShadow: `inset 0 0 0 1px ${withAlpha(headerText, 0.12)}`,
-                  minWidth: 160,
-                }}
-              >
-                <div
-                  style={{
-                    ...labelStyle,
-                    color: withAlpha(headerText, 0.55),
-                    marginBottom: '0.25rem',
-                  }}
-                >
-                  Deposit Required
-                </div>
-                <div
-                  className="text-detail tabular-nums"
-                  style={{ color: withAlpha(headerText, 0.6) }}
-                >
-                  {deposit.pct}% upfront
-                </div>
-                <div
-                  className="text-right text-xl font-semibold mt-1 tabular-nums"
-                  style={{ color: headerText }}
-                >
-                  {fmt(deposit.amount)}
-                </div>
-              </div>
-            )}
-          </div>
-
+          {/* ── Valid until ───────────────────────────────────── */}
           {validUntil && (
             <div
-              className="mt-6 pt-4 text-xs"
+              className="mt-5 pt-4 text-xs"
               style={{
                 color: withAlpha(headerText, 0.6),
                 borderTop: `1px solid ${withAlpha(headerText, 0.12)}`,
@@ -916,6 +993,12 @@ export default function QuoteSinglePageView({
             accepted={initialAccepted}
             declined={initialDeclined}
             revisionRequested={initialRevisionRequested}
+            proposalTitle={proposal.title || undefined}
+            totalAmount={total > 0 ? fmt(total) : undefined}
+            isExpired={expiryState.kind === 'expired'}
+            companyName={displayCompanyName}
+            companyEmail={companyEmail ?? undefined}
+            companyPhone={companyPhone ?? undefined}
             tokens={{
               bodyBg,
               bodyText,
@@ -933,25 +1016,28 @@ export default function QuoteSinglePageView({
 
       {/* ── Footer ────────────────────────────────────────────── */}
       <footer
-        className="px-8 sm:px-14 py-6 flex flex-wrap items-center justify-between gap-3 text-detail tracking-[0.12em] uppercase"
+        className="px-8 sm:px-14 py-6 text-detail tracking-[0.12em] uppercase"
         style={{
           color: muted,
           fontFamily: headingFontFamily,
           borderTop: `1px solid ${hairline}`,
         }}
       >
-        <span>
-          {displayCompanyName}
-          {companyAbn && (
-            <span className="ml-3 opacity-70" style={TABULAR}>
-              ABN {companyAbn}
-            </span>
-          )}
-        </span>
-        <span className="flex items-center gap-4">
-          {companyPhone && <span>{companyPhone}</span>}
-          {companyEmail && <span>{companyEmail}</span>}
-        </span>
+        <div className="flex items-center justify-between gap-x-6 gap-y-1 flex-wrap">
+          <span>{displayCompanyName}</span>
+          <span className="flex items-center gap-x-4 gap-y-1 flex-wrap">
+            {companyPhone && <span>{companyPhone}</span>}
+            {companyEmail && <span>{companyEmail}</span>}
+          </span>
+        </div>
+        {(companyAbn || formatQuoteNumber(proposal.quote_number, quoteNumberFormat)) && (
+          <div className="flex items-center gap-4 mt-2 opacity-60" style={TABULAR}>
+            {companyAbn && <span>ABN {companyAbn}</span>}
+            {formatQuoteNumber(proposal.quote_number, quoteNumberFormat) && (
+              <span>{formatQuoteNumber(proposal.quote_number, quoteNumberFormat)}</span>
+            )}
+          </div>
+        )}
       </footer>
     </article>
   );
