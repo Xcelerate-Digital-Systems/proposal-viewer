@@ -54,7 +54,7 @@ export default function MentionEditor({
   className,
   apiRef,
 }: MentionEditorProps) {
-  const { participantsRef } = useParticipants(participantsUrl);
+  const { participantsRef, readyRef } = useParticipants(participantsUrl);
   const submitRef = useRef(onSubmit);
   submitRef.current = onSubmit;
 
@@ -102,7 +102,7 @@ export default function MentionEditor({
             `@${label}`,
           ];
         },
-        suggestion: buildSuggestion(participantsRef),
+        suggestion: buildSuggestion(participantsRef, readyRef),
       }),
     ],
     content: value || '',
@@ -169,11 +169,18 @@ export default function MentionEditor({
 
 // ─── Suggestion config (TipTap's mention popover plumbing) ──────────────
 
-function buildSuggestion(participantsRef: { current: Participant[] }) {
+function buildSuggestion(
+  participantsRef: { current: Participant[] },
+  readyRef: { current: Promise<Participant[]> },
+) {
   return {
     char: '@',
     allowSpaces: false,
-    items: ({ query }: { query: string }) => {
+    items: async ({ query }: { query: string }) => {
+      if (participantsRef.current.length === 0) {
+        const fetched = await readyRef.current;
+        if (fetched.length > 0) participantsRef.current = fetched;
+      }
       const q = query.trim().toLowerCase();
       const pool = participantsRef.current;
       if (!q) return pool.slice(0, 8);
