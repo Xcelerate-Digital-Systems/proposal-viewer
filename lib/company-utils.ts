@@ -42,6 +42,14 @@ export type CompanyData = {
   bg_image_path: string | null;
   bg_image_overlay_opacity: number | null;
   brand_colors?: string[];
+  cover_image_path?: string | null;
+  decision_action_bg_color?: string | null;
+  decision_action_text_color?: string | null;
+  decision_action_heading_color?: string | null;
+  decision_action_accent_color?: string | null;
+  decision_decline_button_color?: string | null;
+  decision_revision_button_color?: string | null;
+  decision_checkbox_color?: string | null;
 };
 export { deriveBorderColor as deriveBorder, deriveSurfaceColor as deriveSurface } from '@/lib/types/branding';
 export { hexToRgba } from '@/lib/branding/color-math';

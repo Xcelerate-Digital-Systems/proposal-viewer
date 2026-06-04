@@ -1014,19 +1014,19 @@ export default function QuoteSinglePageView({
             revisionSubtitle={decisionExtras.revision_subtitle}
             revisionButtonLabel={decisionExtras.revision_button_label}
             acceptButtonColor={
-              (proposal as Record<string, string | null | undefined>)?.decision_action_accent_color ||
+              (proposal as unknown as Record<string, string | null | undefined>)?.decision_action_accent_color ||
               branding.decision_action_accent_color
             }
             declineButtonColor={
-              (proposal as Record<string, string | null | undefined>)?.decision_decline_button_color ||
+              (proposal as unknown as Record<string, string | null | undefined>)?.decision_decline_button_color ||
               branding.decision_decline_button_color
             }
             revisionButtonColor={
-              (proposal as Record<string, string | null | undefined>)?.decision_revision_button_color ||
+              (proposal as unknown as Record<string, string | null | undefined>)?.decision_revision_button_color ||
               branding.decision_revision_button_color
             }
             checkboxColor={
-              (proposal as Record<string, string | null | undefined>)?.decision_checkbox_color ||
+              (proposal as unknown as Record<string, string | null | undefined>)?.decision_checkbox_color ||
               branding.decision_checkbox_color
             }
             tokens={{
