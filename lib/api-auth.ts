@@ -144,8 +144,16 @@ export async function getAuthContext(req: NextRequest) {
         .select('account_type')
         .eq('id', matchingMembership.company_id)
         .single();
+      // Super-admin status lives on the user's primary membership row but
+      // must be honoured everywhere — carry it forward so permission checks
+      // in downstream handlers (e.g. effectiveRole in GET /api/company)
+      // see is_super_admin=true even when the matched row is a secondary
+      // membership in another company.
+      const member = defaultMember.is_super_admin && !matchingMembership.is_super_admin
+        ? { ...matchingMembership, is_super_admin: true }
+        : matchingMembership;
       return {
-        member: matchingMembership,
+        member,
         companyId: matchingMembership.company_id as string,
         accountType: (company?.account_type ?? 'agency') as 'agency' | 'client',
       };

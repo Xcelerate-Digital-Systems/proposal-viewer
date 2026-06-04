@@ -43,6 +43,7 @@ export default function ClientsPage() {
         }
         return (
           <ClientsContent
+            companyId={auth.companyId ?? ''}
             onEnterClient={auth.setCompanyOverride}
           />
         );
@@ -52,8 +53,10 @@ export default function ClientsPage() {
 }
 
 function ClientsContent({
+  companyId,
   onEnterClient,
 }: {
+  companyId: string;
   onEnterClient: (companyId: string, companyName: string) => void;
 }) {
   const toast = useToast();
@@ -70,7 +73,7 @@ function ClientsContent({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const res = await fetch('/api/clients', {
+      const res = await fetch(`/api/clients?company_id=${companyId}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) throw new Error(`Failed to load clients (${res.status})`);
@@ -82,7 +85,7 @@ function ClientsContent({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [companyId]);
 
   useEffect(() => {
     fetchClients();
@@ -255,6 +258,7 @@ function ClientsContent({
 
       {showCreate && (
         <CreateClientModal
+          companyId={companyId}
           onClose={() => setShowCreate(false)}
           onCreated={() => {
             setShowCreate(false);
@@ -267,9 +271,11 @@ function ClientsContent({
 }
 
 function CreateClientModal({
+  companyId,
   onClose,
   onCreated,
 }: {
+  companyId: string;
   onClose: () => void;
   onCreated: () => void;
 }) {
@@ -302,7 +308,7 @@ function CreateClientModal({
       return;
     }
 
-    const res = await fetch('/api/clients', {
+    const res = await fetch(`/api/clients?company_id=${companyId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
