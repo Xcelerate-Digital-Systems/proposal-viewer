@@ -64,9 +64,12 @@ function entityHref(entry: EmailLogEntry): string | null {
   return null;
 }
 
+const COLLAPSED_COUNT = 3;
+
 export default function EmailActivityWidget({ companyId }: { companyId: string }) {
   const [entries, setEntries] = useState<EmailLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     authFetch(`/api/admin/email-log?limit=8&company_id=${companyId}`)
@@ -116,7 +119,7 @@ export default function EmailActivityWidget({ companyId }: { companyId: string }
         </div>
       ) : (
         <div className="px-5 pb-3">
-          {entries.map((entry, i) => {
+          {(expanded ? entries : entries.slice(0, COLLAPSED_COUNT)).map((entry, i, arr) => {
             const cfg = STATUS_CONFIG[entry.status] || STATUS_CONFIG.sent;
             const StatusIcon = cfg.icon;
             const href = entityHref(entry);
@@ -126,7 +129,7 @@ export default function EmailActivityWidget({ companyId }: { companyId: string }
               <div
                 key={entry.id}
                 className={`flex items-start gap-3 py-2.5 ${
-                  i < entries.length - 1 ? 'border-b border-edge' : ''
+                  i < arr.length - 1 ? 'border-b border-edge' : ''
                 }`}
               >
                 <div
@@ -183,6 +186,14 @@ export default function EmailActivityWidget({ companyId }: { companyId: string }
               </div>
             );
           })}
+          {entries.length > COLLAPSED_COUNT && (
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="w-full text-center py-2.5 border-t border-edge text-xs font-medium text-primary hover:text-primary-hover transition-colors"
+            >
+              {expanded ? 'Show less' : `Show ${entries.length - COLLAPSED_COUNT} more`}
+            </button>
+          )}
         </div>
       )}
     </div>

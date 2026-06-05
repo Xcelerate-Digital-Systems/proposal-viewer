@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Reply, Check, ExternalLink, Send, X, FileImage, ChevronRight,
+  MessageSquare, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -18,6 +19,15 @@ export type InboxComment = {
   createdAt: string;
   screenshotUrl: string | null;
   companyId: string;
+  replyCount: number;
+};
+
+type ReplyRow = {
+  id: string;
+  content: string;
+  author_name: string;
+  author_type: 'team' | 'client';
+  created_at: string;
 };
 
 interface Props {
@@ -73,6 +83,9 @@ export default function InboxItem({ item, memberName, isLast, onResolve }: Props
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shotPreviewOpen, setShotPreviewOpen] = useState(false);
+  const [repliesExpanded, setRepliesExpanded] = useState(false);
+  const [replies, setReplies] = useState<ReplyRow[]>([]);
+  const [repliesLoading, setRepliesLoading] = useState(false);
 
   const lightboxCloseRef = useRef<HTMLButtonElement>(null);
   const openHref = `/campaigns/${item.projectId}/assets/${item.itemId}`;
@@ -108,6 +121,28 @@ export default function InboxItem({ item, memberName, isLast, onResolve }: Props
       setSending(false);
     }
   };
+
+  const toggleReplies = useCallback(async () => {
+    if (repliesExpanded) {
+      setRepliesExpanded(false);
+      return;
+    }
+    setRepliesExpanded(true);
+    if (replies.length > 0) return;
+    setRepliesLoading(true);
+    try {
+      const { data } = await supabase
+        .from('review_comments')
+        .select('id, content, author_name, author_type, created_at')
+        .eq('parent_comment_id', item.commentId)
+        .order('created_at', { ascending: true });
+      setReplies((data || []) as ReplyRow[]);
+    } catch {
+      // silently fail — user can retry
+    } finally {
+      setRepliesLoading(false);
+    }
+  }, [repliesExpanded, replies.length, item.commentId]);
 
   const closeLightbox = useCallback(() => setShotPreviewOpen(false), []);
 
@@ -184,6 +219,60 @@ export default function InboxItem({ item, memberName, isLast, onResolve }: Props
               </button>
             )}
           </div>
+
+          {item.replyCount > 0 && (
+            <div className="mt-2.5">
+              <button
+                onClick={toggleReplies}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted hover:text-ink transition-colors"
+              >
+                <MessageSquare size={12} />
+                {item.replyCount} {item.replyCount === 1 ? 'reply' : 'replies'}
+                {repliesExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+              </button>
+
+              {repliesExpanded && (
+                <div className="mt-2 ml-1 border-l-2 border-edge pl-3 space-y-2">
+                  {repliesLoading ? (
+                    <div className="space-y-2 animate-pulse py-1">
+                      {Array.from({ length: Math.min(item.replyCount, 3) }).map((_, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <div className="w-6 h-6 rounded-full bg-edge shrink-0" />
+                          <div className="flex-1 space-y-1">
+                            <div className="h-2.5 bg-edge rounded w-1/3" />
+                            <div className="h-2.5 bg-edge rounded w-2/3" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    replies.map((r) => {
+                      const rColor = avatarColor(r.author_name);
+                      return (
+                        <div key={r.id} className="flex items-start gap-2 py-1">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-2xs font-semibold shrink-0 ${rColor.bg} ${rColor.text}`}>
+                            {initials(r.author_name)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-detail font-semibold text-ink">{r.author_name}</span>
+                              {r.author_type === 'team' && (
+                                <span className="text-2xs font-medium text-primary bg-primary/10 rounded px-1 py-px">Team</span>
+                              )}
+                              <time className="text-detail text-faint ml-auto shrink-0">{formatRelative(r.created_at)}</time>
+                            </div>
+                            <p className="text-detail text-ink/80 line-clamp-2 whitespace-pre-wrap mt-0.5">
+                              {r.content.replace(/<[^>]+>/g, '')}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {replyOpen && (
             <div className="mt-3 rounded-2xl border border-edge-strong bg-surface/50 p-2.5">

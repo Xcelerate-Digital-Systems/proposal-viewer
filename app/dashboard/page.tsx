@@ -68,6 +68,7 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
           .eq('company_id', companyId)
           .eq('author_type', 'client')
           .eq('resolved', false)
+          .is('parent_comment_id', null)
           .order('created_at', { ascending: false })
           .limit(20),
         supabase
@@ -89,6 +90,19 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
         review_items: { id: string; title: string; review_project_id: string; company_id: string } | null;
       };
       const reviewRows = (reviewCommentsRes.data || []) as unknown as RawReviewComment[];
+
+      const replyCounts: Record<string, number> = {};
+      const commentIds = reviewRows.map((c) => c.id);
+      if (commentIds.length > 0) {
+        const { data: replyRows } = await supabase
+          .from('review_comments')
+          .select('parent_comment_id')
+          .in('parent_comment_id', commentIds);
+        for (const r of (replyRows || []) as { parent_comment_id: string }[]) {
+          replyCounts[r.parent_comment_id] = (replyCounts[r.parent_comment_id] || 0) + 1;
+        }
+      }
+
       const projectIds = Array.from(
         new Set(reviewRows.map((c) => c.review_items?.review_project_id).filter(Boolean) as string[]),
       );
@@ -115,6 +129,7 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
           createdAt: c.created_at,
           screenshotUrl: c.screenshot_url ?? null,
           companyId: rel?.company_id ?? companyId,
+          replyCount: replyCounts[c.id] || 0,
         };
       });
       setInbox(inboxItems);
