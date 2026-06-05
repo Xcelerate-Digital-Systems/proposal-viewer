@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { fontFamily } from '@/lib/google-fonts';
+import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import FontSelect from '@/components/admin/shared/FontSelect';
 import Slider from '@/components/ui/Slider';
 import ColorPickerField from '@/components/ui/ColorPickerField';
@@ -674,6 +675,11 @@ export default function ViewerStyleSection({
         </div>
 
         <StickyPreviewAside>
+          <GoogleFontLoader fonts={[
+            titleFontFamily || fontHeadingFamily || companyDefaults.font_heading,
+            fontHeadingFamily || companyDefaults.font_heading,
+            fontBodyFamily || companyDefaults.font_body,
+          ]} />
           <div
             className="rounded-lg overflow-hidden border border-edge-strong bg-surface p-8 space-y-4"
             style={{ backgroundColor: tpBgColor || companyDefaults.bg_color }}
