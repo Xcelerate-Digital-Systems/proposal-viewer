@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   useNodesState, useEdgesState, applyNodeChanges, applyEdgeChanges,
   type Node, type Edge, type Connection, type NodeChange, type EdgeChange,
-  MarkerType,
 } from '@xyflow/react';
 import type { FeedbackBoardShape, FeedbackBoardNote } from '@/lib/supabase';
 import { type FunnelStepNodeData } from './nodes/FunnelStepNode';
@@ -125,7 +124,6 @@ export function useFunnelBoard() {
         type: 'labeled',
         animated: e.animated || false,
         style: { stroke: strokeColor, strokeWidth },
-        markerEnd: { type: MarkerType.ArrowClosed, color: strokeColor, width: 16, height: 16 },
         data: {
           label: displayLabel,
           // Stashed raw user label so handleUpdateEdgeStyle can preserve it

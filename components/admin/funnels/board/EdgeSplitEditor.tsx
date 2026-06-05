@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Split } from 'lucide-react';
+import { Split, AlertTriangle } from 'lucide-react';
 import type { FunnelBoardEdge } from '@/lib/supabase';
 interface Props {
   edge: FunnelBoardEdge;
@@ -27,13 +27,15 @@ export default function EdgeSplitEditor({ edge, siblings, flowThrough, onUpdate 
   };
 
   const siblingsSum = siblings.reduce((s, e) => s + (e.split_percent ?? 0), 0);
-  const remaining = Math.max(0, 100 - siblingsSum - (edge.split_percent ?? 0));
+  const totalAllocated = siblingsSum + (edge.split_percent ?? 0);
+  const remaining = Math.max(0, 100 - totalAllocated);
+  const overallocated = totalAllocated > 100;
 
   return (
     <div className="flex items-center gap-2 bg-white rounded-lg border border-edge shadow-lg px-3 py-2">
       <Split size={14} className="text-muted shrink-0" />
       <label className="text-detail text-muted whitespace-nowrap">Split %</label>
-      <div className="flex items-center bg-surface border border-edge rounded-lg focus-within:border-teal transition-colors">
+      <div className={`flex items-center bg-surface border rounded-lg focus-within:border-teal transition-colors ${overallocated ? 'border-amber-400' : 'border-edge'}`}>
         <input
           type="number"
           inputMode="decimal"
@@ -49,9 +51,14 @@ export default function EdgeSplitEditor({ edge, siblings, flowThrough, onUpdate 
         />
         <span className="text-detail text-muted pr-2">%</span>
       </div>
-      {siblings.length > 0 && remaining > 0 && (
+      {overallocated ? (
+        <span className="flex items-center gap-1 text-2xs text-amber-600">
+          <AlertTriangle size={11} />
+          {totalAllocated.toFixed(0)}% total — will be normalized
+        </span>
+      ) : siblings.length > 0 && remaining > 0 ? (
         <span className="text-2xs text-muted">{remaining.toFixed(0)}% remaining</span>
-      )}
+      ) : null}
     </div>
   );
 }

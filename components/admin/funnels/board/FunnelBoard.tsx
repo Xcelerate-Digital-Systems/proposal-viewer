@@ -1,14 +1,16 @@
 'use client';
 
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import {
   ReactFlow, ReactFlowProvider, Controls, MiniMap, Background, BackgroundVariant, useReactFlow,
-  ConnectionMode, type NodeTypes, type EdgeTypes, type Node, MarkerType, Panel,
+  ConnectionMode, type NodeTypes, type EdgeTypes, type Node, Panel,
   SelectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Loader2, MousePointer, Undo2, Redo2 } from 'lucide-react';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { computeForecast, formatCount } from '@/lib/funnel/forecast';
+import BoardSummary from './BoardSummary';
 import FunnelStepNode from './nodes/FunnelStepNode';
 import StickyNoteNode from '@/components/admin/feedback/board/nodes/StickyNoteNode';
 import ShapeNode from '@/components/admin/feedback/board/nodes/ShapeNode';
@@ -39,7 +41,6 @@ const defaultEdgeOptions = {
   type: 'labeled',
   animated: false,
   style: { stroke: '#2B2B2B', strokeWidth: 1.8 },
-  markerEnd: { type: MarkerType.ArrowClosed, color: '#2B2B2B', width: 16, height: 16 },
 };
 
 const ALIGNMENT_TOLERANCE = 6; // flow-units; soft snap range while dragging
@@ -346,31 +347,27 @@ function FunnelBoardInner() {
   const onNodeDrag = useCallback((_e: React.MouseEvent, node: Node) => {
     const others = rf.getNodes().filter((n) => n.id !== node.id && !n.selected);
     const drag = visualCentre(node);
-    const hSet = new Set<number>();
-    const vSet = new Set<number>();
-    let snapDY = 0;
-    let snapDX = 0;
+    let bestH: number | null = null;
+    let bestV: number | null = null;
+    let bestDY = Infinity;
+    let bestDX = Infinity;
     for (const o of others) {
       const oc = visualCentre(o);
-      const dy = oc.cy - drag.cy;
-      const dx = oc.cx - drag.cx;
-      if (Math.abs(dy) <= ALIGNMENT_TOLERANCE) {
-        hSet.add(Math.round(oc.cy));
-        if (Math.abs(dy) < Math.abs(snapDY) || snapDY === 0) snapDY = dy;
+      const dy = Math.abs(oc.cy - drag.cy);
+      const dx = Math.abs(oc.cx - drag.cx);
+      if (dy <= ALIGNMENT_TOLERANCE && dy < bestDY) {
+        bestDY = dy;
+        bestH = Math.round(oc.cy);
       }
-      if (Math.abs(dx) <= ALIGNMENT_TOLERANCE) {
-        vSet.add(Math.round(oc.cx));
-        if (Math.abs(dx) < Math.abs(snapDX) || snapDX === 0) snapDX = dx;
+      if (dx <= ALIGNMENT_TOLERANCE && dx < bestDX) {
+        bestDX = dx;
+        bestV = Math.round(oc.cx);
       }
     }
-    setGuides({ horizontals: Array.from(hSet), verticals: Array.from(vSet) });
-    if (snapDX !== 0 || snapDY !== 0) {
-      rf.setNodes((nds) => nds.map((n) =>
-        n.id === node.id
-          ? { ...n, position: { x: n.position.x + snapDX, y: n.position.y + snapDY } }
-          : n
-      ));
-    }
+    setGuides({
+      horizontals: bestH !== null ? [bestH] : [],
+      verticals: bestV !== null ? [bestV] : [],
+    });
   }, [rf]);
 
   const onNodeDragStop = useCallback(() => {
@@ -425,6 +422,11 @@ function FunnelBoardInner() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [ctx, duplicateSelected, copySelected, pasteAtViewport]);
+
+  const forecast = useMemo(
+    () => computeForecast(ctx.steps, ctx.boardEdges, ctx.funnel?.forecast_period ?? 'total'),
+    [ctx.steps, ctx.boardEdges, ctx.funnel?.forecast_period]
+  );
 
   if (ctx.loading) {
     return (
@@ -595,6 +597,16 @@ function FunnelBoardInner() {
                   <span>⇧ drag to select</span>
                 </div>
               </div>
+            </Panel>
+          )}
+
+          {!boardEmpty && (forecast.totalRevenue > 0 || forecast.totalCost > 0) && (
+            <Panel position="bottom-center" className="!bottom-4">
+              <BoardSummary
+                forecast={forecast}
+                currency={ctx.funnel?.currency}
+                period={ctx.funnel?.forecast_period}
+              />
             </Panel>
           )}
         </ReactFlow>

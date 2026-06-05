@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, ExternalLink, Trash2, Check, Search } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { X, ExternalLink, Trash2, Check, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import type { FunnelStep, FunnelStepMetrics } from '@/lib/supabase';
 import {
   FUNNEL_STEP_DEFAULTS, FUNNEL_ICON_LIBRARY, FUNNEL_COLOR_PRESETS,
@@ -14,25 +14,36 @@ interface Props {
   onClose: () => void;
 }
 
-/**
- * Side drawer for editing a single step — label, URL, icon, color, and the
- * manual planner metrics. Writes are optimistic via the parent's onUpdate
- * callback (which already does optimistic local update + DB save).
- */
+const RECURRING_TYPES = new Set(['offer_subscription', 'offer_saas', 'offer_trial']);
+
 export default function StepSideDrawer({
   step,
   onUpdate, onDelete, onClose,
 }: Props) {
   const defaults = FUNNEL_STEP_DEFAULTS[step.step_type] ?? FUNNEL_STEP_DEFAULTS.generic;
 
-  // Local drafts so typing doesn't re-fire DB writes on every keystroke.
   const [label, setLabel] = useState(step.label);
   const [url, setUrl] = useState(step.url || '');
   const [iconQuery, setIconQuery] = useState('');
+  const [metricsOpen, setMetricsOpen] = useState(true);
 
-  // Re-sync drafts when the user switches to a different step.
+  const isTrafficSource = step.step_type.startsWith('traffic_');
+  const isPage = step.step_type.startsWith('page_');
+  const isOffer = step.step_type.startsWith('offer_');
+  const showRecurring = RECURRING_TYPES.has(step.step_type);
+
   useEffect(() => { setLabel(step.label); setUrl(step.url || ''); }, [step.id]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
+
+  const metricsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const updateMetric = useCallback((key: keyof FunnelStepMetrics, raw: string) => {
+    if (metricsTimerRef.current) clearTimeout(metricsTimerRef.current);
+    metricsTimerRef.current = setTimeout(() => {
+      const num = raw.trim() === '' ? null : Number(raw);
+      const next: FunnelStepMetrics = { ...(step.metrics || {}), [key]: num == null || Number.isNaN(num) ? null : num };
+      onUpdate({ metrics: next });
+    }, 400);
+  }, [step.metrics, onUpdate]);
 
   const commitLabel = () => {
     const next = label.trim() || defaults.label;
@@ -46,10 +57,6 @@ export default function StepSideDrawer({
   const setIcon = (slug: string) => onUpdate({ icon: slug });
   const setColor = (hex: string) => onUpdate({ color: hex });
   const resetColor = () => onUpdate({ color: null });
-
-  const isTrafficSource = step.step_type.startsWith('traffic_');
-  const isPage = step.step_type.startsWith('page_');
-  const isOffer = step.step_type.startsWith('offer_');
 
   const relevantIconGroups: string[] =
     isPage ? ['Pages', 'Actions'] :
@@ -205,6 +212,74 @@ export default function StepSideDrawer({
           </div>
         </div>
 
+        {/* Metrics */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setMetricsOpen((v) => !v)}
+            className="w-full flex items-center justify-between text-2xs uppercase tracking-wider font-semibold text-muted hover:text-ink transition-colors mb-2"
+          >
+            <span>Forecast metrics</span>
+            {metricsOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+          </button>
+          {metricsOpen && (
+            <div className="space-y-3">
+              {isTrafficSource && (
+                <MetricField
+                  label="Visitors"
+                  hint="How many visitors this source delivers"
+                  value={step.metrics?.visitors}
+                  onChange={(v) => updateMetric('visitors', v)}
+                />
+              )}
+              {!isTrafficSource && (
+                <MetricField
+                  label="Visitors (override)"
+                  hint="Leave blank to inherit from upstream edges"
+                  value={step.metrics?.visitors}
+                  onChange={(v) => updateMetric('visitors', v)}
+                  placeholder="auto"
+                />
+              )}
+              <MetricField
+                label="Conversion rate"
+                hint="% of visitors that proceed to the next step"
+                value={step.metrics?.conversion_rate}
+                onChange={(v) => updateMetric('conversion_rate', v)}
+                suffix="%"
+                placeholder="0"
+              />
+              {(isOffer || isPage) && (
+                <MetricField
+                  label="Value per conversion"
+                  hint="Revenue generated per conversion at this step"
+                  value={step.metrics?.value}
+                  onChange={(v) => updateMetric('value', v)}
+                  prefix="$"
+                  placeholder="0"
+                />
+              )}
+              <MetricField
+                label={isTrafficSource ? 'Cost per visitor' : 'Cost per conversion'}
+                hint={isTrafficSource ? 'CPC or cost per visitor from this source' : 'Cost per conversion at this step'}
+                value={step.metrics?.cost}
+                onChange={(v) => updateMetric('cost', v)}
+                prefix="$"
+                placeholder="0"
+              />
+              {showRecurring && (
+                <MetricField
+                  label="Recurring months"
+                  hint="Months of recurring revenue per conversion (LTV)"
+                  value={step.metrics?.recurring_months}
+                  onChange={(v) => updateMetric('recurring_months', v)}
+                  placeholder="1"
+                />
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Notes */}
         <Field label="Notes (private)">
           <textarea
@@ -240,6 +315,39 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div>
       <label className="block text-2xs uppercase tracking-wider font-semibold text-muted mb-1.5">{label}</label>
       {children}
+    </div>
+  );
+}
+
+function MetricField({
+  label, hint, value, onChange, prefix, suffix, placeholder = '',
+}: {
+  label: string; hint: string;
+  value: number | null | undefined;
+  onChange: (raw: string) => void;
+  prefix?: string; suffix?: string; placeholder?: string;
+}) {
+  const [local, setLocal] = useState(value != null ? String(value) : '');
+  useEffect(() => { setLocal(value != null ? String(value) : ''); }, [value]);
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-1">
+        <span className="text-detail font-medium text-ink">{label}</span>
+      </div>
+      <div className="flex items-center bg-white border border-edge rounded-lg focus-within:border-teal transition-colors">
+        {prefix && <span className="text-detail text-muted pl-2.5 select-none">{prefix}</span>}
+        <input
+          type="number"
+          inputMode="decimal"
+          step="any"
+          value={local}
+          placeholder={placeholder}
+          onChange={(e) => { setLocal(e.target.value); onChange(e.target.value); }}
+          className="flex-1 px-2.5 py-1.5 text-caption bg-transparent outline-none min-w-0"
+        />
+        {suffix && <span className="text-detail text-muted pr-2.5 select-none">{suffix}</span>}
+      </div>
+      <p className="text-2xs text-muted/70 mt-0.5 leading-snug">{hint}</p>
     </div>
   );
 }
