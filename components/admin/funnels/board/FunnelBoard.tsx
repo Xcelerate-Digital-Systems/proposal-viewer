@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useRef, useState, useCallback, useEffect, useMemo } from 'react';
+import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import {
   ReactFlow, ReactFlowProvider, Controls, MiniMap, Background, BackgroundVariant, useReactFlow,
   ConnectionMode, type NodeTypes, type EdgeTypes, type Node, type Edge, Panel,
@@ -9,10 +9,8 @@ import {
 import '@xyflow/react/dist/style.css';
 import { Loader2, MousePointer, Undo2, Redo2 } from 'lucide-react';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
-import { computeForecast, formatCount, type Forecast } from '@/lib/funnel/forecast';
-
-const ForecastCtx = createContext<Forecast | null>(null);
-export function useForecast() { return useContext(ForecastCtx); }
+import { computeForecast, formatCount } from '@/lib/funnel/forecast';
+import { ForecastCtx } from './ForecastContext';
 import BoardSummary from './BoardSummary';
 import FunnelStepNode from './nodes/FunnelStepNode';
 import StickyNoteNode from '@/components/admin/feedback/board/nodes/StickyNoteNode';

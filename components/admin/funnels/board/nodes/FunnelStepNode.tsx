@@ -16,7 +16,7 @@ import type { FunnelStep } from '@/lib/supabase';
 import { FUNNEL_STEP_DEFAULTS } from '@/lib/types/funnel';
 import { formatCount } from '@/lib/funnel/forecast';
 import { useFunnelBoardContext } from '../FunnelBoardContext';
-import { useForecast } from '../FunnelBoard';
+import { useForecast } from '../ForecastContext';
 import PageMockup, { PAGE_MOCKUP_W, PAGE_MOCKUP_H } from './PageMockup';
 
 export interface FunnelStepNodeData extends Record<string, unknown> {
