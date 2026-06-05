@@ -73,7 +73,7 @@ export default function PublicKanbanView({
   const commentCounts = useMemo(() => {
     const counts: Record<string, { total: number; unresolved: number }> = {};
     for (const c of comments) {
-      if (c.parent_comment_id) continue;
+      if (c.parent_comment_id || !c.review_item_id) continue;
       const id = c.review_item_id;
       if (!counts[id]) counts[id] = { total: 0, unresolved: 0 };
       counts[id].total += 1;
@@ -197,13 +197,16 @@ function KanbanColumn({
       <div
         ref={setNodeRef}
         style={ringStyle}
-        className={`flex-1 rounded-2xl p-3 space-y-2.5 overflow-y-auto transition-colors ${
-          dragActive && !isDropAllowed ? 'bg-surface opacity-60' : 'bg-surface'
+        className={`flex-1 rounded-2xl p-3 space-y-2.5 overflow-y-auto transition-colors border-2 border-dashed ${
+          isOver ? 'border-transparent' :
+          dragActive && !isDropAllowed ? 'bg-surface/60 border-gray-200 opacity-60' :
+          items.length === 0 ? 'bg-gray-50 border-gray-200' :
+          'bg-surface border-transparent'
         }`}
       >
         {items.length === 0 ? (
-          <div className="text-detail text-faint italic text-center py-4">
-            {dragActive && !isDropAllowed ? 'Not available' : 'No items'}
+          <div className="text-detail text-faint italic text-center py-8">
+            {dragActive && !isDropAllowed ? 'Not available' : 'Drag an asset here.'}
           </div>
         ) : (
           items.map((item) => (

@@ -8,7 +8,7 @@ import { TYPE_ICONS, type CommentWithItem } from './types';
 interface Props {
   comment: CommentWithItem;
   onSelect: () => void;
-  onViewItem: () => void;
+  onViewItem?: () => void;
   onToggleResolve: () => void;
   onOpenTasks?: () => void;
   memberNameMap?: Record<string, string>;
@@ -130,17 +130,19 @@ export default function FeedbackRow({
             {hasTasks ? 'Tasks' : 'Task'}
           </button>
         )}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onViewItem();
-          }}
-          title="Open item"
-          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-detail font-medium text-dim hover:text-ink hover:bg-surface transition-colors"
-        >
-          <ExternalLink size={11} />
-          View
-        </button>
+        {onViewItem && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewItem();
+            }}
+            title="Open item"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-detail font-medium text-dim hover:text-ink hover:bg-surface transition-colors"
+          >
+            <ExternalLink size={11} />
+            View
+          </button>
+        )}
         <button
           onClick={(e) => {
             e.stopPropagation();

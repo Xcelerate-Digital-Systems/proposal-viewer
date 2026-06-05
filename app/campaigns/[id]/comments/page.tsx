@@ -17,6 +17,7 @@ import { supabase, type FeedbackProject, type FeedbackItem, type FeedbackComment
 import type { CommentTask, CommentTaskAttachment, FeedbackCommentPriority } from '@/lib/types/feedback';
 import { PRIORITY_OPTIONS } from '@/components/feedback/comments/PrioritySelector';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 
@@ -283,7 +284,8 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
     if (!trimmed) return false;
 
     const insertData: Record<string, unknown> = {
-      review_item_id: parent.review_item_id,
+      review_item_id: parent.review_item_id ?? null,
+      review_project_id: parent.review_project_id ?? projectId,
       company_id: companyId,
       parent_comment_id: parent.id,
       thread_number: null,
@@ -312,21 +314,78 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
     setAllComments((prev) => [...prev, data as FeedbackComment]);
 
     if (project?.share_token) {
-      const item = items.find((i) => i.id === parent.review_item_id);
+      const item = parent.review_item_id
+        ? items.find((i) => i.id === parent.review_item_id)
+        : null;
       fetch('/api/review-notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event_type: 'review_comment_added',
           share_token: project.share_token,
-          review_item_id: parent.review_item_id,
+          review_item_id: parent.review_item_id ?? null,
           review_comment_id: data.id,
           comment_author: authorName,
           comment_author_email: teamMember?.email || null,
           author_user_id: session?.user?.id || null,
           comment_content: trimmed,
-          item_title: item?.title,
+          item_title: item?.title ?? project.title,
           parent_comment_id: parent.id,
+          author_type: 'team',
+        }),
+      }).catch(() => {});
+    }
+
+    return true;
+  };
+
+  // ── Submit new project-level comment ─────────────────────────────
+  const handleSubmitGeneralComment = async (content: string) => {
+    const trimmed = content.trim();
+    if (!trimmed) return false;
+
+    const insertData: Record<string, unknown> = {
+      review_item_id: null,
+      review_project_id: projectId,
+      company_id: companyId,
+      parent_comment_id: null,
+      thread_number: null,
+      author_name: authorName,
+      author_email: teamMember?.email || null,
+      author_user_id: session?.user?.id || null,
+      author_type: 'team',
+      content: trimmed,
+      comment_type: 'general',
+      pin_x: null,
+      pin_y: null,
+    };
+
+    const { data, error } = await supabase
+      .from('review_comments')
+      .insert(insertData)
+      .select()
+      .single();
+
+    if (error || !data) {
+      toast.error('Failed to post comment');
+      return false;
+    }
+
+    setAllComments((prev) => [data as FeedbackComment, ...prev]);
+
+    if (project?.share_token) {
+      fetch('/api/review-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_type: 'review_comment_added',
+          share_token: project.share_token,
+          review_comment_id: data.id,
+          comment_author: authorName,
+          comment_author_email: teamMember?.email || null,
+          author_user_id: session?.user?.id || null,
+          comment_content: trimmed,
+          item_title: project.title,
           author_type: 'team',
         }),
       }).catch(() => {});
@@ -510,19 +569,25 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
             <div className="w-6 h-6 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
           </div>
         ) : enrichedComments.length === 0 && completions.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <MessageSquare size={28} className="text-faint" />
+          <div className="space-y-4">
+            <GeneralCommentComposer onSubmit={handleSubmitGeneralComment} />
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <MessageSquare size={28} className="text-faint" />
+              </div>
+              <h3 className="text-lg font-semibold text-dim mb-1">No feedback yet</h3>
+              <p className="text-sm text-faint">
+                Feedback from clients and team members will appear here.
+              </p>
             </div>
-            <h3 className="text-lg font-semibold text-dim mb-1">No feedback yet</h3>
-            <p className="text-sm text-faint">
-              Feedback from clients and team members will appear here.
-            </p>
           </div>
         ) : (
           <div className="flex gap-6 h-full -mx-1">
             {/* Left column — comments */}
             <div className={`min-w-0 overflow-y-auto space-y-4 px-1 ${showTasks ? 'hidden lg:block lg:w-[55%]' : 'w-full lg:w-[55%]'}`}>
+              {/* General comment composer */}
+              <GeneralCommentComposer onSubmit={handleSubmitGeneralComment} />
+
               {/* Open / Resolved toggle + comment list */}
               <div className="bg-white rounded-2xl shadow-card overflow-hidden">
                 {/* Filter bar */}
@@ -610,10 +675,11 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
                         key={comment.id}
                         comment={comment}
                         onSelect={() => setSelectedComment(comment)}
-                        onViewItem={() =>
-                          router.push(
-                            `/campaigns/${projectId}/assets/${comment.review_item_id}?type=${encodeURIComponent(comment.item_type)}`
-                          )
+                        onViewItem={comment.review_item_id
+                          ? () => router.push(
+                              `/campaigns/${projectId}/assets/${comment.review_item_id}?type=${encodeURIComponent(comment.item_type)}`
+                            )
+                          : undefined
                         }
                         onToggleResolve={() => handleToggleResolve(comment, !comment.resolved)}
                         onOpenTasks={() => setTaskingComment(comment)}
@@ -734,7 +800,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           itemType={selectedTaskDetail.comment.item_type}
           itemUrl={selectedTaskDetail.comment.item_url}
           projectId={projectId}
-          reviewItemId={selectedTaskDetail.comment.review_item_id}
+          reviewItemId={selectedTaskDetail.comment.review_item_id ?? undefined}
           companyId={companyId}
           currentMemberId={currentMemberId}
           memberNameMap={memberNameMap}
@@ -803,6 +869,54 @@ function TaskRow({ task, memberNameMap, onToggleComplete, onViewComment }: {
           <span className="text-2xs text-faint">{task.attachments.length} file{task.attachments.length !== 1 ? 's' : ''}</span>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  General comment composer                                           */
+/* ------------------------------------------------------------------ */
+
+function GeneralCommentComposer({ onSubmit }: { onSubmit: (content: string) => Promise<boolean> }) {
+  const [value, setValue] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const isEmpty = !value.trim();
+
+  const handleSubmit = async () => {
+    if (isEmpty || submitting) return;
+    setSubmitting(true);
+    const ok = await onSubmit(value);
+    setSubmitting(false);
+    if (ok) setValue('');
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-card overflow-hidden px-5 py-4">
+      <p className="text-xs font-medium text-dim mb-2">Add a general comment</p>
+      <div className="flex items-start gap-3">
+        <textarea
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
+          placeholder="Leave feedback about this campaign…"
+          rows={2}
+          className="flex-1 text-sm rounded-lg border border-edge-strong px-3 py-2.5 text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal resize-none"
+        />
+        <Button
+          size="sm"
+          loading={submitting}
+          disabled={isEmpty || submitting}
+          leftIcon={Send}
+          onClick={handleSubmit}
+        >
+          Post
+        </Button>
+      </div>
     </div>
   );
 }

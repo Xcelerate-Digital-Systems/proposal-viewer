@@ -37,8 +37,8 @@ export default function PublicItemsGrid({
   const commentCounts = useMemo(() => {
     const counts: Record<string, { total: number; unresolved: number }> = {};
     for (const c of comments) {
-      if (c.parent_comment_id) continue;
       const id = c.review_item_id;
+      if (c.parent_comment_id || !id) continue;
       if (!counts[id]) counts[id] = { total: 0, unresolved: 0 };
       counts[id].total += 1;
       if (!c.resolved) counts[id].unresolved += 1;

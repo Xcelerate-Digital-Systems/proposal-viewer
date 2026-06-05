@@ -76,7 +76,7 @@ export default function WhiteboardSidebar({
   const commentCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const c of comments) {
-      if (!c.parent_comment_id) {
+      if (!c.parent_comment_id && c.review_item_id) {
         counts[c.review_item_id] = (counts[c.review_item_id] || 0) + 1;
       }
     }

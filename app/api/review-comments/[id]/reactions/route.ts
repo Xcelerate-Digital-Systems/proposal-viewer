@@ -26,7 +26,7 @@ async function authoriseReactionAccess(req: NextRequest, commentId: string) {
   // Load the comment (needed for both paths)
   const { data: comment, error: commentErr } = await supabase
     .from('review_comments')
-    .select('id, company_id, review_item_id')
+    .select('id, company_id, review_item_id, review_project_id')
     .eq('id', commentId)
     .single();
 
@@ -47,20 +47,29 @@ async function authoriseReactionAccess(req: NextRequest, commentId: string) {
   }
 
   // Public path — verify share_token matches the comment's review project
-  const { data: item } = await supabase
-    .from('review_items')
-    .select('id, review_project_id')
-    .eq('id', comment.review_item_id)
-    .single();
+  let projectId: string | null = null;
+  if (comment.review_item_id) {
+    const { data: item } = await supabase
+      .from('review_items')
+      .select('id, review_project_id')
+      .eq('id', comment.review_item_id)
+      .single();
+    if (!item) {
+      return { error: NextResponse.json({ error: 'Review item not found' }, { status: 404 }) };
+    }
+    projectId = item.review_project_id;
+  } else {
+    projectId = comment.review_project_id as string | null;
+  }
 
-  if (!item) {
-    return { error: NextResponse.json({ error: 'Review item not found' }, { status: 404 }) };
+  if (!projectId) {
+    return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
   }
 
   const { data: project } = await supabase
     .from('review_projects')
     .select('id')
-    .eq('id', item.review_project_id)
+    .eq('id', projectId)
     .eq('share_token', shareToken)
     .maybeSingle();
 

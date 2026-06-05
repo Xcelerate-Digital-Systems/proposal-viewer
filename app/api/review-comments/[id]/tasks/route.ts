@@ -24,7 +24,7 @@ async function loadAuthorisedComment(req: NextRequest, commentId: string) {
   const supabase = createServiceClient();
   const { data: comment, error } = await supabase
     .from('review_comments')
-    .select('id, company_id, review_item_id, content')
+    .select('id, company_id, review_item_id, review_project_id, content')
     .eq('id', commentId)
     .single();
 
@@ -40,7 +40,8 @@ async function loadAuthorisedComment(req: NextRequest, commentId: string) {
 
 async function notifyTaskAssignee(params: {
   commentId: string;
-  reviewItemId: string;
+  reviewItemId: string | null;
+  reviewProjectId: string | null;
   companyId: string;
   assignedToId: string;
   assignedById: string | null;
@@ -51,11 +52,13 @@ async function notifyTaskAssignee(params: {
     const supabase = createServiceClient();
 
     const [{ data: item }, { data: assignee }, { data: assigner }] = await Promise.all([
-      supabase
-        .from('review_items')
-        .select('title, review_project_id')
-        .eq('id', params.reviewItemId)
-        .maybeSingle(),
+      params.reviewItemId
+        ? supabase
+            .from('review_items')
+            .select('title, review_project_id')
+            .eq('id', params.reviewItemId)
+            .maybeSingle()
+        : { data: null },
       supabase
         .from('team_members')
         .select('id, name, email, user_id')
@@ -70,12 +73,15 @@ async function notifyTaskAssignee(params: {
         : { data: null },
     ]);
 
-    if (!item || !assignee?.email) return;
+    if (!assignee?.email) return;
+
+    const projectId = item?.review_project_id ?? params.reviewProjectId;
+    if (!projectId) return;
 
     const { data: project } = await supabase
       .from('review_projects')
       .select('id, title, company_id')
-      .eq('id', item.review_project_id)
+      .eq('id', projectId)
       .maybeSingle();
     if (!project) return;
 
@@ -86,7 +92,9 @@ async function notifyTaskAssignee(params: {
       .maybeSingle();
 
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
-    const itemUrl = `${appUrl}/campaigns/${project.id}/assets/${params.reviewItemId}`;
+    const itemUrl = params.reviewItemId
+      ? `${appUrl}/campaigns/${project.id}/assets/${params.reviewItemId}`
+      : `${appUrl}/campaigns/${project.id}/comments`;
     const companyName = company?.name || 'Your agency';
     const accentColor = company?.accent_color || '#017C87';
     const logoUrl = company?.logo_path
@@ -100,6 +108,8 @@ async function notifyTaskAssignee(params: {
       ? htmlToPlainText(params.commentContent).slice(0, 300)
       : null;
 
+    const itemTitle = item?.title ?? null;
+
     // Email
     try {
       const { fromEmail } = await import('@/lib/resend');
@@ -109,7 +119,7 @@ async function notifyTaskAssignee(params: {
         branding: { companyName, accentColor, logoUrl },
         projectTitle: project.title,
         itemUrl,
-        itemTitle: item.title ?? null,
+        itemTitle,
         assignerName,
         assigneeName,
         commentContent: plainComment,
@@ -132,14 +142,17 @@ async function notifyTaskAssignee(params: {
       const { insertInAppNotifications, resolveUserIdsForTeamMembers } = await import('@/lib/in-app-notifications');
       const userIds = await resolveUserIdsForTeamMembers(supabase, [params.assignedToId]);
       if (userIds.length > 0) {
+        const link = params.reviewItemId
+          ? `/campaigns/${project.id}/assets/${params.reviewItemId}`
+          : `/campaigns/${project.id}/comments`;
         await insertInAppNotifications({
           supabase,
           companyId: params.companyId,
           userIds,
           category: 'review_comment',
-          title: `${assignerName} assigned you a task${item.title ? ` on ${item.title}` : ''}`,
+          title: `${assignerName} assigned you a task${itemTitle ? ` on ${itemTitle}` : ''}`,
           body: plainComment?.slice(0, 200) ?? params.instructions?.slice(0, 200) ?? null,
-          link: `/campaigns/${project.id}/assets/${params.reviewItemId}`,
+          link,
         });
       }
     } catch (err) {
@@ -234,7 +247,8 @@ export async function POST(req: NextRequest, props: RouteContext) {
     // Fire-and-forget notification
     void notifyTaskAssignee({
       commentId: params.id,
-      reviewItemId: comment.review_item_id as string,
+      reviewItemId: (comment.review_item_id as string | null) ?? null,
+      reviewProjectId: (comment.review_project_id as string | null) ?? null,
       companyId: comment.company_id as string,
       assignedToId: assignedTo,
       assignedById: memberId,

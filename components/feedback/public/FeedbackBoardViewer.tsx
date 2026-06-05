@@ -68,7 +68,7 @@ export default function FeedbackBoardViewer({
   const commentCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const c of comments) {
-      if (!c.parent_comment_id && !c.resolved) {
+      if (!c.parent_comment_id && !c.resolved && c.review_item_id) {
         counts[c.review_item_id] = (counts[c.review_item_id] || 0) + 1;
       }
     }

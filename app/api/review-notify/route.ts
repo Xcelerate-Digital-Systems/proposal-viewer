@@ -123,16 +123,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Feedback project not found' }, { status: 404 });
     }
 
-    // Validate that the review_comment_id belongs to an item in this project.
+    // Validate that the review_comment_id belongs to this project
+    // (either via its item's project, or directly via review_project_id).
     if (review_comment_id) {
       const { data: commentRow } = await supabase
         .from('review_comments')
-        .select('id, review_item_id, review_items:review_item_id(review_project_id)')
+        .select('id, review_item_id, review_project_id, review_items:review_item_id(review_project_id)')
         .eq('id', review_comment_id)
         .maybeSingle();
-      const rel = (commentRow as { review_items?: { review_project_id?: string } | { review_project_id?: string }[] } | null)?.review_items;
-      const arr = Array.isArray(rel) ? rel : rel ? [rel] : [];
-      const commentProjectId = arr[0]?.review_project_id ?? null;
+
+      let commentProjectId: string | null = null;
+      if (commentRow?.review_item_id) {
+        const rel = (commentRow as { review_items?: { review_project_id?: string } | { review_project_id?: string }[] }).review_items;
+        const arr = Array.isArray(rel) ? rel : rel ? [rel] : [];
+        commentProjectId = arr[0]?.review_project_id ?? null;
+      } else {
+        commentProjectId = (commentRow as { review_project_id?: string } | null)?.review_project_id ?? null;
+      }
+
       if (!commentRow || commentProjectId !== project.id) {
         return NextResponse.json(
           { error: 'review_comment_id does not belong to this project' },

@@ -427,8 +427,10 @@ export default function FeedbackModal({
               )}
 
               <div>
-                <p className="text-xs font-medium text-dim mb-1.5">Item</p>
-                {projectId ? (
+                <p className="text-xs font-medium text-dim mb-1.5">
+                  {comment.review_item_id ? 'Item' : 'Scope'}
+                </p>
+                {comment.review_item_id && projectId ? (
                   <a
                     href={`/campaigns/${projectId}/assets/${comment.review_item_id}`}
                     className="flex items-center gap-2 text-sm text-teal hover:text-teal-hover transition-colors group"

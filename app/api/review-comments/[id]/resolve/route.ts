@@ -27,7 +27,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     // Verify the comment exists and belongs to the user's company
     const { data: comment, error: commentErr } = await supabase
       .from('review_comments')
-      .select('id, company_id, review_item_id, resolved')
+      .select('id, company_id, review_item_id, review_project_id, resolved')
       .eq('id', params.id)
       .single();
 
@@ -63,36 +63,51 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     // Fire notification if resolving (not unresolving)
     if (resolved) {
       try {
-        const { data: itemData } = await supabase
-          .from('review_items')
-          .select('title, review_project_id')
-          .eq('id', comment.review_item_id)
-          .single();
+        let shareToken: string | null = null;
+        let itemTitle: string | null = null;
 
-        if (itemData) {
-          const { data: projectData } = await supabase
-            .from('review_projects')
-            .select('share_token')
-            .eq('id', itemData.review_project_id)
+        if (comment.review_item_id) {
+          const { data: itemData } = await supabase
+            .from('review_items')
+            .select('title, review_project_id')
+            .eq('id', comment.review_item_id)
             .single();
 
-          if (projectData) {
-            const notifyUrl = new URL('/api/review-notify', req.url);
-            fetch(notifyUrl.toString(), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
-              body: JSON.stringify({
-                event_type: 'review_comment_resolved',
-                share_token: projectData.share_token,
-                review_item_id: comment.review_item_id,
-                resolved_by: resolved_by || auth.member.name || 'Team',
-                comment_author_email: auth.member.email || null,
-                author_user_id: auth.member.user_id,
-                item_title: itemData.title,
-                author_type: 'team',
-              }),
-            }).catch(() => {});
+          if (itemData) {
+            itemTitle = itemData.title;
+            const { data: projectData } = await supabase
+              .from('review_projects')
+              .select('share_token')
+              .eq('id', itemData.review_project_id)
+              .single();
+            shareToken = projectData?.share_token ?? null;
           }
+        } else if (comment.review_project_id) {
+          const { data: projectData } = await supabase
+            .from('review_projects')
+            .select('share_token, title')
+            .eq('id', comment.review_project_id)
+            .single();
+          shareToken = projectData?.share_token ?? null;
+          itemTitle = projectData?.title ?? null;
+        }
+
+        if (shareToken) {
+          const notifyUrl = new URL('/api/review-notify', req.url);
+          fetch(notifyUrl.toString(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
+            body: JSON.stringify({
+              event_type: 'review_comment_resolved',
+              share_token: shareToken,
+              review_item_id: comment.review_item_id ?? null,
+              resolved_by: resolved_by || auth.member.name || 'Team',
+              comment_author_email: auth.member.email || null,
+              author_user_id: auth.member.user_id,
+              item_title: itemTitle,
+              author_type: 'team',
+            }),
+          }).catch(() => {});
         }
       } catch {
         // Non-critical
