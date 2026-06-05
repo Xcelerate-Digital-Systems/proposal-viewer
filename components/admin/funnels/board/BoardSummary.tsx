@@ -1,6 +1,6 @@
 'use client';
 
-import { formatMoney } from '@/lib/funnel/forecast';
+import { formatMoney, formatCount } from '@/lib/funnel/forecast';
 import type { Forecast } from '@/lib/funnel/forecast';
 import type { FunnelCurrency, FunnelForecastPeriod } from '@/lib/supabase';
 
@@ -26,6 +26,14 @@ export default function BoardSummary({ forecast, currency = 'USD', period }: Pro
                      : period === 'yearly'  ? 'Profit / yr'
                      : 'Profit';
 
+  let totalVisitors = 0;
+  let totalConversions = 0;
+  forecast.visitorsByStep.forEach((v) => { totalVisitors += v; });
+  forecast.conversionsByStep.forEach((c) => { totalConversions += c; });
+  const overallCvr = totalVisitors > 0
+    ? `${((totalConversions / totalVisitors) * 100).toFixed(1)}%`
+    : '—';
+
   return (
     <div
       className="flex items-center gap-3 bg-white rounded-lg border border-edge shadow-sm px-3.5 py-2"
@@ -38,6 +46,27 @@ export default function BoardSummary({ forecast, currency = 'USD', period }: Pro
       >
         Forecast
       </span>
+      <Divider />
+      <Stat
+        label="Visitors"
+        value={formatCount(totalVisitors)}
+        tone="neutral"
+        tooltip="Total visitors entering the funnel"
+      />
+      <Divider />
+      <Stat
+        label="Conversions"
+        value={formatCount(totalConversions)}
+        tone="neutral"
+        tooltip="Total conversions across all steps"
+      />
+      <Divider />
+      <Stat
+        label="CVR"
+        value={overallCvr}
+        tone="neutral"
+        tooltip="Overall conversion rate (conversions / visitors)"
+      />
       <Divider />
       <Stat
         label={revenueLabel}
