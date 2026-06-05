@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, use } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   MessageSquare, CheckCircle2, Circle, CircleDashed,
-  ListTodo, Paperclip,
+  ListTodo, Paperclip, Send,
 } from 'lucide-react';
 import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHeader';
 import AddFeedbackItemModal from '@/components/admin/feedback/AddFeedbackItemModal';
@@ -157,26 +157,39 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
     setItems(fetchedItems);
 
     const itemIds = fetchedItems.map((i) => i.id);
-    if (itemIds.length > 0) {
-      const { data: commentsData } = await supabase
+
+    // Fetch item-level comments and project-level comments in parallel
+    const [itemCommentsRes, projectCommentsRes] = await Promise.all([
+      itemIds.length > 0
+        ? supabase
+            .from('review_comments')
+            .select('*')
+            .in('review_item_id', itemIds)
+            .order('created_at', { ascending: false })
+        : Promise.resolve({ data: [] }),
+      supabase
         .from('review_comments')
         .select('*')
-        .in('review_item_id', itemIds)
-        .order('created_at', { ascending: false });
+        .eq('review_project_id', projectId)
+        .is('review_item_id', null)
+        .order('created_at', { ascending: false }),
+    ]);
 
-      const comments = commentsData || [];
-      setAllComments(comments);
+    const comments = [
+      ...(itemCommentsRes.data || []),
+      ...(projectCommentsRes.data || []),
+    ] as FeedbackComment[];
+    setAllComments(comments);
 
-      // Fetch tasks for all comments in the project
-      const commentIds = comments.filter((c) => !c.parent_comment_id).map((c) => c.id);
-      if (commentIds.length > 0) {
-        const { data: tasksData } = await supabase
-          .from('comment_tasks')
-          .select('*')
-          .in('comment_id', commentIds)
-          .order('created_at', { ascending: true });
-        setAllTasks((tasksData as CommentTask[]) || []);
-      }
+    // Fetch tasks for all comments in the project
+    const commentIds = comments.filter((c) => !c.parent_comment_id).map((c) => c.id);
+    if (commentIds.length > 0) {
+      const { data: tasksData } = await supabase
+        .from('comment_tasks')
+        .select('*')
+        .in('comment_id', commentIds)
+        .order('created_at', { ascending: true });
+      setAllTasks((tasksData as CommentTask[]) || []);
     }
 
     const { data: completionsData } = await supabase
@@ -224,12 +237,13 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
     const topLevel = allComments.filter((c) => !c.parent_comment_id);
 
     return topLevel.map((c) => {
-      const item = itemMap.get(c.review_item_id);
+      const isProjectLevel = !c.review_item_id;
+      const item = c.review_item_id ? itemMap.get(c.review_item_id) : null;
       const replies = allComments.filter((r) => r.parent_comment_id === c.id);
       return {
         ...c,
-        item_title: item?.title || 'Unknown item',
-        item_type: item?.type || 'image',
+        item_title: isProjectLevel ? 'Campaign' : (item?.title || 'Unknown item'),
+        item_type: isProjectLevel ? 'campaign' : (item?.type || 'image'),
         item_url: item?.url || null,
         reply_count: replies.length,
         screenshot_url: (c as Record<string, unknown>).screenshot_url as string | null,
@@ -309,6 +323,7 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           review_comment_id: data.id,
           comment_author: authorName,
           comment_author_email: teamMember?.email || null,
+          author_user_id: session?.user?.id || null,
           comment_content: trimmed,
           item_title: item?.title,
           parent_comment_id: parent.id,

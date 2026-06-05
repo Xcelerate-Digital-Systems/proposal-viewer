@@ -414,6 +414,7 @@ function ItemViewerContent({
             review_comment_id: data.id,
             comment_author: authorName,
             comment_author_email: teamMember?.email || null,
+            author_user_id: session?.user?.id || null,
             comment_content: content.trim(),
             item_title: currentItem?.title,
             parent_comment_id: parentId || null,

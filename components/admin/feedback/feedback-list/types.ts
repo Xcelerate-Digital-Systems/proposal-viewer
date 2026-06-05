@@ -1,10 +1,13 @@
-import { Globe, Image as ImageIcon, Mail, Smartphone, Monitor, MessageSquare } from 'lucide-react';
+import { Globe, Image as ImageIcon, Mail, Smartphone, Monitor, MessageSquare, FolderOpen } from 'lucide-react';
 import type { FeedbackComment, CommentTask } from '@/lib/supabase';
 
 /**
  * Comment row enriched with denormalised item info — used by the project-wide
  * feedback list and its detail modal. Matches the shape produced when joining
  * `review_comments` to its parent `review_items`.
+ *
+ * Project-level comments (review_item_id is null) use item_title = 'Campaign'
+ * and item_type = 'campaign'.
  */
 export type CommentWithItem = FeedbackComment & {
   item_title: string;
@@ -24,6 +27,7 @@ export const TYPE_ICONS: Record<string, typeof Globe> = {
   email: Mail,
   sms: Smartphone,
   ad: Monitor,
+  campaign: FolderOpen,
 };
 
 export const FALLBACK_TYPE_ICON = MessageSquare;

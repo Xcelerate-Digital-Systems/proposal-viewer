@@ -727,11 +727,13 @@ function LineItemTemplatesView({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
       {templates.map((t) => (
-        <button
+        <div
           key={t.id}
-          type="button"
+          role="button"
+          tabIndex={0}
           onClick={() => onEdit(t)}
-          className="group relative bg-white rounded-2xl border border-edge-strong p-4 hover:shadow-md hover:border-teal/30 transition-all text-left"
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(t); } }}
+          className="group relative bg-white rounded-2xl border border-edge-strong p-4 hover:shadow-md hover:border-teal/30 transition-all text-left cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-teal"
         >
           <div className="flex items-start justify-between gap-2 mb-2">
             <h3 className="text-sm font-semibold text-ink truncate">{t.name}</h3>
@@ -764,7 +766,7 @@ function LineItemTemplatesView({
             </span>
             <span>{new Date(t.created_at).toLocaleDateString()}</span>
           </div>
-        </button>
+        </div>
       ))}
     </div>
   );
@@ -800,11 +802,13 @@ function PackageTemplatesView({
       {templates.map((t) => {
         const featureCount = Array.isArray(t.tier?.features) ? t.tier!.features!.length : 0;
         return (
-          <button
+          <div
             key={t.id}
-            type="button"
+            role="button"
+            tabIndex={0}
             onClick={() => onEdit(t)}
-            className="group relative bg-white rounded-2xl border border-edge-strong p-4 hover:shadow-md hover:border-teal/30 transition-all text-left"
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(t); } }}
+            className="group relative bg-white rounded-2xl border border-edge-strong p-4 hover:shadow-md hover:border-teal/30 transition-all text-left cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-teal"
           >
             <div className="flex items-start justify-between gap-2 mb-2">
               <h3 className="text-sm font-semibold text-ink truncate">{t.name}</h3>
@@ -836,7 +840,7 @@ function PackageTemplatesView({
               </span>
               <span>{new Date(t.created_at).toLocaleDateString()}</span>
             </div>
-          </button>
+          </div>
         );
       })}
     </div>

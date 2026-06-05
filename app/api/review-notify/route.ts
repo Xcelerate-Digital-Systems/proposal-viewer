@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
       parent_comment_id,
       resolved_by,
       item_title,
+      author_user_id,
     } = body as {
       event_type: ReviewEventType;
       share_token: string;
@@ -82,6 +83,7 @@ export async function POST(req: NextRequest) {
       parent_comment_id?: string;
       resolved_by?: string;
       item_title?: string;
+      author_user_id?: string;
     };
 
     if (!event_type || !share_token) {
@@ -158,7 +160,19 @@ export async function POST(req: NextRequest) {
     const isComment = event_type === 'review_comment_added';
     const isReply = isComment && !!parent_comment_id;
     const isNewVersion = event_type === 'review_item_new_version';
-    const actorEmail = (comment_author_email || '').trim().toLowerCase() || null;
+
+    // Resolve the actor's email. Prefer the client-supplied value, but fall
+    // back to the canonical author_email stored on the comment row — this
+    // guards against the client passing null/undefined.
+    let actorEmail = (comment_author_email || '').trim().toLowerCase() || null;
+    if (!actorEmail && review_comment_id) {
+      const { data: commentRow } = await supabase
+        .from('review_comments')
+        .select('author_email')
+        .eq('id', review_comment_id)
+        .maybeSingle();
+      actorEmail = commentRow?.author_email?.trim().toLowerCase() || null;
+    }
 
     // Resolve the item's current stage (when scoped to one). Stage is used to
     // filter assignees by their `stages` array and to keep internal-stage
@@ -280,7 +294,10 @@ export async function POST(req: NextRequest) {
           .filter((m) => m.targetEmail !== actorEmail)
           .map((m) => m.targetEmail);
         if (mentionEmails.length > 0) {
-          const userIds = await resolveUserIdsForCompanyEmails(supabase, project.company_id, mentionEmails);
+          let userIds = await resolveUserIdsForCompanyEmails(supabase, project.company_id, mentionEmails);
+          if (author_user_id) {
+            userIds = userIds.filter((uid) => uid !== author_user_id);
+          }
           if (userIds.length > 0) {
             await insertInAppNotifications({
               supabase,
@@ -362,9 +379,12 @@ export async function POST(req: NextRequest) {
         // In-app notifications for comments appear immediately even though
         // the email is batched into a 5-min digest window.
         try {
-          const commentUserIds = await resolveUserIdsForCompanyEmails(
+          let commentUserIds = await resolveUserIdsForCompanyEmails(
             supabase, project.company_id, Array.from(recipientEmails),
           );
+          if (author_user_id) {
+            commentUserIds = commentUserIds.filter((uid) => uid !== author_user_id);
+          }
           if (commentUserIds.length > 0) {
             const inAppCategory: NotificationCategory = isReply ? 'comment_added' : 'comment_added';
             await insertInAppNotifications({
@@ -425,9 +445,12 @@ export async function POST(req: NextRequest) {
 
         // In-app notifications for status / version events.
         try {
-          const statusUserIds = await resolveUserIdsForCompanyEmails(
+          let statusUserIds = await resolveUserIdsForCompanyEmails(
             supabase, project.company_id, Array.from(recipientEmails),
           );
+          if (author_user_id) {
+            statusUserIds = statusUserIds.filter((uid) => uid !== author_user_id);
+          }
           if (statusUserIds.length > 0) {
             const inAppCat: NotificationCategory =
               event_type === 'review_comment_resolved' ? 'comment_resolved'

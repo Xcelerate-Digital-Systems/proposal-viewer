@@ -449,7 +449,8 @@ export type FeedbackCommentPriority = 'high' | 'medium' | 'normal' | 'low' | 'no
 
 export type FeedbackComment = {
   id: string;
-  review_item_id: string;
+  review_item_id: string | null;
+  review_project_id: string | null;
   company_id: string;
   /** Which version of the item the comment was made on. Null means v1 (original). */
   version_id: string | null;

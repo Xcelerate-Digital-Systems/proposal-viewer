@@ -87,6 +87,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
                 review_item_id: comment.review_item_id,
                 resolved_by: resolved_by || auth.member.name || 'Team',
                 comment_author_email: auth.member.email || null,
+                author_user_id: auth.member.user_id,
                 item_title: itemData.title,
                 author_type: 'team',
               }),
