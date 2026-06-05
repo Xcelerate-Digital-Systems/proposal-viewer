@@ -54,6 +54,7 @@ export function computeForecast(
   steps: FunnelStep[],
   edges: FunnelBoardEdge[],
   period: FunnelForecastPeriod = 'total',
+  defaultDealValue: number | null = null,
 ): Forecast {
   const fc = emptyForecast();
   if (steps.length === 0) return fc;
@@ -130,7 +131,7 @@ export function computeForecast(
     // Costs / revenue per step. Recurring offer types multiply value by the
     // user-supplied recurring_months (defaults to 1) so subscription LTV is
     // captured without separate plumbing.
-    const value = step.metrics?.value ?? 0;
+    const value = step.metrics?.value ?? defaultDealValue ?? 0;
     const cost = step.metrics?.cost ?? 0;
     const ltvMultiplier = RECURRING_OFFER_TYPES.has(step.step_type)
       ? Math.max(1, step.metrics?.recurring_months ?? 1)

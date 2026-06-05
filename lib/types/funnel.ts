@@ -160,6 +160,10 @@ export type Funnel = {
   forecast_period: FunnelForecastPeriod;
   /** When set, this funnel was created as a "scenario" clone of another. */
   parent_funnel_id: string | null;
+  /** Default revenue per conversion for the whole funnel. Steps inherit this
+   *  when their own metrics.value is null. Lets agencies set "average deal
+   *  value" once instead of per-step. */
+  default_deal_value: number | null;
   /** Marks this funnel as a reusable template — hidden from the main funnels
    *  list and shown in the "Use template" gallery on the new-funnel flow. */
   is_template: boolean;

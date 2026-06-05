@@ -6,6 +6,7 @@ import {
   type Node, type Edge, type Connection, type NodeChange, type EdgeChange,
 } from '@xyflow/react';
 import type { FeedbackBoardShape, FeedbackBoardNote } from '@/lib/supabase';
+import { formatCount } from '@/lib/funnel/forecast';
 import { type FunnelStepNodeData } from './nodes/FunnelStepNode';
 import { type StickyNoteNodeData } from '@/components/admin/feedback/board/nodes/StickyNoteNode';
 import { type ShapeNodeData } from '@/components/admin/feedback/board/nodes/ShapeNode';
@@ -27,7 +28,7 @@ function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, delay: 
  * reads visual fields (shape_type, x/y/w/h, content, color, …) — never the
  * FK column.
  */
-export function useFunnelBoard() {
+export function useFunnelBoard(flowByEdge?: Map<string, number>) {
   const ctx = useFunnelBoardContextOrThrow();
   const {
     steps, boardNotes, shapes, boardEdges,
@@ -114,7 +115,11 @@ export function useFunnelBoard() {
 
       const isSelected = selectedEdge?.id === e.id;
       const userLabel = e.label || '';
-      const displayLabel = userLabel || undefined;
+      const edgeFlow = flowByEdge?.get(e.id);
+      const flowLabel = edgeFlow && edgeFlow > 0 ? formatCount(edgeFlow) : '';
+      const displayLabel = userLabel
+        ? (flowLabel ? `${userLabel}  ·  ${flowLabel}` : userLabel)
+        : (flowLabel || undefined);
 
       return {
         id: e.id,
@@ -137,7 +142,7 @@ export function useFunnelBoard() {
       } as Edge;
     });
     setEdges(flow);
-  }, [boardEdges, handleEdgeClickFromData, setEdges, selectedEdge?.id]);
+  }, [boardEdges, handleEdgeClickFromData, setEdges, selectedEdge?.id, flowByEdge]);
 
   /* ── Drag save ─────────────────────────────────────────────── */
 

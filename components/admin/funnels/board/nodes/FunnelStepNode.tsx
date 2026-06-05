@@ -14,7 +14,9 @@ import {
 } from 'lucide-react';
 import type { FunnelStep } from '@/lib/supabase';
 import { FUNNEL_STEP_DEFAULTS } from '@/lib/types/funnel';
+import { formatCount } from '@/lib/funnel/forecast';
 import { useFunnelBoardContext } from '../FunnelBoardContext';
+import { useForecast } from '../FunnelBoard';
 import PageMockup, { PAGE_MOCKUP_W, PAGE_MOCKUP_H } from './PageMockup';
 
 export interface FunnelStepNodeData extends Record<string, unknown> {
@@ -131,6 +133,7 @@ const ICON_SIZE = 88;
  *  value reserved empty whitespace below the text which inflated the gap
  *  between the label and the bottom-edge handle. */
 const LABEL_OFFSET = 22;
+const METRICS_H = 18;
 const LABEL_GAP = 8;
 
 // Handles anchored to the 88px circle (matches IconHandles geometry from
@@ -205,7 +208,11 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   const tint = step.color || defaults.tint;
 
   const ctx = useFunnelBoardContext();
+  const forecast = useForecast();
   const isSelected = selected || ctx?.selectedStepId === step.id;
+  const visitors = forecast?.visitorsByStep.get(step.id) ?? 0;
+  const conversions = forecast?.conversionsByStep.get(step.id) ?? 0;
+  const hasMetrics = visitors > 0;
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(step.label || defaults.label);
@@ -239,9 +246,10 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   // label so the next node's connection feels close.
   //   - Disc: disc (88) + gap (8) + label (56) = 152
   //   - Page: page (200) + gap (8) + label (56) = 264
+  const metricsRow = hasMetrics ? METRICS_H : 0;
   const frameH = isPage
-    ? PAGE_MOCKUP_H + LABEL_GAP + LABEL_OFFSET
-    : ICON_SIZE + LABEL_GAP + LABEL_OFFSET;
+    ? PAGE_MOCKUP_H + LABEL_GAP + LABEL_OFFSET + metricsRow
+    : ICON_SIZE + LABEL_GAP + LABEL_OFFSET + metricsRow;
 
   const labelEl = (
     <div className="flex items-start max-w-full px-1 w-full justify-center" style={{ height: LABEL_OFFSET }}>
@@ -342,18 +350,32 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
             {pageBody}
             <div style={{ height: LABEL_GAP }} aria-hidden />
             {labelEl}
-
+            {hasMetrics && <MetricsBadge visitors={visitors} conversions={conversions} />}
           </>
         ) : (
           <>
             {discBody}
             <div style={{ height: LABEL_GAP }} aria-hidden />
             {labelEl}
-
+            {hasMetrics && <MetricsBadge visitors={visitors} conversions={conversions} />}
           </>
         )}
       </div>
     </>
+  );
+}
+
+function MetricsBadge({ visitors, conversions }: { visitors: number; conversions: number }) {
+  return (
+    <div className="flex items-center justify-center gap-1.5 mt-0.5" style={{ height: METRICS_H }}>
+      <span className="text-2xs text-muted tabular-nums">{formatCount(visitors)}</span>
+      {conversions > 0 && conversions !== visitors && (
+        <>
+          <span className="text-2xs text-faint">→</span>
+          <span className="text-2xs text-teal font-medium tabular-nums">{formatCount(conversions)}</span>
+        </>
+      )}
+    </div>
   );
 }
 

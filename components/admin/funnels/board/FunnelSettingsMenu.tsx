@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Settings2, Check } from 'lucide-react';
+import { Settings2, Check, DollarSign } from 'lucide-react';
 import type { Funnel, FunnelCurrency, FunnelForecastPeriod } from '@/lib/supabase';
 import { FUNNEL_CURRENCIES, FUNNEL_PERIODS } from '@/lib/types/funnel';
 
@@ -60,6 +60,18 @@ export default function FunnelSettingsMenu({ funnel, onUpdate }: Props) {
             </div>
           </Section>
 
+          <Section label="Default deal value">
+            <DealValueInput
+              value={funnel.default_deal_value}
+              currency={FUNNEL_CURRENCIES.find((c) => c.code === funnel.currency)?.symbol ?? '$'}
+              onCommit={(v) => onUpdate({ default_deal_value: v })}
+            />
+            <p className="text-2xs text-muted mt-1.5 leading-snug">
+              Average revenue per conversion. Steps inherit this unless
+              they set their own value.
+            </p>
+          </Section>
+
           <Section label="Forecast period">
             <div className="space-y-1">
               {FUNNEL_PERIODS.map((p) => (
@@ -104,5 +116,32 @@ function Row({ active, onClick, children }: { active: boolean; onClick: () => vo
       {children}
       {active && <Check size={12} className="text-teal shrink-0" />}
     </button>
+  );
+}
+
+function DealValueInput({ value, currency, onCommit }: { value: number | null; currency: string; onCommit: (v: number | null) => void }) {
+  const [local, setLocal] = useState(value != null ? String(value) : '');
+  useEffect(() => { setLocal(value != null ? String(value) : ''); }, [value]);
+  const commit = () => {
+    const raw = local.trim();
+    const next = raw === '' ? null : Math.max(0, Number(raw) || 0);
+    if (next !== value) onCommit(next);
+  };
+  return (
+    <div className="flex items-center bg-white border border-edge rounded-lg focus-within:border-teal transition-colors">
+      <span className="text-xs text-muted pl-2.5 select-none">{currency}</span>
+      <input
+        type="number"
+        inputMode="decimal"
+        min={0}
+        step="any"
+        value={local}
+        placeholder="e.g. 5000"
+        onChange={(e) => setLocal(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+        className="flex-1 px-2 py-1.5 text-xs bg-transparent outline-none min-w-0"
+      />
+    </div>
   );
 }
