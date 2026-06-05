@@ -273,7 +273,7 @@ function SectionHeader({ title, description }: { title: string; description: str
   return (
     <div className="mb-5">
       <h2 className="text-base font-semibold text-ink">{title}</h2>
-      <p className="text-xs text-faint mt-0.5">{description}</p>
+      <p className="text-xs text-muted mt-0.5">{description}</p>
     </div>
   );
 }
@@ -298,7 +298,7 @@ function DeveloperSection({
           </div>
           <div>
             <h3 className="text-sm font-semibold text-ink">{title}</h3>
-            <p className="text-xs text-faint">{description}</p>
+            <p className="text-xs text-muted">{description}</p>
           </div>
         </div>
       </div>

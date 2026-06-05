@@ -46,6 +46,7 @@ export default function BusinessDetailsCard({ companyId, isOwner }: Props) {
   const [initial, setInitial] = useState<FormState>(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchCompany = useCallback(async () => {
     const headers = await getAuthHeaders();
@@ -78,6 +79,7 @@ export default function BusinessDetailsCard({ companyId, isOwner }: Props) {
 
   const save = async () => {
     setSaving(true);
+    setError(null);
     try {
       const headers = await getAuthHeaders();
       const res = await fetch(`/api/company?company_id=${companyId}`, {
@@ -96,7 +98,12 @@ export default function BusinessDetailsCard({ companyId, isOwner }: Props) {
         setInitial(form);
         setSavedAt(Date.now());
         setTimeout(() => setSavedAt(null), 2500);
+      } else {
+        const json = await res.json().catch(() => ({}));
+        setError(json.error || 'Failed to save business details');
       }
+    } catch {
+      setError('Network error saving details');
     } finally {
       setSaving(false);
     }
@@ -115,7 +122,7 @@ export default function BusinessDetailsCard({ companyId, isOwner }: Props) {
         </div>
         <div>
           <h2 className="text-sm font-semibold text-ink">Business Details</h2>
-          <p className="text-xs text-faint">Appear on the rendered quote and customer-facing email.</p>
+          <p className="text-xs text-muted">Appear on the rendered quote and customer-facing email.</p>
         </div>
       </div>
 
@@ -200,6 +207,12 @@ export default function BusinessDetailsCard({ companyId, isOwner }: Props) {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="border border-red-200 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+          {error}
+        </div>
+      )}
 
       <div className="flex items-center justify-end gap-3 pt-2">
         {savedAt && (

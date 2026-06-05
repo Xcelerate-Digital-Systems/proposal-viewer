@@ -31,6 +31,7 @@ export default function CompanyProfileCard({ companyId, isOwner }: Props) {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchCompany = useCallback(async () => {
@@ -59,6 +60,7 @@ export default function CompanyProfileCard({ companyId, isOwner }: Props) {
 
   const save = async () => {
     setSaving(true);
+    setError(null);
     try {
       const headers = await getAuthHeaders();
       const res = await fetch(`/api/company?company_id=${companyId}`, {
@@ -74,7 +76,12 @@ export default function CompanyProfileCard({ companyId, isOwner }: Props) {
         setInitial(form);
         setSavedAt(Date.now());
         setTimeout(() => setSavedAt(null), 2500);
+      } else {
+        const json = await res.json().catch(() => ({}));
+        setError(json.error || 'Failed to save company profile');
       }
+    } catch {
+      setError('Network error saving profile');
     } finally {
       setSaving(false);
     }
@@ -194,6 +201,12 @@ export default function CompanyProfileCard({ companyId, isOwner }: Props) {
             className="w-full px-3 py-2 rounded-lg bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 disabled:opacity-50 disabled:cursor-not-allowed" />
         </div>
       </div>
+
+      {error && (
+        <div className="mt-4 border border-red-200 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+          {error}
+        </div>
+      )}
 
       <div className="flex items-center justify-end gap-3 pt-4">
         <button

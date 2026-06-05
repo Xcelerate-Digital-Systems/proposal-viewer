@@ -23,6 +23,7 @@ export default function ApiKeyManager() {
   const [newLabel, setNewLabel] = useState('');
   const [justCreated, setJustCreated] = useState<{ label: string; plaintext: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const authHeader = async () => {
     const { data } = await supabase.auth.getSession();
@@ -44,25 +45,39 @@ export default function ApiKeyManager() {
   const create = async () => {
     if (!newLabel.trim()) return;
     setCreating(true);
-    const res = await fetch('/api/settings/api-keys', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
-      body: JSON.stringify({ label: newLabel.trim() }),
-    });
-    const json = await res.json();
-    setCreating(false);
-    if (json.success) {
-      setJustCreated({ label: newLabel.trim(), plaintext: json.data.plaintext });
-      setNewLabel('');
-      load();
+    setError(null);
+    try {
+      const res = await fetch('/api/settings/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
+        body: JSON.stringify({ label: newLabel.trim() }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setJustCreated({ label: newLabel.trim(), plaintext: json.data.plaintext });
+        setNewLabel('');
+        load();
+      } else {
+        setError(json.error || 'Failed to create API key');
+      }
+    } catch {
+      setError('Network error creating API key');
+    } finally {
+      setCreating(false);
     }
   };
 
   const revoke = async (id: string) => {
     const ok = await confirm({ title: 'Revoke API key', message: 'Revoke this key? Any extension or integration using it will stop working.', confirmLabel: 'Revoke', destructive: true });
     if (!ok) return;
-    await fetch(`/api/settings/api-keys?id=${id}`, { method: 'DELETE', headers: await authHeader() });
-    load();
+    setError(null);
+    try {
+      const res = await fetch(`/api/settings/api-keys?id=${id}`, { method: 'DELETE', headers: await authHeader() });
+      if (!res.ok) setError('Failed to revoke API key');
+      load();
+    } catch {
+      setError('Network error revoking API key');
+    }
   };
 
   const copy = () => {
@@ -76,6 +91,11 @@ export default function ApiKeyManager() {
 
   return (
     <div>
+      {error && (
+        <div className="mb-4 border border-red-200 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+          {error}
+        </div>
+      )}
       {justCreated && (
         <div className="mb-4 p-4 bg-teal-tint border border-teal/30 rounded-2xl max-w-lg">
           <p className="text-xs font-semibold text-ink mb-1">Key created — copy it now</p>

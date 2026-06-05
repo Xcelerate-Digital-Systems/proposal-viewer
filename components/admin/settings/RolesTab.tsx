@@ -34,7 +34,7 @@ export default function RolesTab({ currentRole }: RolesTabProps) {
         <h2 className="text-base font-semibold text-ink">Roles &amp; permissions</h2>
         <p className="text-caption text-muted mt-1">
           What each role can do across projects, the team, and company settings. Custom roles aren&apos;t
-          available yet — contact us if you need finer-grained access.
+          available yet — <a href="/support" className="text-primary hover:text-primary-hover underline-offset-2 hover:underline">contact us</a> if you need finer-grained access.
         </p>
       </div>
 

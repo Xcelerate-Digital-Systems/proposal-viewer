@@ -55,7 +55,7 @@ export default function WebhookManager({ companyId, events }: WebhookManagerProp
         </div>
       )}
 
-      <p className="text-xs text-faint mt-4 px-1">
+      <p className="text-xs text-muted mt-4 px-1">
         Each event can have its own endpoint URL. If a signing secret is set, requests include an <code className="text-muted">X-Webhook-Signature</code> header with an HMAC-SHA256 signature.
       </p>
     </div>

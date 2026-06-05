@@ -177,6 +177,15 @@ export default function MembersTab({
   };
 
   const handleChangeRole = async (memberId: string, newRole: Role) => {
+    const member = members.find(m => m.id === memberId);
+    const label = newRole === 'owner' ? 'Owner' : newRole === 'admin' ? 'Admin' : 'Member';
+    const ok = await confirm({
+      title: `Change role to ${label}`,
+      message: `Change ${member?.name ?? 'this member'}'s role to ${label}?${newRole === 'owner' ? ' This grants full control of the workspace.' : ''}`,
+      confirmLabel: `Make ${label}`,
+      destructive: newRole === 'owner',
+    });
+    if (!ok) return;
     setActionLoading(memberId);
     setActionMenuId(null);
     const res = await patchMember(memberId, { role: newRole });
@@ -265,7 +274,7 @@ export default function MembersTab({
             <Loader2 size={20} className="animate-spin text-faint" />
           </div>
         ) : (
-          <div className="bg-white border border-edge rounded-[14px] overflow-hidden divide-y divide-edge">
+          <div className="bg-white border border-edge rounded-[14px] overflow-visible divide-y divide-edge">
             {members.map(m => {
               const isCurrentUser = m.id === currentMemberId;
               const canEditProfile =
