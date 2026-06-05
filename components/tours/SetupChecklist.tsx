@@ -35,6 +35,10 @@ const TOUR_META: Record<TourId, { label: string; description: string }> = {
     label: 'Quote Builder',
     description: 'Build itemised quotes for clients',
   },
+  'quote-builder': {
+    label: 'Quote Builder (editor)',
+    description: 'Navigate the quote editor sections and preview',
+  },
   documents: {
     label: 'Doc Builder',
     description: 'Create shareable documents',

@@ -9,11 +9,12 @@ interface SectionCardProps {
   action?: ReactNode;
   icon?: ReactNode;
   children: ReactNode;
+  'data-tour'?: string;
 }
 
-export default function SectionCard({ title, description, action, icon, children }: SectionCardProps) {
+export default function SectionCard({ title, description, action, icon, children, 'data-tour': dataTour }: SectionCardProps) {
   return (
-    <section className="bg-white rounded-2xl border border-edge-strong">
+    <section className="bg-white rounded-2xl border border-edge-strong" data-tour={dataTour}>
       <header className="flex items-start justify-between gap-4 px-5 py-4 border-b border-edge">
         <div className="min-w-0">
           <div className="flex items-center gap-2">

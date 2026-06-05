@@ -12,6 +12,7 @@ import MissingInfoBanner from '@/components/admin/quotes/MissingInfoBanner';
 import { ProposalDetailProvider } from '@/components/admin/proposals/ProposalDetailContext';
 import { EditorSaveStatusProvider } from '@/components/admin/EditorSaveStatusContext';
 import { EditorUndoProvider } from '@/components/admin/EditorUndoContext';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 
 export default function QuoteDetailLayout(
   props: {
@@ -123,6 +124,7 @@ function DetailShell({
       value={{ proposal, refetch: fetchProposal, companyId, customDomain, companyBgPrimary, companyInfo }}
     >
       <EditorSaveStatusProvider>
+        <UnsavedChangesGuard />
         <EditorUndoProvider>
           <div className="flex flex-col h-full">
             <QuoteShellHeader
@@ -137,4 +139,9 @@ function DetailShell({
       </EditorSaveStatusProvider>
     </ProposalDetailProvider>
   );
+}
+
+function UnsavedChangesGuard() {
+  useUnsavedChangesGuard();
+  return null;
 }

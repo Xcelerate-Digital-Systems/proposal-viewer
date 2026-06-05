@@ -7,7 +7,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Receipt } from 'lucide-react';
 import {
   type Proposal,
   type PricingLineItem,
@@ -17,7 +17,10 @@ import {
 } from '@/lib/supabase';
 import { usePricingEditor } from '@/components/admin/shared/usePricingEditor';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
+import { useToast } from '@/components/ui/Toast';
 import CurrencyInput from '@/components/ui/CurrencyInput';
+import EmptyState from '@/components/ui/EmptyState';
+import { Button } from '@/components/ui/Button';
 import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import LineItemsLibraryBar from '@/components/admin/proposals/quote-builder/LineItemsLibraryBar';
 
@@ -28,6 +31,7 @@ interface Props {
 }
 
 export default function QuoteLineItemsSection({ proposal, companyId, onApplied }: Props) {
+  const toast = useToast();
   const editor = usePricingEditor({
     apiBase: '/api/proposals/pages',
     entityKey: 'proposal_id',
@@ -97,7 +101,21 @@ export default function QuoteLineItemsSection({ proposal, companyId, onApplied }
   };
 
   const removeItem = (id: string) => {
+    const removed = items.find((it) => it.id === id);
+    if (!removed) return;
     editor.updateForm({ items: items.filter((it) => it.id !== id) });
+    toast.info(`Removed "${removed.label || 'line item'}"`, {
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          editor.updateForm({
+            items: [...editor.form.items, removed].sort(
+              (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+            ),
+          });
+        },
+      },
+    });
   };
 
   const tableRef = useRef<HTMLDivElement>(null);
@@ -123,6 +141,7 @@ export default function QuoteLineItemsSection({ proposal, companyId, onApplied }
   return (
     <SectionCard
       title="Line Items"
+      data-tour="quote-line-items"
       action={
         <LineItemsLibraryBar
           items={items}
@@ -145,8 +164,20 @@ export default function QuoteLineItemsSection({ proposal, companyId, onApplied }
 
         <div role="rowgroup" className="divide-y divide-edge">
           {items.length === 0 && (
-            <div role="row" className="py-6 text-center text-xs text-faint">
-              <div role="cell">No line items yet. Click <span className="text-teal font-medium">Add Line Item</span> to start.</div>
+            <div role="row">
+              <div role="cell">
+                <EmptyState
+                  icon={Receipt}
+                  title="No line items yet"
+                  description="Add your first line item to start building the quote."
+                  action={
+                    <Button size="sm" leftIcon={Plus} onClick={addItem}>
+                      Add Line Item
+                    </Button>
+                  }
+                  className="py-8"
+                />
+              </div>
             </div>
           )}
           {items.map((item, idx) => (
@@ -209,7 +240,7 @@ export default function QuoteLineItemsSection({ proposal, companyId, onApplied }
                 className="p-1 rounded text-faint hover:text-red-500 hover:bg-red-50 transition-colors"
                 aria-label={`Remove ${item.label || 'line item'}`}
               >
-                <Trash2 size={12} />
+                <Trash2 size={14} />
               </button>
             </div>
           </div>

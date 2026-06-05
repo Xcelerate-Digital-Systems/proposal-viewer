@@ -12,11 +12,13 @@ import { campaignsTour } from './tours/campaigns';
 import { funnelsTour } from './tours/funnels';
 import { swipeTour } from './tours/swipe';
 import { integrationsTour } from './tours/integrations';
+import { quoteBuilderTour } from './tours/quote-builder';
 
 export type TourId =
   | 'dashboard'
   | 'proposals'
   | 'quotes'
+  | 'quote-builder'
   | 'documents'
   | 'campaigns'
   | 'funnels'
@@ -53,6 +55,13 @@ const REGISTRY: Record<TourId, TourEntry> = {
     matchesPath: (p) => p === '/quotes',
     path: '/quotes',
     label: 'Quotes tour',
+  },
+  'quote-builder': {
+    id: 'quote-builder',
+    steps: quoteBuilderTour,
+    matchesPath: (p) => /^\/quotes\/[^/]+$/.test(p),
+    path: '/quotes',
+    label: 'Quote Builder tour',
   },
   documents: {
     id: 'documents',

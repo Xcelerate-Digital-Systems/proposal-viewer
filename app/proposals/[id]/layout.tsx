@@ -9,6 +9,7 @@ import ProposalDetailHeader from '@/components/admin/proposals/ProposalDetailHea
 import { ProposalDetailProvider } from '@/components/admin/proposals/ProposalDetailContext';
 import { EditorSaveStatusProvider } from '@/components/admin/EditorSaveStatusContext';
 import { EditorUndoProvider } from '@/components/admin/EditorUndoContext';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 
 export default function ProposalDetailLayout(
   props: {
@@ -113,6 +114,7 @@ function DetailShell({
       }}
     >
       <EditorSaveStatusProvider>
+        <UnsavedChangesGuard />
         <EditorUndoProvider>
           <div className="flex flex-col h-full">
             <ProposalDetailHeader
@@ -126,4 +128,9 @@ function DetailShell({
       </EditorSaveStatusProvider>
     </ProposalDetailProvider>
   );
+}
+
+function UnsavedChangesGuard() {
+  useUnsavedChangesGuard();
+  return null;
 }

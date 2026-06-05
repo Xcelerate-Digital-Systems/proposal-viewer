@@ -8,7 +8,7 @@
 // but routes to the new /quotes paths instead of /proposals/[id]/quote-*.
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -21,6 +21,7 @@ import { formatQuoteNumber } from '@/lib/quote-number';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import StatusDropdown from '@/components/ui/StatusDropdown';
+import { inputClassName } from '@/components/ui/FormField';
 import EditorSaveStatusBadge from '@/components/admin/EditorSaveStatusBadge';
 import { useProposalDetail } from '@/components/admin/proposals/ProposalDetailContext';
 import { Button, buttonClasses } from '@/components/ui/Button';
@@ -65,7 +66,32 @@ export default function QuoteShellHeader({
   const { companyInfo } = useProposalDetail();
   const [copied, setCopied] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [showSaveAsTemplate, setShowSaveAsTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const templatePopoverRef = useRef<HTMLDivElement>(null);
   const activeKey = activeKeyFromPath(pathname);
+
+  const closeTemplatePopover = useCallback(() => {
+    setShowSaveAsTemplate(false);
+  }, []);
+
+  useEffect(() => {
+    if (!showSaveAsTemplate) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeTemplatePopover();
+    };
+    const handleClick = (e: MouseEvent) => {
+      if (templatePopoverRef.current && !templatePopoverRef.current.contains(e.target as Node)) {
+        closeTemplatePopover();
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    document.addEventListener('mousedown', handleClick);
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      document.removeEventListener('mousedown', handleClick);
+    };
+  }, [showSaveAsTemplate, closeTemplatePopover]);
 
   const quoteNumberFormat = companyInfo
     ? { prefix: companyInfo.quoteNumberPrefix, padWidth: companyInfo.quoteNumberPadWidth }
@@ -76,7 +102,6 @@ export default function QuoteShellHeader({
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast.success('Quote link copied!');
   };
 
   const handleStatusChange = async (newStatus: ProposalStatus) => {
@@ -105,12 +130,9 @@ export default function QuoteShellHeader({
     }
   };
 
-  const saveAsTemplate = async () => {
-    const name = window.prompt(
-      'Save this quote as a template. Templates remember design, line items, terms, scope — but not the client.',
-      `${proposal.title} — Template`,
-    );
-    if (!name?.trim()) return;
+  const handleSaveAsTemplate = async () => {
+    const name = templateName.trim();
+    if (!name) return;
     setSavingTemplate(true);
     try {
       const { data: session } = await supabase.auth.getSession();
@@ -120,11 +142,13 @@ export default function QuoteShellHeader({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.session?.access_token ?? ''}`,
         },
-        body: JSON.stringify({ name: name.trim() }),
+        body: JSON.stringify({ name }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Save failed');
       toast.success(`Saved as "${json.name}"`);
+      setShowSaveAsTemplate(false);
+      setTemplateName('');
     } catch (err) {
       console.error(err);
       toast.error('Failed to save as template');
@@ -251,15 +275,47 @@ export default function QuoteShellHeader({
             <Download size={14} />
             PDF
           </a>
-          <Button
-            variant="ghost"
-            size="sm"
-            iconOnly
-            leftIcon={BookmarkPlus}
-            loading={savingTemplate}
-            onClick={saveAsTemplate}
-            aria-label="Save as template"
-          />
+          <div className="relative" ref={templatePopoverRef}>
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              leftIcon={BookmarkPlus}
+              onClick={() => {
+                setTemplateName(proposal.title || '');
+                setShowSaveAsTemplate((v) => !v);
+              }}
+              aria-label="Save as template"
+              title="Save as template"
+            />
+            {showSaveAsTemplate && (
+              <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl border border-edge shadow-popover p-4 z-50">
+                <label className="block text-sm font-medium text-ink mb-1">Template Name</label>
+                <input
+                  autoFocus
+                  type="text"
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSaveAsTemplate(); }}
+                  placeholder="e.g. Standard Quote"
+                  className={`${inputClassName} mb-3`}
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => setShowSaveAsTemplate(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSaveAsTemplate}
+                    loading={savingTemplate}
+                    disabled={!templateName.trim()}
+                  >
+                    Save
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
           <Button
             variant="ghost"
             size="sm"
@@ -267,6 +323,7 @@ export default function QuoteShellHeader({
             leftIcon={Files}
             onClick={duplicateQuote}
             aria-label="Duplicate quote"
+            title="Duplicate quote"
           />
           <Button
             variant="ghost"
@@ -275,6 +332,7 @@ export default function QuoteShellHeader({
             leftIcon={Trash2}
             onClick={deleteQuote}
             aria-label="Delete quote"
+            title="Delete quote"
             className="hover:!text-red-500 hover:!bg-red-50"
           />
         </div>

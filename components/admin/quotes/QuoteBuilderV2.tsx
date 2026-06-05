@@ -39,6 +39,10 @@ type GroupId = (typeof GROUPS)[number]['id'];
 
 export default function QuoteBuilderV2({ proposal, companyId, onRefetch }: Props) {
   const [openGroups, setOpenGroups] = useState<Set<GroupId>>(() => {
+    try {
+      const stored = localStorage.getItem(`agencyviz_quote_groups_${proposal.id}`);
+      if (stored) return new Set(JSON.parse(stored) as GroupId[]);
+    } catch {}
     const s = new Set<GroupId>();
     GROUPS.forEach((g) => s.add(g.id));
     return s;
@@ -51,9 +55,10 @@ export default function QuoteBuilderV2({ proposal, companyId, onRefetch }: Props
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
+      try { localStorage.setItem(`agencyviz_quote_groups_${proposal.id}`, JSON.stringify(Array.from(next))); } catch {}
       return next;
     });
-  }, []);
+  }, [proposal.id]);
 
   const scrollToGroup = useCallback((id: GroupId) => {
     setOpenGroups((prev) => {
@@ -90,7 +95,7 @@ export default function QuoteBuilderV2({ proposal, companyId, onRefetch }: Props
       <div className="flex gap-6">
         <div className="flex-1 min-w-0">
           {/* Section nav */}
-          <nav className="sticky top-0 z-[5] bg-white pt-1 pb-3 mb-5 shadow-divider">
+          <nav data-tour="quote-section-nav" className="sticky top-0 z-[5] bg-white pt-1 pb-3 mb-5 shadow-divider">
             <div className="flex items-center gap-1">
               {GROUPS.map((g) => (
                 <button
@@ -162,8 +167,10 @@ export default function QuoteBuilderV2({ proposal, companyId, onRefetch }: Props
           </div>
         </div>
 
-        <StickyPreviewAside sticky={false}>
-          <PreviewPane proposal={proposal} companyId={companyId} />
+        <StickyPreviewAside>
+          <div data-tour="quote-preview">
+            <PreviewPane proposal={proposal} companyId={companyId} noSticky />
+          </div>
         </StickyPreviewAside>
       </div>
     </div>

@@ -68,7 +68,6 @@ export default function ProposalDetailHeader({
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast.success('Link copied!');
   };
 
   const handleStatusChange = async (newStatus: ProposalStatus) => {
@@ -243,6 +242,7 @@ export default function ProposalDetailHeader({
             size="sm"
             iconOnly
             aria-label="Delete proposal"
+            title="Delete proposal"
             onClick={deleteProposal}
             className="text-faint hover:text-red-500 hover:bg-red-50"
           >
