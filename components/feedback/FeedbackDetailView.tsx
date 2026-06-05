@@ -469,8 +469,8 @@ export default function FeedbackDetailView({
 
   // ── Screenshot capture — fires after React commits the pending pin ──
   // This useEffect runs after the pending-pin marker is in the DOM.  A short
-  // timeout lets the browser paint the marker before html2canvas walks the
-  // tree, so the screenshot includes the pin in its correct position.
+  // timeout lets the browser paint the marker before the screenshot captures
+  // the tree, so the screenshot includes the pin in its correct position.
   useEffect(() => {
     if (!pendingPin) return;
     const id = setTimeout(() => {

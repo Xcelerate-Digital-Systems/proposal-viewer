@@ -179,11 +179,12 @@ function uploadVideo(blob,cb){
     .catch(function(){cb(null);});
 }
 
-/* ── html2canvas loader ─────────────────────────────────── */
-function loadH2C(cb){
-  if(window.html2canvas){cb();return;}
-  var s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
-  s.onload=cb;s.onerror=function(){alert("Failed to load screenshot library.");};
+/* ── html-to-image loader ──────────────────────────────── */
+function loadH2I(cb){
+  if(window.htmlToImage){cb();return;}
+  var s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.min.js";
+  s.onload=function(){window.htmlToImage=window.htmlToImage||window["html-to-image"];cb();};
+  s.onerror=function(){alert("Failed to load screenshot library.");};
   document.head.appendChild(s);
 }
 
@@ -209,20 +210,14 @@ function captureAutoScreenshot(cb,opts){
     window.scrollTo(targetX,targetY);
   }
 
-  loadH2C(function(){
-    /* Double-rAF guarantees one full paint has completed (scroll
-       position + pending pin marker layout) before we snap. */
+  loadH2I(function(){
     requestAnimationFrame(function(){
       requestAnimationFrame(function(){
-        html2canvas(document.body,{
-          useCORS:true,allowTaint:true,
-          scale:window.devicePixelRatio||1,
-          scrollX:-window.scrollX,scrollY:-window.scrollY,
-          windowWidth:document.documentElement.clientWidth,
-          windowHeight:document.documentElement.clientHeight,
+        htmlToImage.toCanvas(document.body,{
+          pixelRatio:window.devicePixelRatio||1,
           width:document.documentElement.clientWidth,
           height:document.documentElement.clientHeight,
-          x:window.scrollX,y:window.scrollY
+          style:{transform:"translate(-"+window.scrollX+"px, -"+window.scrollY+"px)"}
         }).then(function(canvas){
           root.style.display="";if(form)form.style.display="";
           window.scrollTo(savedScrollX,savedScrollY);

@@ -52,15 +52,12 @@ var DRAW_COLOR="#FF3B30";var DRAW_WIDTH=3;
 function captureScreenshot(){
   root.style.display="none";
   annotations.forEach(function(a){if(a.el)a.el.style.display="none";});
-  loadH2C(function(){
-    html2canvas(document.body,{
-      useCORS:true,allowTaint:true,
-      scrollX:-window.scrollX,scrollY:-window.scrollY,
-      windowWidth:document.documentElement.clientWidth,
-      windowHeight:document.documentElement.clientHeight,
+  loadH2I(function(){
+    htmlToImage.toCanvas(document.body,{
+      pixelRatio:window.devicePixelRatio||1,
       width:document.documentElement.clientWidth,
       height:document.documentElement.clientHeight,
-      x:window.scrollX,y:window.scrollY
+      style:{transform:"translate(-"+window.scrollX+"px, -"+window.scrollY+"px)"}
     }).then(function(canvas){
       root.style.display="";annotations.forEach(function(a){if(a.el)a.el.style.display="";});
       openSS(canvas);

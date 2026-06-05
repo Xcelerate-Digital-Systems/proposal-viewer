@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Download, FileImage, FileText, Loader2 } from 'lucide-react';
 import { useReactFlow } from '@xyflow/react';
-import html2canvas from 'html2canvas';
+import { toCanvas } from 'html-to-image';
 import { PDFDocument } from 'pdf-lib';
 
 interface Props {
@@ -15,9 +15,9 @@ interface Props {
 
 /**
  * Export the current funnel canvas as PNG or PDF. We snapshot the
- * .react-flow__viewport DOM element via html2canvas. Before capture we call
- * fitView so the export frames the whole funnel rather than the user's
- * current pan/zoom.
+ * .react-flow element via html-to-image. Before capture we call fitView
+ * so the export frames the whole funnel rather than the user's current
+ * pan/zoom.
  */
 export default function ExportMenu({ containerRef, funnelName }: Props) {
   const rf = useReactFlow();
@@ -54,20 +54,16 @@ export default function ExportMenu({ containerRef, funnelName }: Props) {
     const flow = root.querySelector('.react-flow') as HTMLElement | null;
     if (!flow) return null;
 
-    const canvas = await html2canvas(flow, {
-      backgroundColor: '#FFFDF7', // ivory, matches notebook bg
-      scale: window.devicePixelRatio >= 2 ? 2 : 1.5,
-      logging: false,
-      useCORS: true,
-      ignoreElements: (el) => {
-        // Skip Controls / MiniMap / Panels / Side drawer so the export is
-        // just the funnel itself.
-        if (!(el instanceof HTMLElement)) return false;
-        if (el.classList.contains('react-flow__controls')) return true;
-        if (el.classList.contains('react-flow__minimap')) return true;
-        if (el.classList.contains('react-flow__panel')) return true;
-        if (el.tagName === 'ASIDE') return true; // step side drawer
-        return false;
+    const canvas = await toCanvas(flow, {
+      backgroundColor: '#FFFDF7',
+      pixelRatio: window.devicePixelRatio >= 2 ? 2 : 1.5,
+      filter: (el) => {
+        if (!(el instanceof HTMLElement)) return true;
+        if (el.classList.contains('react-flow__controls')) return false;
+        if (el.classList.contains('react-flow__minimap')) return false;
+        if (el.classList.contains('react-flow__panel')) return false;
+        if (el.tagName === 'ASIDE') return false;
+        return true;
       },
     });
     return canvas;

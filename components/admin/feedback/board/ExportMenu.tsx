@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Download, FileImage, FileText, Loader2 } from 'lucide-react';
 import { useReactFlow } from '@xyflow/react';
-import html2canvas from 'html2canvas';
+import { toCanvas } from 'html-to-image';
 import { PDFDocument } from 'pdf-lib';
 
 interface Props {
@@ -14,10 +14,10 @@ interface Props {
 }
 
 /**
- * Export the current feedback whiteboard as PNG or PDF via html2canvas +
+ * Export the current feedback whiteboard as PNG or PDF via html-to-image +
  * pdf-lib. Calls fitView before capture so the export frames the whole
  * board, not the user's current pan/zoom. Controls / MiniMap / panels /
- * side drawer are skipped via the ignoreElements predicate.
+ * side drawer are skipped via the filter predicate.
  */
 export default function ExportMenu({ containerRef, boardName }: Props) {
   const rf = useReactFlow();
@@ -46,18 +46,16 @@ export default function ExportMenu({ containerRef, boardName }: Props) {
     const flow = root.querySelector('.react-flow') as HTMLElement | null;
     if (!flow) return null;
 
-    const canvas = await html2canvas(flow, {
+    const canvas = await toCanvas(flow, {
       backgroundColor: '#FFFDF7',
-      scale: window.devicePixelRatio >= 2 ? 2 : 1.5,
-      logging: false,
-      useCORS: true,
-      ignoreElements: (el) => {
-        if (!(el instanceof HTMLElement)) return false;
-        if (el.classList.contains('react-flow__controls')) return true;
-        if (el.classList.contains('react-flow__minimap')) return true;
-        if (el.classList.contains('react-flow__panel')) return true;
-        if (el.tagName === 'ASIDE') return true;
-        return false;
+      pixelRatio: window.devicePixelRatio >= 2 ? 2 : 1.5,
+      filter: (el) => {
+        if (!(el instanceof HTMLElement)) return true;
+        if (el.classList.contains('react-flow__controls')) return false;
+        if (el.classList.contains('react-flow__minimap')) return false;
+        if (el.classList.contains('react-flow__panel')) return false;
+        if (el.tagName === 'ASIDE') return false;
+        return true;
       },
     });
     return canvas;

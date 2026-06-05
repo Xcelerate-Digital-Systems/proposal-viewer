@@ -9,7 +9,7 @@ import type { Proposal, ProposalPricing, ProposalPackages, PageNameEntry, TocSet
 export const A4_WIDTH = 595.28;
 export const A4_HEIGHT = 841.89;
 
-/** Base capture width for html2canvas (px) — wider = sharper */
+/** Base capture width for html-to-image (px) — wider = sharper */
 export const BASE_CAPTURE_WIDTH = 1440;
 
 // ── Shared types ─────────────────────────────────────────────────────

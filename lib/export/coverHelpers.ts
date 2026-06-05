@@ -102,7 +102,7 @@ export async function loadPerPageDocs(
  * that have show_member_badge enabled.
  *
  * MemberBadge uses useEffect+fetch internally, which won't resolve before
- * html2canvas fires. Pre-fetching here and passing static data as a prop
+ * the capture fires. Pre-fetching here and passing static data as a prop
  * lets the badge render synchronously at capture time.
  */
 export async function prefetchMemberBadgeData(

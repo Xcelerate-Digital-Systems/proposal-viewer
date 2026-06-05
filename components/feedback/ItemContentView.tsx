@@ -495,8 +495,7 @@ export default function ItemContentView({
             </div>
           );
         })()}
-        {/* Image (non-ad) — wrapped in a subtle card container with title caption.
-            crossOrigin="anonymous" lets html2canvas read the pixels for pin screenshots. */}
+        {/* Image (non-ad) — wrapped in a subtle card container with title caption. */}
         {!isAd && imageUrl && (
           <div className="bg-surface rounded-2xl shadow-card-soft overflow-hidden">
             <div className="flex items-center gap-2.5 px-4 py-3 border-b border-edge">
@@ -511,6 +510,7 @@ export default function ItemContentView({
                 src={imageUrl}
                 alt={item.title}
                 crossOrigin="anonymous"
+                data-screenshot-source
                 className="max-w-full max-h-[calc(100dvh-200px)] object-contain select-none"
                 draggable={false}
               />

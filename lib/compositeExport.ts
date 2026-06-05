@@ -110,7 +110,7 @@ export async function exportCompositePdf(opts: CompositeExportOptions): Promise<
   }
 
   // 3. Member badge data — MemberBadge uses useEffect+fetch which won't resolve
-  //    before html2canvas fires; pre-fetch here and pass as static prop instead
+  //    before the capture fires; pre-fetch here and pass as static prop instead
   const allTextPageIds: string[] = [];
   for (let vp = 1; vp <= numPages; vp++) {
     if (isTextPage(vp)) {

@@ -2,7 +2,7 @@
 'use client';
 
 import { PDFDocument } from 'pdf-lib';
-import html2canvas from 'html2canvas';
+import { toCanvas } from 'html-to-image';
 import { createRoot } from 'react-dom/client';
 import { createElement } from 'react';
 import { BASE_CAPTURE_WIDTH, type BgImageCtx } from './types';
@@ -34,7 +34,7 @@ export async function preloadImageAsDataUrl(url: string): Promise<string | null>
 }
 
 /**
- * Render a React element offscreen, capture with html2canvas, then composite.
+ * Render a React element offscreen, capture with html-to-image, then composite.
  *
  * Background strategy — canvas compositing (NOT DOM injection):
  *   1. Capture the component with backgroundColor: null (transparent).
@@ -43,7 +43,7 @@ export async function preloadImageAsDataUrl(url: string): Promise<string | null>
  *      the composited background show through.
  *   2. Build a final canvas: bg image fill → colour overlay → component on top.
  *
- * Why not DOM injection? html2canvas doesn't reliably capture position:absolute
+ * Why not DOM injection? DOM-to-canvas libs don't reliably capture position:absolute
  * children inside an off-screen position:fixed container. Canvas 2D compositing
  * is deterministic and always works.
  */
@@ -85,7 +85,7 @@ export async function captureComponent(
   await new Promise((r) => setTimeout(r, 150));
 
   // Wait for any <img> elements (e.g. client logo data URLs) to fully decode.
-  // React sets src synchronously but decode is async — html2canvas will miss
+  // React sets src synchronously but decode is async — the capture will miss
   // images that haven't painted yet even after the 150ms settle.
   const imgs = Array.from(container.querySelectorAll('img'));
   await Promise.all(
@@ -101,12 +101,10 @@ export async function captureComponent(
   );
 
   // Capture with transparent background
-  const componentCanvas = await html2canvas(container, {
-    backgroundColor: null,
+  const componentCanvas = await toCanvas(container, {
+    backgroundColor: undefined,
     width: captureWidth,
-    scale: 2,
-    useCORS: true,
-    logging: false,
+    pixelRatio: 2,
   });
 
   root.unmount();
