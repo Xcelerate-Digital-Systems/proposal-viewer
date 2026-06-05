@@ -124,6 +124,86 @@ export default function StepSideDrawer({
           </div>
         </Field>
 
+        {/* Metrics — first after identity fields so users find it immediately */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setMetricsOpen((v) => !v)}
+            className="w-full flex items-center justify-between text-2xs uppercase tracking-wider font-semibold text-muted hover:text-ink transition-colors mb-2"
+          >
+            <span>Forecast metrics</span>
+            {metricsOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+          </button>
+          {metricsOpen && (
+            <div className="space-y-3">
+              {isTrafficSource && (
+                <MetricField
+                  label="Visitors"
+                  hint="How many visitors this source delivers"
+                  value={step.metrics?.visitors}
+                  onChange={(v) => updateMetric('visitors', v)}
+                />
+              )}
+              {!isTrafficSource && (
+                <MetricField
+                  label="Visitors (override)"
+                  hint="Leave blank to inherit from upstream edges"
+                  value={step.metrics?.visitors}
+                  onChange={(v) => updateMetric('visitors', v)}
+                  placeholder="auto"
+                />
+              )}
+              <MetricField
+                label="Conversion rate"
+                hint="% of visitors that proceed to the next step"
+                value={step.metrics?.conversion_rate}
+                onChange={(v) => updateMetric('conversion_rate', v)}
+                suffix="%"
+                placeholder="0"
+              />
+              <MetricField
+                label="Value per conversion"
+                hint="Revenue generated per conversion at this step"
+                value={step.metrics?.value}
+                onChange={(v) => updateMetric('value', v)}
+                prefix="$"
+                placeholder="0"
+              />
+              <MetricField
+                label={isTrafficSource ? 'Cost per visitor' : 'Cost per conversion'}
+                hint={isTrafficSource ? 'CPC or cost per visitor from this source' : 'Cost per conversion at this step'}
+                value={step.metrics?.cost}
+                onChange={(v) => updateMetric('cost', v)}
+                prefix="$"
+                placeholder="0"
+              />
+              {showRecurring && (
+                <MetricField
+                  label="Recurring months"
+                  hint="Months of recurring revenue per conversion (LTV)"
+                  value={step.metrics?.recurring_months}
+                  onChange={(v) => updateMetric('recurring_months', v)}
+                  placeholder="1"
+                />
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Notes */}
+        <Field label="Notes (private)">
+          <textarea
+            value={(step.metrics?.notes as string) ?? ''}
+            onChange={(e) => {
+              const next: FunnelStepMetrics = { ...(step.metrics || {}), notes: e.target.value || null };
+              onUpdate({ metrics: next });
+            }}
+            rows={3}
+            placeholder="Internal context for this step…"
+            className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal resize-none"
+          />
+        </Field>
+
         {/* Icon picker */}
         <div>
           <h4 className="text-2xs uppercase tracking-wider font-semibold text-muted mb-2">Icon</h4>
@@ -152,7 +232,7 @@ export default function StepSideDrawer({
                 : visibleIconGroups;
 
               if (groups.length === 0) {
-                return <p className="text-detail text-muted py-2 text-center">No icons match "{iconQuery}"</p>;
+                return <p className="text-detail text-muted py-2 text-center">No icons match &ldquo;{iconQuery}&rdquo;</p>;
               }
 
               return groups.map((group) => (
@@ -216,88 +296,6 @@ export default function StepSideDrawer({
             ))}
           </div>
         </div>
-
-        {/* Metrics */}
-        <div>
-          <button
-            type="button"
-            onClick={() => setMetricsOpen((v) => !v)}
-            className="w-full flex items-center justify-between text-2xs uppercase tracking-wider font-semibold text-muted hover:text-ink transition-colors mb-2"
-          >
-            <span>Forecast metrics</span>
-            {metricsOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-          </button>
-          {metricsOpen && (
-            <div className="space-y-3">
-              {isTrafficSource && (
-                <MetricField
-                  label="Visitors"
-                  hint="How many visitors this source delivers"
-                  value={step.metrics?.visitors}
-                  onChange={(v) => updateMetric('visitors', v)}
-                />
-              )}
-              {!isTrafficSource && (
-                <MetricField
-                  label="Visitors (override)"
-                  hint="Leave blank to inherit from upstream edges"
-                  value={step.metrics?.visitors}
-                  onChange={(v) => updateMetric('visitors', v)}
-                  placeholder="auto"
-                />
-              )}
-              <MetricField
-                label="Conversion rate"
-                hint="% of visitors that proceed to the next step"
-                value={step.metrics?.conversion_rate}
-                onChange={(v) => updateMetric('conversion_rate', v)}
-                suffix="%"
-                placeholder="0"
-              />
-              {(isOffer || isPage) && (
-                <MetricField
-                  label="Value per conversion"
-                  hint="Revenue generated per conversion at this step"
-                  value={step.metrics?.value}
-                  onChange={(v) => updateMetric('value', v)}
-                  prefix="$"
-                  placeholder="0"
-                />
-              )}
-              <MetricField
-                label={isTrafficSource ? 'Cost per visitor' : 'Cost per conversion'}
-                hint={isTrafficSource ? 'CPC or cost per visitor from this source' : 'Cost per conversion at this step'}
-                value={step.metrics?.cost}
-                onChange={(v) => updateMetric('cost', v)}
-                prefix="$"
-                placeholder="0"
-              />
-              {showRecurring && (
-                <MetricField
-                  label="Recurring months"
-                  hint="Months of recurring revenue per conversion (LTV)"
-                  value={step.metrics?.recurring_months}
-                  onChange={(v) => updateMetric('recurring_months', v)}
-                  placeholder="1"
-                />
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Notes */}
-        <Field label="Notes (private)">
-          <textarea
-            value={(step.metrics?.notes as string) ?? ''}
-            onChange={(e) => {
-              const next: FunnelStepMetrics = { ...(step.metrics || {}), notes: e.target.value || null };
-              onUpdate({ metrics: next });
-            }}
-            rows={3}
-            placeholder="Internal context for this step…"
-            className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal resize-none"
-          />
-        </Field>
       </div>
 
       {/* Footer */}

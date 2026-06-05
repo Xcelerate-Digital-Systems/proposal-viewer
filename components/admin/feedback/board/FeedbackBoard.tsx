@@ -483,31 +483,27 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
   const onNodeDrag = useCallback((_e: React.MouseEvent, node: Node) => {
     const others = rf.getNodes().filter((n) => n.id !== node.id && !n.selected);
     const drag = visualCentre(node);
-    const hSet = new Set<number>();
-    const vSet = new Set<number>();
-    let snapDY = 0;
-    let snapDX = 0;
+    let bestH: number | null = null;
+    let bestV: number | null = null;
+    let bestDY = Infinity;
+    let bestDX = Infinity;
     for (const o of others) {
       const oc = visualCentre(o);
-      const dy = oc.cy - drag.cy;
-      const dx = oc.cx - drag.cx;
-      if (Math.abs(dy) <= ALIGNMENT_TOLERANCE) {
-        hSet.add(Math.round(oc.cy));
-        if (Math.abs(dy) < Math.abs(snapDY) || snapDY === 0) snapDY = dy;
+      const dy = Math.abs(oc.cy - drag.cy);
+      const dx = Math.abs(oc.cx - drag.cx);
+      if (dy <= ALIGNMENT_TOLERANCE && dy < bestDY) {
+        bestDY = dy;
+        bestH = Math.round(oc.cy);
       }
-      if (Math.abs(dx) <= ALIGNMENT_TOLERANCE) {
-        vSet.add(Math.round(oc.cx));
-        if (Math.abs(dx) < Math.abs(snapDX) || snapDX === 0) snapDX = dx;
+      if (dx <= ALIGNMENT_TOLERANCE && dx < bestDX) {
+        bestDX = dx;
+        bestV = Math.round(oc.cx);
       }
     }
-    setGuides({ horizontals: Array.from(hSet), verticals: Array.from(vSet) });
-    if (snapDX !== 0 || snapDY !== 0) {
-      rf.setNodes((nds) => nds.map((n) =>
-        n.id === node.id
-          ? { ...n, position: { x: n.position.x + snapDX, y: n.position.y + snapDY } }
-          : n
-      ));
-    }
+    setGuides({
+      horizontals: bestH !== null ? [bestH] : [],
+      verticals: bestV !== null ? [bestV] : [],
+    });
   }, [rf]);
 
   const onNodeDragStop = useCallback(() => {

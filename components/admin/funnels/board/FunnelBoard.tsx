@@ -592,13 +592,21 @@ function FunnelBoardInner() {
             </Panel>
           )}
 
-          {!boardEmpty && (forecast.totalRevenue > 0 || forecast.totalCost > 0) && (
+          {ctx.steps.length > 0 && (
             <Panel position="bottom-center" className="!bottom-4">
-              <BoardSummary
-                forecast={forecast}
-                currency={ctx.funnel?.currency}
-                period={ctx.funnel?.forecast_period}
-              />
+              {forecast.totalRevenue > 0 || forecast.totalCost > 0 ? (
+                <BoardSummary
+                  forecast={forecast}
+                  currency={ctx.funnel?.currency}
+                  period={ctx.funnel?.forecast_period}
+                />
+              ) : (
+                <div className="flex items-center gap-2 bg-white rounded-lg border border-edge shadow-sm px-3.5 py-2">
+                  <span className="text-detail text-muted">
+                    Click a step and enter forecast metrics to see projections here
+                  </span>
+                </div>
+              )}
             </Panel>
           )}
         </ReactFlow>
