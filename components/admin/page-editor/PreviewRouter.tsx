@@ -28,6 +28,7 @@ interface PreviewRouterProps {
   canGoNext: boolean;
   tocSettings?: TocSettings;
   allPages?: UnifiedPage[];
+  companyId?: string;
 }
 
 export default function PreviewRouter({
@@ -46,6 +47,7 @@ export default function PreviewRouter({
   canGoNext,
   tocSettings,
   allPages,
+  companyId,
 }: PreviewRouterProps) {
   if (!selectedPage) {
     return (
@@ -92,6 +94,7 @@ export default function PreviewRouter({
         onGoNext={onGoNext}
         canGoPrev={canGoPrev}
         canGoNext={canGoNext}
+        companyId={companyId}
       />
     );
   }

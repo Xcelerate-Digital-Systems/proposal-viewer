@@ -335,6 +335,7 @@ export default function PageEditor({
             canGoNext={canGoNext}
             tocSettings={tocSettings}
             allPages={pages}
+            companyId={companyId ?? undefined}
           />
         </StickyPreviewAside>
       </div>
