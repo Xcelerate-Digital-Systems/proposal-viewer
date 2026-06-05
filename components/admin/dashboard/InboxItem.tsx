@@ -7,6 +7,7 @@ import {
   MessageSquare, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { formatRelative } from '@/lib/format-date';
 
 export type InboxComment = {
   commentId: string;
@@ -34,20 +35,9 @@ interface Props {
   item: InboxComment;
   memberName: string;
   isLast?: boolean;
+  isSelected?: boolean;
+  triggerReply?: number;
   onResolve: (item: InboxComment) => void;
-}
-
-function formatRelative(dateStr: string) {
-  const diffMs = Date.now() - new Date(dateStr).getTime();
-  const diffMin = Math.floor(diffMs / 60_000);
-  const diffHr = Math.floor(diffMs / 3_600_000);
-  const diffDays = Math.floor(diffMs / 86_400_000);
-  if (diffMin < 1) return 'just now';
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHr < 24) return `${diffHr}h ago`;
-  if (diffDays === 1) return 'yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function initials(name: string) {
@@ -76,7 +66,7 @@ function avatarColor(name: string) {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-export default function InboxItem({ item, memberName, isLast, onResolve }: Props) {
+export default function InboxItem({ item, memberName, isLast, isSelected, triggerReply, onResolve }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyText, setReplyText] = useState('');
@@ -86,11 +76,68 @@ export default function InboxItem({ item, memberName, isLast, onResolve }: Props
   const [repliesExpanded, setRepliesExpanded] = useState(false);
   const [replies, setReplies] = useState<ReplyRow[]>([]);
   const [repliesLoading, setRepliesLoading] = useState(false);
+  const [repliesError, setRepliesError] = useState(false);
 
+  const rootRef = useRef<HTMLDivElement>(null);
   const lightboxCloseRef = useRef<HTMLButtonElement>(null);
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevTriggerRef = useRef(triggerReply);
+  const draftKey = `inbox-draft-${item.commentId}`;
+
+  // Scroll into view when selected via keyboard
+  useEffect(() => {
+    if (isSelected && rootRef.current) {
+      rootRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [isSelected]);
+
+  // Open reply form when triggerReply increments while selected
+  useEffect(() => {
+    if (isSelected && triggerReply !== undefined && triggerReply !== prevTriggerRef.current) {
+      setReplyOpen(true);
+    }
+    prevTriggerRef.current = triggerReply;
+  }, [isSelected, triggerReply]);
   const openHref = `/campaigns/${item.projectId}/assets/${item.itemId}`;
   const color = avatarColor(item.clientName);
   const isAging = (Date.now() - new Date(item.createdAt).getTime()) > 48 * 60 * 60 * 1000;
+
+  // Restore draft when reply panel opens
+  useEffect(() => {
+    if (!replyOpen) return;
+    try {
+      const saved = sessionStorage.getItem(draftKey);
+      if (saved) setReplyText(saved);
+    } catch {
+      // sessionStorage unavailable — ignore
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replyOpen]);
+
+  // Debounce-save draft to sessionStorage while typing
+  useEffect(() => {
+    if (!replyOpen) return;
+    if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = setTimeout(() => {
+      try {
+        if (replyText) {
+          sessionStorage.setItem(draftKey, replyText);
+        } else {
+          sessionStorage.removeItem(draftKey);
+        }
+      } catch {
+        // sessionStorage unavailable — ignore
+      }
+    }, 300);
+    return () => {
+      if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replyText, replyOpen]);
+
+  const clearDraft = useCallback(() => {
+    try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
+  }, [draftKey]);
 
   const sendReply = async (andResolve: boolean) => {
     const trimmed = replyText.trim();
@@ -108,6 +155,7 @@ export default function InboxItem({ item, memberName, isLast, onResolve }: Props
         company_id: item.companyId,
       });
       if (insertErr) throw insertErr;
+      clearDraft();
       if (andResolve) {
         onResolve(item);
       } else {
@@ -138,7 +186,8 @@ export default function InboxItem({ item, memberName, isLast, onResolve }: Props
         .order('created_at', { ascending: true });
       setReplies((data || []) as ReplyRow[]);
     } catch {
-      // silently fail — user can retry
+      setReplies([]);
+      setRepliesError(true);
     } finally {
       setRepliesLoading(false);
     }
@@ -157,7 +206,7 @@ export default function InboxItem({ item, memberName, isLast, onResolve }: Props
   }, [shotPreviewOpen, closeLightbox]);
 
   return (
-    <div className={`px-5 py-4 ${!isLast ? 'border-b border-edge' : ''} ${isAging ? 'bg-amber-50/40' : ''}`}>
+    <div ref={rootRef} data-inbox-item className={`px-5 py-4 ${!isLast ? 'border-b border-edge' : ''} ${isAging ? 'bg-amber-50/40' : ''} ${isSelected ? 'ring-2 ring-primary/20 rounded-lg bg-primary/[0.02]' : ''}`}>
       <div className="flex gap-3">
         <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${color.bg} ${color.text}`}>
           {initials(item.clientName)}
@@ -170,6 +219,7 @@ export default function InboxItem({ item, memberName, isLast, onResolve }: Props
               dateTime={item.createdAt}
               className={`text-detail ml-auto shrink-0 ${isAging ? 'text-amber-600 font-medium' : 'text-faint'}`}
             >
+              {isAging && <span className="sr-only">Overdue: </span>}
               {formatRelative(item.createdAt)}
             </time>
           </div>
@@ -245,6 +295,16 @@ export default function InboxItem({ item, memberName, isLast, onResolve }: Props
                         </div>
                       ))}
                     </div>
+                  ) : repliesError ? (
+                    <div className="py-2 text-center">
+                      <p className="text-detail text-muted">Failed to load replies.</p>
+                      <button
+                        onClick={() => { setRepliesError(false); setRepliesExpanded(false); toggleReplies(); }}
+                        className="text-detail font-medium text-primary hover:text-primary-hover mt-1"
+                      >
+                        Try again
+                      </button>
+                    </div>
                   ) : (
                     replies.map((r) => {
                       const rColor = avatarColor(r.author_name);
@@ -289,6 +349,7 @@ export default function InboxItem({ item, memberName, isLast, onResolve }: Props
               <div className="flex items-center justify-end gap-2 mt-2">
                 <button
                   onClick={() => {
+                    clearDraft();
                     setReplyOpen(false);
                     setReplyText('');
                     setError(null);
@@ -322,21 +383,21 @@ export default function InboxItem({ item, memberName, isLast, onResolve }: Props
             <div className="flex items-center gap-1 mt-3">
               <button
                 onClick={() => setReplyOpen(true)}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-ink bg-surface hover:bg-surface rounded-full px-3 py-1.5 transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-ink bg-surface hover:bg-edge rounded-full px-3 py-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
                 <Reply size={12} />
                 Reply
               </button>
               <button
                 onClick={() => onResolve(item)}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted hover:text-ink rounded-full px-3 py-1.5 transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted hover:text-ink rounded-full px-3 py-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
                 <Check size={12} />
                 Resolve
               </button>
               <Link
                 href={openHref}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-hover rounded-full px-3 py-1.5 transition-colors ml-auto"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-hover rounded-full px-3 py-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30 ml-auto"
               >
                 <ExternalLink size={12} />
                 Open

@@ -69,7 +69,7 @@ function ClientCard({ proposal }: { proposal: Proposal }) {
         <Link
           href={viewerHref}
           target="_blank"
-          className="inline-flex items-center gap-1 text-detail font-medium text-teal hover:text-teal-hover"
+          className="inline-flex items-center gap-1 text-detail font-medium text-primary hover:text-primary-hover"
         >
           <ExternalLink size={11} />
           View

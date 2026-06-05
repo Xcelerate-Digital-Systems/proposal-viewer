@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Mail, ArrowRight, CheckCircle2, Eye, MousePointerClick, AlertTriangle, Clock, Send } from 'lucide-react';
 import { authFetch } from '@/lib/auth-fetch';
+import { formatRelative } from '@/lib/format-date';
 
 type EmailLogEntry = {
   id: string;
@@ -40,19 +41,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   auth:                  'Auth',
 };
 
-function formatRelative(dateStr: string) {
-  const diffMs = Date.now() - new Date(dateStr).getTime();
-  const diffMin = Math.floor(diffMs / 60_000);
-  const diffHr = Math.floor(diffMs / 3_600_000);
-  const diffDays = Math.floor(diffMs / 86_400_000);
-  if (diffMin < 1) return 'just now';
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHr < 24) return `${diffHr}h ago`;
-  if (diffDays === 1) return 'yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return new Date(dateStr).toLocaleDateString('en-AU', { month: 'short', day: 'numeric' });
-}
-
 function entityHref(entry: EmailLogEntry): string | null {
   if (!entry.entity_id) return null;
   if (entry.entity_type === 'proposal' || entry.entity_type === 'quote') {
@@ -88,7 +76,7 @@ export default function EmailActivityWidget({ companyId }: { companyId: string }
           <div className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center">
             <Mail size={14} className="text-muted" />
           </div>
-          <h2 className="text-sm font-semibold text-ink">Agency Activity</h2>
+          <h2 className="text-sm font-semibold text-ink">Recent Emails</h2>
           {entries.length > 0 && (
             <span className="text-detail text-muted">{entries.length}</span>
           )}

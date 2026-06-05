@@ -4,13 +4,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
-  FileText, CheckCircle2, Timer, Reply, ArrowRight, MessageSquareText, Check,
+  FileText, ReceiptText, CheckCircle2, Timer, Reply, ArrowRight, Check,
 } from 'lucide-react';
 import { supabase, type Proposal, type FeedbackProject } from '@/lib/supabase';
 import AdminLayout from '@/components/admin/AdminLayout';
 import InboxItem, { type InboxComment } from '@/components/admin/dashboard/InboxItem';
 import FeedbackActionWidgets from '@/components/admin/dashboard/FeedbackActionWidgets';
-import PipelineSummary from '@/components/admin/dashboard/PipelineSummary';
 import EmailActivityWidget from '@/components/admin/dashboard/EmailActivityWidget';
 import ClientPipeline from '@/components/admin/dashboard/ClientPipeline';
 import ErrorState from '@/components/ui/ErrorState';
@@ -195,6 +194,67 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
     };
   }, [persistResolve]);
 
+  /* ── Keyboard shortcuts (agency inbox) ─────────────────── */
+
+  const [selectedIdx, setSelectedIdx] = useState(-1);
+  const [replyTrigger, setReplyTrigger] = useState(0);
+  const selectedIdxRef = useRef(-1);
+  selectedIdxRef.current = selectedIdx;
+
+  useEffect(() => {
+    if (isClient) return;
+    const handler = (e: KeyboardEvent) => {
+      const tag = (document.activeElement?.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+      if (document.activeElement?.getAttribute('contenteditable') === 'true') return;
+
+      const visibleCount = Math.min(inbox.length, 10);
+      if (e.key === 'Escape') {
+        setSelectedIdx(-1);
+        return;
+      }
+      if (visibleCount === 0) return;
+
+      switch (e.key.toLowerCase()) {
+        case 'j':
+          e.preventDefault();
+          setSelectedIdx(prev => {
+            const next = prev < 0 ? 0 : Math.min(prev + 1, visibleCount - 1);
+            return next;
+          });
+          break;
+        case 'k':
+          e.preventDefault();
+          setSelectedIdx(prev => Math.max(prev - 1, 0));
+          break;
+        case 'r':
+          if (selectedIdxRef.current >= 0 && selectedIdxRef.current < visibleCount) {
+            e.preventDefault();
+            setReplyTrigger(prev => prev + 1);
+          }
+          break;
+        case 'd':
+          if (selectedIdxRef.current >= 0 && selectedIdxRef.current < visibleCount) {
+            e.preventDefault();
+            handleResolve(inbox[selectedIdxRef.current]);
+          }
+          break;
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isClient, inbox, handleResolve]);
+
+  // Reset selection when inbox changes (e.g. after resolve) to keep index valid
+  useEffect(() => {
+    setSelectedIdx(prev => {
+      if (prev < 0) return prev;
+      const visibleCount = Math.min(inbox.length, 10);
+      if (visibleCount === 0) return -1;
+      return Math.min(prev, visibleCount - 1);
+    });
+  }, [inbox]);
+
   /* ── Helpers ──────────────────────────────────────────── */
 
   const getGreeting = () => {
@@ -248,7 +308,7 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
               <StatCard icon={Timer} iconClass="text-amber-500" label="Awaiting Review" value={awaitingAction} />
               <StatCard icon={CheckCircle2} iconClass="text-emerald-600" label="Accepted" value={acceptedCount} />
               <StatCard icon={FileText} iconClass="text-muted" label="Proposals" value={proposals.length} />
-              <StatCard icon={FileText} iconClass="text-muted" label="Quotes" value={quotes.length} />
+              <StatCard icon={ReceiptText} iconClass="text-muted" label="Quotes" value={quotes.length} />
             </div>
 
             <section className="bg-white rounded-2xl shadow-card overflow-hidden flex flex-col">
@@ -346,7 +406,7 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
             </header>
 
             {undoItem && (
-              <div className="flex items-center gap-3 px-5 py-2.5 bg-surface border-b border-edge">
+              <div role="status" aria-live="polite" className="flex items-center gap-3 px-5 py-2.5 bg-surface border-b border-edge">
                 <Check size={14} className="text-emerald-600 shrink-0" />
                 <span className="text-caption text-ink flex-1">
                   Comment by {undoItem.clientName} resolved
@@ -387,6 +447,8 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
                     item={c}
                     memberName={memberName}
                     isLast={i === Math.min(arr.length, 10) - 1}
+                    isSelected={i === selectedIdx}
+                    triggerReply={replyTrigger}
                     onResolve={handleResolve}
                   />
                 ))}
@@ -405,28 +467,15 @@ function DashboardContent({ companyId, memberName, teamMemberId, accountType }: 
           </section>
 
           {/* ── Sidebar: action widgets + pipeline ─────── */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 xl:sticky xl:top-0 xl:max-h-[calc(100vh-8rem)] xl:overflow-y-auto">
             <FeedbackActionWidgets companyId={companyId} teamMemberId={teamMemberId} />
 
-            <div
-              data-tour="dashboard-proposals"
-              className="flex flex-col gap-4"
-            >
-              <PipelineSummary
-                icon={MessageSquareText}
-                title="Campaigns"
-                href="/campaigns"
-                linkLabel="View pipeline"
-                segments={feedbackSegments}
-                total={feedbackProjects.length}
-              />
-              <PipelineSummary
-                icon={FileText}
-                title="Proposals & Quotes"
-                href="/proposals"
-                linkLabel="View pipeline"
-                segments={proposalSegments}
-                total={pipeline.length}
+            <div data-tour="dashboard-proposals">
+              <TabbedPipeline
+                tabs={[
+                  { label: 'Campaigns', href: '/campaigns', segments: feedbackSegments, total: feedbackProjects.length },
+                  { label: 'Proposals', href: '/proposals', segments: proposalSegments, total: pipeline.length },
+                ]}
               />
             </div>
 
@@ -458,6 +507,86 @@ function StatCard({
         <span className="text-caption font-medium text-muted">{label}</span>
       </div>
       <p className="text-2xl font-bold text-ink leading-none">{value}</p>
+    </div>
+  );
+}
+
+/* ── Tabbed pipeline summary (Campaigns + Proposals in one card) ── */
+
+interface PipelineTab {
+  label: string;
+  href: string;
+  segments: { key: string; label: string; hex: string; count: number }[];
+  total: number;
+}
+
+function TabbedPipeline({ tabs }: { tabs: PipelineTab[] }) {
+  const [active, setActive] = useState(0);
+  const tab = tabs[active];
+
+  return (
+    <div className="bg-white rounded-2xl shadow-card overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-edge">
+        <div className="flex gap-1">
+          {tabs.map((t, i) => (
+            <button
+              key={t.label}
+              onClick={() => setActive(i)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                i === active
+                  ? 'bg-surface text-ink'
+                  : 'text-muted hover:text-ink'
+              }`}
+            >
+              {t.label}
+              <span className="ml-1.5 text-detail text-muted">{t.total}</span>
+            </button>
+          ))}
+        </div>
+        <Link
+          href={tab.href}
+          className="text-xs font-medium text-primary hover:text-primary-hover inline-flex items-center gap-1"
+        >
+          View pipeline <ArrowRight size={12} />
+        </Link>
+      </div>
+
+      {tab.total === 0 ? (
+        <div className="px-5 py-4">
+          <p className="text-caption text-muted">No items yet.</p>
+        </div>
+      ) : (
+        <div className="px-5 py-4 space-y-3">
+          <div
+            className="flex h-2 rounded-full overflow-hidden bg-edge"
+            role="img"
+            aria-label={tab.segments.filter(s => s.count > 0).map(s => `${s.label}: ${s.count}`).join(', ')}
+          >
+            {tab.segments
+              .filter((s) => s.count > 0)
+              .map((s) => (
+                <div
+                  key={s.key}
+                  className="h-full transition-all duration-300"
+                  style={{ width: `${(s.count / tab.total) * 100}%`, backgroundColor: s.hex }}
+                  title={`${s.label}: ${s.count}`}
+                />
+              ))}
+          </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {tab.segments
+              .filter((s) => s.count > 0)
+              .map((s) => (
+                <div key={s.key} className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.hex }} />
+                  <span className="text-detail text-muted">
+                    {s.label} <span className="text-ink font-medium">{s.count}</span>
+                  </span>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
