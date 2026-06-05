@@ -3,7 +3,7 @@
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import {
   ReactFlow, ReactFlowProvider, Controls, MiniMap, Background, BackgroundVariant, useReactFlow,
-  ConnectionMode, type NodeTypes, type EdgeTypes, type Node, Panel,
+  ConnectionMode, type NodeTypes, type EdgeTypes, type Node, type Edge, Panel,
   SelectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -26,7 +26,7 @@ import CanvasContextMenu, { type ContextTarget } from './CanvasContextMenu';
 import AlignmentGuides from './AlignmentGuides';
 import { useFunnelBoard } from './useFunnelBoard';
 import { useFunnelBoardContextOrThrow } from './FunnelBoardContext';
-import type { FunnelStep, FunnelStepType, FunnelShapeType } from '@/lib/supabase';
+import type { FunnelStep, FunnelStepType, FunnelShapeType, FunnelBoardEdge } from '@/lib/supabase';
 import type { PaletteItem } from '@/lib/types/funnel';
 import type { NewShape } from './FunnelBoardContext';
 
@@ -54,7 +54,7 @@ function visualCentre(n: Node): { cx: number; cy: number } {
     const step = (n.data as { step?: { step_type?: string } } | undefined)?.step;
     const isPage = !!step?.step_type?.startsWith('page_');
     return {
-      cx: n.position.x + 120,
+      cx: n.position.x + 100,
       cy: n.position.y + (isPage ? 100 : 44),
     };
   }
@@ -96,7 +96,7 @@ function FunnelBoardInner() {
   /* ─── Add helpers (used by click-to-add palette + right-click + Cmd+D) ─── */
 
   const addStepAt = useCallback((stepType: FunnelStepType, flowX: number, flowY: number) => {
-    void ctx.createStep(stepType, { x: flowX - 120, y: flowY - 100 });
+    void ctx.createStep(stepType, { x: flowX - 100, y: flowY - 100 });
   }, [ctx]);
 
   const addShapeAt = useCallback((shapeType: FunnelShapeType, flowX: number, flowY: number) => {
@@ -318,10 +318,10 @@ function FunnelBoardInner() {
       const ox = 40 * offsetIdx;
       const oy = 40 * offsetIdx;
       if (entry.kind === 'step') {
-        const next = await ctx.createStep(entry.stepType, { x: c.x + ox - 120, y: c.y + oy - 100 });
+        const next = await ctx.createStep(entry.stepType, { x: c.x + ox - 100, y: c.y + oy - 100 });
         if (next) await ctx.updateStep(next.id, { label: entry.label, icon: entry.icon, url: entry.url, color: entry.color, metrics: entry.metrics as FunnelStep['metrics'] });
       } else if (entry.kind === 'shape') {
-        await ctx.createShape({ ...entry.data, x: c.x + ox - 120, y: c.y + oy - 120 });
+        await ctx.createShape({ ...entry.data, x: c.x + ox - 100, y: c.y + oy - 100 });
       } else {
         const note = await ctx.addNote({ x: c.x + ox - 100, y: c.y + oy - 75 });
         if (note) await ctx.updateNote(note.id, { content: entry.content, color: entry.color, width: entry.width, height: entry.height, font_size: entry.font_size });
@@ -565,22 +565,14 @@ function FunnelBoardInner() {
 
           {board.selectedEdge && (
             <Panel position="top-center" className="!top-24">
-              <div className="flex flex-col items-center gap-2">
-                <EdgeStyleEditor
-                  edge={board.selectedEdge}
-                  onUpdate={board.handleUpdateEdgeStyle}
-                  onDelete={() => board.handleDeleteEdge(board.selectedEdge!.id)}
-                  onClose={board.closeEdgeEditor}
-                />
-                {splitEditorContext && (
-                  <EdgeSplitEditor
-                    edge={splitEditorContext.edge}
-                    siblings={splitEditorContext.siblings}
-                    flowThrough={splitEditorContext.flowThrough}
-                    onUpdate={(patch) => ctx.updateEdge(splitEditorContext.edge.id, patch)}
-                  />
-                )}
-              </div>
+              <CombinedEdgePanel
+                edge={board.selectedEdge}
+                onUpdateStyle={board.handleUpdateEdgeStyle}
+                onDelete={() => board.handleDeleteEdge(board.selectedEdge!.id)}
+                onClose={board.closeEdgeEditor}
+                splitContext={splitEditorContext}
+                onUpdateSplit={splitEditorContext ? (patch) => ctx.updateEdge(splitEditorContext.edge.id, patch) : undefined}
+              />
             </Panel>
           )}
 
@@ -663,6 +655,52 @@ function FunnelBoardInner() {
           />
         )}
       </div>
+    </div>
+  );
+}
+
+function CombinedEdgePanel({
+  edge, onUpdateStyle, onDelete, onClose, splitContext, onUpdateSplit,
+}: {
+  edge: Edge;
+  onUpdateStyle: (edgeId: string, patch: Record<string, unknown>) => void | Promise<void>;
+  onDelete: () => void;
+  onClose: () => void;
+  splitContext: { edge: FunnelBoardEdge; siblings: FunnelBoardEdge[]; flowThrough: number } | null;
+  onUpdateSplit?: (patch: Partial<FunnelBoardEdge>) => void;
+}) {
+  const [tab, setTab] = useState<'style' | 'split'>('style');
+  const hasSplit = !!splitContext;
+  return (
+    <div className="flex flex-col items-center">
+      {hasSplit && (
+        <div className="flex items-center gap-0.5 bg-white rounded-t-lg border border-b-0 border-edge px-1 pt-1">
+          <button
+            type="button"
+            onClick={() => setTab('style')}
+            className={`px-2.5 py-1 text-2xs font-medium rounded-md transition-colors ${
+              tab === 'style' ? 'bg-surface text-ink' : 'text-muted hover:text-ink'
+            }`}
+          >Style</button>
+          <button
+            type="button"
+            onClick={() => setTab('split')}
+            className={`px-2.5 py-1 text-2xs font-medium rounded-md transition-colors ${
+              tab === 'split' ? 'bg-surface text-ink' : 'text-muted hover:text-ink'
+            }`}
+          >Split</button>
+        </div>
+      )}
+      {tab === 'style' ? (
+        <EdgeStyleEditor edge={edge} onUpdate={onUpdateStyle} onDelete={onDelete} onClose={onClose} />
+      ) : splitContext && onUpdateSplit ? (
+        <EdgeSplitEditor
+          edge={splitContext.edge}
+          siblings={splitContext.siblings}
+          flowThrough={splitContext.flowThrough}
+          onUpdate={onUpdateSplit}
+        />
+      ) : null}
     </div>
   );
 }

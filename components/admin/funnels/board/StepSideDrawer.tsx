@@ -139,10 +139,15 @@ export default function StepSideDrawer({
           <div className="space-y-3">
             {(() => {
               const q = iconQuery.toLowerCase().trim();
+              const qNoSpaces = q.replaceAll(' ', '').replaceAll('-', '');
               const groups = q
                 ? visibleIconGroups.map((g) => ({
                     ...g,
-                    icons: g.icons.filter((slug) => slug.replaceAll('-', ' ').includes(q) || slug.includes(q)),
+                    icons: g.icons.filter((slug) => {
+                      const flat = slug.replaceAll('-', '');
+                      const spaced = slug.replaceAll('-', ' ');
+                      return spaced.includes(q) || slug.includes(q) || flat.includes(qNoSpaces);
+                    }),
                   })).filter((g) => g.icons.length > 0)
                 : visibleIconGroups;
 

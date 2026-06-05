@@ -22,10 +22,8 @@ export interface FunnelStepNodeData extends Record<string, unknown> {
   readOnly?: boolean;
   onUpdate?: (id: string, patch: Partial<FunnelStep>) => void;
   onDelete?: (id: string) => void;
-  /** @deprecated Metrics layer removed. Kept for type compat only. */
   forecastVisitors?: number;
   forecastConversions?: number;
-  showMetricsOverride?: boolean;
 }
 
 // Map icon slug → lucide component. Brand SVGs (facebook/google/etc.) are
@@ -126,7 +124,7 @@ export function StepIcon({ slug, size = 32 }: { slug: string; size?: number }) {
   return <Lc size={size} strokeWidth={1.8} className="text-white" />;
 }
 
-const FRAME_W = 240;
+const FRAME_W = 200;
 const ICON_SIZE = 88;
 /** Single-line label container height. Labels truncate to one line, so 22px
  *  fits a 11px text glyph plus a couple of px breathing room. The old 56px
@@ -134,7 +132,6 @@ const ICON_SIZE = 88;
  *  between the label and the bottom-edge handle. */
 const LABEL_OFFSET = 22;
 const LABEL_GAP = 8;
-const SHELL_H = LABEL_OFFSET + ICON_SIZE;
 
 // Handles anchored to the 88px circle (matches IconHandles geometry from
 // the feedback board so funnel and feedback flow nodes align horizontally).
@@ -264,8 +261,8 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
       ) : (
         <span
           onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
-          className="block text-detail text-ink/80 text-center truncate max-w-[180px] leading-tight"
-          title={readOnly ? (step.label || defaults.label) : 'Double-click to rename'}
+          className="block text-detail text-ink/80 text-center truncate max-w-[160px] leading-tight"
+          title={step.label || defaults.label}
         >
           {step.label || defaults.label}
         </span>

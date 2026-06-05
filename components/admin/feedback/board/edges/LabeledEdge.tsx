@@ -85,12 +85,12 @@ function LabeledEdgeComponent({
     targetPosition,
   });
 
-  // Bias the label slightly toward the source so it sits squarely in the
-  // middle of the visible edge run, never under the arrowhead at the target
-  // end. 0.5 = curve midpoint (default); 0.4 puts it 10% closer to source.
-  const LABEL_BIAS = 0.4;
-  const biasedLabelX = sourceX + (labelX - sourceX) * (2 * LABEL_BIAS);
-  const biasedLabelY = sourceY + (labelY - sourceY) * (2 * LABEL_BIAS);
+  // Bias label toward the source so it doesn't sit under the arrowhead.
+  // For short edges (<120px), use 0.5 (centre) to avoid overlap.
+  const edgeLen = Math.hypot(targetX - sourceX, targetY - sourceY);
+  const bias = edgeLen < 120 ? 0.5 : 0.4;
+  const biasedLabelX = sourceX + (labelX - sourceX) * (2 * bias);
+  const biasedLabelY = sourceY + (labelY - sourceY) * (2 * bias);
 
   const arrowHeads = useMemo(() => {
     if (arrowDir === 'none') return '';
