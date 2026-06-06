@@ -468,19 +468,24 @@ export default function FeedbackDetailView({
   }, [browseMode, commentsLocked, baseHandleImageClick, pinActive]);
 
   // ── Screenshot capture — fires after React commits the pending pin ──
-  // This useEffect runs after the pending-pin marker is in the DOM.  A short
-  // timeout lets the browser paint the marker before the screenshot captures
-  // the tree, so the screenshot includes the pin in its correct position.
+  // Two rAFs guarantee the browser has fully painted the pending-pin marker
+  // before capture starts. The fast path (direct canvas draw) draws its own
+  // pin programmatically so timing doesn't matter there, but the html-to-image
+  // fallback (ads, email, SMS) captures the DOM and needs the pin visible.
   useEffect(() => {
     if (!pendingPin) return;
-    const id = setTimeout(() => {
-      captureScreenshot(imageContainerRef.current, {
-        cropAroundPct: { x: pendingPin.x, y: pendingPin.y },
-      }).then((url) => {
-        if (url) setPendingScreenshotUrl(url);
+    let cancelled = false;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (cancelled) return;
+        captureScreenshot(imageContainerRef.current, {
+          cropAroundPct: { x: pendingPin.x, y: pendingPin.y },
+        }).then((url) => {
+          if (url && !cancelled) setPendingScreenshotUrl(url);
+        });
       });
-    }, 150);
-    return () => clearTimeout(id);
+    });
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingPin]);
 
