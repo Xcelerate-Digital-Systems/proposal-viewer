@@ -48,6 +48,7 @@ export default function ExportMenu({ containerRef, boardName }: Props) {
 
     const canvas = await toCanvas(flow, {
       backgroundColor: '#FFFDF7',
+      cacheBust: true,
       pixelRatio: window.devicePixelRatio >= 2 ? 2 : 1.5,
       filter: (el) => {
         if (!(el instanceof HTMLElement)) return true;

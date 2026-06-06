@@ -4,14 +4,11 @@
 import { useCallback, useRef, useState } from 'react';
 
 interface UseScreenshotCaptureOptions {
-  /** The share token for the feedback project */
   shareToken?: string;
-  /** The current feedback item ID */
   itemId?: string | null;
 }
 
 interface CaptureOptions {
-  /** Crop a 16:9 region centred on these container-relative percentages (0-100). */
   cropAroundPct?: { x: number; y: number };
 }
 
@@ -19,33 +16,62 @@ const PIN_SIZE = 28;
 const PIN_COLOR = '#16A34A';
 
 /**
- * Try to capture by drawing the <img> directly onto a canvas.
- * Draws the <img> directly onto a canvas — fast, reliable, no DOM walking.
- * Returns null if the container doesn't have a usable <img>.
+ * Fetch an image URL as a blob and return an HTMLImageElement from it.
+ * This bypasses the browser's CORS cache — even if the <img> element
+ * loaded without CORS headers, this fetch gets a fresh response with them.
  */
-function captureFromImg(
+async function fetchAsImage(url: string): Promise<HTMLImageElement | null> {
+  try {
+    const res = await fetch(url, { mode: 'cors' });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(img);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(null);
+      };
+      img.src = objectUrl;
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Capture by drawing the <img> directly onto a canvas.
+ * Fetches the image as a blob to avoid CORS cache issues.
+ */
+async function captureFromImg(
   containerEl: HTMLElement,
   opts?: CaptureOptions
-): HTMLCanvasElement | null {
+): Promise<HTMLCanvasElement | null> {
   const img = containerEl.querySelector('img[data-screenshot-source]') as HTMLImageElement | null;
   if (!img || !img.naturalWidth || !img.complete) return null;
 
-  // Full canvas at natural image resolution
-  const nw = img.naturalWidth;
-  const nh = img.naturalHeight;
+  // Fetch as blob to bypass CORS cache, fall back to the DOM element
+  const freshImg = await fetchAsImage(img.src) || img;
+  const nw = freshImg.naturalWidth;
+  const nh = freshImg.naturalHeight;
+  if (!nw || !nh) return null;
+
   const canvas = document.createElement('canvas');
   canvas.width = nw;
   canvas.height = nh;
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  // Draw the image
+  ctx.drawImage(freshImg, 0, 0, nw, nh);
+
+  // Verify the canvas isn't tainted
   try {
-    ctx.drawImage(img, 0, 0, nw, nh);
-    // Test that we can actually read the pixels (CORS check)
-    ctx.getImageData(0, 0, 1, 1);
+    canvas.toDataURL();
   } catch {
-    // Tainted canvas — fall back to html-to-image
     return null;
   }
 
@@ -55,18 +81,13 @@ function captureFromImg(
     const py = (opts.cropAroundPct.y / 100) * nh;
     const r = PIN_SIZE / 2;
 
-    // Green circle
     ctx.beginPath();
     ctx.arc(px, py, r, 0, Math.PI * 2);
     ctx.fillStyle = PIN_COLOR;
     ctx.fill();
-
-    // White border
     ctx.lineWidth = 2;
     ctx.strokeStyle = '#ffffff';
     ctx.stroke();
-
-    // "+" text
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 14px sans-serif';
     ctx.textAlign = 'center';
@@ -99,7 +120,7 @@ function captureFromImg(
 
 /**
  * Captures a screenshot of the content area — prefers direct <img> draw
- * (fast, reliable), falls back to html-to-image for HTML mockups (email, SMS, ads).
+ * (fast, reliable), falls back to html-to-image for HTML mockups.
  */
 export function useScreenshotCapture({
   shareToken,
@@ -117,15 +138,16 @@ export function useScreenshotCapture({
       try {
         await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-        // Fast path: draw <img> directly (image + ad assets)
-        const directCanvas = captureFromImg(containerEl, opts);
+        // Fast path: draw <img> directly (image assets)
+        const directCanvas = await captureFromImg(containerEl, opts);
 
         let outCanvas: HTMLCanvasElement;
 
         if (directCanvas) {
           outCanvas = directCanvas;
         } else {
-          // Fallback: html-to-image for HTML mockups (email, SMS, ads, Google ads)
+          // Fallback: html-to-image for HTML mockups (email, SMS, ads, etc.)
+          // cacheBust avoids stale CORS cache entries for embedded images.
           const { toCanvas } = await import('html-to-image');
 
           let scrollParent: HTMLElement | null = null;
@@ -154,10 +176,11 @@ export function useScreenshotCapture({
 
           const canvas = await toCanvas(containerEl, {
             pixelRatio: 1,
+            cacheBust: true,
             backgroundColor: '#f9fafb',
-            filter: (el: Element) => {
-              if (el instanceof HTMLElement) {
-                if (el.classList?.contains('z-40') || el.classList?.contains('z-50')) return false;
+            filter: (node: Node) => {
+              if (node instanceof HTMLElement) {
+                if (node.classList?.contains('z-40') || node.classList?.contains('z-50')) return false;
               }
               return true;
             },

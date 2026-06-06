@@ -103,6 +103,7 @@ export async function captureComponent(
   // Capture with transparent background
   const componentCanvas = await toCanvas(container, {
     backgroundColor: undefined,
+    cacheBust: true,
     width: captureWidth,
     pixelRatio: 2,
   });
