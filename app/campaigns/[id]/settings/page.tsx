@@ -10,6 +10,7 @@ import { supabase, type FeedbackProject } from '@/lib/supabase';
 import { authFetch } from '@/lib/auth-fetch';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
+import DatePicker from '@/components/ui/DatePicker';
 
 export default function FeedbackProjectSettingsPage(
   props: {
@@ -253,17 +254,11 @@ function SettingsContent({
                     )}
                   </div>
                   <div className="flex items-center gap-1 ml-2 shrink-0">
-                    <label className="relative cursor-pointer">
-                      <input
-                        type="date"
-                        value={dueDate}
-                        onChange={(e) => saveDueDateWithFeedback(e.target.value)}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      />
+                    <DatePicker value={dueDate} onChange={saveDueDateWithFeedback}>
                       <span className="text-xs text-faint hover:text-prose transition-colors">
                         Change
                       </span>
-                    </label>
+                    </DatePicker>
                     <span className="text-edge-strong">·</span>
                     <button
                       type="button"
@@ -277,16 +272,12 @@ function SettingsContent({
               ) : (
                 <div className="space-y-2.5">
                   <div className="flex items-center gap-2">
-                    <label className="relative inline-flex items-center gap-2 px-3.5 py-2 border border-dashed border-edge-hover rounded-xl cursor-pointer hover:border-edge-strong hover:bg-surface/50 transition-colors group">
-                      <CalendarDays size={15} className="text-faint group-hover:text-dim transition-colors" />
-                      <span className="text-caption text-dim group-hover:text-ink transition-colors">Pick a date</span>
-                      <input
-                        type="date"
-                        value={dueDate}
-                        onChange={(e) => saveDueDateWithFeedback(e.target.value)}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      />
-                    </label>
+                    <DatePicker value={dueDate} onChange={saveDueDateWithFeedback}>
+                      <div className="inline-flex items-center gap-2 px-3.5 py-2 border border-dashed border-edge-hover rounded-xl cursor-pointer hover:border-edge-strong hover:bg-surface/50 transition-colors group">
+                        <CalendarDays size={15} className="text-faint group-hover:text-dim transition-colors" />
+                        <span className="text-caption text-dim group-hover:text-ink transition-colors">Pick a date</span>
+                      </div>
+                    </DatePicker>
                     {savingDue && (
                       <div className="w-4 h-4 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
                     )}
