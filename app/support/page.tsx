@@ -1,15 +1,22 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   MessageSquareText, Plus, ArrowLeft, Send, Clock, Loader2,
-  CircleDot, CheckCircle2, AlertCircle, X,
+  CircleDot, CheckCircle2, AlertCircle, X, Paperclip, Image as ImageIcon, Video, Trash2, ExternalLink,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { authFetch } from '@/lib/auth-fetch';
 import { useToast } from '@/components/ui/Toast';
+
+type Attachment = {
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+};
 
 type Ticket = {
   id: string;
@@ -19,6 +26,8 @@ type Ticket = {
   status: string;
   priority: string;
   category: string;
+  loom_url: string | null;
+  attachments: Attachment[];
   created_at: string;
   updated_at: string;
 };
@@ -221,6 +230,48 @@ function TicketDetailView({
         </div>
       )}
 
+      {ticket.loom_url && (
+        <div className="mb-6">
+          <label className="block text-xs font-medium text-muted mb-2">Loom Recording</label>
+          <div className="rounded-xl overflow-hidden border border-edge" style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+            <iframe
+              src={ticket.loom_url.replace('/share/', '/embed/')}
+              allowFullScreen
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+            />
+          </div>
+        </div>
+      )}
+
+      {ticket.attachments && ticket.attachments.length > 0 && (
+        <div className="mb-6">
+          <label className="block text-xs font-medium text-muted mb-2">Attachments</label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {ticket.attachments.map((att, i) => (
+              <a
+                key={i}
+                href={att.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group border border-edge rounded-xl overflow-hidden hover:border-teal/30 hover:shadow-sm transition-all"
+              >
+                {att.type.startsWith('image/') ? (
+                  <img src={att.url} alt={att.name} className="w-full h-32 object-cover" />
+                ) : (
+                  <div className="w-full h-32 bg-surface flex items-center justify-center">
+                    <Paperclip size={24} className="text-faint" />
+                  </div>
+                )}
+                <div className="px-3 py-2">
+                  <p className="text-xs text-ink truncate">{att.name}</p>
+                  <p className="text-detail text-faint">{formatBytes(att.size)}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="space-y-3 mb-6">
         {ticket.support_ticket_messages.map((msg) => (
           <div
@@ -289,11 +340,52 @@ function CreateTicketModal({
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('general');
+  const [loomUrl, setLoomUrl] = useState('');
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    if (attachments.length + files.length > 5) {
+      setError('Maximum 5 attachments');
+      return;
+    }
+    setUploading(true);
+    setError('');
+
+    for (const file of Array.from(files)) {
+      const form = new FormData();
+      form.append('file', file);
+      try {
+        const res = await authFetch('/api/support/attachments', { method: 'POST', body: form });
+        if (res.ok) {
+          const att = await res.json();
+          setAttachments((prev) => [...prev, att]);
+        } else {
+          const data = await res.json().catch(() => ({}));
+          setError(data.error || `Failed to upload ${file.name}`);
+        }
+      } catch {
+        setError(`Failed to upload ${file.name}`);
+      }
+    }
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async () => {
     if (!subject.trim()) return;
+    if (loomUrl.trim() && !/^https:\/\/(www\.)?loom\.com\/share\/[a-zA-Z0-9]+/.test(loomUrl.trim())) {
+      setError('Please enter a valid Loom share URL (https://www.loom.com/share/...)');
+      return;
+    }
     setSaving(true);
     setError('');
 
@@ -304,6 +396,8 @@ function CreateTicketModal({
         subject: subject.trim(),
         description: description.trim(),
         category,
+        loom_url: loomUrl.trim() || null,
+        attachments,
       }),
     });
 
@@ -365,6 +459,73 @@ function CreateTicketModal({
             />
           </div>
 
+          <div>
+            <label className="block text-xs font-medium text-muted mb-1.5">Screenshots</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/webp,.pdf"
+              multiple
+              onChange={(e) => handleFileUpload(e.target.files)}
+              className="hidden"
+            />
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {attachments.map((att, i) => (
+                  <div key={i} className="relative group">
+                    {att.type.startsWith('image/') ? (
+                      <img src={att.url} alt={att.name} className="w-20 h-20 object-cover rounded-lg border border-edge" />
+                    ) : (
+                      <div className="w-20 h-20 bg-surface border border-edge rounded-lg flex items-center justify-center">
+                        <Paperclip size={16} className="text-faint" />
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(i)}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={10} />
+                    </button>
+                    <p className="text-detail text-faint mt-0.5 truncate w-20">{att.name}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading || attachments.length >= 5}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-muted bg-surface border border-edge rounded-lg hover:border-teal/30 transition-colors disabled:opacity-50"
+            >
+              {uploading ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <ImageIcon size={13} />
+              )}
+              {uploading ? 'Uploading...' : attachments.length > 0 ? 'Add more' : 'Attach screenshots'}
+            </button>
+            <p className="text-detail text-faint mt-1">PNG, JPG, GIF, WebP, or PDF. Max 10MB each, up to 5 files.</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted mb-1.5">
+              <span className="flex items-center gap-1.5">
+                <Video size={13} />
+                Loom Recording
+                <span className="text-faint font-normal">(optional)</span>
+              </span>
+            </label>
+            <input
+              type="url"
+              value={loomUrl}
+              onChange={(e) => setLoomUrl(e.target.value)}
+              placeholder="https://www.loom.com/share/..."
+              className="w-full bg-surface border border-edge rounded-lg px-3 py-2.5 text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+            />
+            <p className="text-detail text-faint mt-1">Paste a Loom share link to help us understand the issue.</p>
+          </div>
+
           {error && (
             <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
               {error}
@@ -417,6 +578,12 @@ function CategoryLabel({ category }: { category: string }) {
   return (
     <span className="text-detail text-faint">{labels[category] || category}</span>
   );
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function timeAgo(dateStr: string): string {

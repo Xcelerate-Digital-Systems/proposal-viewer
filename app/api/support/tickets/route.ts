@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     if (!body) {
       return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
-    const { subject, description, category } = body;
+    const { subject, description, category, loom_url, attachments } = body;
 
     if (!subject || typeof subject !== 'string' || subject.trim().length === 0) {
       return NextResponse.json({ error: 'Subject is required' }, { status: 400 });
@@ -55,6 +55,24 @@ export async function POST(req: NextRequest) {
 
     const validCategories = ['general', 'billing', 'bug', 'feature_request', 'account'];
     const safeCategory = validCategories.includes(category) ? category : 'general';
+
+    let safeLoomUrl: string | null = null;
+    if (loom_url && typeof loom_url === 'string') {
+      const trimmed = loom_url.trim().slice(0, 500);
+      if (/^https:\/\/(www\.)?loom\.com\/share\/[a-zA-Z0-9]+/.test(trimmed)) {
+        safeLoomUrl = trimmed;
+      }
+    }
+
+    let safeAttachments: { url: string; name: string; type: string; size: number }[] = [];
+    if (Array.isArray(attachments)) {
+      safeAttachments = attachments
+        .filter((a: unknown): a is { url: string; name: string; type: string; size: number } =>
+          typeof a === 'object' && a !== null &&
+          typeof (a as Record<string, unknown>).url === 'string' &&
+          typeof (a as Record<string, unknown>).name === 'string')
+        .slice(0, 5);
+    }
 
     const supabase = createServiceClient();
     const { data: ticket, error } = await supabase
@@ -67,6 +85,8 @@ export async function POST(req: NextRequest) {
         subject: subject.trim().slice(0, 200),
         description: (description || '').trim().slice(0, 10000),
         category: safeCategory,
+        loom_url: safeLoomUrl,
+        attachments: safeAttachments,
       })
       .select()
       .single();

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { LifeBuoy, X, Send, Loader2, CheckCircle2 } from 'lucide-react';
+import { LifeBuoy, X, Send, Loader2, CheckCircle2, Video } from 'lucide-react';
 import { authFetch } from '@/lib/auth-fetch';
 
 const CATEGORIES = [
@@ -16,6 +16,7 @@ export default function SupportWidget() {
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('general');
+  const [loomUrl, setLoomUrl] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -35,6 +36,7 @@ export default function SupportWidget() {
     setSubject('');
     setDescription('');
     setCategory('general');
+    setLoomUrl('');
     setSent(false);
   };
 
@@ -45,7 +47,7 @@ export default function SupportWidget() {
       const res = await authFetch('/api/support/tickets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject: subject.trim(), description: description.trim(), category }),
+        body: JSON.stringify({ subject: subject.trim(), description: description.trim(), category, loom_url: loomUrl.trim() || null }),
       });
       if (res.ok) {
         setSent(true);
@@ -116,6 +118,21 @@ export default function SupportWidget() {
                   placeholder="Describe the issue or request"
                   rows={4}
                   className="w-full px-3 py-1.5 text-sm border border-edge-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/30 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-1 text-xs font-medium text-prose mb-1">
+                  <Video size={12} />
+                  Loom Link
+                  <span className="text-faint font-normal">(optional)</span>
+                </label>
+                <input
+                  type="url"
+                  value={loomUrl}
+                  onChange={(e) => setLoomUrl(e.target.value)}
+                  placeholder="https://www.loom.com/share/..."
+                  className="w-full px-3 py-1.5 text-sm border border-edge-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/30"
                 />
               </div>
 
