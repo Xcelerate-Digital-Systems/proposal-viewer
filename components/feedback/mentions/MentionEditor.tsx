@@ -102,7 +102,7 @@ export default function MentionEditor({
             `@${label}`,
           ];
         },
-        suggestion: buildSuggestion(participantsRef, readyRef),
+        suggestion: buildSuggestion(participantsRef, readyRef) as never,
       }),
     ],
     content: value || '',
@@ -176,6 +176,17 @@ function buildSuggestion(
   return {
     char: '@',
     allowSpaces: false,
+    command: ({ editor, range, props }: { editor: import('@tiptap/react').Editor; range: { from: number; to: number }; props: Record<string, unknown> }) => {
+      const item = props as unknown as Participant;
+      editor
+        .chain()
+        .focus()
+        .insertContentAt(range, [
+          { type: 'mention', attrs: { id: item.id, label: item.name } },
+          { type: 'text', text: ' ' },
+        ])
+        .run();
+    },
     items: async ({ query }: { query: string }) => {
       if (participantsRef.current.length === 0) {
         const fetched = await readyRef.current;
