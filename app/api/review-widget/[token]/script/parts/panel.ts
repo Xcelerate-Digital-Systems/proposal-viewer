@@ -97,8 +97,8 @@ function renderFooter(){
 renderFooter();
 
 /* ── Panel open/close ──────────────────────────────────── */
-function openPanel(){panelOpen=true;panel.classList.add("open");stack.classList.add("panel-open");modeToggle.classList.add("panel-open");setActiveTool("comments");}
-function closePanel(){panelOpen=false;panel.classList.remove("open");stack.classList.remove("panel-open");modeToggle.classList.remove("panel-open");if(activeTool==="comments")setActiveTool(null);}
+function openPanel(){panelOpen=true;panel.classList.add("open");stack.classList.add("panel-open");setActiveTool("comments");}
+function closePanel(){panelOpen=false;panel.classList.remove("open");stack.classList.remove("panel-open");if(activeTool==="comments")setActiveTool(null);}
 panel.querySelector("#aviz-close").addEventListener("click",closePanel);
 
 /* ── Render ─────────────────────────────────────────────── */

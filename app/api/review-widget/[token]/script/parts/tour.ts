@@ -81,13 +81,14 @@ function repositionTourCallout(){
   var rect=btn.getBoundingClientRect();
   var cRect=tourCallout.getBoundingClientRect();
   var gap=18;
-  var top=rect.top+rect.height/2-cRect.height/2;
-  var left=rect.left-cRect.width-gap;
-  /* Flip to the right of the button if no room on the left. */
+  /* Toolbar is horizontal at the bottom — callout appears ABOVE the button,
+     centred horizontally. Falls back to below if no room above. */
+  var top=rect.top-cRect.height-gap;
+  var left=rect.left+rect.width/2-cRect.width/2;
   var flipped=false;
-  if(left<12){left=rect.right+gap;flipped=true;}
-  if(top<12)top=12;
-  if(top+cRect.height>window.innerHeight-12)top=window.innerHeight-cRect.height-12;
+  if(top<12){top=rect.bottom+gap;flipped=true;}
+  if(left<12)left=12;
+  if(left+cRect.width>window.innerWidth-12)left=window.innerWidth-cRect.width-12;
   tourCallout.style.top=top+"px";
   tourCallout.style.left=left+"px";
   tourCallout.classList.toggle("flipped",flipped);

@@ -101,38 +101,32 @@ html.aviz-mode-text *,html.aviz-mode-highlight *{cursor:text !important;}
   box-shadow:0 8px 40px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.06);padding:14px;
   animation:aviz-fadeIn .15s ease-out;}
 
-/* ── Stack (mode toggle + toolbar) ─────────────────────────
-   The fixed right-edge anchor lives on the stack so the toggle pill
-   and the toolbar stay vertically aligned and slide off together on
-   mobile when the comments panel opens. */
-#aviz-stack{position:fixed;right:20px;top:50%;transform:translateY(-50%);z-index:2147483640;
-  display:flex;flex-direction:column;align-items:flex-end;gap:10px;
-  transition:right .25s cubic-bezier(.4,0,.2,1);}
-
-/* ── Mode toggle (Comment / Browse) ────────────────────────
-   Floating segmented pill control anchored to the bottom-centre of
-   the viewport, independent of the right-edge toolbar stack so it
-   doesn't read as a sub-control of the toolbar. The lit pill is the
-   reviewer's current mode; the unlit pill is a one-click switch. */
-#aviz-mode-toggle{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2147483640;
-  display:inline-flex;background:#fff;border-radius:9999px;padding:5px;gap:2px;
+/* ── Unified bottom bar ───────────────────────────────────
+   Single horizontal bar anchored to the bottom-centre of the
+   viewport. Contains mode toggle + annotation tools in one row.
+   Layout: [Comment|Browse] · [Pin][Box][Text] · [Video] · [Comments][Questions] */
+#aviz-stack{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2147483640;
+  display:inline-flex;align-items:center;background:#fff;border-radius:9999px;
+  padding:5px;gap:0;
   border:1px solid rgba(0,0,0,.04);
   box-shadow:0 2px 4px rgba(20,20,40,.06),0 10px 30px rgba(20,20,40,.12);
   transition:bottom .25s cubic-bezier(.4,0,.2,1),opacity .2s;}
+
+/* ── Mode toggle (inline within the bar) ──────────────────
+   Segmented pill sitting on the left side of the bar. */
+#aviz-mode-toggle{display:inline-flex;border-radius:9999px;padding:0;gap:2px;
+  background:transparent;border:none;box-shadow:none;}
 .aviz-toggle-pill{background:transparent;border:none;color:#6b7280;font-family:${FONT};
-  font-size:13px;font-weight:600;letter-spacing:.01em;padding:8px 18px;border-radius:9999px;
+  font-size:13px;font-weight:600;letter-spacing:.01em;padding:8px 16px;border-radius:9999px;
   cursor:pointer;line-height:1;margin:0;transition:background-color .2s,color .2s;}
 .aviz-toggle-pill:hover{color:#111827;}
 .aviz-toggle-pill.active,.aviz-toggle-pill.active:hover{background:${ACCENT};color:#fff;
   box-shadow:0 1px 2px rgba(20,20,40,.06);}
 
-/* ── Toolbar ───────────────────────────────────────────────
-   Mirrors the in-app FeedbackToolbar component: rounded card, small
-   pill buttons individually rounded, full accent fill when active,
-   dark pill tooltip on hover, light centred separator. */
-#aviz-toolbar{display:flex;flex-direction:column;align-items:center;gap:4px;background:#fff;border-radius:16px;
-  box-shadow:0 2px 4px rgba(20,20,40,.06),0 8px 24px rgba(20,20,40,.06);
-  padding:6px;overflow:visible;border:1px solid rgba(0,0,0,.04);}
+/* ── Toolbar (inline tools within the bar) ────────────────
+   Horizontal row of tool buttons. */
+#aviz-toolbar{display:inline-flex;align-items:center;gap:2px;background:transparent;border-radius:0;
+  box-shadow:none;padding:0;overflow:visible;border:none;}
 .aviz-tool{position:relative;width:36px;height:36px;display:flex;align-items:center;justify-content:center;
   background:transparent;border:none;border-radius:12px;cursor:pointer;color:#6b7280;
   transition:background-color .2s,color .2s;margin:0;padding:0;}
@@ -146,26 +140,23 @@ html.aviz-mode-text *,html.aviz-mode-highlight *{cursor:text !important;}
   justify-content:center;padding:0 4px;line-height:1;}
 .aviz-tool.active .aviz-badge{background:#fff;color:${ACCENT};}
 .aviz-tool .aviz-badge:empty{display:none;}
-.aviz-tooltip{position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);
+/* Tooltips now appear ABOVE buttons (horizontal bar is at the bottom) */
+.aviz-tooltip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
   background:#111827;color:#fff;font-size:11px;font-weight:500;padding:5px 10px;border-radius:8px;
   white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;z-index:2147483641;
   box-shadow:0 2px 6px rgba(0,0,0,.12);}
 .aviz-tool:hover .aviz-tooltip{opacity:1;}
 .aviz-tooltip .soon{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:9999px;
   background:rgba(255,255,255,.18);color:#fff;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
-.aviz-sep{width:20px;height:1px;background:#f3f4f6;flex-shrink:0;margin:2px 0;padding:0;}
-/* Toolbar lives on the right; panel lives on the left — no shift needed on desktop. */
+/* Separators are vertical dividers in horizontal layout */
+.aviz-sep{width:1px;height:20px;background:#e5e7eb;flex-shrink:0;margin:0 4px;padding:0;}
 @media(max-width:480px){
-  #aviz-stack{right:10px;gap:8px;}
-  #aviz-toolbar{padding:5px;}
-  .aviz-tool{width:34px;height:34px;}
-  #aviz-mode-toggle{bottom:14px;}
-  .aviz-toggle-pill{padding:7px 14px;font-size:12.5px;}
-  /* Panel covers the viewport on mobile; tuck the toolbar off the right
-     edge and slide the floating toggle off the bottom so neither sit on
-     top of the panel. */
-  #aviz-stack.panel-open{right:-160px;}
-  #aviz-mode-toggle.panel-open{bottom:-80px;opacity:0;pointer-events:none;}
+  #aviz-stack{bottom:14px;padding:4px;gap:0;}
+  .aviz-tool{width:32px;height:32px;}
+  .aviz-tool svg{width:16px;height:16px;}
+  .aviz-toggle-pill{padding:7px 12px;font-size:12px;}
+  /* Panel covers the viewport on mobile; slide the bar off the bottom. */
+  #aviz-stack.panel-open{bottom:-80px;opacity:0;pointer-events:none;}
 }
 
 /* ── Mode bar (top bar when pin/box/text active) ───────── */
@@ -295,7 +286,7 @@ mark.aviz-hl.resolved{background:rgba(${HIGHLIGHT_COLOR},.15) !important;}
 #aviz-tour-backdrop{position:fixed;inset:0;z-index:2147483635;background:rgba(15,23,42,.55);
   animation:aviz-fadeIn .2s ease-out;}
 html.aviz-tour-on #aviz-stack{pointer-events:none;z-index:2147483640;}
-html.aviz-tour-on #aviz-mode-toggle{opacity:.45;pointer-events:none;}
+html.aviz-tour-on #aviz-mode-toggle{opacity:.45;}
 html.aviz-tour-on .aviz-tool .aviz-tooltip{display:none;}
 html.aviz-tour-on .aviz-tool.aviz-tour-target{background:${ACCENT}18;color:${ACCENT};
   box-shadow:0 0 0 3px ${ACCENT}55,0 0 22px ${ACCENT}99;animation:aviz-tourPulse 1.5s ease-in-out infinite;position:relative;z-index:1;}
@@ -321,11 +312,13 @@ html.aviz-tour-on .aviz-tool.aviz-tour-target{background:${ACCENT}18;color:${ACC
   margin:0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:${FONT};
   transition:background .3s;}
 .aviz-tour-callout .aviz-tour-next:hover{background:#015f68;}
-.aviz-tour-callout .aviz-tour-arrow{position:absolute;right:-7px;top:50%;transform:translateY(-50%);
+/* Arrow points down toward the toolbar button below the callout */
+.aviz-tour-callout .aviz-tour-arrow{position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);
   width:14px;height:14px;background:#fff;border-right:1px solid rgba(0,0,0,.04);
-  border-top:1px solid rgba(0,0,0,.04);transform-origin:center;rotate:45deg;
-  box-shadow:2px -2px 4px rgba(0,0,0,.04);}
-.aviz-tour-callout.flipped .aviz-tour-arrow{right:auto;left:-7px;rotate:225deg;}
+  border-bottom:1px solid rgba(0,0,0,.04);transform-origin:center;rotate:45deg;
+  box-shadow:2px 2px 4px rgba(0,0,0,.04);}
+/* Flipped: callout is below the button, arrow points up */
+.aviz-tour-callout.flipped .aviz-tour-arrow{bottom:auto;top:-7px;rotate:225deg;}
 
 /* ══════════════════════════════════════════════════════════
    COMMENTS PANEL  –  matches in-app CommentsPanel design

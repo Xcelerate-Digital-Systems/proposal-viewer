@@ -5,17 +5,13 @@ export function toolbarJS(): string {
 /* ── DOM setup ──────────────────────────────────────────── */
 var root=document.createElement("div");root.id="aviz-root";document.body.appendChild(root);
 
-/* ── Stack (wraps mode toggle + toolbar so they share a single
-       right-edge anchor and slide together on mobile panel-open) ── */
+/* ── Unified bottom bar ─────────────────────────────────────
+   Single horizontal bar at the bottom-centre of the viewport
+   combining the Comment/Browse mode toggle and annotation tools.
+   Layout: [Comment|Browse] · [Pin][Box][Text] · [Video] · [Comments][Questions] */
 var stack=document.createElement("div");stack.id="aviz-stack";
 
-/* ── Mode toggle (Comment / Browse) ──────────────────────
-   Top-level mode switch -- "Comment" arms pin and re-enables the
-   annotation tools; "Browse" suppresses pin drops + the hover ring
-   so the reviewer can interact with the page normally. The toggle
-   lives above the toolbar so the choice is impossible to miss; the
-   browse tile used to sit inside the toolbar column and reviewers
-   couldn't tell it apart from the annotation tools. */
+/* Mode toggle segment */
 var modeToggle=document.createElement("div");modeToggle.id="aviz-mode-toggle";
 var togglePills={
   comment:document.createElement("button"),
@@ -26,13 +22,12 @@ togglePills.comment.setAttribute("data-mode","comment");togglePills.comment.text
 togglePills.browse.type="button";togglePills.browse.className="aviz-toggle-pill";
 togglePills.browse.setAttribute("data-mode","browse");togglePills.browse.textContent="Browse";
 modeToggle.appendChild(togglePills.comment);modeToggle.appendChild(togglePills.browse);
-/* modeToggle is appended directly to the root (not the stack) so it
-   anchors to the bottom-centre of the viewport independently of the
-   right-edge toolbar -- floating it underneath the toolbar made it
-   read like an orphaned dropdown. */
-root.appendChild(modeToggle);
+stack.appendChild(modeToggle);
 
-/* ── Toolbar ────────────────────────────────────────────── */
+/* Divider between mode toggle and tools */
+var sep0=document.createElement("div");sep0.className="aviz-sep";stack.appendChild(sep0);
+
+/* ── Tools ──────────────────────────────────────────────── */
 var toolbar=document.createElement("div");toolbar.id="aviz-toolbar";
 var tools=[
   {id:"pin",icon:ICON.pin,label:"Pin Comment"},
@@ -40,6 +35,7 @@ var tools=[
   {id:"text",icon:ICON.text,label:"Add Text"},
   {id:"sep1",sep:true},
   {id:"video",icon:ICON.video,label:"Record Video"},
+  {id:"sep2",sep:true},
   {id:"comments",icon:ICON.chat,label:"Comments"},
   {id:"questions",icon:ICON.help,label:"Questions",soon:true},
 ];
