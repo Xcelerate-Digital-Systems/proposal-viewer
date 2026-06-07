@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Upload, Plus, Trash2, Type, AlignLeft, Check, ChevronDown } from 'lucide-react';
+import { X, Upload, Plus, Trash2, Type, AlignLeft, Check, ChevronDown, GripVertical } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import type { FeedbackItem, FeedbackItemVersion } from '@/lib/supabase';
 import type { VersionView } from '@/lib/feedback/versions';
@@ -13,6 +13,15 @@ import { supabase } from '@/lib/supabase';
 import { authFetch } from '@/lib/auth-fetch';
 import { getFeedbackStatusDef } from '@/lib/feedback/status';
 import AdMockupPreview, { type AdPlatform } from '@/components/admin/feedback/AdMockupPreview';
+import {
+  DndContext, closestCenter, DragEndEvent,
+  PointerSensor, useSensor, useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext, verticalListSortingStrategy, arrayMove, useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 
 /* ─── Shared helpers ──────────────────────────────────────────────── */
 
@@ -479,88 +488,23 @@ export default function AddVersionModal({
           </div>
 
           {/* RIGHT: Copy Variations */}
-          <div className="flex-1 min-w-0 flex flex-col overflow-y-auto">
-            <div className="p-5 flex-1">
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-medium text-dim uppercase tracking-wider">Copy Variations</label>
-                <button type="button" onClick={addNewVariation} className="inline-flex items-center gap-1 text-detail font-semibold text-teal hover:text-teal-hover">
-                  <Plus size={12} /> New variation
-                </button>
-              </div>
-              <p className="text-detail text-faint mb-4">
-                Select existing variations or create new ones. Shared variations carry their feedback across all ads that use them.
-              </p>
-
-              {loadingVariations && (
-                <div className="flex items-center gap-2 text-detail text-faint py-2">
-                  <div className="w-3 h-3 border border-faint border-t-teal rounded-full animate-spin" />
-                  Loading…
-                </div>
-              )}
-
-              <div className="space-y-2.5">
-                {/* Existing variations */}
-                {variations.filter((v) => v.isExisting).length > 0 && (
-                  <div className="space-y-1.5">
-                    <p className="text-2xs font-semibold uppercase tracking-wider text-dim">Existing in this campaign</p>
-                    {variations.filter((v) => v.isExisting).map((v) => (
-                      <ExistingVariationRow
-                        key={v.id}
-                        variation={v}
-                        isActive={activeVariation?.id === v.id}
-                        onToggle={() => toggleVariation(v.id)}
-                        onActivate={() => { if (v.selected) setActiveVariationId(v.id); }}
-                        onPatch={(patch) => patchVariation(v.id, patch)}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {/* New variations */}
-                {variations.filter((v) => !v.isExisting).length > 0 && (
-                  <div className="space-y-2.5">
-                    {variations.filter((v) => v.isExisting).length > 0 && (
-                      <p className="text-2xs font-semibold uppercase tracking-wider text-dim mt-3">New variations</p>
-                    )}
-                    {variations.filter((v) => !v.isExisting).map((v, i) => (
-                      <NewVariationEditor
-                        key={v.id}
-                        variation={v}
-                        index={i}
-                        isActive={activeVariation?.id === v.id}
-                        onPatch={(patch) => patchVariation(v.id, patch)}
-                        onActivate={() => setActiveVariationId(v.id)}
-                        onRemove={() => removeVariation(v.id)}
-                        canRemove={variations.filter((x) => !x.isExisting).length > 1 || variations.filter((x) => x.isExisting && x.selected).length > 0}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Notes + stage reset */}
-              <div className="mt-6 space-y-3 border-t border-edge pt-4">
-                <Field label="Version notes (optional)">
-                  <input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. tightened copy, swapped hero shot" />
-                </Field>
-                {!isEditing && (
-                  <Field label="After upload">
-                    <div className="flex items-center gap-2">
-                      <select className={`${inputCls} flex-1`} value={resetTo} onChange={(e) => setResetTo(e.target.value as FeedbackStatus | 'keep')}>
-                        {RESET_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                      </select>
-                      {resetTo !== 'keep' && (
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium border ${getFeedbackStatusDef(resetTo).bg} ${getFeedbackStatusDef(resetTo).text} ${getFeedbackStatusDef(resetTo).border}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${getFeedbackStatusDef(resetTo).dot}`} />
-                          {getFeedbackStatusDef(resetTo).label}
-                        </span>
-                      )}
-                    </div>
-                  </Field>
-                )}
-              </div>
-            </div>
-          </div>
+          <VersionVariationPanel
+            variations={variations}
+            setVariations={setVariations}
+            activeVariationId={activeVariation?.id ?? null}
+            setActiveVariationId={setActiveVariationId}
+            toggleVariation={toggleVariation}
+            patchVariation={patchVariation}
+            addNewVariation={addNewVariation}
+            removeVariation={removeVariation}
+            loadingVariations={loadingVariations}
+            notes={notes}
+            setNotes={setNotes}
+            isEditing={isEditing}
+            resetTo={resetTo}
+            setResetTo={setResetTo}
+            RESET_OPTIONS={RESET_OPTIONS}
+          />
         </div>
 
         {/* Footer */}
@@ -679,9 +623,165 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function ExistingVariationRow({ variation, isActive, onToggle, onActivate, onPatch }: {
+/* ─── Version Variation Panel with DnD ───────────────────────────── */
+
+function VersionVariationPanel({
+  variations, setVariations, activeVariationId, setActiveVariationId,
+  toggleVariation, patchVariation, addNewVariation, removeVariation, loadingVariations,
+  notes, setNotes, isEditing, resetTo, setResetTo, RESET_OPTIONS,
+}: {
+  variations: PickerVariation[];
+  setVariations: React.Dispatch<React.SetStateAction<PickerVariation[]>>;
+  activeVariationId: string | null;
+  setActiveVariationId: (id: string | null) => void;
+  toggleVariation: (id: string) => void;
+  patchVariation: (id: string, patch: Partial<PickerVariation>) => void;
+  addNewVariation: () => void;
+  removeVariation: (id: string) => void;
+  loadingVariations: boolean;
+  notes: string;
+  setNotes: (v: string) => void;
+  isEditing: boolean;
+  resetTo: FeedbackStatus | 'keep';
+  setResetTo: (v: FeedbackStatus | 'keep') => void;
+  RESET_OPTIONS: { value: FeedbackStatus | 'keep'; label: string }[];
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  const existingVars = variations.filter((v) => v.isExisting);
+  const newVars = variations.filter((v) => !v.isExisting);
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    setVariations((prev) => {
+      const oldIdx = prev.findIndex((v) => v.id === active.id);
+      const newIdx = prev.findIndex((v) => v.id === over.id);
+      if (oldIdx === -1 || newIdx === -1) return prev;
+      return arrayMove(prev, oldIdx, newIdx);
+    });
+  };
+
+  const handleToggleExpand = (id: string, isExisting: boolean) => {
+    if (isExisting) {
+      const v = variations.find((x) => x.id === id);
+      if (!v?.selected) toggleVariation(id);
+    }
+    if (activeVariationId === id) {
+      setActiveVariationId(null);
+    } else {
+      setActiveVariationId(id);
+    }
+  };
+
+  return (
+    <div className="flex-1 min-w-0 flex flex-col overflow-y-auto">
+      <div className="p-5 flex-1">
+        <div className="flex items-center justify-between mb-1">
+          <label className="block text-xs font-medium text-dim uppercase tracking-wider">Copy Variations</label>
+          <button type="button" onClick={addNewVariation} className="inline-flex items-center gap-1 text-detail font-semibold text-teal hover:text-teal-hover">
+            <Plus size={12} /> New variation
+          </button>
+        </div>
+        <p className="text-detail text-faint mb-4">
+          Select existing variations or create new ones. Drag to reorder.
+        </p>
+
+        {loadingVariations && (
+          <div className="flex items-center gap-2 text-detail text-faint py-2">
+            <div className="w-3 h-3 border border-faint border-t-teal rounded-full animate-spin" />
+            Loading…
+          </div>
+        )}
+
+        <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={handleDragEnd}>
+          <SortableContext items={variations.map((v) => v.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2.5">
+              {existingVars.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-2xs font-semibold uppercase tracking-wider text-dim">Existing in this campaign</p>
+                  {existingVars.map((v) => (
+                    <SortableExistingVariationRow
+                      key={v.id}
+                      variation={v}
+                      isActive={activeVariationId === v.id}
+                      onToggle={() => toggleVariation(v.id)}
+                      onActivate={() => handleToggleExpand(v.id, true)}
+                      onPatch={(patch) => patchVariation(v.id, patch)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {newVars.length > 0 && (
+                <div className="space-y-2.5">
+                  {existingVars.length > 0 && (
+                    <p className="text-2xs font-semibold uppercase tracking-wider text-dim mt-3">New variations</p>
+                  )}
+                  {newVars.map((v, i) => (
+                    <SortableNewVariationEditor
+                      key={v.id}
+                      variation={v}
+                      index={i}
+                      isActive={activeVariationId === v.id}
+                      onPatch={(patch) => patchVariation(v.id, patch)}
+                      onActivate={() => handleToggleExpand(v.id, false)}
+                      onRemove={() => removeVariation(v.id)}
+                      canRemove={newVars.length > 1 || existingVars.filter((x) => x.selected).length > 0}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </SortableContext>
+        </DndContext>
+
+        {/* Notes + stage reset */}
+        <div className="mt-6 space-y-3 border-t border-edge pt-4">
+          <Field label="Version notes (optional)">
+            <input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. tightened copy, swapped hero shot" />
+          </Field>
+          {!isEditing && (
+            <Field label="After upload">
+              <div className="flex items-center gap-2">
+                <select className={`${inputCls} flex-1`} value={resetTo} onChange={(e) => setResetTo(e.target.value as FeedbackStatus | 'keep')}>
+                  {RESET_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                {resetTo !== 'keep' && (
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium border ${getFeedbackStatusDef(resetTo).bg} ${getFeedbackStatusDef(resetTo).text} ${getFeedbackStatusDef(resetTo).border}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${getFeedbackStatusDef(resetTo).dot}`} />
+                    {getFeedbackStatusDef(resetTo).label}
+                  </span>
+                )}
+              </div>
+            </Field>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Sortable Existing Variation Row ────────────────────────────── */
+
+function SortableExistingVariationRow(props: {
   variation: PickerVariation; isActive: boolean; onToggle: () => void; onActivate: () => void;
   onPatch: (patch: Partial<PickerVariation>) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.variation.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style}>
+      <ExistingVariationRow {...props} dragHandleProps={{ ...attributes, ...listeners }} />
+    </div>
+  );
+}
+
+function ExistingVariationRow({ variation, isActive, onToggle, onActivate, onPatch, dragHandleProps }: {
+  variation: PickerVariation; isActive: boolean; onToggle: () => void; onActivate: () => void;
+  onPatch: (patch: Partial<PickerVariation>) => void; dragHandleProps?: Record<string, unknown>;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const expanded = variation.selected && isActive;
@@ -706,6 +806,10 @@ function ExistingVariationRow({ variation, isActive, onToggle, onActivate, onPat
       onClick={() => { if (!variation.selected) onToggle(); onActivate(); }}
     >
       <div className="flex items-center gap-2.5 p-3">
+        <button type="button" className="text-faint hover:text-dim cursor-grab active:cursor-grabbing shrink-0 touch-none"
+          {...dragHandleProps} onClick={(e) => e.stopPropagation()}>
+          <GripVertical size={14} />
+        </button>
         <button type="button" onClick={(e) => { e.stopPropagation(); onToggle(); }}
           className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
             variation.selected ? 'bg-teal border-teal text-white' : 'border-edge-hover hover:border-teal/50'
@@ -752,49 +856,87 @@ function ExistingVariationRow({ variation, isActive, onToggle, onActivate, onPat
   );
 }
 
-function NewVariationEditor({ variation, index, isActive, onPatch, onActivate, onRemove, canRemove }: {
+/* ─── Sortable New Variation Editor ──────────────────────────────── */
+
+function SortableNewVariationEditor(props: {
   variation: PickerVariation; index: number; isActive: boolean;
   onPatch: (patch: Partial<PickerVariation>) => void; onActivate: () => void; onRemove: () => void; canRemove: boolean;
 }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.variation.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style}>
+      <NewVariationEditor {...props} dragHandleProps={{ ...attributes, ...listeners }} />
+    </div>
+  );
+}
+
+function NewVariationEditor({ variation, index, isActive, onPatch, onActivate, onRemove, canRemove, dragHandleProps }: {
+  variation: PickerVariation; index: number; isActive: boolean;
+  onPatch: (patch: Partial<PickerVariation>) => void; onActivate: () => void; onRemove: () => void; canRemove: boolean;
+  dragHandleProps?: Record<string, unknown>;
+}) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const displayLabel = variation.label?.trim() || variation.headline?.trim() || `Variation ${index + 1}`;
+  const subtitle = variation.headline?.trim() ? variation.primary_text?.trim() || '' : variation.primary_text?.trim() || '';
+
   const autoResize = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
     el.style.height = `${Math.max(el.scrollHeight, 140)}px`;
   }, []);
-  useEffect(() => { autoResize(); }, [variation.primary_text, autoResize]);
+  useEffect(() => { if (isActive) autoResize(); }, [isActive, variation.primary_text, autoResize]);
 
   return (
-    <div className={`rounded-2xl border transition-colors ${isActive ? 'border-teal/40 bg-teal/5' : 'border-edge-strong bg-white'}`}>
-      <div className="flex items-center gap-2 px-3 pt-3">
-        <button type="button" onClick={onActivate}
+    <div
+      className={`rounded-2xl border transition-colors ${isActive ? 'border-teal/40 bg-teal/5' : 'border-edge-strong bg-white hover:bg-surface cursor-pointer'}`}
+      onClick={() => { if (!isActive) onActivate(); }}
+    >
+      <div className="flex items-center gap-2 px-3 py-3">
+        <button type="button" className="text-faint hover:text-dim cursor-grab active:cursor-grabbing shrink-0 touch-none"
+          {...dragHandleProps} onClick={(e) => e.stopPropagation()}>
+          <GripVertical size={14} />
+        </button>
+        <button type="button" onClick={(e) => { e.stopPropagation(); onActivate(); }}
           className={`inline-flex items-center justify-center w-5 h-5 rounded text-detail font-semibold shrink-0 transition-colors ${
             isActive ? 'bg-teal text-white' : 'bg-surface text-prose hover:bg-edge'
           }`}>{index + 1}</button>
-        <input type="text" value={variation.label} onChange={(e) => onPatch({ label: e.target.value })} onFocus={onActivate}
-          placeholder={`Variation ${index + 1} name (optional)`}
-          className="flex-1 min-w-0 bg-transparent text-caption font-semibold text-ink placeholder:text-faint placeholder:font-normal outline-none" />
+        {isActive ? (
+          <input type="text" value={variation.label} onChange={(e) => onPatch({ label: e.target.value })}
+            placeholder={`Variation ${index + 1} name (optional)`}
+            className="flex-1 min-w-0 bg-transparent text-caption font-semibold text-ink placeholder:text-faint placeholder:font-normal outline-none"
+            onClick={(e) => e.stopPropagation()} />
+        ) : (
+          <p className="flex-1 min-w-0 text-xs font-medium text-ink truncate">{displayLabel}</p>
+        )}
         {canRemove && (
-          <button type="button" onClick={onRemove} className="text-faint hover:text-red-500 p-1 rounded shrink-0" title="Remove"><Trash2 size={13} /></button>
+          <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(); }} className="text-faint hover:text-red-500 p-1 rounded shrink-0" title="Remove"><Trash2 size={13} /></button>
         )}
       </div>
-      <div className="px-3 pb-3 pt-2 space-y-2.5">
-        <div>
-          <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-faint mb-1"><AlignLeft size={10} /> Primary text</label>
-          <textarea ref={textareaRef} value={variation.primary_text}
-            onChange={(e) => { onPatch({ primary_text: e.target.value }); autoResize(); }} onFocus={onActivate}
-            placeholder="Body copy shown above the image…"
-            className="w-full px-3 py-2 bg-white border border-edge-strong rounded-lg text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 resize-none overflow-hidden"
-            style={{ minHeight: 140 }} />
+      {!isActive && subtitle && (
+        <div className="px-3 pb-3 -mt-1">
+          <p className="text-detail text-faint line-clamp-2">{subtitle}</p>
         </div>
-        <div>
-          <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-faint mb-1"><Type size={10} /> Headline</label>
-          <input type="text" value={variation.headline} onChange={(e) => onPatch({ headline: e.target.value })} onFocus={onActivate}
-            placeholder="Short punchy headline…"
-            className="w-full px-3 py-2 bg-white border border-edge-strong rounded-lg text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20" />
+      )}
+      {isActive && (
+        <div className="px-3 pb-3 pt-0 space-y-2.5" onClick={(e) => e.stopPropagation()}>
+          <div>
+            <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-faint mb-1"><AlignLeft size={10} /> Primary text</label>
+            <textarea ref={textareaRef} value={variation.primary_text}
+              onChange={(e) => { onPatch({ primary_text: e.target.value }); autoResize(); }}
+              placeholder="Body copy shown above the image…"
+              className="w-full px-3 py-2 bg-white border border-edge-strong rounded-lg text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 resize-none overflow-hidden"
+              style={{ minHeight: 140 }} />
+          </div>
+          <div>
+            <label className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-faint mb-1"><Type size={10} /> Headline</label>
+            <input type="text" value={variation.headline} onChange={(e) => onPatch({ headline: e.target.value })}
+              placeholder="Short punchy headline…"
+              className="w-full px-3 py-2 bg-white border border-edge-strong rounded-lg text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20" />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

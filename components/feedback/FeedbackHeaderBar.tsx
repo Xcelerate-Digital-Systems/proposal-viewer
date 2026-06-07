@@ -10,6 +10,7 @@ import { generateBrandPalette } from '@/lib/branding';
 import VersionPicker from '@/components/feedback/VersionPicker';
 import TypeFilterTabs from '@/components/feedback/TypeFilterTabs';
 import ClientStatusControl from '@/components/feedback/ClientStatusControl';
+import Tooltip from '@/components/ui/Tooltip';
 import type { FeedbackProject, FeedbackItem, FeedbackStatus } from '@/lib/supabase';
 import type { CompanyBranding } from '@/hooks/useProposal';
 import type { VersionView } from '@/lib/feedback/versions';
@@ -60,9 +61,14 @@ interface FeedbackHeaderBarProps {
   reviewMode?: ReviewMode;
   onReviewModeChange?: (mode: ReviewMode) => void;
   reviewerName?: string;
+  reviewerAvatarUrl?: string | null;
   reviewSubmitted?: boolean;
   onOpenFinishModal: () => void;
   hasFinishHandler: boolean;
+
+  // Progress tracking
+  /** Number of items that have at least one comment or an explicit status set */
+  reviewedCount?: number;
 }
 
 /**
@@ -100,9 +106,11 @@ export default function FeedbackHeaderBar({
   reviewMode,
   onReviewModeChange,
   reviewerName,
+  reviewerAvatarUrl,
   reviewSubmitted,
   onOpenFinishModal,
   hasFinishHandler,
+  reviewedCount,
 }: FeedbackHeaderBarProps) {
   const palette = useMemo(() =>
     branding ? generateBrandPalette(branding.accent_color, branding.bg_primary, branding.bg_secondary, branding.sidebar_text_color, branding.accept_text_color, branding.bg_divider) : null,
@@ -125,13 +133,14 @@ export default function FeedbackHeaderBar({
         {backAction ? (
           <button
             onClick={backAction.onClick}
-            className={`flex items-center gap-1.5 text-sm transition-colors min-w-0 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:rounded-md focus-visible:ring-offset-1 ${
-              headerBranded ? '' : 'text-dim hover:text-prose'
+            className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1 ${
+              headerBranded ? '' : 'bg-surface text-prose hover:text-ink'
             }`}
-            style={headerBranded ? { color: palette?.mutedText ?? `${sidebarText}99` } : undefined}
+            style={headerBranded ? { border: `1px solid ${palette?.border ?? `${sidebarText}25`}`, color: sidebarText } : undefined}
+            aria-label={backAction.label}
+            title={backAction.label}
           >
-            <ArrowLeft size={14} className="shrink-0" />
-            <span className="font-medium truncate max-w-[180px]" title={backAction.label}>{backAction.label}</span>
+            <ArrowLeft size={14} />
           </button>
         ) : null}
 
@@ -265,6 +274,29 @@ export default function FeedbackHeaderBar({
       {/* Spacer */}
       <div className="flex-1 min-w-0" />
 
+      {/* Progress indicator (client review mode) */}
+      {reviewedCount !== undefined && filteredItems.length > 1 && (
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5">
+            <div className="relative w-16 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: palette?.accentSurface ?? `${sidebarText}15` }}>
+              <div
+                className="absolute inset-y-0 left-0 rounded-full transition-all duration-300"
+                style={{
+                  width: `${Math.round((reviewedCount / filteredItems.length) * 100)}%`,
+                  backgroundColor: branding?.accent_color || '#017C87',
+                }}
+              />
+            </div>
+            <span
+              className="text-detail tabular-nums whitespace-nowrap"
+              style={headerBranded ? { color: palette?.mutedText ?? `${sidebarText}80` } : undefined}
+            >
+              {reviewedCount}/{filteredItems.length} reviewed
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Trailing controls */}
       <div className="flex items-center gap-2 shrink-0">
         {versions && versions.length > 0 && onVersionChange && (
@@ -308,51 +340,62 @@ export default function FeedbackHeaderBar({
           <div className="flex items-center gap-2 shrink-0">{renderHeaderActions(selectedItem)}</div>
         )}
 
-        {/* Review controls (Comment/Browse pill) */}
+        {/* Review controls (Comment/Browse pill) — labeled buttons */}
         {onReviewModeChange && reviewMode && (
           <div
             className="flex items-center rounded-full p-0.5 shrink-0"
             style={{ backgroundColor: palette?.accentSurface ?? `${sidebarText}15` }}
           >
-            <button
-              type="button"
-              onClick={() => onReviewModeChange('comment')}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1"
-              style={
-                reviewMode === 'comment'
-                  ? { backgroundColor: palette?.borderSubtle ?? `${sidebarText}26`, color: sidebarText }
-                  : { color: palette?.mutedText ?? `${sidebarText}99` }
-              }
-              title="Leave feedback on content"
-            >
-              <MessageSquare size={12} />
-              Comment
-            </button>
-            <button
-              type="button"
-              onClick={() => onReviewModeChange('browse')}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1"
-              style={
-                reviewMode === 'browse'
-                  ? { backgroundColor: palette?.borderSubtle ?? `${sidebarText}26`, color: sidebarText }
-                  : { color: palette?.mutedText ?? `${sidebarText}99` }
-              }
-              title="Interact with content without leaving feedback"
-            >
-              <MousePointer2 size={12} />
-              Browse
-            </button>
+            <Tooltip content="Click anywhere on content to pin feedback" placement="bottom">
+              <button
+                type="button"
+                onClick={() => onReviewModeChange('comment')}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1"
+                style={
+                  reviewMode === 'comment'
+                    ? { backgroundColor: palette?.borderSubtle ?? `${sidebarText}26`, color: sidebarText }
+                    : { color: palette?.mutedText ?? `${sidebarText}99` }
+                }
+              >
+                <MessageSquare size={12} />
+                Comment
+              </button>
+            </Tooltip>
+            <Tooltip content="Navigate content without leaving feedback" placement="bottom">
+              <button
+                type="button"
+                onClick={() => onReviewModeChange('browse')}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1"
+                style={
+                  reviewMode === 'browse'
+                    ? { backgroundColor: palette?.borderSubtle ?? `${sidebarText}26`, color: sidebarText }
+                    : { color: palette?.mutedText ?? `${sidebarText}99` }
+                }
+              >
+                <MousePointer2 size={12} />
+                Browse
+              </button>
+            </Tooltip>
           </div>
         )}
 
         {reviewerName !== undefined && (
-          <div
-            className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
-            style={{ backgroundColor: branding?.accent_color || '#017C87' }}
-            title={reviewerName || 'Reviewer'}
-          >
-            {(reviewerName.trim()[0] ?? 'R').toUpperCase()}
-          </div>
+          reviewerAvatarUrl ? (
+            <img
+              src={reviewerAvatarUrl}
+              alt={reviewerName || 'Reviewer'}
+              className="w-7 h-7 rounded-full object-cover shrink-0"
+              title={reviewerName || 'Reviewer'}
+            />
+          ) : (
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
+              style={{ backgroundColor: branding?.accent_color || '#017C87' }}
+              title={reviewerName || 'Reviewer'}
+            >
+              {(reviewerName.trim()[0] ?? 'R').toUpperCase()}
+            </div>
+          )
         )}
 
         {hasFinishHandler &&

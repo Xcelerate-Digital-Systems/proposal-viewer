@@ -26,7 +26,7 @@ module.exports = {
         muted: '#8A8A8A',
         dim: '#6B7280',
         prose: '#4B5563',
-        faint: '#808080',
+        faint: '#737373',
         edge: {
           DEFAULT: '#EFEFEF',
           hover: '#D5D5D5',

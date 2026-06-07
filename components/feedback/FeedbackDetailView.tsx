@@ -143,6 +143,7 @@ interface ReviewDetailViewProps {
   reviewMode?: 'comment' | 'browse';
   onReviewModeChange?: (mode: 'comment' | 'browse') => void;
   reviewerName?: string;
+  reviewerAvatarUrl?: string | null;
   reviewerEmail?: string;
   reviewSubmitted?: boolean;
   onReviewSubmitted?: () => void;
@@ -191,6 +192,7 @@ export default function FeedbackDetailView({
   reviewMode,
   onReviewModeChange,
   reviewerName,
+  reviewerAvatarUrl,
   reviewerEmail,
   reviewSubmitted = false,
   onReviewSubmitted,
@@ -558,6 +560,31 @@ export default function FeedbackDetailView({
     onItemChange?.(targetId!, type);
   }, [items, selectedItemId, onFilterChange, onItemChange]);
 
+  // ── Keyboard shortcuts (← → for item nav) ──
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+      if (e.key === 'ArrowLeft' && currentIdx > 0) {
+        e.preventDefault();
+        goToItem(currentIdx - 1);
+      } else if (e.key === 'ArrowRight' && currentIdx < filteredItems.length - 1) {
+        e.preventDefault();
+        goToItem(currentIdx + 1);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [currentIdx, filteredItems.length, goToItem]);
+
+  // ── Progress: items with at least one comment or non-default status ──
+  const reviewedCount = useMemo(() => {
+    const itemsWithComments = new Set(comments.map((c) => c.review_item_id));
+    return filteredItems.filter(
+      (i) => itemsWithComments.has(i.id) || (i.status !== 'client_review' && i.status !== 'draft' && i.status !== 'internal_review' && i.status !== 'in_progress'),
+    ).length;
+  }, [filteredItems, comments]);
+
   // ── Mobile gate ──
   const MobileGate = (
     <div className="flex lg:hidden min-h-screen items-center justify-center bg-surface p-6">
@@ -626,9 +653,11 @@ export default function FeedbackDetailView({
           reviewMode={reviewMode}
           onReviewModeChange={onReviewModeChange}
           reviewerName={reviewerName}
+          reviewerAvatarUrl={reviewerAvatarUrl}
           reviewSubmitted={reviewSubmitted}
           onOpenFinishModal={() => setShowFinishModal(true)}
           hasFinishHandler={onReviewSubmitted !== undefined}
+          reviewedCount={isClient ? reviewedCount : undefined}
         />
 
         {/* Comments-paused banner (client only — shown immediately below the header rows) */}

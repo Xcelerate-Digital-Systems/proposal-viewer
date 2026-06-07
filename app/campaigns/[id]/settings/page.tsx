@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { CalendarDays, Send } from 'lucide-react';
+import { CalendarDays, Check, Send } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHeader';
 import ProjectAssigneesPanel from '@/components/admin/feedback/ProjectAssigneesPanel';
@@ -159,12 +159,41 @@ function SettingsContent({
     setReminding(false);
   };
 
-  const dueDateLabel = dueDate
-    ? new Date(dueDate + 'T00:00:00').toLocaleDateString('en-AU', {
-        day: 'numeric', month: 'short', year: 'numeric',
-      })
+  const dueDateObj = dueDate ? new Date(dueDate + 'T00:00:00') : null;
+  const dueDateLabel = dueDateObj
+    ? dueDateObj.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
     : null;
   const isOverdue = dueDate ? new Date(dueDate + 'T23:59:59') < new Date() : false;
+
+  const dueRelative = (() => {
+    if (!dueDateObj) return null;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diff = Math.round((dueDateObj.getTime() - today.getTime()) / 86400000);
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Tomorrow';
+    if (diff === -1) return 'Yesterday';
+    if (diff > 1 && diff <= 7) return `${diff} days from now`;
+    if (diff < -1) return `${Math.abs(diff)} days ago`;
+    return null;
+  })();
+
+  const [dueSaved, setDueSaved] = useState(false);
+  const saveDueDateWithFeedback = (value: string) => {
+    saveDueDate(value);
+    if (value) {
+      setDueSaved(true);
+      setTimeout(() => setDueSaved(false), 1200);
+    }
+  };
+
+  const toISODate = (d: Date) => d.toISOString().split('T')[0];
+  const quickDates = [
+    { label: 'Tomorrow', date: () => { const d = new Date(); d.setDate(d.getDate() + 1); return toISODate(d); } },
+    { label: 'Next week', date: () => { const d = new Date(); d.setDate(d.getDate() + 7); return toISODate(d); } },
+    { label: '2 weeks', date: () => { const d = new Date(); d.setDate(d.getDate() + 14); return toISODate(d); } },
+    { label: 'Next month', date: () => { const d = new Date(); d.setMonth(d.getMonth() + 1); return toISODate(d); } },
+  ];
 
   return (
     <div className="flex flex-col h-full">
@@ -195,31 +224,87 @@ function SettingsContent({
               <p className="text-caption text-dim mb-3">
                 Set a deadline for this review. Shown in reminder emails sent to guests.
               </p>
-              <div className="flex items-center gap-3">
-                <input
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => saveDueDate(e.target.value)}
-                  className="px-3 py-1.5 text-caption border border-edge-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
-                />
-                {dueDateLabel && (
-                  <span className={`text-caption font-medium ${isOverdue ? 'text-red-600' : 'text-dim'}`}>
-                    {isOverdue ? 'Overdue — ' : ''}{dueDateLabel}
-                  </span>
-                )}
-                {savingDue && (
-                  <div className="w-4 h-4 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
-                )}
-                {dueDate && (
-                  <button
-                    type="button"
-                    onClick={() => saveDueDate('')}
-                    className="text-xs text-faint hover:text-red-500 transition-colors"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
+
+              {dueDate && dueDateLabel ? (
+                <div className={`inline-flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors ${
+                  isOverdue
+                    ? 'border-red-200 bg-red-50'
+                    : 'border-edge bg-white'
+                }`}>
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                    isOverdue ? 'bg-red-100' : 'bg-teal/10'
+                  }`}>
+                    {dueSaved ? (
+                      <Check size={16} className="text-emerald-500" />
+                    ) : savingDue ? (
+                      <div className="w-4 h-4 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
+                    ) : (
+                      <CalendarDays size={16} className={isOverdue ? 'text-red-500' : 'text-teal'} />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-caption font-semibold ${isOverdue ? 'text-red-700' : 'text-ink'}`}>
+                      {dueDateLabel}
+                    </p>
+                    {dueRelative && (
+                      <p className={`text-detail ${isOverdue ? 'text-red-500' : 'text-dim'}`}>
+                        {isOverdue ? 'Overdue' : dueRelative}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 ml-2 shrink-0">
+                    <label className="relative cursor-pointer">
+                      <input
+                        type="date"
+                        value={dueDate}
+                        onChange={(e) => saveDueDateWithFeedback(e.target.value)}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <span className="text-xs text-faint hover:text-prose transition-colors">
+                        Change
+                      </span>
+                    </label>
+                    <span className="text-edge-strong">·</span>
+                    <button
+                      type="button"
+                      onClick={() => saveDueDate('')}
+                      className="text-xs text-faint hover:text-red-500 transition-colors"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <label className="relative inline-flex items-center gap-2 px-3.5 py-2 border border-dashed border-edge-hover rounded-xl cursor-pointer hover:border-edge-strong hover:bg-surface/50 transition-colors group">
+                      <CalendarDays size={15} className="text-faint group-hover:text-dim transition-colors" />
+                      <span className="text-caption text-dim group-hover:text-ink transition-colors">Pick a date</span>
+                      <input
+                        type="date"
+                        value={dueDate}
+                        onChange={(e) => saveDueDateWithFeedback(e.target.value)}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                    </label>
+                    {savingDue && (
+                      <div className="w-4 h-4 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {quickDates.map((q) => (
+                      <button
+                        key={q.label}
+                        type="button"
+                        onClick={() => saveDueDateWithFeedback(q.date())}
+                        className="px-2.5 py-1 text-detail font-medium text-dim hover:text-teal hover:bg-teal/5 rounded-lg transition-colors"
+                      >
+                        {q.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* ── Email Reminders ─────────────────────────────── */}

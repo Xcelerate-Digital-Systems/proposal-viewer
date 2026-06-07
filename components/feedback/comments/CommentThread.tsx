@@ -271,7 +271,7 @@ export default function CommentThread({
               const label = `${asset.type === 'headline' ? 'Headline' : 'Description'} ${asset.index + 1}`;
               return (
                 <span
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium bg-blue-50 text-[#1a0dab]"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium bg-blue-50 text-blue-700"
                   title={label}
                 >
                   <Icon size={10} />

@@ -269,32 +269,54 @@ export default function CompleteFeedbackModal({
         <div className="px-6 pb-5 space-y-4 overflow-y-auto">
           {showStatusList && (
             <div className="space-y-2">
+              {/* Already-decided items summary */}
+              {mode === 'project' && items && (() => {
+                const decidedItems = (items || []).filter((i) => i.status === 'approved' || i.status === 'rejected');
+                if (decidedItems.length === 0) return null;
+                return (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-100">
+                    <span className="text-caption text-emerald-700 font-medium">
+                      {decidedItems.length} item{decidedItems.length > 1 ? 's' : ''} already decided
+                    </span>
+                    <span className="text-detail text-emerald-600">
+                      ({decidedItems.filter((i) => i.status === 'approved').length} approved
+                      {decidedItems.filter((i) => i.status === 'rejected').length > 0 &&
+                        `, ${decidedItems.filter((i) => i.status === 'rejected').length} rejected`})
+                    </span>
+                  </div>
+                );
+              })()}
+
               <p className="text-caption text-prose">
                 {mode === 'item'
                   ? 'Let us know where this item stands before you finish.'
-                  : 'These items are waiting on your decision — set a status for each before submitting.'}
+                  : editableItems.length === 0
+                  ? 'All items have been decided. Add a message and submit.'
+                  : `${editableItems.length} item${editableItems.length > 1 ? 's' : ''} still need${editableItems.length === 1 ? 's' : ''} a decision:`}
               </p>
-              <div className="border border-edge rounded-2xl divide-y divide-gray-100">
-                {showBulkRow && (
-                  <div className="flex items-center gap-3 px-3 py-2 bg-surface/60">
-                    <p className="flex-1 min-w-0 text-caption font-medium text-prose">
-                      Set all items to
-                    </p>
-                    <StatusPill value={bulkChoice} onChange={setAllStatuses} />
-                  </div>
-                )}
-                {editableItems.map((it) => (
-                  <div key={it.id} className="flex items-center gap-3 px-3 py-2">
-                    <p className="flex-1 min-w-0 truncate text-caption text-ink">{it.title}</p>
-                    <StatusPill
-                      value={statusMap[it.id] ?? it.status}
-                      onChange={(next) =>
-                        setStatusMap((prev) => ({ ...prev, [it.id]: next }))
-                      }
-                    />
-                  </div>
-                ))}
-              </div>
+              {editableItems.length > 0 && (
+                <div className="border border-edge rounded-2xl divide-y divide-gray-100">
+                  {showBulkRow && (
+                    <div className="flex items-center gap-3 px-3 py-2 bg-surface/60">
+                      <p className="flex-1 min-w-0 text-caption font-medium text-prose">
+                        Set all to
+                      </p>
+                      <StatusPill value={bulkChoice} onChange={setAllStatuses} />
+                    </div>
+                  )}
+                  {editableItems.map((it) => (
+                    <div key={it.id} className="flex items-center gap-3 px-3 py-2">
+                      <p className="flex-1 min-w-0 truncate text-caption text-ink">{it.title}</p>
+                      <StatusPill
+                        value={statusMap[it.id] ?? it.status}
+                        onChange={(next) =>
+                          setStatusMap((prev) => ({ ...prev, [it.id]: next }))
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -302,7 +324,7 @@ export default function CompleteFeedbackModal({
             autoFocus={!showStatusList}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            rows={4}
+            rows={3}
             placeholder="Add a message (optional)"
             className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm text-ink placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:border-transparent"
             style={{ ['--tw-ring-color' as string]: `${accentColor}25` }}

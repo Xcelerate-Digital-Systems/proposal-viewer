@@ -15,6 +15,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Check, Loader2 } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
 import { REVIEW_STATUS_CONFIG, getFeedbackStatusDef } from '@/lib/feedback/status';
 import type { FeedbackStatus } from '@/lib/supabase';
 
@@ -29,9 +30,9 @@ const CLIENT_FACING: Set<FeedbackStatus> = new Set(CLIENT_STATUS_OPTIONS);
 
 /** One-liners that nudge the reviewer toward the right choice. Keep short. */
 const STATUS_TAGLINE: Partial<Record<FeedbackStatus, string>> = {
-  client_review:   'Re-open for another round of review',
+  client_review:   'Not ready to decide yet, keep reviewing',
   revision_needed: 'Send back to the team for changes',
-  approved:        'Sign off on this, ready to go live',
+  approved:        'Sign off — ready to go live',
   rejected:        'Decline this version permanently',
 };
 
@@ -52,6 +53,7 @@ export default function ClientStatusControl({ itemId, status, onChange, branded,
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const toast = useToast();
 
   // Click-outside + Escape close.
   useEffect(() => {
@@ -73,9 +75,17 @@ export default function ClientStatusControl({ itemId, status, onChange, branded,
   const handlePick = async (next: FeedbackStatus) => {
     setOpen(false);
     if (next === status) return;
+    const prev = status;
     try {
       setPending(true);
       await onChange(itemId, next);
+      const nextDef = REVIEW_STATUS_CONFIG[next];
+      toast.success(`Status changed to ${nextDef.label}`, {
+        action: {
+          label: 'Undo',
+          onClick: () => { onChange(itemId, prev); },
+        },
+      });
     } finally {
       setPending(false);
     }

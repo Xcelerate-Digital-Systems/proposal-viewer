@@ -44,7 +44,7 @@ function ItemViewerGate(props: {
   itemId: string;
   companyId: string;
   session: { user: { id: string; email?: string } } | null;
-  teamMember: { id?: string; name?: string; email?: string } | null;
+  teamMember: { id?: string; name?: string; email?: string; avatar_path?: string | null } | null;
 }) {
   const router = useRouter();
   const allowed = props.accountType === 'agency';
@@ -74,7 +74,7 @@ function ItemViewerContent({
   itemId: string;
   companyId: string;
   session: { user: { id: string; email?: string } } | null;
-  teamMember: { id?: string; name?: string; email?: string } | null;
+  teamMember: { id?: string; name?: string; email?: string; avatar_path?: string | null } | null;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -97,6 +97,16 @@ function ItemViewerContent({
   const [memberNameMap, setMemberNameMap] = useState<Record<string, string>>({});
 
   const authorName = teamMember?.name || teamMember?.email || 'Team';
+
+  // Resolve avatar signed URL from storage path
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!teamMember?.avatar_path) return;
+    supabase.storage
+      .from('proposals')
+      .createSignedUrl(teamMember.avatar_path, 3600)
+      .then(({ data }) => { if (data?.signedUrl) setAvatarUrl(data.signedUrl); });
+  }, [teamMember?.avatar_path]);
 
   // Type filter — read from URL
   const getUrlType = useCallback(() => {
@@ -672,6 +682,7 @@ function ItemViewerContent({
         reviewMode={reviewMode}
         onReviewModeChange={setReviewMode}
         reviewerName={authorName}
+        reviewerAvatarUrl={avatarUrl}
         reviewerEmail={teamMember?.email || ''}
         reviewSubmitted={reviewSubmitted}
         onReviewSubmitted={() => setReviewSubmitted(true)}
