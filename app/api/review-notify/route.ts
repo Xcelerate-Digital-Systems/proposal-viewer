@@ -325,7 +325,7 @@ export async function POST(req: NextRequest) {
     let enqueued = 0;
     if (recipientEmails.size > 0) {
       if (isComment) {
-        // Comments enqueue per recipient and flush via cron in a 5-min window.
+        // Comments enqueue per recipient and flush via cron in a 10-min window.
         // We snapshot the screenshot URL + parent context now so the worker
         // can build the digest without re-fetching per recipient.
         let screenshotUrl: string | null = null;
@@ -385,7 +385,7 @@ export async function POST(req: NextRequest) {
         }
 
         // In-app notifications for comments appear immediately even though
-        // the email is batched into a 5-min digest window.
+        // the email is batched into a 10-min digest window.
         try {
           let commentUserIds = await resolveUserIdsForCompanyEmails(
             supabase, project.company_id, Array.from(recipientEmails),

@@ -29,10 +29,10 @@ const CLIENT_FACING: Set<FeedbackStatus> = new Set(CLIENT_STATUS_OPTIONS);
 
 /** One-liners that nudge the reviewer toward the right choice. Keep short. */
 const STATUS_TAGLINE: Partial<Record<FeedbackStatus, string>> = {
-  client_review:   'Re-open for client review',
+  client_review:   'Re-open for another round of review',
   revision_needed: 'Send back to the team for changes',
-  approved:        'Sign this off — ready to ship',
-  rejected:        'Permanently decline this version',
+  approved:        'Sign off on this, ready to go live',
+  rejected:        'Decline this version permanently',
 };
 
 interface Props {
@@ -124,7 +124,7 @@ export default function ClientStatusControl({ itemId, status, onChange, branded,
         >
           <div className="px-3 pt-1.5 pb-1">
             <p className="text-2xs font-semibold uppercase tracking-wider text-faint">
-              Set status
+              Update status
             </p>
           </div>
           {CLIENT_STATUS_OPTIONS.map((opt) => {

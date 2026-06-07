@@ -13,6 +13,8 @@ import { usePopoverPosition } from '@/hooks/usePopoverPosition';
 import { useCommentReactions } from '@/hooks/useCommentReactions';
 import type { TeamMemberLookup } from '@/hooks/useTeamMemberLookup';
 import { Button } from '@/components/ui/Button';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { useToast } from '@/components/ui/Toast';
 import MentionEditor from '@/components/feedback/mentions/MentionEditor';
 import CommentContent from '@/components/feedback/mentions/CommentContent';
 
@@ -78,6 +80,8 @@ export default function PinCommentPopover({
   participantsUrl,
   shareToken,
 }: PinCommentPopoverProps) {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [showReply, setShowReply] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -115,15 +119,21 @@ export default function PinCommentPopover({
       let uploadedAttachments: FeedbackCommentAttachment[] | undefined;
       if (replyFiles.length > 0 && shareToken) {
         uploadedAttachments = [];
+        let failedCount = 0;
         for (const pa of replyFiles) {
           const formData = new FormData();
           formData.append('file', pa.file);
           formData.append('share_token', shareToken);
           const res = await fetch('/api/review-comments/attachments', { method: 'POST', body: formData });
           if (res.ok) uploadedAttachments.push(await res.json());
+          else failedCount++;
+        }
+        if (failedCount > 0) {
+          toast.error(`${failedCount} ${failedCount === 1 ? 'file' : 'files'} could not be uploaded`);
         }
       }
       await onReply(replyText, comment.id, uploadedAttachments);
+      toast.success('Reply posted');
       setReplyText('');
       setReplyFiles([]);
       setShowReply(false);
@@ -265,6 +275,16 @@ export default function PinCommentPopover({
                 variant="ghost"
                 size="sm"
                 onClick={async () => {
+                  const replyCount = replies.length;
+                  const ok = await confirm({
+                    title: 'Delete comment',
+                    message: replyCount > 0
+                      ? `This will permanently remove this comment and ${replyCount} ${replyCount === 1 ? 'reply' : 'replies'}.`
+                      : 'This will permanently remove this comment.',
+                    confirmLabel: 'Delete',
+                    destructive: true,
+                  });
+                  if (!ok) return;
                   await onDelete!(comment.id);
                   onClose();
                 }}

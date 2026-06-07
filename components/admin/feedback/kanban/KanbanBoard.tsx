@@ -18,6 +18,7 @@ import KanbanCard, { type ItemDecisionTally } from './KanbanCard';
 import KanbanColumnAssignees, {
   type StageMember, type StageGuest, type CompanyMember, type ProjectGuest,
 } from './KanbanColumnAssignees';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 interface KanbanBoardProps {
   items: FeedbackItem[];
@@ -360,7 +361,9 @@ function KanbanColumn({
       {/* Column header */}
       <div className="flex items-center gap-2 mb-3 shrink-0">
         <span className={`w-2 h-2 rounded-full ${def.dot}`} />
-        <h3 className="text-caption font-semibold text-ink" title={STAGE_DESCRIPTIONS[status]}>{def.label}</h3>
+        <Tooltip content={STAGE_DESCRIPTIONS[status]} placement="bottom">
+          <h3 className="text-caption font-semibold text-ink cursor-default">{def.label}</h3>
+        </Tooltip>
         <span className="text-detail font-medium text-faint">{items.length}</span>
         {projectId && (
           <div className="ml-auto">
@@ -386,7 +389,7 @@ function KanbanColumn({
       >
         {items.length === 0 ? (
           <div className="text-detail text-faint italic text-center py-4">
-            Drop here
+            Drag an asset here
           </div>
         ) : (
           items.map((item) => (

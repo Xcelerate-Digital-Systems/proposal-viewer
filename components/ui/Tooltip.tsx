@@ -51,7 +51,7 @@ export default function Tooltip({
       {visible && (
         <span
           role="tooltip"
-          className={`absolute z-50 px-2.5 py-1.5 text-xs font-medium text-white bg-ink rounded-lg shadow-popover whitespace-nowrap pointer-events-none animate-[fadeIn_100ms_ease-out] ${placementClasses[placement]}`}
+          className={`absolute z-50 px-2.5 py-1.5 text-xs font-medium text-white bg-ink rounded-lg shadow-popover pointer-events-none animate-[fadeIn_100ms_ease-out] max-w-[260px] ${placementClasses[placement]}`}
         >
           {content}
         </span>

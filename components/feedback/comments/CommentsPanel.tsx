@@ -230,10 +230,13 @@ export default function CommentsPanel({
 
         {/* Empty state */}
         {!hasComments && (
-          <div className="text-center py-12">
+          <div className="text-center py-12 px-4">
             <MapPin size={28} className="mx-auto mb-3 text-faint" />
-            <p className="text-caption text-faint">
-              Click anywhere on the content to leave a comment.
+            <p className="text-caption font-medium text-prose">
+              No feedback yet
+            </p>
+            <p className="text-detail text-faint mt-1 leading-relaxed">
+              Click anywhere on the content to pin a comment, or use the form below to leave general feedback.
             </p>
           </div>
         )}

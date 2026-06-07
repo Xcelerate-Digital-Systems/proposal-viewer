@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { type FeedbackItem, type FeedbackItemType, type FeedbackStatus } from '@/lib/supabase';
 import { REVIEW_STATUS_ORDER, getFeedbackStatusDef } from '@/lib/feedback/status';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 export type ItemDecisionTally = {
   approved: number;
@@ -124,22 +125,20 @@ export default function KanbanCard({
             <>
               <span className="text-edge-hover">·</span>
               {decisionTally.approved > 0 && (
-                <div
-                  className="flex items-center gap-0.5 text-emerald-600 font-semibold"
-                  title={`${decisionTally.approved} approved this version`}
-                >
-                  <Check size={11} />
-                  {decisionTally.approved}
-                </div>
+                <Tooltip content={`${decisionTally.approved} reviewer${decisionTally.approved === 1 ? '' : 's'} approved this version. When all assigned reviewers approve, the item advances automatically.`}>
+                  <div className="flex items-center gap-0.5 text-emerald-600 font-semibold">
+                    <Check size={11} />
+                    {decisionTally.approved}
+                  </div>
+                </Tooltip>
               )}
               {decisionTally.changesRequested > 0 && (
-                <div
-                  className="flex items-center gap-0.5 text-orange-600 font-semibold"
-                  title={`${decisionTally.changesRequested} requested changes`}
-                >
-                  <RefreshCw size={11} />
-                  {decisionTally.changesRequested}
-                </div>
+                <Tooltip content={`${decisionTally.changesRequested} reviewer${decisionTally.changesRequested === 1 ? '' : 's'} requested changes on this version`}>
+                  <div className="flex items-center gap-0.5 text-orange-600 font-semibold">
+                    <RefreshCw size={11} />
+                    {decisionTally.changesRequested}
+                  </div>
+                </Tooltip>
               )}
             </>
           )}

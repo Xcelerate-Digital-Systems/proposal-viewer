@@ -158,7 +158,7 @@ export default function GuestOnboardingModal({
           </h2>
           <p className="text-caption text-dim leading-relaxed mt-2">
             Add your name so the team knows who&rsquo;s leaving feedback. Email is
-            optional — we&rsquo;ll only use it to notify you of replies.
+            optional; we&rsquo;ll only use it to notify you of replies.
           </p>
 
           {/* Inputs */}
@@ -202,6 +202,9 @@ export default function GuestOnboardingModal({
               >
                 Email (optional)
               </label>
+              {emailError && (
+                <p className="text-detail text-red-500 mt-1 ml-1">Enter a valid email address</p>
+              )}
             </div>
           </div>
 
@@ -212,7 +215,7 @@ export default function GuestOnboardingModal({
             className="group mt-5 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 shadow-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white/50"
             style={{ backgroundColor: accentColor }}
           >
-            Continue
+            Start reviewing
             <ArrowRight
               size={16}
               className="transition-transform group-hover:translate-x-0.5 group-disabled:translate-x-0"

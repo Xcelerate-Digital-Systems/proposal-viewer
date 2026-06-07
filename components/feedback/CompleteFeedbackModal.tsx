@@ -223,16 +223,16 @@ export default function CompleteFeedbackModal({
       });
 
       if (!res.ok) {
-        toast.error('Failed to submit — please try again');
+        toast.error('Could not send your feedback. Please try again.');
         setSubmitting(false);
         return;
       }
 
-      toast.success('Thanks — your review has been sent');
+      toast.success('Your review has been sent. Thanks!');
       onSubmitted();
       onClose();
     } catch {
-      toast.error('Failed to submit — please try again');
+      toast.error('Could not send your feedback. Please try again.');
       setSubmitting(false);
     }
   };
@@ -315,7 +315,7 @@ export default function CompleteFeedbackModal({
             className="w-full px-4 py-3 rounded-2xl text-sm font-semibold text-white transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white/50"
             style={{ backgroundColor: accentColor }}
           >
-            {submitting ? 'Sending…' : 'Finish'}
+            {submitting ? 'Sending…' : 'Submit feedback'}
           </button>
         </div>
       </div>

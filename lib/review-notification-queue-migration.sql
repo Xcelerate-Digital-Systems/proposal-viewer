@@ -2,7 +2,7 @@
 --
 -- Comment notifications (new comments + replies) are enqueued here instead of
 -- being sent immediately. A cron worker
--- (POST /api/cron/flush-review-notifications) groups rows older than 5 minutes
+-- (POST /api/cron/flush-review-notifications) groups rows older than 10 minutes
 -- by (recipient_email, review_project_id) and sends a single digest email.
 --
 -- Status events (approved / revision needed / resolved / new version / review
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS public.pending_review_notifications (
   payload jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at timestamptz NOT NULL DEFAULT now(),
   -- The flush worker only picks rows where dispatch_after <= now().
-  dispatch_after timestamptz NOT NULL DEFAULT (now() + interval '5 minutes'),
+  dispatch_after timestamptz NOT NULL DEFAULT (now() + interval '10 minutes'),
   dispatched_at timestamptz
 );
 

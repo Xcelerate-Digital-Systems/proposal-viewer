@@ -268,7 +268,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
             }
             renderCard={(project) => <FeedbackBoardCard project={project} />}
             onMove={(projectId, _from, to) => updateProjectStatus(projectId, to as FeedbackStatus)}
-            emptyMessage="Drag a campaign here."
+            emptyMessage="Drag a campaign into this column"
           />
         )}
       </div>

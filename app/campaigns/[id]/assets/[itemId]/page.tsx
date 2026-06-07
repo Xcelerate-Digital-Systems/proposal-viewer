@@ -397,7 +397,7 @@ function ItemViewerContent({
       .single();
 
     if (error) {
-      toast.error('Failed to post comment');
+      toast.error(error.message || 'Could not post comment. Check your connection and try again.');
     } else if (data) {
       setComments((prev) => [...prev, data]);
       setAllProjectComments((prev) => [...prev, data]);
@@ -443,7 +443,7 @@ function ItemViewerContent({
       toast.success('Comment resolved');
     } else {
       const body = await res.json().catch(() => ({}));
-      toast.error(body?.error || 'Failed to resolve');
+      toast.error(body?.error || 'Could not resolve comment');
     }
   };
 
@@ -464,7 +464,7 @@ function ItemViewerContent({
       toast.info('Comment reopened');
     } else {
       const body = await res.json().catch(() => ({}));
-      toast.error(body?.error || 'Failed to reopen');
+      toast.error(body?.error || 'Could not reopen comment');
     }
   };
 
@@ -485,7 +485,7 @@ function ItemViewerContent({
       toast.success('Comment updated');
     } else {
       const body = await res.json().catch(() => ({}));
-      toast.error(body?.error || 'Failed to update comment');
+      toast.error(body?.error || 'Could not update comment');
     }
   };
 
@@ -508,7 +508,7 @@ function ItemViewerContent({
       toast.success('Comment deleted');
     } else {
       const body = await res.json().catch(() => ({}));
-      toast.error(body?.error || 'Failed to delete comment');
+      toast.error(body?.error || 'Could not delete comment');
     }
   };
 
@@ -533,7 +533,7 @@ function ItemViewerContent({
       );
     } else {
       const body = await res.json().catch(() => ({}));
-      toast.error(body?.error || 'Failed to create task');
+      toast.error(body?.error || 'Could not create task');
     }
   };
 
@@ -555,7 +555,7 @@ function ItemViewerContent({
       );
     } else {
       const body = await res.json().catch(() => ({}));
-      toast.error(body?.error || 'Failed to update task');
+      toast.error(body?.error || 'Could not update task');
     }
   };
 
@@ -576,7 +576,7 @@ function ItemViewerContent({
       );
     } else {
       const body = await res.json().catch(() => ({}));
-      toast.error(body?.error || 'Failed to remove task');
+      toast.error(body?.error || 'Could not remove task');
     }
   };
 
@@ -602,7 +602,7 @@ function ItemViewerContent({
       .update({ status, updated_at: new Date().toISOString() })
       .eq('id', itemIdToUpdate);
     if (error) {
-      toast.error('Failed to update status');
+      toast.error(error.message || 'Could not update status. Check your connection and try again.');
       if (previous) {
         setItems((prev) => prev.map((i) => (i.id === itemIdToUpdate ? { ...i, status: previous } : i)));
       }

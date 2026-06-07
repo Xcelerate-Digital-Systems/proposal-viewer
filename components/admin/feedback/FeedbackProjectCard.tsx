@@ -139,7 +139,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
       .eq('id', project.id);
 
     if (error) {
-      toast.error('Failed to update status');
+      toast.error(error.message || 'Could not update status. Check your connection and try again.');
     } else {
       const label = projectStatusOptions.find((o) => o.value === newStatus)?.label ?? newStatus;
       toast.success(`Project marked as ${label}`);
@@ -163,7 +163,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
       .eq('id', project.id);
 
     if (error) {
-      toast.error('Failed to save changes');
+      toast.error(error.message || 'Could not save changes. Check your connection and try again.');
     } else {
       toast.success('Project updated');
       setShowEdit(false);
@@ -256,7 +256,7 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
               <div className="w-12 h-12 rounded-2xl bg-teal-tint flex items-center justify-center mx-auto mb-2">
                 <FolderOpen size={22} className="text-teal" />
               </div>
-              <p className="text-xs text-faint">No items yet</p>
+              <p className="text-xs text-faint">No assets yet. Open to add one.</p>
             </div>
           )}
 

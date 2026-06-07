@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { ExternalLink, Monitor, Pause } from 'lucide-react';
+import { ExternalLink, Monitor, Pause, MapPin } from 'lucide-react';
 import CompleteFeedbackModal from './CompleteFeedbackModal';
 import FeedbackHeaderBar from './FeedbackHeaderBar';
 import type { FeedbackProject, FeedbackItem, FeedbackComment, FeedbackStatus } from '@/lib/supabase';
@@ -30,6 +30,7 @@ import { FeedbackToolbar, FeedbackModeBar, DrawingOverlay } from '@/components/f
 import type { AnnotationData } from '@/components/feedback/tools';
 import { useTextHighlight, type TextHighlightData } from '@/hooks/useTextHighlight';
 import { useTeamMemberLookup } from '@/hooks/useTeamMemberLookup';
+import { useToast } from '@/components/ui/Toast';
 
 /* ─── Types ──────────────────────────────────────────────────────── */
 
@@ -194,6 +195,7 @@ export default function FeedbackDetailView({
   reviewSubmitted = false,
   onReviewSubmitted,
 }: ReviewDetailViewProps) {
+  const toast = useToast();
   const isAdmin = mode === 'admin';
   const isClient = mode === 'client';
 
@@ -214,6 +216,9 @@ export default function FeedbackDetailView({
   const [typeFilter, setTypeFilter] = useState<string | null>(initialTypeFilter || null);
   const [showComments, setShowComments] = useState(true);
   const [showFinishModal, setShowFinishModal] = useState(false);
+  const [pinHintDismissed, setPinHintDismissed] = useState(() => {
+    try { return localStorage.getItem('feedback-pin-hint-dismissed') === '1'; } catch { return false; }
+  });
 
   // ── Branding colors (client mode) ──
   const brandingColors = useBrandingColors(branding ?? {} as CompanyBranding);
@@ -404,6 +409,7 @@ export default function FeedbackDetailView({
         : (pendingAnnotation || undefined);
 
       await onSubmitComment(selectedItemId, content, pinX, pinY, parentId, annotationPayload, pendingScreenshotUrl || undefined, highlight, priority, attachments, videoUrl);
+      if (!parentId) toast.success(pinX != null ? 'Comment pinned' : 'Comment added');
       setPendingAnnotation(null);
       setPendingScreenshotUrl(null);
       setPendingHighlight(null);
@@ -465,7 +471,11 @@ export default function FeedbackDetailView({
     if (pinActive) {
       setShowComments(true);
     }
-  }, [browseMode, commentsLocked, baseHandleImageClick, pinActive]);
+    if (!pinHintDismissed) {
+      setPinHintDismissed(true);
+      try { localStorage.setItem('feedback-pin-hint-dismissed', '1'); } catch {}
+    }
+  }, [browseMode, commentsLocked, baseHandleImageClick, pinActive, pinHintDismissed]);
 
   // ── Screenshot capture — fires after React commits the pending pin ──
   // Two rAFs guarantee the browser has fully painted the pending-pin marker
@@ -729,6 +739,22 @@ export default function FeedbackDetailView({
               highlightedCommentId={highlightedCommentId}
               onAnnotationClick={handlePinClick}
             />
+
+            {/* First-time pin hint */}
+            {!pinHintDismissed && !browseMode && !commentsLocked && topLevelComments.length === 0 && selectedItem && (
+              <button
+                type="button"
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2.5 rounded-full bg-ink/80 text-white text-detail font-medium shadow-lg backdrop-blur-sm animate-[fadeIn_300ms_ease-out] cursor-pointer hover:bg-ink/90 transition-colors"
+                onClick={() => {
+                  setPinHintDismissed(true);
+                  try { localStorage.setItem('feedback-pin-hint-dismissed', '1'); } catch {}
+                }}
+                aria-label="Dismiss hint"
+              >
+                <MapPin size={14} className="shrink-0 opacity-80" />
+                <span>Click anywhere on the content to pin feedback</span>
+              </button>
+            )}
 
             {/* Pin comment popover (existing pins) — portaled into the content
                 container so percentage-based positioning resolves against the
