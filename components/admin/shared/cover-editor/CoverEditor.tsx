@@ -147,7 +147,7 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
     const fetchCompanyLogo = async () => {
       const { data } = await supabase
         .from('companies')
-        .select('name, logo_path, font_heading, font_heading_weight, font_body, font_body_weight, font_button, font_button_weight, title_font_family')
+        .select('name, logo_path, font_heading, font_heading_weight, font_body, font_body_weight, font_button, font_button_weight, title_font_family, accent_color, accept_text_color')
         .eq('id', entity.company_id)
         .single();
 
@@ -176,6 +176,16 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
         setBodyFontWeight(e.font_body_weight || data.font_body_weight || null);
         setButtonFont(e.font_button_family || data.font_button || null);
         setButtonFontWeight(e.font_button_weight || data.font_button_weight || null);
+        // If the entity has no explicit button color, inherit from accent
+        if (!entity.cover_button_bg && data.accent_color) {
+          setColors((prev) => ({
+            ...prev,
+            coverButtonBg: prev.coverButtonBg === '#01434A' ? data.accent_color : prev.coverButtonBg,
+            coverButtonTextColor: prev.coverButtonTextColor === '#ffffff' && data.accept_text_color
+              ? data.accept_text_color
+              : prev.coverButtonTextColor,
+          }));
+        }
         if (data.logo_path) {
           const { data: urlData } = supabase.storage
             .from('company-assets')

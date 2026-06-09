@@ -13,6 +13,7 @@ import ViewerFontsSection from '@/components/admin/company/ViewerFontsSection';
 import BrandColorsSection from '@/components/admin/company/BrandColorsSection';
 import ContentPageDefaultsSection from '@/components/admin/company/ContentPageDefaultsSection';
 import DecisionDesignSection from '@/components/admin/company/DecisionDesignSection';
+import { ContentPagePreview, DecisionPagePreview } from '@/components/admin/company/BrandKitPreviews';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import { fontFamily } from '@/lib/google-fonts';
 import { buildGradientCss, resolveStops } from '@/lib/gradient-stops';
@@ -151,7 +152,18 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           textPageHeadingColor={s.textPageHeadingColor}
           setTextPageHeadingColor={s.setTextPageHeadingColor}
           lastSaved={s.contentPageSaved}
-        />
+        >
+          <ContentPagePreview
+            bgColor={s.textPageBgColor}
+            textColor={s.textPageTextColor}
+            headingColor={s.textPageHeadingColor}
+            accentColor={s.accentColor}
+            fontHeading={s.fontHeading}
+            fontBody={s.fontBody}
+            fontHeadingWeight={s.fontHeadingWeight}
+            fontBodyWeight={s.fontBodyWeight}
+          />
+        </ContentPageDefaultsSection>
 
         {/* Decision Design */}
         <DecisionDesignSection
@@ -176,7 +188,20 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           textPageTextColor={s.textPageTextColor}
           textPageHeadingColor={s.textPageHeadingColor}
           accentColor={s.accentColor}
-        />
+        >
+          <DecisionPagePreview
+            bgColor={s.decisionBgColor || s.textPageBgColor}
+            textColor={s.decisionTextColor || s.textPageTextColor}
+            headingColor={s.decisionHeadingColor || s.textPageHeadingColor || s.decisionTextColor || s.textPageTextColor}
+            acceptButtonColor={s.decisionAcceptButtonColor || s.decisionHeadingColor || s.textPageHeadingColor || s.textPageTextColor}
+            declineButtonColor={s.decisionDeclineButtonColor || '#dc2626'}
+            revisionButtonColor={s.decisionRevisionButtonColor || s.decisionHeadingColor || s.textPageHeadingColor || s.textPageTextColor}
+            checkboxColor={s.decisionCheckboxColor || s.accentColor}
+            acceptTextColor={s.acceptTextColor}
+            fontHeading={s.fontHeading}
+            fontBody={s.fontBody}
+          />
+        </DecisionDesignSection>
 
         {/* Default Cover Image */}
         <CoverImageSection
@@ -192,6 +217,8 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           fontBody={s.fontBody}
           fontHeadingWeight={s.fontHeadingWeight}
           fontBodyWeight={s.fontBodyWeight}
+          accentColor={s.accentColor}
+          acceptTextColor={s.acceptTextColor}
         />
 
         {/* Custom Domain */}
@@ -224,6 +251,8 @@ function CoverImageSection({
   fontBody,
   fontHeadingWeight,
   fontBodyWeight,
+  accentColor,
+  acceptTextColor,
 }: {
   isOwner: boolean;
   coverImageUrl: string | null;
@@ -237,6 +266,8 @@ function CoverImageSection({
   fontBody: string | null;
   fontHeadingWeight: string | null;
   fontBodyWeight: string | null;
+  accentColor: string;
+  acceptTextColor: string;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -245,8 +276,8 @@ function CoverImageSection({
   const bgStyle = company?.cover_bg_style || 'gradient';
   const textColor = company?.cover_text_color || '#ffffff';
   const subtitleColor = company?.cover_subtitle_color || '#ffffffb3';
-  const btnBg = company?.cover_button_bg || '#01434A';
-  const btnText = company?.cover_button_text || '#ffffff';
+  const btnBg = accentColor;
+  const btnText = acceptTextColor;
   const overlayOpacity = company?.cover_overlay_opacity ?? 0.65;
   const gradientType = (company?.cover_gradient_type || 'linear') as 'linear' | 'radial' | 'conic';
   const gradientAngle = company?.cover_gradient_angle ?? 135;
@@ -272,12 +303,14 @@ function CoverImageSection({
 
   return (
     <div className="bg-white border border-edge rounded-[14px] p-5">
-      <div className="flex items-center gap-2 mb-2">
-        <ImageIcon size={15} className="text-faint" />
-        <span className="text-sm font-medium text-muted">Default Cover Image</span>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <ImageIcon size={15} className="text-faint" />
+          <span className="text-sm font-medium text-muted">Default Cover Image</span>
+        </div>
       </div>
       <p className="text-xs text-faint mb-4">
-        Upload a default background image for the cover page. New proposals and quotes will use this automatically. You can still override it per-proposal.
+        Upload a default background image for the cover page. New proposals and quotes will use this automatically. You can override it per-proposal. PNG, JPEG, or WebP. Max 5 MB.
       </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

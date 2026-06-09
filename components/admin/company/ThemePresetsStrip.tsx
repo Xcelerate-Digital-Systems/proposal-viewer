@@ -2,15 +2,13 @@
 'use client';
 
 import { Sliders } from 'lucide-react';
-import { BG_PRESETS, ACCENT_PRESETS } from '@/lib/company-utils';
+import { BG_PRESETS } from '@/lib/company-utils';
 
 interface ThemePresetsStripProps {
   bgPrimary: string;
   setBgPrimary: (v: string) => void;
   bgSecondary: string;
   setBgSecondary: (v: string) => void;
-  accentColor: string;
-  setAccentColor: (v: string) => void;
   disabled: boolean;
 }
 
@@ -19,8 +17,6 @@ export default function ThemePresetsStrip({
   setBgPrimary,
   bgSecondary,
   setBgSecondary,
-  accentColor,
-  setAccentColor,
   disabled,
 }: ThemePresetsStripProps) {
   const matchedBg = BG_PRESETS.find(
@@ -30,7 +26,7 @@ export default function ThemePresetsStrip({
 
   return (
     <div className="pb-4 mb-4 border-b border-edge">
-      <span className="text-2xs font-semibold text-faint uppercase tracking-wider">Quick Start</span>
+      <span className="text-xs font-medium text-dim">Quick Start</span>
 
       {/* Background theme presets */}
       <div className="mt-2.5">
@@ -85,29 +81,6 @@ export default function ThemePresetsStrip({
         </div>
       </div>
 
-      {/* Accent color presets */}
-      <div className="mt-3">
-        <span className="text-2xs text-faint">Accent colour</span>
-        <div className="flex flex-wrap gap-2 mt-1.5">
-          {ACCENT_PRESETS.map((color) => {
-            const active = color.toLowerCase() === accentColor.toLowerCase();
-            return (
-              <button
-                key={color}
-                onClick={() => setAccentColor(color)}
-                disabled={disabled}
-                className={`w-7 h-7 rounded-full border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                  active
-                    ? 'border-teal ring-2 ring-teal/20 scale-110'
-                    : 'border-edge hover:border-edge-hover hover:scale-105'
-                }`}
-                style={{ backgroundColor: color }}
-                title={color}
-              />
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }

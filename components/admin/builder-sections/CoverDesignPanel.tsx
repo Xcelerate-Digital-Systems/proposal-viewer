@@ -80,6 +80,8 @@ export default function CoverDesignPanel({
   /* ── Preview-only state ─────────────────────────────────────── */
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState('');
+  const [companyAccent, setCompanyAccent] = useState('#01434A');
+  const [companyAcceptText, setCompanyAcceptText] = useState('#ffffff');
   // Resolved font + weight cascade: entity override → company default.
   // The Design tab's Globals card writes these onto the entity row, so the
   // cover preview re-renders with the chosen weight once the save lands.
@@ -126,7 +128,7 @@ export default function CoverDesignPanel({
     (async () => {
       const { data: company } = await supabase
         .from('companies')
-        .select('name, logo_path, font_heading, font_heading_weight, font_body, font_body_weight, font_button, font_button_weight, title_font_family')
+        .select('name, logo_path, font_heading, font_heading_weight, font_body, font_body_weight, font_button, font_button_weight, title_font_family, accent_color, accept_text_color')
         .eq('id', entity.company_id)
         .single();
       if (cancelled) return;
@@ -156,6 +158,14 @@ export default function CoverDesignPanel({
         setBodyFontWeight(e.font_body_weight || company.font_body_weight || null);
         setButtonFont(e.font_button_family || company.font_button || null);
         setButtonFontWeight(e.font_button_weight || company.font_button_weight || null);
+        if (company.accent_color) setCompanyAccent(company.accent_color);
+        if (company.accept_text_color) setCompanyAcceptText(company.accept_text_color);
+        if (!entity.cover_button_bg && company.accent_color) {
+          setButtonBg(company.accent_color);
+        }
+        if (!entity.cover_button_text_color && company.accept_text_color) {
+          setButtonTextColor(company.accept_text_color);
+        }
         if (company.logo_path) {
           const { data: url } = supabase.storage.from('company-assets').getPublicUrl(company.logo_path);
           if (url?.publicUrl) setCompanyLogoUrl(url.publicUrl);
@@ -555,9 +565,9 @@ export default function CoverDesignPanel({
           action={
             <button
               onClick={() => {
-                setButtonBg('#01434A');
-                setButtonTextColor('#ffffff');
-                persist({ cover_button_bg: '#01434A', cover_button_text_color: '#ffffff' });
+                setButtonBg(companyAccent);
+                setButtonTextColor(companyAcceptText);
+                persist({ cover_button_bg: null, cover_button_text_color: null });
               }}
               className="flex items-center gap-1.5 text-xs text-faint hover:text-teal transition-colors"
             >
@@ -570,7 +580,7 @@ export default function CoverDesignPanel({
             <ColorPickerField
               label="Button Background"
               value={buttonBg}
-              fallback="#01434A"
+              fallback={companyAccent}
               onChange={(v) => { setButtonBg(v); persist({ cover_button_bg: v }); }}
             />
             <ColorPickerField

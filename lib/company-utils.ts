@@ -54,11 +54,6 @@ export type CompanyData = {
 export { deriveBorderColor as deriveBorder, deriveSurfaceColor as deriveSurface } from '@/lib/types/branding';
 export { hexToRgba } from '@/lib/branding/color-math';
 
-export const ACCENT_PRESETS = [
-  '#01434A', '#ef4444', '#f59e0b', '#22c55e',
-  '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4',
-];
-
 export const BG_PRESETS = [
   { label: 'Midnight', primary: '#0f0f0f', secondary: '#141414' },
   { label: 'Charcoal', primary: '#1a1a1a', secondary: '#222222' },

@@ -292,7 +292,7 @@ export default function ViewerFontsSection({
 }: ViewerFontsSectionProps) {
   return (
     <div className="bg-white border border-edge rounded-[14px] p-5 ">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Type size={15} className="text-faint" />
           <span className="text-sm font-medium text-muted">Viewer Fonts</span>

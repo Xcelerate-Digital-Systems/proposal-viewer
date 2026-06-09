@@ -1,6 +1,7 @@
 // components/admin/company/ContentPageDefaultsSection.tsx
 'use client';
 
+import { ReactNode } from 'react';
 import { Check, Loader2, FileText } from 'lucide-react';
 import ColorPickerField from '@/components/ui/ColorPickerField';
 
@@ -15,6 +16,7 @@ interface ContentPageDefaultsSectionProps {
   textPageHeadingColor: string | null;
   setTextPageHeadingColor: (v: string | null) => void;
   lastSaved?: boolean;
+  children?: ReactNode;
 }
 
 export default function ContentPageDefaultsSection({
@@ -28,6 +30,7 @@ export default function ContentPageDefaultsSection({
   textPageHeadingColor,
   setTextPageHeadingColor,
   lastSaved,
+  children,
 }: ContentPageDefaultsSectionProps) {
   return (
     <div className="bg-white border border-edge rounded-[14px] p-5">
@@ -48,17 +51,23 @@ export default function ContentPageDefaultsSection({
         )}
       </div>
       <p className="text-xs text-faint mb-4">
-        Default colours for proposal, quote, and document content pages. Can be overridden per-proposal in the Design tab.
+        Default colours for text and content pages inside proposals, quotes, and documents. These are the pages your clients read. You can override these per-proposal in the Design tab.
       </p>
 
-      <div className="space-y-2">
-        <ColorPickerField label="Page background" value={textPageBgColor} fallback="#141414" onChange={setTextPageBgColor} disabled={!isOwner} />
-        <ColorPickerField label="Body text" value={textPageTextColor} fallback="#ffffff" onChange={setTextPageTextColor} disabled={!isOwner} />
-        <ColorPickerField label="Heading colour" value={textPageHeadingColor || ''} fallback="" onChange={(v) => setTextPageHeadingColor(v || null)} disabled={!isOwner} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <div className="space-y-2">
+            <ColorPickerField label="Page background" value={textPageBgColor} fallback="#141414" onChange={setTextPageBgColor} disabled={!isOwner} />
+            <ColorPickerField label="Body text" value={textPageTextColor} fallback="#ffffff" onChange={setTextPageTextColor} disabled={!isOwner} />
+            <ColorPickerField label="Heading colour" value={textPageHeadingColor || ''} fallback="" onChange={(v) => setTextPageHeadingColor(v || null)} disabled={!isOwner} />
+          </div>
+          <p className="text-xs text-faint mt-3">
+            Leave heading colour empty to inherit from body text.
+          </p>
+        </div>
+
+        {children && <div>{children}</div>}
       </div>
-      <p className="text-xs text-faint mt-3">
-        Leave heading colour empty to inherit from body text.
-      </p>
     </div>
   );
 }

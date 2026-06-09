@@ -8,6 +8,8 @@ import { setBrandingColors } from '@/components/ui/ColorPickerField';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { hexToOklch } from '@/lib/branding/color-math';
 
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
+
 /* ─── Auth helper ────────────────────────────────────────────────────────── */
 
 async function getAuthHeaders() {
@@ -514,6 +516,10 @@ export function useCompanySettings(companyId: string) {
 
   const handleBgImageUpload = async (file: File) => {
     if (!isOwner) return;
+    if (file.size > MAX_IMAGE_SIZE) {
+      showFeedback('Image must be under 5 MB', true);
+      return;
+    }
     setBgImageUploading(true);
     try {
       const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
@@ -548,7 +554,8 @@ export function useCompanySettings(companyId: string) {
       showFeedback('Background image uploaded');
     } catch (err) {
       console.error(err);
-      showFeedback('Failed to upload background image', true);
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      showFeedback(`Upload failed: ${msg}`, true);
     } finally {
       setBgImageUploading(false);
     }
@@ -556,6 +563,8 @@ export function useCompanySettings(companyId: string) {
 
   const handleBgImageRemove = async () => {
     if (!isOwner || !bgImagePath) return;
+    const ok = await confirm({ title: 'Remove background image', message: 'Remove the background texture from your viewer?', confirmLabel: 'Remove', destructive: true });
+    if (!ok) return;
     try {
       await supabase.storage.from('company-assets').remove([bgImagePath]);
 
@@ -580,6 +589,10 @@ export function useCompanySettings(companyId: string) {
 
   const handleCoverImageUpload = async (file: File) => {
     if (!isOwner) return;
+    if (file.size > MAX_IMAGE_SIZE) {
+      showFeedback('Image must be under 5 MB', true);
+      return;
+    }
     setCoverImageUploading(true);
     try {
       const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
@@ -614,7 +627,8 @@ export function useCompanySettings(companyId: string) {
       showFeedback('Cover image uploaded');
     } catch (err) {
       console.error(err);
-      showFeedback('Failed to upload cover image', true);
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      showFeedback(`Upload failed: ${msg}`, true);
     } finally {
       setCoverImageUploading(false);
     }
@@ -622,6 +636,8 @@ export function useCompanySettings(companyId: string) {
 
   const handleCoverImageRemove = async () => {
     if (!isOwner || !coverImagePath) return;
+    const ok = await confirm({ title: 'Remove cover image', message: 'Remove the default cover image? New proposals will use a plain background.', confirmLabel: 'Remove', destructive: true });
+    if (!ok) return;
     try {
       await supabase.storage.from('company-assets').remove([coverImagePath]);
 

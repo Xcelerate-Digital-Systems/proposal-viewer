@@ -89,8 +89,6 @@ export default function ViewerColorsSection({
         setBgPrimary={setBgPrimary}
         bgSecondary={bgSecondary}
         setBgSecondary={setBgSecondary}
-        accentColor={accentColor}
-        setAccentColor={setAccentColor}
         disabled={!isOwner}
       />
 
@@ -100,7 +98,7 @@ export default function ViewerColorsSection({
         <div>
           {/* Accent color */}
           <div className="mb-4">
-            <span className="text-2xs font-semibold text-faint uppercase tracking-wider">Accent Colour</span>
+            <span className="text-xs font-medium text-dim">Accent Colour</span>
             <div className="mt-1.5">
               <ColorPickerField label="Buttons, links, highlights" value={accentColor} fallback="#01434A" onChange={setAccentColor} disabled={!isOwner} />
             </div>
@@ -108,7 +106,7 @@ export default function ViewerColorsSection({
 
           {/* Background */}
           <div className="mb-4 pt-4 border-t border-edge">
-            <span className="text-2xs font-semibold text-faint uppercase tracking-wider">Background</span>
+            <span className="text-xs font-medium text-dim">Background</span>
             <div className="space-y-2 mt-1.5">
               <ColorPickerField label="Main background" value={bgPrimary} fallback="#0f0f0f" onChange={setBgPrimary} disabled={!isOwner} />
               <ColorPickerField
@@ -125,9 +123,9 @@ export default function ViewerColorsSection({
 
           {/* Background texture */}
           <div className="mb-4 pt-4 border-t border-edge">
-            <span className="text-2xs font-semibold text-faint uppercase tracking-wider">Background Texture</span>
+            <span className="text-xs font-medium text-dim">Background Texture</span>
             <p className="text-xs text-faint mt-1 mb-3">
-              Optional image or pattern behind viewer pages.
+              Optional image or pattern behind viewer pages. PNG, JPEG, WebP, or SVG. Max 5 MB.
             </p>
 
             {bgImageUrl ? (
@@ -199,7 +197,7 @@ export default function ViewerColorsSection({
 
           {/* Text on dark surfaces */}
           <div className="pt-4 border-t border-edge">
-            <span className="text-2xs font-semibold text-faint uppercase tracking-wider">Text on Dark Surfaces</span>
+            <span className="text-xs font-medium text-dim">Text on Dark Surfaces</span>
             <div className="space-y-2 mt-1.5">
               <ColorPickerField label="Light text" value={sidebarTextColor} fallback="#ffffff" onChange={setSidebarTextColor} disabled={!isOwner} />
               <ColorPickerField label="Button text" value={acceptTextColor} fallback="#ffffff" onChange={setAcceptTextColor} disabled={!isOwner} />

@@ -52,7 +52,7 @@ export default function BrandColorsSection({
 
   return (
     <div className="bg-white border border-edge rounded-[14px] p-5">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Palette size={15} className="text-faint" />
           <span className="text-sm font-medium text-muted">Brand Colors</span>

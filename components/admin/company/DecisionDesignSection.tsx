@@ -1,6 +1,7 @@
 'use client';
 
-import { Check, RotateCcw, CheckSquare } from 'lucide-react';
+import { ReactNode } from 'react';
+import { Check, RotateCcw, CheckSquare, Loader2 } from 'lucide-react';
 import ColorPickerField from '@/components/ui/ColorPickerField';
 
 interface Props {
@@ -25,6 +26,7 @@ interface Props {
   textPageTextColor: string;
   textPageHeadingColor: string | null;
   accentColor: string;
+  children?: ReactNode;
 }
 
 export default function DecisionDesignSection({
@@ -49,6 +51,7 @@ export default function DecisionDesignSection({
   textPageTextColor,
   textPageHeadingColor,
   accentColor,
+  children,
 }: Props) {
   const resetAll = () => {
     setDecisionBgColor(null);
@@ -68,82 +71,88 @@ export default function DecisionDesignSection({
           <span className="text-sm font-medium text-muted">Decision Page Design</span>
         </div>
         <div className="flex items-center gap-2">
-          {lastSaved && (
-            <span className="flex items-center gap-1 text-xs text-emerald-600">
-              <Check size={12} /> Saved
+          {saving === 'decision_design' && (
+            <span className="flex items-center gap-1.5 text-xs text-faint">
+              <Loader2 size={12} className="animate-spin" /> Saving…
             </span>
           )}
-          {saving === 'decision_design' && (
-            <div className="w-3.5 h-3.5 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
+          {lastSaved && saving !== 'decision_design' && (
+            <span className="flex items-center gap-1.5 text-xs text-emerald-500">
+              <Check size={12} /> Saved
+            </span>
           )}
         </div>
       </div>
       <p className="text-xs text-faint mb-4">
-        Colours for the Accept / Decline / Request Changes form. Applies globally to proposals and quotes. Leave blank to inherit from Content Page colours.
+        Colours for the Accept / Decline / Request Changes form shown at the end of proposals and quotes, where your client makes their decision. Leave blank to inherit from Content Page colours above.
       </p>
 
-      <fieldset disabled={!isOwner} className="space-y-4">
-        <ColorPickerField
-          label="Background"
-          value={decisionBgColor}
-          fallback={textPageBgColor}
-          onChange={setDecisionBgColor}
-          onReset={() => setDecisionBgColor(null)}
-        />
-        <ColorPickerField
-          label="Text"
-          value={decisionTextColor}
-          fallback={textPageTextColor}
-          onChange={setDecisionTextColor}
-          onReset={() => setDecisionTextColor(null)}
-        />
-        <ColorPickerField
-          label="Headline"
-          value={decisionHeadingColor}
-          fallback={textPageHeadingColor || textPageTextColor}
-          onChange={setDecisionHeadingColor}
-          onReset={() => setDecisionHeadingColor(null)}
-        />
-        <ColorPickerField
-          label="Accept Button"
-          value={decisionAcceptButtonColor}
-          fallback={decisionHeadingColor || textPageHeadingColor || textPageTextColor}
-          onChange={setDecisionAcceptButtonColor}
-          onReset={() => setDecisionAcceptButtonColor(null)}
-        />
-        <ColorPickerField
-          label="Decline Button"
-          value={decisionDeclineButtonColor}
-          fallback="#dc2626"
-          onChange={setDecisionDeclineButtonColor}
-          onReset={() => setDecisionDeclineButtonColor(null)}
-        />
-        <ColorPickerField
-          label="Request Changes Button"
-          value={decisionRevisionButtonColor}
-          fallback={decisionHeadingColor || textPageHeadingColor || textPageTextColor}
-          onChange={setDecisionRevisionButtonColor}
-          onReset={() => setDecisionRevisionButtonColor(null)}
-        />
-        <ColorPickerField
-          label="Checkbox"
-          value={decisionCheckboxColor}
-          fallback={accentColor}
-          onChange={setDecisionCheckboxColor}
-          onReset={() => setDecisionCheckboxColor(null)}
-        />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <fieldset disabled={!isOwner} className="space-y-4">
+          <ColorPickerField
+            label="Background"
+            value={decisionBgColor}
+            fallback={textPageBgColor}
+            onChange={setDecisionBgColor}
+            onReset={() => setDecisionBgColor(null)}
+          />
+          <ColorPickerField
+            label="Text"
+            value={decisionTextColor}
+            fallback={textPageTextColor}
+            onChange={setDecisionTextColor}
+            onReset={() => setDecisionTextColor(null)}
+          />
+          <ColorPickerField
+            label="Headline"
+            value={decisionHeadingColor}
+            fallback={textPageHeadingColor || textPageTextColor}
+            onChange={setDecisionHeadingColor}
+            onReset={() => setDecisionHeadingColor(null)}
+          />
+          <ColorPickerField
+            label="Accept Button"
+            value={decisionAcceptButtonColor}
+            fallback={decisionHeadingColor || textPageHeadingColor || textPageTextColor}
+            onChange={setDecisionAcceptButtonColor}
+            onReset={() => setDecisionAcceptButtonColor(null)}
+          />
+          <ColorPickerField
+            label="Decline Button"
+            value={decisionDeclineButtonColor}
+            fallback="#dc2626"
+            onChange={setDecisionDeclineButtonColor}
+            onReset={() => setDecisionDeclineButtonColor(null)}
+          />
+          <ColorPickerField
+            label="Request Changes Button"
+            value={decisionRevisionButtonColor}
+            fallback={decisionHeadingColor || textPageHeadingColor || textPageTextColor}
+            onChange={setDecisionRevisionButtonColor}
+            onReset={() => setDecisionRevisionButtonColor(null)}
+          />
+          <ColorPickerField
+            label="Checkbox"
+            value={decisionCheckboxColor}
+            fallback={accentColor}
+            onChange={setDecisionCheckboxColor}
+            onReset={() => setDecisionCheckboxColor(null)}
+          />
 
-        {isOwner && (
-          <button
-            type="button"
-            onClick={resetAll}
-            className="flex items-center gap-1.5 text-xs text-faint hover:text-teal transition-colors"
-          >
-            <RotateCcw size={12} />
-            Reset all to inherit
-          </button>
-        )}
-      </fieldset>
+          {isOwner && (
+            <button
+              type="button"
+              onClick={resetAll}
+              className="flex items-center gap-1.5 text-xs text-faint hover:text-teal transition-colors"
+            >
+              <RotateCcw size={12} />
+              Reset all to inherit
+            </button>
+          )}
+        </fieldset>
+
+        {children && <div>{children}</div>}
+      </div>
     </div>
   );
 }

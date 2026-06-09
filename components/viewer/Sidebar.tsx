@@ -209,21 +209,42 @@ export default function Sidebar({
         <div className="p-3 space-y-2 border-t" style={{ borderColor: palette.border }}>
           {/* ── Terminal state badges ── */}
           {accepted && (
-            <div className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium bg-emerald-900/20 text-emerald-400 border border-emerald-800/30">
+            <div
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium"
+              style={{
+                backgroundColor: palette.isDark ? 'rgba(6,78,59,0.2)' : 'rgba(5,150,105,0.08)',
+                color: palette.isDark ? '#34d399' : '#059669',
+                border: `1px solid ${palette.isDark ? 'rgba(6,78,59,0.3)' : 'rgba(5,150,105,0.2)'}`,
+              }}
+            >
               <CheckCircle2 size={15} />
               Approved
             </div>
           )}
 
           {declined && (
-            <div className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium bg-red-900/20 text-red-400 border border-red-800/30">
+            <div
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium"
+              style={{
+                backgroundColor: palette.isDark ? 'rgba(127,29,29,0.2)' : 'rgba(220,38,38,0.06)',
+                color: palette.isDark ? '#f87171' : '#dc2626',
+                border: `1px solid ${palette.isDark ? 'rgba(127,29,29,0.3)' : 'rgba(220,38,38,0.15)'}`,
+              }}
+            >
               <XCircle size={15} />
               Declined
             </div>
           )}
 
           {revisionRequested && (
-            <div className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium bg-amber-900/20 text-amber-400 border border-amber-800/30">
+            <div
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium"
+              style={{
+                backgroundColor: palette.isDark ? 'rgba(120,53,15,0.2)' : 'rgba(245,158,11,0.08)',
+                color: palette.isDark ? '#fbbf24' : '#d97706',
+                border: `1px solid ${palette.isDark ? 'rgba(120,53,15,0.3)' : 'rgba(245,158,11,0.2)'}`,
+              }}
+            >
               <PenLine size={15} />
               Changes Requested
             </div>

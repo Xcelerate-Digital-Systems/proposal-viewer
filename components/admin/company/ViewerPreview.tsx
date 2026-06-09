@@ -29,6 +29,10 @@ interface ViewerPreviewProps {
   bgImageOverlayOpacity?: number;
 }
 
+// The actual viewer uses branding.bg_secondary directly for the sidebar
+// background — NOT palette.bgElevated (which is derived from bgPrimary).
+// Sub-previews receive bgSecondary so colours match the real viewer.
+
 export default function ViewerPreview({
   accent,
   bgPrimary,
@@ -79,6 +83,7 @@ export default function ViewerPreview({
         {activeTab === 'proposal' && (
           <ProposalPreview
             palette={palette}
+            bgSecondary={bgSecondary}
             logoUrl={logoUrl}
             companyName={companyName}
             acceptTextColor={acceptTextColor}
@@ -91,6 +96,7 @@ export default function ViewerPreview({
         {activeTab === 'campaign' && (
           <CampaignPreview
             palette={palette}
+            bgSecondary={bgSecondary}
             logoUrl={logoUrl}
             companyName={companyName}
             fontSidebar={fontSidebar}
@@ -99,6 +105,7 @@ export default function ViewerPreview({
         {activeTab === 'portal' && (
           <PortalPreview
             palette={palette}
+            bgSecondary={bgSecondary}
             logoUrl={logoUrl}
             companyName={companyName}
             fontSidebar={fontSidebar}
@@ -117,6 +124,7 @@ export default function ViewerPreview({
 
 function ProposalPreview({
   palette,
+  bgSecondary,
   logoUrl,
   companyName,
   acceptTextColor,
@@ -126,6 +134,7 @@ function ProposalPreview({
   bgImageOverlayOpacity,
 }: {
   palette: ReturnType<typeof generateBrandPalette>;
+  bgSecondary: string;
   logoUrl: string | null;
   companyName: string;
   acceptTextColor: string;
@@ -139,7 +148,7 @@ function ProposalPreview({
       {/* Sidebar */}
       <div
         className="w-[160px] shrink-0 flex flex-col border-r"
-        style={{ backgroundColor: palette.bgElevated, borderColor: palette.border }}
+        style={{ backgroundColor: bgSecondary, borderColor: palette.border }}
       >
         <div className="px-3 py-2.5 border-b flex items-center gap-1.5" style={{ borderColor: palette.border }}>
           {logoUrl ? (
@@ -170,7 +179,13 @@ function ProposalPreview({
           ))}
         </div>
         <div className="p-2 border-t" style={{ borderColor: palette.border }}>
-          <div className="flex items-center justify-center gap-1 px-2 py-1.5 rounded text-2xs font-medium" style={{ backgroundColor: 'rgba(6,78,59,0.15)', color: '#34d399' }}>
+          <div
+            className="flex items-center justify-center gap-1 px-2 py-1.5 rounded text-2xs font-medium"
+            style={{
+              backgroundColor: palette.isDark ? 'rgba(6,78,59,0.15)' : 'rgba(5,150,105,0.08)',
+              color: palette.isDark ? '#34d399' : '#059669',
+            }}
+          >
             <CheckCircle2 size={10} />
             Approved
           </div>
@@ -209,11 +224,13 @@ function ProposalPreview({
 
 function CampaignPreview({
   palette,
+  bgSecondary,
   logoUrl,
   companyName,
   fontSidebar,
 }: {
   palette: ReturnType<typeof generateBrandPalette>;
+  bgSecondary: string;
   logoUrl: string | null;
   companyName: string;
   fontSidebar?: string | null;
@@ -223,7 +240,7 @@ function CampaignPreview({
       {/* Top bar — matches ReviewTopBar layout */}
       <div
         className="flex items-center justify-between px-4 py-2.5 shrink-0 border-b"
-        style={{ backgroundColor: palette.bgElevated, borderColor: palette.border }}
+        style={{ backgroundColor: bgSecondary, borderColor: palette.border }}
       >
         <div className="flex items-center gap-2.5 min-w-0">
           {logoUrl ? (
@@ -284,7 +301,7 @@ function CampaignPreview({
                     {i === 2 ? (
                       <span className="text-2xs px-1.5 py-0.5 rounded-full" style={{ backgroundColor: palette.accentSurface, color: palette.accent }}>Review</span>
                     ) : i === 0 ? (
-                      <ThumbsUp size={10} style={{ color: '#22c55e' }} />
+                      <ThumbsUp size={10} style={{ color: palette.isDark ? '#34d399' : '#059669' }} />
                     ) : (
                       <ThumbsDown size={10} style={{ color: palette.faintText }} />
                     )}
@@ -303,12 +320,14 @@ function CampaignPreview({
 
 function PortalPreview({
   palette,
+  bgSecondary,
   logoUrl,
   companyName,
   fontSidebar,
   fontSidebarWeight,
 }: {
   palette: ReturnType<typeof generateBrandPalette>;
+  bgSecondary: string;
   logoUrl: string | null;
   companyName: string;
   fontSidebar?: string | null;
@@ -320,7 +339,7 @@ function PortalPreview({
 
   const proposals = [
     { title: 'Q3 Marketing Plan', status: 'Sent', statusColor: palette.accent },
-    { title: 'Brand Refresh', status: 'Accepted', statusColor: '#22c55e' },
+    { title: 'Brand Refresh', status: 'Accepted', statusColor: palette.isDark ? '#34d399' : '#059669' },
     { title: 'SEO Audit Scope', status: 'Draft', statusColor: palette.faintText },
   ];
 
@@ -329,7 +348,7 @@ function PortalPreview({
       {/* Sidebar */}
       <div
         className="w-[150px] shrink-0 flex flex-col border-r"
-        style={{ backgroundColor: palette.bgElevated, borderColor: palette.border }}
+        style={{ backgroundColor: bgSecondary, borderColor: palette.border }}
       >
         <div className="px-3 py-2.5 border-b flex items-center gap-1.5" style={{ borderColor: palette.border }}>
           {logoUrl ? (
