@@ -13,6 +13,7 @@ import { SiteHeader } from '@/components/marketing/SiteHeader';
 import { ContainerScroll } from '@/components/marketing/ContainerScroll';
 import { FAQAccordion } from '@/components/marketing/FAQAccordion';
 import { SiteFooter } from '@/components/marketing/SiteFooter';
+import { LiquidCTA } from '@/components/marketing/LiquidCTA';
 
 export const metadata: Metadata = {
   title: 'AgencyViz - The Agency Toolbox',
@@ -55,42 +56,15 @@ const MARKUP_BULLETS = [
 ];
 
 const SECONDARY = [
-  { icon: FlowArrow, title: 'Funnel Planner', desc: 'Build campaign funnels on an infinite canvas with 60+ node types. The built-in forecast engine calculates projected revenue, cost, profit, and ROAS before you spend a dollar.', bullets: ['60+ node types for any campaign', 'Built-in revenue & ROAS forecast', 'What-if scenarios to compare strategies'], href: '/home/funnel-planner' },
-  { icon: BookmarkSimple, title: 'Swipe Vault', desc: 'Save ads with the creative, the copy, and the metadata. Tag by persuasion angle. Every save gets a realistic Facebook feed mockup your whole team draws from.', bullets: ['9 persuasion angle tags', 'Realistic Facebook feed mockup', 'Shared team library with video transcription'], href: '/home/swipe-vault' },
-  { icon: Plug, title: 'Looker Studio Connector', desc: 'Connect Meta to Looker Studio and pull 95+ fields live: spend, clicks, ROAS, creative thumbnails, and breakdowns. No data stored. No CSV exports.', bullets: ['95+ insight fields from Meta', 'Passthrough, zero data retention', 'GoHighLevel two-way CRM sync'], href: '/home/integrations' },
+  { icon: FlowArrow, title: 'Funnel Planner', desc: 'Build campaign funnels on an infinite canvas with 60+ node types. The built-in forecast engine calculates projected revenue, cost, profit, and ROAS before you spend a dollar.', bullets: ['60+ node types for any campaign', 'Built-in revenue & ROAS forecast', 'What-if scenarios to compare strategies'], href: '/tools/funnel-planner', accent: 'from-teal/6 to-cyan-50/40', iconBg: 'bg-teal/8 group-hover:bg-teal/12' },
+  { icon: BookmarkSimple, title: 'Swipe Vault', desc: 'Save ads with the creative, the copy, and the metadata. Tag by persuasion angle. Every save gets a realistic Facebook feed mockup your whole team draws from.', bullets: ['9 persuasion angle tags', 'Realistic Facebook feed mockup', 'Shared team library with video transcription'], href: '/tools/swipe-vault', accent: 'from-amber-50/60 to-orange-50/30', iconBg: 'bg-amber-100/60 group-hover:bg-amber-100/80' },
+  { icon: Plug, title: 'Looker Studio Connector', desc: 'Connect Meta to Looker Studio and pull 95+ fields live: spend, clicks, ROAS, creative thumbnails, and breakdowns. No data stored. No CSV exports.', bullets: ['95+ insight fields from Meta', 'Passthrough, zero data retention', 'GoHighLevel two-way CRM sync'], href: '/tools/integrations', accent: 'from-violet-50/50 to-indigo-50/30', iconBg: 'bg-violet-100/50 group-hover:bg-violet-100/70' },
 ];
 
 const STEPS = [
   { title: 'Build', desc: 'Start from a template. Proposals, quotes, docs, plans, and review boards come together in minutes.' },
   { title: 'Share', desc: 'Send one link. Your client opens it in the browser, no account, no download, no friction.' },
   { title: 'Sign off', desc: 'They accept, comment, and approve. You track every revision to done in one place.' },
-];
-
-const TESTIMONIALS = [
-  {
-    quote: 'We used to send proposals in one tool, run creative feedback through another, and share plans in Google Docs. Now it\'s all one link and clients actually engage with the whole thing because there\'s nothing to download.',
-    name: 'Founding Agency',
-    role: 'Agency Director',
-    initials: 'AD',
-  },
-  {
-    quote: 'Clients pin feedback on the creative and I assign the fix. No more decoding "the headline on the third one" in a forwarded email.',
-    name: 'Founding Agency',
-    role: 'Creative Lead',
-    initials: 'CL',
-  },
-  {
-    quote: 'The proposal went out at 2pm, the client accepted by 2:07. No back-and-forth, no PDF, no chasing.',
-    name: 'Founding Agency',
-    role: 'Account Manager',
-    initials: 'AM',
-  },
-  {
-    quote: 'Clients actually comment on strategy decks now because they open them in two seconds instead of downloading a 40MB PDF.',
-    name: 'Founding Agency',
-    role: 'Strategy Director',
-    initials: 'SD',
-  },
 ];
 
 const FAQS = [
@@ -160,7 +134,7 @@ export default async function HomePage() {
           </ScrollReveal>
 
           <div className="grid md:grid-cols-2 gap-5">
-            <ScrollReveal>
+            <ScrollReveal variant="slide-left">
               <div className="rounded-2xl border border-red-100 bg-red-50/30 p-8 h-full">
                 <span className="text-xs font-semibold uppercase tracking-wider text-red-400">Before</span>
                 <h3 className="mt-3 text-xl font-bold text-ink">The duct-taped stack</h3>
@@ -176,7 +150,7 @@ export default async function HomePage() {
                 </ul>
               </div>
             </ScrollReveal>
-            <ScrollReveal delay={100}>
+            <ScrollReveal variant="slide-right" delay={100}>
               <div className="rounded-2xl border border-surface-dark-border bg-surface-dark p-8 h-full">
                 <span className="text-xs font-semibold uppercase tracking-wider text-surface-dark-accent">With AgencyViz</span>
                 <h3 className="mt-3 text-xl font-bold text-white">One workspace. Both sides.</h3>
@@ -200,7 +174,7 @@ export default async function HomePage() {
       <section id="tools" className="py-20 md:py-28">
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-col lg:flex-row gap-12 lg:gap-16 items-center">
-            <ScrollReveal className="flex-1 max-w-lg">
+            <ScrollReveal variant="slide-left" className="flex-1 max-w-lg">
               <span className="text-xs font-semibold uppercase tracking-wider text-teal">Pitch</span>
               <h2 className="mt-3 text-3xl md:text-4xl font-bold text-ink tracking-tight leading-tight">
                 Win the pitch before the call ends.
@@ -218,10 +192,16 @@ export default async function HomePage() {
                 ))}
               </ul>
             </ScrollReveal>
-            <ScrollReveal className="flex-1 w-full" delay={120}>
-              <MockAppFrame label="app.agencyviz.io/proposals">
-                <MockProposalUI />
-              </MockAppFrame>
+            <ScrollReveal variant="slide-right" className="flex-1 w-full" delay={120}>
+              <div className="hidden md:block">
+                <MockAppFrame label="app.agencyviz.io/proposals">
+                  <MockProposalUI />
+                </MockAppFrame>
+              </div>
+              <div className="md:hidden rounded-2xl border border-edge bg-surface/60 p-6 text-center">
+                <p className="text-sm text-prose">Drag-and-drop proposal builder with custom covers, embedded quotes, and live browser sharing.</p>
+                <p className="mt-3 text-xs text-dim">Desktop workspace preview</p>
+              </div>
             </ScrollReveal>
           </div>
         </div>
@@ -231,7 +211,7 @@ export default async function HomePage() {
       <section className="py-20 md:py-28 bg-surface/40 border-y border-edge/50">
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-col lg:flex-row-reverse gap-12 lg:gap-16 items-center">
-            <ScrollReveal className="flex-1 max-w-lg">
+            <ScrollReveal variant="slide-right" className="flex-1 max-w-lg">
               <span className="text-xs font-semibold uppercase tracking-wider text-teal">Markup</span>
               <h2 className="mt-3 text-3xl md:text-4xl font-bold text-ink tracking-tight leading-tight">
                 Feedback that lands where it belongs.
@@ -249,10 +229,16 @@ export default async function HomePage() {
                 ))}
               </ul>
             </ScrollReveal>
-            <ScrollReveal className="flex-1 w-full">
-              <MockAppFrame label="app.agencyviz.io/campaigns">
-                <MockMarkupUI />
-              </MockAppFrame>
+            <ScrollReveal variant="slide-left" className="flex-1 w-full">
+              <div className="hidden md:block">
+                <MockAppFrame label="app.agencyviz.io/campaigns">
+                  <MockMarkupUI />
+                </MockAppFrame>
+              </div>
+              <div className="md:hidden rounded-2xl border border-edge bg-surface/60 p-6 text-center">
+                <p className="text-sm text-prose">Kanban board with pin feedback, stage-based workflows, and per-reviewer sign-off.</p>
+                <p className="mt-3 text-xs text-dim">Desktop workspace preview</p>
+              </div>
             </ScrollReveal>
           </div>
         </div>
@@ -269,24 +255,27 @@ export default async function HomePage() {
               Plan campaigns, research what works, and report on performance without leaving AgencyViz.
             </p>
           </ScrollReveal>
-          <ScrollReveal stagger className="grid md:grid-cols-3 gap-5">
+          <ScrollReveal variant="stagger" className="grid md:grid-cols-3 gap-5">
             {SECONDARY.map(s => (
-              <div key={s.title} className="rounded-2xl border border-edge bg-white p-7 hover-lift group flex flex-col">
-                <div className="w-11 h-11 rounded-xl bg-teal/8 flex items-center justify-center mb-5 group-hover:bg-teal/12 transition-colors">
-                  <s.icon size={22} weight="duotone" className="text-teal" />
+              <div key={s.title} className="rounded-2xl border border-edge bg-white hover-lift group flex flex-col overflow-hidden">
+                <div className={`h-2 bg-gradient-to-r ${s.accent}`} />
+                <div className="p-7 pt-5 flex flex-col flex-1">
+                  <div className={`w-11 h-11 rounded-xl ${s.iconBg} flex items-center justify-center mb-5 transition-colors`}>
+                    <s.icon size={22} weight="duotone" className="text-teal" />
+                  </div>
+                  <h3 className="text-base font-semibold text-ink">{s.title}</h3>
+                  <p className="mt-2.5 text-sm text-muted leading-relaxed">{s.desc}</p>
+                  <ul className="mt-4 space-y-2 flex-1">
+                    {s.bullets.map((b: string) => (
+                      <li key={b} className="flex items-start gap-2 text-xs text-ink/70">
+                        <Check size={12} weight="bold" className="text-teal shrink-0 mt-0.5" /> {b}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href={s.href} className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-teal hover:text-teal/80 transition-colors py-1.5">
+                    Learn more <ArrowRight size={14} weight="bold" />
+                  </Link>
                 </div>
-                <h3 className="text-base font-semibold text-ink">{s.title}</h3>
-                <p className="mt-2.5 text-sm text-muted leading-relaxed">{s.desc}</p>
-                <ul className="mt-4 space-y-2 flex-1">
-                  {s.bullets.map((b: string) => (
-                    <li key={b} className="flex items-start gap-2 text-xs text-ink/70">
-                      <Check size={12} weight="bold" className="text-teal shrink-0 mt-0.5" /> {b}
-                    </li>
-                  ))}
-                </ul>
-                <Link href={s.href} className="mt-5 inline-flex items-center gap-1 text-xs font-medium text-teal hover:text-teal/80 transition-colors">
-                  Learn more <ArrowRight size={12} weight="bold" />
-                </Link>
               </div>
             ))}
           </ScrollReveal>
@@ -328,7 +317,7 @@ export default async function HomePage() {
             </p>
           </ScrollReveal>
 
-          <ScrollReveal>
+          <ScrollReveal variant="scale">
             <AnimatedPricing
               compact
               planName={plan?.name ?? 'Founders'}
@@ -345,37 +334,28 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Testimonials ───────────────────────────────────── */}
-      <section className="py-20 md:py-28 bg-surface/40 border-y border-edge/50">
-        <div className="max-w-5xl mx-auto px-6">
-          <ScrollReveal className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-ink tracking-tight">
-              What agencies are saying.
-            </h2>
-          </ScrollReveal>
-          <ScrollReveal stagger className="grid md:grid-cols-2 gap-5">
-            {TESTIMONIALS.map((t, i) => (
-              <div key={i} className="rounded-2xl border border-edge bg-white p-7">
-                <p className="text-sm text-ink leading-relaxed">
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-                <div className="mt-5 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-surface-dark flex items-center justify-center text-xs font-semibold text-surface-dark-accent">
-                    {t.initials}
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-ink">{t.name}</div>
-                    <div className="text-xs text-muted">{t.role}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
+      {/* ── Quick answers (inline, pre-FAQ) ─────────────────── */}
+      <section className="py-16 md:py-20">
+        <div className="max-w-4xl mx-auto px-6">
+          <ScrollReveal className="grid md:grid-cols-3 gap-6 md:gap-8">
+            <div>
+              <h3 className="text-sm font-semibold text-ink">Do clients need an account?</h3>
+              <p className="mt-2 text-sm text-prose leading-relaxed">No. Everything is shared by link. Clients view, comment, and approve without signing up.</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-ink">Does it work in the browser?</h3>
+              <p className="mt-2 text-sm text-prose leading-relaxed">Yes. No app to install, no PDF to download, no login to create. Desktop, tablet, and mobile.</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-ink">Is my data secure?</h3>
+              <p className="mt-2 text-sm text-prose leading-relaxed">Row-level security policies on every table. Access tokens encrypted with AES-256-GCM.</p>
+            </div>
           </ScrollReveal>
         </div>
       </section>
 
       {/* ── FAQ ─────────────────────────────────────────────── */}
-      <section id="faq" className="py-20 md:py-28">
+      <section id="faq" className="py-20 md:py-28 border-t border-edge/50">
         <div className="max-w-2xl mx-auto px-6">
           <ScrollReveal className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-bold text-ink tracking-tight">
@@ -408,18 +388,16 @@ export default async function HomePage() {
             <div className="mt-10">
               {PUBLIC_SIGNUP_ON ? (
                 <div className="flex items-center justify-center gap-4 flex-wrap">
-                  <a
-                    href="https://app.agencyviz.io/signup"
-                    className="press-scale inline-flex items-center gap-2 h-12 px-6 rounded-lg bg-white text-teal font-semibold hover:bg-white/90 transition-colors focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-dark"
-                  >
-                    Start your 7-day free trial <ArrowRight size={16} weight="bold" />
-                  </a>
-                  <Link href="/pricing" className="text-sm text-white/50 hover:text-white transition-colors">
+                  <LiquidCTA href="https://app.agencyviz.io/signup">
+                    Start your 7-day free trial
+                  </LiquidCTA>
+                  <LiquidCTA href="/pricing">
                     See pricing
-                  </Link>
+                  </LiquidCTA>
                 </div>
               ) : (
                 <div className="max-w-md mx-auto">
+                  <p className="text-sm text-white/50 mb-5">Be first in when we open doors. One email, your invite link.</p>
                   <WaitlistForm source="home-cta" />
                 </div>
               )}

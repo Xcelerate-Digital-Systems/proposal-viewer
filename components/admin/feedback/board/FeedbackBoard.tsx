@@ -18,7 +18,7 @@ import {
   SelectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Loader2, MousePointer, Undo2, Redo2 } from 'lucide-react';
+import { Loader2, MousePointer, Undo2, Redo2, HelpCircle, X } from 'lucide-react';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import FeedbackItemNode from './nodes/FeedbackItemNode';
 import StickyNoteNode from './nodes/StickyNoteNode';
@@ -656,6 +656,17 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
             else if (board.selectedEdge) board.closeEdgeEditor();
             clearDrawerSelection();
           }}
+          onBeforeDelete={async ({ nodes }) => {
+            if (nodes.length === 0) return true;
+            const label = nodes.length === 1
+              ? `Delete this ${nodes[0]?.type === 'stickyNote' ? 'note' : nodes[0]?.type === 'feedbackItem' ? 'item' : 'shape'}?`
+              : `Delete ${nodes.length} selected items? Connected edges will also be removed.`;
+            return confirm({
+              message: label,
+              destructive: true,
+              confirmLabel: nodes.length === 1 ? 'Delete' : `Delete ${nodes.length} items`,
+            });
+          }}
           onEdgesDelete={(deletedEdges) => {
             deletedEdges.forEach((e) => board.handleDeleteEdge(e.id));
           }}
@@ -714,6 +725,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
                 </button>
               </div>
               <ExportMenu containerRef={reactFlowRef} boardName={ctx.project?.title || 'whiteboard'} />
+              <ShortcutHelpButton />
             </div>
           </Panel>
 
@@ -811,6 +823,52 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
           </svg>
         )}
       </div>
+    </div>
+  );
+}
+
+const SHORTCUTS = [
+  ['V', 'Select'],
+  ['R', 'Rectangle'],
+  ['O', 'Ellipse'],
+  ['A', 'Arrow'],
+  ['L', 'Line'],
+  ['T', 'Text'],
+  ['N', 'Sticky note'],
+  ['⌘C', 'Copy'],
+  ['⌘V', 'Paste'],
+  ['⌘D', 'Duplicate'],
+  ['⌘Z', 'Undo'],
+  ['⌘⇧Z', 'Redo'],
+  ['⌫', 'Delete'],
+] as const;
+
+function ShortcutHelpButton() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="w-7 h-7 rounded-lg flex items-center justify-center bg-white border border-edge shadow-sm text-ink/50 hover:text-ink transition-colors focus:outline-none focus:ring-2 focus:ring-teal/30"
+        title="Keyboard shortcuts"
+        aria-label="Keyboard shortcuts"
+      >
+        {open ? <X size={14} /> : <HelpCircle size={14} />}
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-2 w-52 bg-white border border-edge rounded-xl shadow-lg p-3 z-50">
+          <p className="text-2xs font-semibold text-dim uppercase tracking-wider mb-2">Keyboard shortcuts</p>
+          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+            {SHORTCUTS.map(([key, label]) => (
+              <div key={key} className="contents">
+                <kbd className="text-2xs font-mono bg-surface border border-edge rounded px-1.5 py-0.5 text-ink/70 text-center min-w-[28px]">{key}</kbd>
+                <span className="text-xs text-prose">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

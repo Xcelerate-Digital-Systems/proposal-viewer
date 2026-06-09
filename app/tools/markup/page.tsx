@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight, Check, X,
@@ -10,6 +10,7 @@ import {
   GitBranch, Highlighter, LinkSimple, BellRinging,
   Eye, EyeSlash, CheckCircle,
 } from '@phosphor-icons/react';
+import { LiquidButton } from '@/components/ui/liquid-glass-button';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SiteHeader } from '@/components/marketing/SiteHeader';
 import { SiteFooter } from '@/components/marketing/SiteFooter';
@@ -114,35 +115,36 @@ export default function MarkupPage() {
       <SiteHeader publicSignupOn={PUBLIC_SIGNUP_ON} />
 
       {/* ── 1. Hero ──────────────────────────────────────── */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden min-h-[100dvh] bg-gradient-to-br from-[#017C87] via-[#016670] to-[#043946]">
         <div className="absolute inset-0">
           <FloatingPaths position={1} animate={animate} />
           <FloatingPaths position={-1} animate={animate} />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/30 to-white pointer-events-none" />
         <div
           className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 52% 44% at 50% 44%, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.5) 45%, transparent 75%)' }}
+          style={{ background: 'radial-gradient(ellipse 52% 44% at 50% 44%, rgba(1,124,135,0.4) 0%, transparent 65%)' }}
         />
         <div className="relative z-10 pt-32 md:pt-40 pb-0">
           <div className="max-w-4xl mx-auto px-6 text-center mb-12">
             <ScrollReveal>
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-teal bg-teal/8 rounded-full px-3.5 py-1.5 mb-6">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-white bg-white/10 border border-white/20 rounded-full px-3.5 py-1.5 mb-6">
                 <ChatDots size={14} weight="bold" /> Markup
               </span>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-ink tracking-tight leading-[1.1]">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-[1.1]">
                 Feedback that lands<br />
-                <span className="text-teal">where it belongs.</span>
+                <span className="text-white/80">where it belongs.</span>
               </h1>
-              <p className="mt-5 text-base md:text-lg text-prose max-w-xl mx-auto leading-relaxed">
+              <p className="mt-5 text-base md:text-lg text-white/70 max-w-xl mx-auto leading-relaxed">
                 Pin comments on images, video, emails, webpages, and ads.
                 Track every revision through a stage-based workflow.
                 Get sign-off without a single email thread.
               </p>
               <div className="mt-8">
-                <Link href={CTA_HREF} className="press-scale inline-flex items-center gap-2 h-12 px-7 rounded-lg bg-primary text-white font-semibold hover:bg-primary-hover transition-colors">
-                  {CTA_LABEL} <ArrowRight size={16} weight="bold" />
-                </Link>
+                <LiquidButton asChild size="xl" className="text-white font-semibold">
+                  <Link href={CTA_HREF} className="gap-2">
+                    {CTA_LABEL} <ArrowRight size={16} weight="bold" />
+                  </Link>
+                </LiquidButton>
               </div>
             </ScrollReveal>
           </div>
@@ -340,26 +342,6 @@ export default function MarkupPage() {
         </div>
       </section>
 
-      {/* ── 8. Testimonial ───────────────────────────────── */}
-      <section className="py-16 md:py-20">
-        <div className="max-w-3xl mx-auto px-6">
-          <ScrollReveal>
-            <div className="bg-surface-dark rounded-2xl p-8 md:p-10 text-center">
-              <p className="text-base md:text-lg text-white/90 leading-relaxed italic">
-                &ldquo;Clients pin feedback on the creative and I assign the fix to a teammate. No more decoding &lsquo;the headline on the third one&rsquo; in a forwarded email.&rdquo;
-              </p>
-              <div className="mt-6 flex items-center justify-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-surface-dark-accent/20 flex items-center justify-center text-sm font-bold text-surface-dark-accent">CL</div>
-                <div className="text-left">
-                  <p className="text-sm font-medium text-white">Founding Agency</p>
-                  <p className="text-xs text-surface-dark-accent/60">Creative Lead</p>
-                </div>
-              </div>
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
-
       {/* ── 9. FAQ ───────────────────────────────────────── */}
       <section className="py-20 md:py-28 bg-surface/40 border-y border-edge/50">
         <div className="max-w-2xl mx-auto px-6">
@@ -393,12 +375,16 @@ export default function MarkupPage() {
               Pin feedback on the creative. Track every revision. Get sign-off without the email thread.
             </p>
             <div className="mt-8 flex items-center justify-center gap-4 flex-wrap">
-              <Link href={CTA_HREF} className="press-scale inline-flex items-center gap-2 h-12 px-7 rounded-lg bg-white text-teal font-semibold hover:bg-white/90 transition-colors">
-                {CTA_LABEL} <ArrowRight size={16} weight="bold" />
-              </Link>
-              <Link href="/pricing" className="text-sm text-white/50 hover:text-white transition-colors">
-                View pricing
-              </Link>
+              <LiquidButton asChild size="xl" className="text-white font-semibold">
+                <Link href={CTA_HREF} className="gap-2">
+                  {CTA_LABEL} <ArrowRight size={16} weight="bold" />
+                </Link>
+              </LiquidButton>
+              <LiquidButton asChild size="default" className="text-white font-semibold">
+                <Link href="/pricing" className="gap-2">
+                  View pricing <ArrowRight size={14} weight="bold" />
+                </Link>
+              </LiquidButton>
             </div>
           </ScrollReveal>
         </div>
@@ -414,13 +400,27 @@ export default function MarkupPage() {
 function WorkflowTabs() {
   const [active, setActive] = useState(0);
   const reduce = useReducedMotion();
+  const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  useEffect(() => { tabsRef.current[active]?.focus(); }, [active]);
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const len = WORKFLOW_TABS.length;
+    if (e.key === 'ArrowRight') setActive(i => (i + 1) % len);
+    else if (e.key === 'ArrowLeft') setActive(i => (i - 1 + len) % len);
+    else return;
+    e.preventDefault();
+  };
 
   return (
     <ScrollReveal>
-      <div className="flex items-center justify-center gap-2 md:gap-4 mb-8">
+      <div role="tablist" className="flex items-center justify-center gap-2 md:gap-4 mb-8" onKeyDown={onKeyDown}>
         {WORKFLOW_TABS.map((tab, i) => (
           <button
             key={tab.label}
+            ref={el => { tabsRef.current[i] = el; }}
+            role="tab"
+            aria-selected={active === i}
+            tabIndex={active === i ? 0 : -1}
             onClick={() => setActive(i)}
             className={`px-5 md:px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${
               active === i ? 'bg-teal text-white shadow-sm' : 'bg-white text-muted hover:text-ink border border-edge'
@@ -430,7 +430,7 @@ function WorkflowTabs() {
           </button>
         ))}
       </div>
-      <div className="rounded-2xl bg-white border border-edge p-6 md:p-10 shadow-card-soft">
+      <div role="tabpanel" className="rounded-2xl bg-white border border-edge p-6 md:p-10 shadow-card-soft">
         <AnimatePresence mode="wait">
           <motion.div
             key={active}
@@ -505,7 +505,7 @@ function FloatingPaths({ position, animate }: { position: number; animate: boole
     width: 0.7 + i * 0.05,
   }));
   return (
-    <div className="absolute inset-0 pointer-events-none text-teal">
+    <div className="absolute inset-0 pointer-events-none text-white">
       <svg className="w-full h-full" viewBox="0 0 696 316" fill="none" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
         {paths.map(p => (
           <motion.path

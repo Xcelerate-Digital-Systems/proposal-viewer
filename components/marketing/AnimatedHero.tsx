@@ -7,7 +7,8 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowRight } from '@phosphor-icons/react';
-import { buttonClasses } from '@/components/ui/buttonClasses';
+import { LiquidButton } from '@/components/ui/liquid-glass-button';
+
 
 function FloatingPaths({ position, animate }: { position: number; animate: boolean }) {
   const paths = Array.from({ length: 30 }, (_, i) => ({
@@ -17,7 +18,7 @@ function FloatingPaths({ position, animate }: { position: number; animate: boole
   }));
 
   return (
-    <div className="absolute inset-0 pointer-events-none text-teal">
+    <div className="absolute inset-0 pointer-events-none text-white">
       <svg className="w-full h-full" viewBox="0 0 696 316" fill="none" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
         {paths.map((path) => (
           <motion.path
@@ -49,23 +50,22 @@ export function AnimatedHero({ publicSignupOn }: { publicSignupOn: boolean }) {
   const animate = !reduce;
 
   const lines = [
-    { text: 'Everything your clients see,', className: 'text-ink' },
-    { text: 'in one place.', className: 'text-teal' },
+    { text: 'Everything your clients see.', className: 'text-white' },
+    { text: 'In one place.', className: 'text-white/80' },
   ];
   let globalIndex = 0;
 
   return (
-    <section className="relative overflow-hidden border-b border-edge/50 min-h-[88dvh] flex items-center">
+    <section className="relative overflow-hidden border-b border-edge/50 min-h-[100dvh] flex items-center bg-gradient-to-br from-[#017C87] via-[#016670] to-[#043946]">
       {/* Paths backdrop */}
       <div className="absolute inset-0">
         <FloatingPaths position={1} animate={animate} />
         <FloatingPaths position={-1} animate={animate} />
       </div>
-      {/* Readability wash — light enough that the paths still read */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/30 to-white pointer-events-none" />
+      {/* Subtle centre glow for readability */}
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse 52% 44% at 50% 44%, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.5) 45%, transparent 75%)' }}
+        style={{ background: 'radial-gradient(ellipse 52% 44% at 50% 44%, rgba(1,124,135,0.4) 0%, transparent 65%)' }}
       />
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 py-20 text-center w-full">
@@ -73,7 +73,7 @@ export function AnimatedHero({ publicSignupOn }: { publicSignupOn: boolean }) {
           initial={animate ? { opacity: 0, y: 12 } : false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-teal bg-teal/8 border border-teal/15 rounded-full px-3.5 py-1.5"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-white bg-white/10 border border-white/20 rounded-full px-3.5 py-1.5"
         >
           The agency toolbox
         </motion.span>
@@ -106,7 +106,7 @@ export function AnimatedHero({ publicSignupOn }: { publicSignupOn: boolean }) {
           initial={animate ? { opacity: 0 } : false}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.1, duration: 0.7 }}
-          className="mt-6 text-lg text-prose max-w-2xl mx-auto leading-relaxed"
+          className="mt-6 text-lg text-white/70 max-w-2xl mx-auto leading-relaxed"
         >
           Proposals, quotes, presentations, plans, and creative review.
           One workspace instead of five logins.
@@ -118,10 +118,12 @@ export function AnimatedHero({ publicSignupOn }: { publicSignupOn: boolean }) {
           transition={{ delay: 1.3, duration: 0.6 }}
           className="mt-9 flex items-center justify-center gap-3"
         >
-          <Link href="/pricing" className={`${buttonClasses({ variant: 'primary', size: 'lg' })} press-scale`}>
-            {publicSignupOn ? 'Start your free trial' : 'See pricing'} <ArrowRight size={16} weight="bold" />
-          </Link>
-          <a href="https://app.agencyviz.io/login" className={`${buttonClasses({ variant: 'secondary', size: 'lg' })} press-scale`}>
+          <LiquidButton asChild size="xl" className="text-white font-semibold">
+            <Link href="/pricing" className="gap-2">
+              {publicSignupOn ? 'Start your free trial' : 'See pricing'} <ArrowRight size={16} weight="bold" />
+            </Link>
+          </LiquidButton>
+          <a href="https://app.agencyviz.io/login" className="press-scale inline-flex items-center gap-2 h-12 px-7 rounded-lg border border-white/25 text-white font-semibold hover:bg-white/10 transition-colors">
             Sign in
           </a>
         </motion.div>

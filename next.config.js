@@ -63,6 +63,11 @@ const nextConfig = {
       { source: '/proposals/:id/quote-packages',  destination: '/quotes/:id',          permanent: false },
       { source: '/feedback',                      destination: '/markup',              permanent: true  },
       { source: '/feedback/:path*',               destination: '/markup/:path*',       permanent: true  },
+      { source: '/home/pitch',                    destination: '/tools/pitch',         permanent: true  },
+      { source: '/home/markup',                   destination: '/tools/markup',        permanent: true  },
+      { source: '/home/funnel-planner',           destination: '/tools/funnel-planner',permanent: true  },
+      { source: '/home/integrations',             destination: '/tools/integrations',  permanent: true  },
+      { source: '/home/swipe-vault',              destination: '/tools/swipe-vault',   permanent: true  },
     ];
   },
 };

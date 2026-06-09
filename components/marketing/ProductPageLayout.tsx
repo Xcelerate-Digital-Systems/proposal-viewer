@@ -12,6 +12,7 @@ import {
 import { SiteHeader } from './SiteHeader';
 import { SiteFooter } from './SiteFooter';
 import { FAQAccordion } from './FAQAccordion';
+import { LiquidButton } from '@/components/ui/liquid-glass-button';
 
 const PUBLIC_SIGNUP_ON = process.env.NEXT_PUBLIC_PUBLIC_SIGNUP_ENABLED === 'true';
 
@@ -68,7 +69,7 @@ function FloatingPaths({ position, animate }: { position: number; animate: boole
     width: 0.7 + i * 0.05,
   }));
   return (
-    <div className="absolute inset-0 pointer-events-none text-teal">
+    <div className="absolute inset-0 pointer-events-none text-white">
       <svg className="w-full h-full" viewBox="0 0 696 316" fill="none" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
         {paths.map(p => (
           <motion.path
@@ -173,8 +174,8 @@ export function ProductPageLayout({
 
   let charIdx = 0;
   const heroLines = headlineAccent
-    ? [{ text: headline, color: 'text-ink' }, { text: headlineAccent, color: 'text-teal' }]
-    : [{ text: headline, color: 'text-ink' }];
+    ? [{ text: headline, color: 'text-white' }, { text: headlineAccent, color: 'text-white/80' }]
+    : [{ text: headline, color: 'text-white' }];
 
   const heroTitle = (
     <>
@@ -205,7 +206,7 @@ export function ProductPageLayout({
         initial={animate ? { opacity: 0 } : false}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.8, duration: 0.7 }}
-        className="mt-4 text-sm md:text-base text-prose max-w-xl mx-auto leading-relaxed"
+        className="mt-4 text-sm md:text-base text-white/70 max-w-xl mx-auto leading-relaxed"
       >
         {subtext}
       </motion.p>
@@ -215,12 +216,11 @@ export function ProductPageLayout({
         transition={{ delay: 1, duration: 0.6 }}
         className="mt-6"
       >
-        <Link
-          href={PUBLIC_SIGNUP_ON ? 'https://app.agencyviz.io/signup' : '/pricing'}
-          className="press-scale inline-flex items-center gap-2 h-12 px-7 rounded-lg bg-primary text-white font-semibold hover:bg-primary-hover transition-colors"
-        >
-          {PUBLIC_SIGNUP_ON ? 'Start free trial' : 'See pricing'} <ArrowRight size={16} weight="bold" />
-        </Link>
+        <LiquidButton asChild size="xl" className="text-white font-semibold">
+          <Link href={PUBLIC_SIGNUP_ON ? 'https://app.agencyviz.io/signup' : '/pricing'} className="gap-2">
+            {PUBLIC_SIGNUP_ON ? 'Start free trial' : 'See pricing'} <ArrowRight size={16} weight="bold" />
+          </Link>
+        </LiquidButton>
       </motion.div>
     </>
   );
@@ -230,15 +230,14 @@ export function ProductPageLayout({
       <SiteHeader publicSignupOn={PUBLIC_SIGNUP_ON} />
 
       {/* ── 1. Hero with FloatingPaths + ContainerScroll ──── */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden min-h-[100dvh] flex flex-col justify-center bg-gradient-to-br from-[#017C87] via-[#016670] to-[#043946]">
         <div className="absolute inset-0">
           <FloatingPaths position={1} animate={animate} />
           <FloatingPaths position={-1} animate={animate} />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/30 to-white pointer-events-none" />
         <div
           className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 52% 44% at 50% 44%, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.5) 45%, transparent 75%)' }}
+          style={{ background: 'radial-gradient(ellipse 52% 44% at 50% 44%, rgba(1,124,135,0.4) 0%, transparent 65%)' }}
         />
         <div className="relative z-10">
           <HeroScroll title={heroTitle}>{heroMockup}</HeroScroll>
@@ -348,10 +347,11 @@ export function ProductPageLayout({
             <h2 className="text-3xl md:text-4xl font-bold text-ink tracking-tight">Get a 7-day free trial today.</h2>
             <p className="mt-4 text-prose max-w-md mx-auto leading-relaxed">{name} comes with the full AgencyViz toolkit. Delightfully all in one place.</p>
             <div className="mt-8">
-              <Link href={PUBLIC_SIGNUP_ON ? 'https://app.agencyviz.io/signup' : '/pricing'}
-                className="press-scale inline-flex items-center gap-2 h-12 px-7 rounded-lg bg-primary text-white font-semibold hover:bg-primary-hover transition-colors">
-                {PUBLIC_SIGNUP_ON ? 'Start free trial' : 'See pricing'} <ArrowRight size={16} weight="bold" />
-              </Link>
+              <LiquidButton asChild size="xl" className="text-white font-semibold">
+                <Link href={PUBLIC_SIGNUP_ON ? 'https://app.agencyviz.io/signup' : '/pricing'} className="gap-2">
+                  {PUBLIC_SIGNUP_ON ? 'Start free trial' : 'See pricing'} <ArrowRight size={16} weight="bold" />
+                </Link>
+              </LiquidButton>
               <p className="mt-3 text-xs text-faint">No credit card required.</p>
             </div>
           </Reveal>
@@ -381,11 +381,16 @@ export function ProductPageLayout({
             <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight leading-tight">Ready to get started?</h2>
             <p className="mt-4 text-base text-surface-dark-accent/60 max-w-md mx-auto leading-relaxed">Unlock AgencyViz with an unrestricted 7-day free trial.</p>
             <div className="mt-8 flex items-center justify-center gap-4 flex-wrap">
-              <Link href={PUBLIC_SIGNUP_ON ? 'https://app.agencyviz.io/signup' : '/pricing'}
-                className="press-scale inline-flex items-center gap-2 h-12 px-7 rounded-lg bg-white text-teal font-semibold hover:bg-white/90 transition-colors">
-                Start free trial <ArrowRight size={16} weight="bold" />
-              </Link>
-              <Link href="/pricing" className="text-sm text-white/50 hover:text-white transition-colors">View pricing</Link>
+              <LiquidButton asChild size="xl" className="text-white font-semibold">
+                <Link href={PUBLIC_SIGNUP_ON ? 'https://app.agencyviz.io/signup' : '/pricing'} className="gap-2">
+                  Start free trial <ArrowRight size={16} weight="bold" />
+                </Link>
+              </LiquidButton>
+              <LiquidButton asChild size="default" className="text-white font-semibold">
+                <Link href="/pricing" className="gap-2">
+                  View pricing <ArrowRight size={14} weight="bold" />
+                </Link>
+              </LiquidButton>
             </div>
           </Reveal>
         </div>

@@ -173,14 +173,7 @@ export default function DocumentUploadModal({ companyId, onClose, onSuccess }: D
           <h2 className="text-lg font-semibold font-[family-name:var(--font-display)] text-ink">
             New Document
           </h2>
-          <button
-            onClick={onClose}
-            disabled={uploading}
-            className="text-faint hover:text-prose disabled:opacity-30 disabled:cursor-not-allowed"
-            aria-label="Close modal"
-          >
-            <X size={20} />
-          </button>
+          <Button variant="ghost" size="sm" iconOnly leftIcon={X} onClick={onClose} disabled={uploading} aria-label="Close" />
         </div>
 
         {splitFailed ? (

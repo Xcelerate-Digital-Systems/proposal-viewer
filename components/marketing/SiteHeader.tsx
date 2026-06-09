@@ -6,13 +6,14 @@ import {
   ArrowRight, CaretDown,
   FileText, ChatDots, FlowArrow, BookmarkSimple, Plug,
 } from '@phosphor-icons/react';
+import { LiquidButton } from '@/components/ui/liquid-glass-button';
 
 const PRODUCTS = [
-  { label: 'Pitch', href: '/home/pitch', desc: 'Proposals, quotes, docs & templates', icon: FileText },
-  { label: 'Markup', href: '/home/markup', desc: 'Creative review & feedback', icon: ChatDots },
-  { label: 'Funnel Planner', href: '/home/funnel-planner', desc: 'Visual campaign mapping', icon: FlowArrow },
-  { label: 'Swipe Vault', href: '/home/swipe-vault', desc: 'Save & organise ad inspiration', icon: BookmarkSimple },
-  { label: 'Integrations', href: '/home/integrations', desc: 'Looker Studio connector', icon: Plug },
+  { label: 'Pitch', href: '/tools/pitch', desc: 'Proposals, quotes, docs & templates', icon: FileText },
+  { label: 'Markup', href: '/tools/markup', desc: 'Creative review & feedback', icon: ChatDots },
+  { label: 'Funnel Planner', href: '/tools/funnel-planner', desc: 'Visual campaign mapping', icon: FlowArrow },
+  { label: 'Swipe Vault', href: '/tools/swipe-vault', desc: 'Save & organise ad inspiration', icon: BookmarkSimple },
+  { label: 'Integrations', href: '/tools/integrations', desc: 'Looker Studio connector', icon: Plug },
 ];
 
 function useScrolled(threshold = 8) {
@@ -147,12 +148,11 @@ export function SiteHeader({
           >
             Sign in
           </a>
-          <a
-            href={ctaHref}
-            className="press-scale ml-1 inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-white text-teal text-sm font-semibold hover:bg-white/90 transition-colors focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-dark focus-visible:outline-none"
-          >
-            {ctaLabel} <ArrowRight size={14} weight="bold" />
-          </a>
+          <LiquidButton asChild size="sm" className="ml-1 text-white font-semibold">
+            <a href={ctaHref} className="gap-1.5">
+              {ctaLabel} <ArrowRight size={14} weight="bold" />
+            </a>
+          </LiquidButton>
         </nav>
 
         {/* Mobile toggle */}
@@ -189,12 +189,11 @@ export function SiteHeader({
             <a href="https://app.agencyviz.io/login" className="px-3 py-2.5 text-sm text-white/80 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
               Sign in
             </a>
-            <a
-              href={ctaHref}
-              className="press-scale mt-2 inline-flex items-center justify-center gap-1.5 h-11 rounded-lg bg-white text-teal text-sm font-semibold hover:bg-white/90 transition-colors"
-            >
-              {ctaLabel} <ArrowRight size={15} weight="bold" />
-            </a>
+            <LiquidButton asChild size="lg" className="mt-2 text-white font-semibold w-full justify-center">
+              <a href={ctaHref} className="gap-1.5">
+                {ctaLabel} <ArrowRight size={15} weight="bold" />
+              </a>
+            </LiquidButton>
           </nav>
         </div>
       )}

@@ -14,6 +14,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@number-flow/react": "^0.6.0",
     "@phosphor-icons/react": "^2.1.10",
+    "@radix-ui/react-slot": "^1.2.5",
     "@supabase/supabase-js": "^2.45.0",
     "@tiptap/extension-color": "^3.21.0",
     "@tiptap/extension-highlight": "^3.21.0",
@@ -27,6 +28,8 @@
     "@tiptap/react": "^3.21.0",
     "@tiptap/starter-kit": "^3.21.0",
     "@xyflow/react": "^12.10.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "emoji-picker-react": "^4.19.1",
     "framer-motion": "^12.40.0",
     "geist": "^1.7.1",
@@ -45,6 +48,7 @@
     "resend": "^4.8.0",
     "roughjs": "^4.6.6",
     "stripe": "^22.1.1",
+    "tailwind-merge": "^3.6.0",
     "tippy.js": "^6.3.7"
   },
   "devDependencies": {

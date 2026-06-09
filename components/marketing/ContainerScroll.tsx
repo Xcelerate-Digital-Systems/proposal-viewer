@@ -69,7 +69,7 @@ function Inner({
 }) {
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    container: scrollRef,
+    ...(scrollRef.current ? { container: scrollRef } : {}),
   });
 
   const rotate = useTransform(scrollYProgress, [0, 1], [20, 0]);
