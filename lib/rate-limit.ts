@@ -19,6 +19,7 @@
 //     });
 //   }
 
+import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 
@@ -95,6 +96,30 @@ export function ipFromRequest(req: NextRequest | Request): string {
     return parts[parts.length - 1].trim();
   }
   return 'unknown';
+}
+
+/**
+ * Convenience wrapper for authenticated routes. Call after getAuthContext().
+ * Returns a 429 NextResponse if the limit is exceeded, or null to proceed.
+ *
+ * Usage:
+ *   const limited = await authRateLimit(companyId, 'proposals');
+ *   if (limited) return limited;
+ */
+export async function authRateLimit(
+  companyId: string,
+  endpoint: string,
+  limit = 60,
+  windowSeconds = 60,
+): Promise<NextResponse | null> {
+  const rl = await rateLimit({ key: `api:${endpoint}:${companyId}`, limit, windowSeconds });
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: rateLimitHeaders(rl, limit) },
+    );
+  }
+  return null;
 }
 
 /** Standard `X-RateLimit-*` + `Retry-After` headers to return alongside a response. */
