@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, FileText, Pause, Play, CalendarDays } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, Pause, Play, CalendarDays, PackageCheck, Link2, Unlink } from 'lucide-react';
 import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
 import ReviewerNoteModal from '@/components/admin/feedback/ReviewerNoteModal';
 import ShareMenu from '@/components/feedback/ShareMenu';
@@ -13,6 +13,7 @@ import { DEFAULT_SHARED_VIEWS, type FeedbackStatus } from '@/lib/types/feedback'
 import { REVIEW_STATUS_OPTIONS } from '@/lib/feedback/status';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
+import { authFetch } from '@/lib/auth-fetch';
 
 const projectStatusOptions: StatusOption<FeedbackStatus>[] = REVIEW_STATUS_OPTIONS.map((s) => ({
   value: s.value,
@@ -45,6 +46,54 @@ export default function FeedbackProjectHeader({
   const toast = useToast();
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [togglingPause, setTogglingPause] = useState(false);
+  const [handoffLoading, setHandoffLoading] = useState(false);
+  const [showHandoffMenu, setShowHandoffMenu] = useState(false);
+
+  const isHandoffReady = project.status === 'approved' || project.status === 'archived';
+  const hasHandoffLink = !!project.handoff_share_token;
+
+  const generateHandoff = async () => {
+    setHandoffLoading(true);
+    try {
+      const res = await authFetch(`/api/campaigns/${project.id}/handoff`, { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'Failed to generate handoff link');
+        return;
+      }
+      const { token } = await res.json();
+      setProject((prev) => (prev ? { ...prev, handoff_share_token: token } : prev));
+      const url = `${window.location.origin}/handoff/${token}`;
+      await navigator.clipboard.writeText(url);
+      toast.success('Handoff link copied to clipboard');
+    } catch {
+      toast.error('Failed to generate handoff link');
+    } finally {
+      setHandoffLoading(false);
+    }
+  };
+
+  const copyHandoffLink = async () => {
+    if (!project.handoff_share_token) return;
+    const url = `${window.location.origin}/handoff/${project.handoff_share_token}`;
+    await navigator.clipboard.writeText(url);
+    toast.success('Handoff link copied');
+  };
+
+  const revokeHandoff = async () => {
+    try {
+      const res = await authFetch(`/api/campaigns/${project.id}/handoff`, { method: 'DELETE' });
+      if (!res.ok) {
+        toast.error('Failed to revoke handoff link');
+        return;
+      }
+      setProject((prev) => (prev ? { ...prev, handoff_share_token: null } : prev));
+      toast.success('Handoff link revoked');
+      setShowHandoffMenu(false);
+    } catch {
+      toast.error('Failed to revoke handoff link');
+    }
+  };
 
   const buildUrl = (t: string) => buildReviewProjectUrl(t, customDomain, window.location.origin);
 
@@ -166,6 +215,62 @@ export default function FeedbackProjectHeader({
               setProject((prev) => (prev ? { ...prev, shared_views: next } : prev))
             }
           />
+
+          {isHandoffReady && (
+            <div className="relative">
+              {hasHandoffLink ? (
+                <button
+                  onClick={() => setShowHandoffMenu(!showHandoffMenu)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                >
+                  <PackageCheck size={14} />
+                  Handoff
+                </button>
+              ) : (
+                <button
+                  onClick={generateHandoff}
+                  disabled={handoffLoading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-medium bg-surface text-prose hover:bg-surface transition-colors disabled:opacity-50"
+                >
+                  <PackageCheck size={14} />
+                  {handoffLoading ? 'Generating…' : 'Handoff'}
+                </button>
+              )}
+
+              {showHandoffMenu && hasHandoffLink && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowHandoffMenu(false)} />
+                  <div className="absolute right-0 top-full mt-1.5 z-50 w-56 rounded-xl border border-gray-200 bg-white shadow-lg py-1.5">
+                    <button
+                      onClick={() => { copyHandoffLink(); setShowHandoffMenu(false); }}
+                      className="flex items-center gap-2.5 w-full px-3.5 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Link2 size={14} className="text-gray-400" />
+                      Copy handoff link
+                    </button>
+                    <button
+                      onClick={() => {
+                        window.open(`/handoff/${project.handoff_share_token}`, '_blank');
+                        setShowHandoffMenu(false);
+                      }}
+                      className="flex items-center gap-2.5 w-full px-3.5 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <PackageCheck size={14} className="text-gray-400" />
+                      Open handoff page
+                    </button>
+                    <div className="my-1 border-t border-gray-100" />
+                    <button
+                      onClick={revokeHandoff}
+                      className="flex items-center gap-2.5 w-full px-3.5 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <Unlink size={14} />
+                      Revoke link
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           {onAddItem && (
             <Button size="sm" leftIcon={Plus} onClick={onAddItem}>

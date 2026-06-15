@@ -33,6 +33,7 @@ export type FeedbackProject = {
   status: FeedbackStatus;
   share_token: string;
   board_share_token: string | null;
+  handoff_share_token: string | null;
   share_mode: FeedbackShareMode;
   shared_views: FeedbackSharedViews;
   root_domain: string | null;
