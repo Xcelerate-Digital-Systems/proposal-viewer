@@ -210,26 +210,57 @@ function captureAutoScreenshot(cb,opts){
     window.scrollTo(targetX,targetY);
   }
 
-  loadH2I(function(){
-    requestAnimationFrame(function(){
+  /* Pre-patch cross-origin images: fetch each as a blob and swap src to
+     an object-URL. This bypasses the browser's CORS cache — even if the
+     page loaded the image without CORS headers, we get a fresh response
+     with them. Images that fail (truly CORS-hostile) are left as-is;
+     html-to-image's imagePlaceholder covers them. */
+  var imgs=document.querySelectorAll("img[src]");
+  var blobUrls=[];
+  var swaps=[];
+  for(var i=0;i<imgs.length;i++){(function(img){
+    var src=img.src;
+    if(!src||src.startsWith("data:")||src.startsWith("blob:"))return;
+    swaps.push(
+      fetch(src,{mode:"cors",cache:"no-cache"})
+        .then(function(r){if(!r.ok)throw 0;return r.blob();})
+        .then(function(b){var u=URL.createObjectURL(b);blobUrls.push(u);img.setAttribute("data-aviz-orig-src",src);img.src=u;})
+        .catch(function(){/* leave original src */})
+    );
+  })(imgs[i]);}
+
+  Promise.all(swaps).then(function(){
+    loadH2I(function(){
       requestAnimationFrame(function(){
-        htmlToImage.toCanvas(document.body,{
-          pixelRatio:window.devicePixelRatio||1,
-          width:document.documentElement.clientWidth,
-          height:document.documentElement.clientHeight,
-          style:{transform:"translate(-"+window.scrollX+"px, -"+window.scrollY+"px)"}
-        }).then(function(canvas){
-          root.style.display="";if(form)form.style.display="";
-          window.scrollTo(savedScrollX,savedScrollY);
-          cb(canvas.toDataURL("image/jpeg",0.85));
-        }).catch(function(err){
-          root.style.display="";if(form)form.style.display="";
-          window.scrollTo(savedScrollX,savedScrollY);
-          console.error("Auto-screenshot failed:",err);cb(null);
+        requestAnimationFrame(function(){
+          htmlToImage.toCanvas(document.body,{
+            pixelRatio:window.devicePixelRatio||1,
+            cacheBust:true,
+            width:document.documentElement.clientWidth,
+            height:document.documentElement.clientHeight,
+            style:{transform:"translate(-"+window.scrollX+"px, -"+window.scrollY+"px)"},
+            imagePlaceholder:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'%3E%3C/svg%3E",
+            filter:function(node){if(node===root||node===form)return false;return true;}
+          }).then(function(canvas){
+            restoreAndCleanup();
+            cb(canvas.toDataURL("image/jpeg",0.85));
+          }).catch(function(err){
+            restoreAndCleanup();
+            console.error("Auto-screenshot failed:",err);cb(null);
+          });
         });
       });
     });
   });
+
+  function restoreAndCleanup(){
+    root.style.display="";if(form)form.style.display="";
+    window.scrollTo(savedScrollX,savedScrollY);
+    /* Restore original image srcs and revoke blob URLs */
+    var patched=document.querySelectorAll("img[data-aviz-orig-src]");
+    for(var j=0;j<patched.length;j++){patched[j].src=patched[j].getAttribute("data-aviz-orig-src");patched[j].removeAttribute("data-aviz-orig-src");}
+    blobUrls.forEach(function(u){URL.revokeObjectURL(u);});
+  }
 }
 
 `;
