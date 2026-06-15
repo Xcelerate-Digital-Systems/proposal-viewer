@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const rl = await rateLimit({ key: `meta-data:${auth.companyId}`, limit: 30, windowSeconds: 60 });
+  const rl = await rateLimit({ key: `meta-data:${auth.companyId}`, limit: 120, windowSeconds: 60 });
   if (!rl.success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
   const body = await req.json().catch(() => null);
