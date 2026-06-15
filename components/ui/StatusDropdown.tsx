@@ -49,13 +49,17 @@ export default function StatusDropdown<T extends string = string>({
   const ref = useRef<HTMLDivElement>(null);
   const portalRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number; width: number; flipUp: boolean } | null>(null);
 
   const updatePos = useCallback(() => {
     if (!triggerRef.current) return;
     const r = triggerRef.current.getBoundingClientRect();
-    setPos({ top: r.bottom + 4, left: r.left, width: r.width });
-  }, []);
+    const dropdownHeight = (options.length * 36) + 8;
+    const spaceBelow = window.innerHeight - r.bottom;
+    const flipUp = spaceBelow < dropdownHeight + 8;
+    const top = flipUp ? Math.max(8, r.top - dropdownHeight - 4) : r.bottom + 4;
+    setPos({ top, left: r.left, width: r.width, flipUp });
+  }, [options.length]);
 
   useEffect(() => {
     if (!open) return;
@@ -121,7 +125,7 @@ export default function StatusDropdown<T extends string = string>({
           <div
             ref={portalRef}
             className="fixed z-[9999] bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]"
-            style={{ top: pos.top, left: pos.left, width: Math.max(pos.width, 160) }}
+            style={{ top: pos.top, left: pos.left, width: Math.max(pos.width, 160), maxHeight: 'calc(100vh - 16px)', overflowY: 'auto' }}
           >
             {options.map((opt) => (
               <button
