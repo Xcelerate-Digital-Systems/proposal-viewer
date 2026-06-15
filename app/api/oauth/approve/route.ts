@@ -10,6 +10,8 @@ import { randomBytes, createHash } from 'crypto';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext, API_KEY_PREFIX, hashApiKey } from '@/lib/api-auth';
 import { getOAuthClient, isRedirectUriAllowed } from '@/lib/oauth-clients/server';
+import { encryptOAuthToken } from '@/lib/oauth-token-crypto';
+import { authRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +21,10 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'oauth/approve');
+    if (limited) return limited;
+
 
     const body = await req.json().catch(() => ({}));
     const client_id = typeof body.client_id === 'string' ? body.client_id : '';
@@ -68,6 +74,7 @@ export async function POST(req: NextRequest) {
         key_prefix,
         key_hash,
         source: 'oauth_client',
+        oauth_client_id: client_id,
       })
       .select('id')
       .single();
@@ -86,7 +93,7 @@ export async function POST(req: NextRequest) {
       client_id,
       redirect_uri,
       api_key_id: key.id,
-      plaintext_token: plaintext,
+      plaintext_token: encryptOAuthToken(plaintext),
       scope,
       expires_at,
     });
