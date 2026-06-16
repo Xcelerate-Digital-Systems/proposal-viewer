@@ -72,12 +72,21 @@ function getData(request) {
   });
   var apiFields = Object.keys(apiFieldSet);
 
+  // If the chart uses any date dimension (date_start or rollups like Month,
+  // Quarter, Week), we need daily rows so computeDateRollup() can derive
+  // values. Otherwise use 'all_days' to collapse the entire date range into
+  // one row per entity — dramatically fewer rows and API usage.
+  var needsDailyGrain = requestedFieldIds.some(function (id) {
+    return id === 'date_start' || id === 'date_stop' || DATE_ROLLUP_FIELD_IDS[id];
+  });
+
   var body = {
     ad_account_id: adAccountId,
     date_from: request.dateRange.startDate,
     date_to: request.dateRange.endDate,
     fields: apiFields,
     level: 'ad',
+    time_increment: needsDailyGrain ? '1' : 'all_days',
   };
   if (breakdowns.length > 0) body.breakdowns = breakdowns;
 

@@ -11,6 +11,7 @@
 //     fields?:     ["impressions","clicks",...],     // optional; validated whitelist
 //     breakdowns?: ["age","publisher_platform",...], // optional; validated whitelist
 //     level?:      "ad" | "adset" | "campaign" | "account"  // default "ad"
+//     time_increment?: "1" | "7" | "28" | "monthly" | "all_days"  // omit = Meta default (lifetime)
 //   }
 //
 // Response:
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== 'object') return badRequest('Body must be JSON object');
 
-  const { ad_account_id, date_from, date_to, fields, breakdowns, level } = body as Record<string, unknown>;
+  const { ad_account_id, date_from, date_to, fields, breakdowns, level, time_increment } = body as Record<string, unknown>;
 
   if (typeof ad_account_id !== 'string' || !/^act_\d+$/.test(ad_account_id)) {
     return badRequest('ad_account_id must look like act_1234567890');
@@ -68,6 +69,9 @@ export async function POST(req: NextRequest) {
   }
   if (level !== undefined && !['ad', 'adset', 'campaign', 'account'].includes(level as string)) {
     return badRequest('level must be one of ad|adset|campaign|account');
+  }
+  if (time_increment !== undefined && !['1', '7', '28', 'monthly', 'all_days'].includes(time_increment as string)) {
+    return badRequest('time_increment must be one of 1|7|28|monthly|all_days');
   }
 
   // Resolve the connected Meta account for this company.
@@ -117,7 +121,7 @@ export async function POST(req: NextRequest) {
       fields: fields as string[] | undefined,
       breakdowns: breakdowns as string[] | undefined,
       level: level as 'ad' | 'adset' | 'campaign' | 'account' | undefined,
-      concurrency: 4,
+      timeIncrement: time_increment as string | undefined,
     });
 
     // Fire-and-forget last_used_at update.

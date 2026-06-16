@@ -155,7 +155,7 @@ export function dateChunks(dateFrom: string, dateTo: string, maxDays = 60): Arra
   return chunks;
 }
 
-async function fetchInsightsChunk(opts: {
+async function fetchInsightsPage(opts: {
   accessToken: string;
   accountId: string;
   level: string;
@@ -163,16 +163,19 @@ async function fetchInsightsChunk(opts: {
   breakdowns: string[];
   dateFrom: string;
   dateTo: string;
+  timeIncrement?: string;
 }): Promise<Record<string, unknown>[]> {
   const rows: Record<string, unknown>[] = [];
   const params: Record<string, string> = {
     level: opts.level,
     fields: opts.fields.join(','),
     time_range: JSON.stringify({ since: opts.dateFrom, until: opts.dateTo }),
-    time_increment: '1',
     limit: '500',
     access_token: opts.accessToken,
   };
+  if (opts.timeIncrement) {
+    params.time_increment = opts.timeIncrement;
+  }
   if (opts.breakdowns.length > 0) {
     params.breakdowns = opts.breakdowns.join(',');
   }
@@ -205,32 +208,30 @@ export async function fetchInsights(opts: {
   breakdowns?: string[];
   level?: 'ad' | 'adset' | 'campaign' | 'account';
   concurrency?: number;
+  timeIncrement?: string;
 }): Promise<{ rows: Record<string, unknown>[]; pages: number; elapsed_ms: number }> {
   const start = Date.now();
   const { insightFields, creativeFields } = splitAndValidateFields(opts.fields);
   const breakdowns = validateBreakdowns(opts.breakdowns);
   const level = opts.level ?? 'ad';
-  const concurrency = opts.concurrency ?? 4;
 
   // Creative hydration only makes sense at ad grain — creative_id collapses
   // at higher levels. Silently skip rather than error so a user who picks
   // campaign-level with a creative-heavy template still gets insights data.
   const hydrateCreatives = creativeFields.length > 0 && level === 'ad';
 
-  const chunks = dateChunks(opts.dateFrom, opts.dateTo, 60);
-  const results = await mapPool(chunks, concurrency, ([from, to]) =>
-    fetchInsightsChunk({
-      accessToken: opts.accessToken,
-      accountId: opts.accountId,
-      level,
-      fields: insightFields,
-      breakdowns,
-      dateFrom: from,
-      dateTo: to,
-    }),
-  );
-
-  const rows = results.flat();
+  // Single request to Meta — no date chunking. Meta supports up to 37
+  // months in one call. This cuts API usage by ~6x for 12-month ranges.
+  const rows = await fetchInsightsPage({
+    accessToken: opts.accessToken,
+    accountId: opts.accountId,
+    level,
+    fields: insightFields,
+    breakdowns,
+    dateFrom: opts.dateFrom,
+    dateTo: opts.dateTo,
+    timeIncrement: opts.timeIncrement,
+  });
 
   if (hydrateCreatives) {
     const adIds = rows
@@ -254,5 +255,5 @@ export async function fetchInsights(opts: {
     }
   }
 
-  return { rows, pages: chunks.length, elapsed_ms: Date.now() - start };
+  return { rows, pages: 1, elapsed_ms: Date.now() - start };
 }
