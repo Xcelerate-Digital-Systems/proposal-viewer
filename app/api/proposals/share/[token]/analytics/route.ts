@@ -29,12 +29,18 @@ export async function POST(
 
   const { data: proposal } = await supabase
     .from('proposals')
-    .select('id, company_id')
+    .select('id, company_id, status')
     .eq('share_token', token)
     .single();
 
   if (!proposal) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  // Only track analytics once the proposal has been sent to the client.
+  // Draft views are the agency owner previewing — exclude those.
+  if (proposal.status === 'draft') {
+    return NextResponse.json({ skipped: true });
   }
 
   let body: Record<string, unknown>;

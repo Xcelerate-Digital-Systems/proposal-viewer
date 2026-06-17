@@ -2,7 +2,7 @@
 'use client';
 
 import { Editor } from '@tiptap/react';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Bold, Italic, Underline, Strikethrough,
   Heading1, Heading2, Heading3, List, ListOrdered, Quote,
@@ -82,6 +82,57 @@ function Separator() {
   return <div className="shrink-0 w-px h-6 bg-edge mx-1" />;
 }
 
+/* ─── Font size input (commits on Enter / blur) ─────────────── */
+
+function FontSizeInput({ editor, currentFontSize }: { editor: Editor; currentFontSize: string }) {
+  const [localValue, setLocalValue] = useState(currentFontSize);
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!editing) setLocalValue(currentFontSize);
+  }, [currentFontSize, editing]);
+
+  const commit = () => {
+    setEditing(false);
+    const num = parseInt(localValue, 10);
+    if (localValue && num >= 1 && num <= 999) {
+      editor.chain().focus().setFontSize(`${num}px`).run();
+    } else if (!localValue) {
+      editor.chain().focus().unsetFontSize().run();
+    }
+  };
+
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      inputMode="numeric"
+      value={editing ? localValue : currentFontSize}
+      min={6}
+      max={96}
+      placeholder="–"
+      title="Font Size"
+      onFocus={() => {
+        setEditing(true);
+        setLocalValue(currentFontSize);
+        setTimeout(() => inputRef.current?.select(), 0);
+      }}
+      onChange={(e) => {
+        const v = e.target.value.replace(/\D/g, '');
+        setLocalValue(v);
+      }}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') { e.preventDefault(); commit(); }
+        if (e.key === 'Escape') { setEditing(false); setLocalValue(currentFontSize); editor.commands.focus(); }
+      }}
+      onMouseDown={(e) => e.stopPropagation()}
+      className="shrink-0 h-8 w-16 px-1.5 text-xs text-prose bg-white border border-edge-strong rounded hover:border-edge-hover focus:outline-none focus:border-teal text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+    />
+  );
+}
+
 /* ─── Component ───────────────────────────────────────────────── */
 
 interface RichTextToolbarProps {
@@ -142,22 +193,8 @@ export default function RichTextToolbar({ editor, className }: RichTextToolbarPr
 
       <Separator />
 
-      {/* Font size */}
-      <input
-        type="number"
-        value={currentFontSize}
-        min={6}
-        max={96}
-        placeholder="–"
-        title="Font Size"
-        onChange={(e) => {
-          const val = e.target.value;
-          if (val) editor.chain().focus().setFontSize(`${val}px`).run();
-          else editor.chain().focus().unsetFontSize().run();
-        }}
-        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); editor.commands.focus(); } }}
-        className="shrink-0 h-8 w-16 px-1.5 text-xs text-prose bg-white border border-edge-strong rounded hover:border-edge-hover focus:outline-none focus:border-teal [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-      />
+      {/* Font size — local state, commits on Enter/blur */}
+      <FontSizeInput editor={editor} currentFontSize={currentFontSize} />
 
       {/* Font weight */}
       <select
@@ -284,7 +321,7 @@ export default function RichTextToolbar({ editor, className }: RichTextToolbarPr
             className="text-xs px-2.5 py-1.5 border border-edge-strong rounded w-44 focus:outline-none focus:border-teal"
             autoFocus
           />
-          <button onClick={setLink} className="text-xs px-2.5 py-1.5 bg-teal text-white rounded hover:bg-[#01434A]">Set</button>
+          <button onClick={setLink} className="text-xs px-2.5 py-1.5 bg-teal text-white rounded hover:bg-surface-dark-border">Set</button>
           <button onClick={() => setShowLinkInput(false)} className="text-xs px-2.5 py-1.5 text-dim hover:text-prose">✕</button>
         </div>
       ) : (

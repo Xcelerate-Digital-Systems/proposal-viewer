@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { authRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,10 @@ export async function GET(
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const limited = await authRateLimit(auth.companyId, 'proposals/analytics');
+    if (limited) return limited;
+
 
     const { id } = await props.params;
     const supabase = createServiceClient();
@@ -88,8 +93,8 @@ export async function GET(
       .sort((a, b) => a.pageIndex - b.pageIndex);
 
     const sessions = rows.map((v) => {
-      const name = v.viewer_name || proposal.client_name || null;
-      const email = v.viewer_email || proposal.client_email || null;
+      const name = v.viewer_name || null;
+      const email = v.viewer_email || null;
       return {
         id: v.id,
         viewerName: name,

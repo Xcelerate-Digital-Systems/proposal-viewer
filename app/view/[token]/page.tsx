@@ -24,11 +24,33 @@ export default function ProposalViewerPage(props: { params: Promise<{ token: str
   const searchParams = useSearchParams();
   const autoPrint = searchParams?.get('print') === '1';
 
+  // Detect if the viewer is a logged-in team member of the agency that
+  // owns this proposal — if so, skip analytics tracking entirely.
+  const [isTeamMember, setIsTeamMember] = useState(false);
+  const companyIdForAuth = v.proposal?.company_id ?? null;
+  useEffect(() => {
+    if (!companyIdForAuth) return;
+    let cancelled = false;
+    supabase.auth.getUser().then(({ data }) => {
+      if (cancelled || !data.user) return;
+      supabase
+        .from('team_members')
+        .select('id')
+        .eq('user_id', data.user.id)
+        .eq('company_id', companyIdForAuth)
+        .limit(1)
+        .then(({ data: rows }) => {
+          if (!cancelled && rows && rows.length > 0) setIsTeamMember(true);
+        });
+    });
+    return () => { cancelled = true; };
+  }, [companyIdForAuth]);
+
   const { trackPageView } = useViewerTracking({
     shareToken: params.token,
     viewerName: v.proposal?.client_name ?? null,
     viewerEmail: v.proposal?.client_email ?? null,
-    enabled: !!v.proposal && !autoPrint,
+    enabled: !!v.proposal && !autoPrint && !isTeamMember,
   });
 
   useEffect(() => {
