@@ -337,9 +337,10 @@ function MemberBadge({
 }) {
   const [name, setName] = useState<string | null>(staticData?.name ?? null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(staticData?.avatar_url ?? null);
+  const palette = useBrandPalette(branding);
 
   useEffect(() => {
-    if (staticData) return; // skip fetch — static data already initialised state
+    if (staticData) return;
     const resolve = async () => {
       const res = await fetch(`/api/member-badge?member_id=${memberId}`, {
         cache: 'no-store',
@@ -354,7 +355,6 @@ function MemberBadge({
 
   if (!name) return null;
 
-  const palette = useBrandPalette(branding);
   const textColor = branding.text_page_text_color || branding.sidebar_text_color || '#ffffff';
   const muted = `${textColor}80`;
 
