@@ -103,16 +103,24 @@ export default function PreparedBySelector({
               </div>
             )}
             <span className="flex-1 text-left text-ink truncate">{selected.name}</span>
-            <button
-              type="button"
+            <span
+              role="button"
+              tabIndex={0}
               onClick={(e) => {
                 e.stopPropagation();
                 onSelect(null);
               }}
-              className="p-0.5 text-faint hover:text-prose transition-colors"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onSelect(null);
+                }
+              }}
+              className="p-0.5 text-faint hover:text-prose transition-colors cursor-pointer"
             >
               <X size={14} />
-            </button>
+            </span>
           </>
         ) : (
           <>
@@ -126,9 +134,9 @@ export default function PreparedBySelector({
       {/* Dropdown — portal to escape parent stacking context */}
       {open && ddPos && createPortal(
         <>
-          <div className="fixed inset-0 z-[9998]" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
-            className="fixed z-[9999] bg-white border border-edge-strong rounded-lg shadow-lg max-h-48 overflow-y-auto"
+            className="fixed z-50 bg-white border border-edge-strong rounded-lg shadow-lg max-h-48 overflow-y-auto"
             style={{ top: ddPos.top, left: ddPos.left, width: ddPos.width }}
           >
             {members.length === 0 ? (
