@@ -14,6 +14,7 @@ import {
   getSubscriptionForCompany,
   trialDaysRemaining,
 } from '@/lib/billing/plan';
+import { authRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,10 @@ export async function GET(req: NextRequest) {
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const limited = await authRateLimit(auth.companyId, 'billing/subscription');
+    if (limited) return limited;
+
 
     const sub = await getSubscriptionForCompany(auth.companyId);
     const plan = sub

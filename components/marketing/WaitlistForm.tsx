@@ -14,6 +14,7 @@ interface WaitlistFormProps {
 }
 
 export function WaitlistForm({ source }: WaitlistFormProps) {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [agencyName, setAgencyName] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -34,6 +35,7 @@ export function WaitlistForm({ source }: WaitlistFormProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          name: name.trim() || undefined,
           email: email.trim(),
           agency_name: agencyName.trim() || undefined,
           source,
@@ -73,6 +75,14 @@ export function WaitlistForm({ source }: WaitlistFormProps) {
         Public signup is invite-only right now. Join the waitlist and we&apos;ll let
         you in as soon as we open the doors.
       </p>
+      <input
+        type="text"
+        placeholder="Your name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        maxLength={120}
+        className="w-full px-3 py-2.5 rounded-lg bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40"
+      />
       <div className="grid sm:grid-cols-2 gap-2">
         <input
           type="email"

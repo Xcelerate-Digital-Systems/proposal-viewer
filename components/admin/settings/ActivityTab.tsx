@@ -28,7 +28,7 @@ type EmailLogEntry = {
 };
 
 const STATUS_CONFIG: Record<string, { icon: typeof Send; label: string; bg: string; text: string }> = {
-  sent:       { icon: Send,              label: 'Sent',      bg: 'bg-gray-100',    text: 'text-gray-600' },
+  sent:       { icon: Send,              label: 'Sent',      bg: 'bg-surface',     text: 'text-prose' },
   delivered:  { icon: CheckCircle2,      label: 'Delivered', bg: 'bg-emerald-50',  text: 'text-emerald-700' },
   opened:     { icon: Eye,               label: 'Opened',    bg: 'bg-blue-50',     text: 'text-blue-700' },
   clicked:    { icon: MousePointerClick, label: 'Clicked',   bg: 'bg-violet-50',   text: 'text-violet-700' },

@@ -14,6 +14,7 @@ import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
 import { buildAuthorizeUrl } from '@/lib/connectors/meta/api-client';
 import { checkResourceLimit, buildLimitErrorBody } from '@/lib/billing/entitlements';
+import { authRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,10 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'connectors/meta/oauth/start');
+    if (limited) return limited;
+
 
     // Gate before the redirect — otherwise the user does the whole Facebook
     // OAuth dance only to be denied on callback. Done first so a denied

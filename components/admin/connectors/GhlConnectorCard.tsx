@@ -862,7 +862,7 @@ function StatusDot({ status }: { status: string }) {
     dead: { color: 'bg-red-500', label: 'Dead' },
     processing: { color: 'bg-blue-500', label: 'Processing' },
   };
-  const { color, label } = config[status] || { color: 'bg-gray-400', label: status };
+  const { color, label } = config[status] || { color: 'bg-muted', label: status };
 
   return (
     <span className="inline-flex items-center gap-1.5">

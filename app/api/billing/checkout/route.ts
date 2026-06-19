@@ -135,10 +135,10 @@ export async function POST(req: NextRequest) {
         .eq('company_id', company.id);
     }
 
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || req.headers.get('origin') || '').replace(
-      /\/+$/,
-      '',
-    );
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/+$/, '');
+    if (!appUrl) {
+      return NextResponse.json({ error: 'App URL not configured' }, { status: 500 });
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -170,7 +170,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('Billing checkout error:', err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 },
     );
   }

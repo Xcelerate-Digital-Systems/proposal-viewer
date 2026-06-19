@@ -140,7 +140,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
         description={`${projects.length} campaign${projects.length !== 1 ? 's' : ''}`}
         actions={<>
           {/* View toggle */}
-            <div className="flex items-center bg-surface rounded-full p-1 gap-0.5">
+            <div className="flex items-center bg-surface rounded-full p-1 gap-0.5" role="group" aria-label="View mode">
               <button
                 onClick={() => toggleView('grid')}
                 className={`w-[34px] h-[30px] rounded-full flex items-center justify-center transition-all ${
@@ -148,9 +148,10 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
                     ? 'bg-white shadow-sm text-ink'
                     : 'text-faint hover:text-muted'
                 }`}
-                title="Grid view"
+                aria-label="Grid view"
+                aria-pressed={viewMode === 'grid'}
               >
-                <LayoutGrid size={16} />
+                <LayoutGrid size={16} aria-hidden="true" />
               </button>
               <button
                 onClick={() => toggleView('list')}
@@ -159,9 +160,10 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
                     ? 'bg-white shadow-sm text-ink'
                     : 'text-faint hover:text-muted'
                 }`}
-                title="List view"
+                aria-label="List view"
+                aria-pressed={viewMode === 'list'}
               >
-                <List size={16} />
+                <List size={16} aria-hidden="true" />
               </button>
               <button
                 onClick={() => toggleView('board')}
@@ -170,9 +172,10 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
                     ? 'bg-white shadow-sm text-ink'
                     : 'text-faint hover:text-muted'
                 }`}
-                title="Board view"
+                aria-label="Board view"
+                aria-pressed={viewMode === 'board'}
               >
-                <KanbanSquare size={16} />
+                <KanbanSquare size={16} aria-hidden="true" />
               </button>
             </div>
 
@@ -185,6 +188,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-transparent text-caption text-ink placeholder-faint outline-none w-full"
+                aria-label="Search campaigns"
               />
             </div>
 

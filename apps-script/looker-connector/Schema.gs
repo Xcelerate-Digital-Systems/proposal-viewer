@@ -96,7 +96,7 @@ var CREATIVE_DIMENSIONS = [
   { id: 'ad_creative_id',               name: 'Creative ID',               type: 'TEXT',  group: 'Ad Creative Asset' },
   { id: 'ad_creative_name',             name: 'Creative name',             type: 'TEXT',  group: 'Ad Creative Asset' },
   { id: 'ad_creative_type',             name: 'Creative type',             type: 'TEXT',  group: 'Ad Creative Asset', desc: 'VIDEO, PHOTO, SHARE, etc. API: creative.object_type.' },
-  { id: 'ad_thumbnail_url',             name: 'Ad thumbnail URL',          type: 'URL',   group: 'Ad Creative Asset', desc: 'Small Meta-hosted thumbnail URL (works for image + video ads). API: creative.thumbnail_url. To render as an inline image in a table, create a calculated field: IMAGE(ad_thumbnail_url, "thumbnail").' },
+  { id: 'ad_thumbnail_url',             name: 'Ad preview',                type: 'URL',   group: 'Ad Creative Asset', desc: 'Meta-hosted preview image URL (works for image + video ads). API: creative.thumbnail_url. To render inline, create a calculated field: IMAGE(ad_thumbnail_url, "preview").' },
   { id: 'ad_image_url',                 name: 'Ad image URL',              type: 'URL',   group: 'Ad Creative Asset', desc: 'Full-size creative image URL. API: creative.image_url. To render inline, create a calculated field: IMAGE(ad_image_url, "image").' },
   { id: 'ad_video_id',                  name: 'Video ID',                  type: 'TEXT',  group: 'Ad Creative Asset', desc: 'Meta video asset id (for video ads). API: creative.video_id.' },
   { id: 'ad_instagram_permalink',       name: 'Instagram permalink',       type: 'URL',   group: 'Ad Creative Asset', desc: 'Public Instagram post URL (where applicable). API: creative.instagram_permalink_url.' },

@@ -16,6 +16,7 @@ import { getAuthContext } from '@/lib/api-auth';
 import { corsPreflight, withCors } from '@/lib/cors';
 import { canAccessType, visibleTypesOrFilter } from '@/lib/swipe-files/access';
 import { isValidWebhookUrl } from '@/lib/sanitize';
+import { authRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -45,6 +46,9 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await getAuthContext(req);
     if (!auth) return withCors(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }));
+
+    const limited = await authRateLimit(auth.companyId, 'ads/swipe/files/import-from-url');
+    if (limited) return limited;
 
     const body = await req.json().catch(() => null);
     if (!body) return withCors(NextResponse.json({ error: 'Invalid request body' }, { status: 400 }));
@@ -196,7 +200,7 @@ async function downloadAndStore(
   }
 
   const ext = EXT_BY_CT[ct] || 'bin';
-  const path = `swipe-files/${companyId}/${stub}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const path = `swipe-files/${companyId}/${stub}-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
 
   const supabase = createServiceClient();
   const { error: upErr } = await supabase.storage

@@ -90,7 +90,7 @@ function avizRenderVideoPreview(){
   if(!__avizVideoModal)return;
   var card=__avizVideoModal.querySelector(".aviz-vid-card-inner");
   card.innerHTML=''
-    +'<video class="aviz-vid-preview" src="'+__avizVideoUrl+'" controls></video>'
+    +'<video class="aviz-vid-preview" src="'+esc(__avizVideoUrl)+'" controls></video>'
     +'<p class="aviz-vid-len">Length: '+avizFmtSeconds(__avizVideoElapsed)+'</p>'
     +'<div class="aviz-vid-actions">'
       +'<button class="aviz-vid-redo">\\u21BB  Record again</button>'
@@ -185,7 +185,7 @@ function avizOpenVideoCommentForm(videoUrl){
   wrap.style.position="fixed";
   wrap.innerHTML=''
     +'<h4>Posting as <strong style="color:#374151;font-weight:600">'+esc(guestName)+'</strong></h4>'
-    +'<video class="aviz-vid-preview" src="'+videoUrl+'" controls style="margin-bottom:12px"></video>'
+    +'<video class="aviz-vid-preview" src="'+esc(videoUrl)+'" controls style="margin-bottom:12px"></video>'
     +'<textarea class="aviz-ta aviz-vf-text" placeholder="Add a comment to go with the video (optional)\\u2026" style="min-height:64px"></textarea>'
     +'<div class="aviz-pf-footer" style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;align-items:center">'
       +'<div class="aviz-pf-priority-slot" style="margin-right:auto"></div>'

@@ -70,8 +70,8 @@ const STICKIES = [
 /* ── Cursor path — follows the horizontal flow ───────────────────── */
 
 const CURSOR_PATH = {
-  left: ['45%', '8%',  '8%',  '28%', '47%', '64%', '82%', '45%'],
-  top:  ['60%', '30%', '30%', '30%', '30%', '30%', '30%', '60%'],
+  x: ['45cqw', '8cqw',  '8cqw',  '28cqw', '47cqw', '64cqw', '82cqw', '45cqw'],
+  y: ['60cqh', '30cqh', '30cqh', '30cqh', '30cqh', '30cqh', '30cqh', '60cqh'],
 };
 const CURSOR_TIMES = [0, 0.1, 0.22, 0.35, 0.48, 0.6, 0.75, 1];
 
@@ -221,6 +221,7 @@ function BoardView({
 
         {/* Canvas */}
         <div className="flex-1 relative" style={{
+          containerType: 'size',
           backgroundColor: '#FAFAFA',
           backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.04) 1px, transparent 1px)',
           backgroundSize: '20px 20px',
@@ -331,9 +332,9 @@ function BoardView({
           {/* Animated cursor */}
           {!reduce && (
             <motion.div
-              className="absolute pointer-events-none"
-              style={{ zIndex: 20 }}
-              animate={{ left: CURSOR_PATH.left, top: CURSOR_PATH.top }}
+              className="pointer-events-none"
+              style={{ position: 'absolute', left: 0, top: 0, zIndex: 20, willChange: 'transform' }}
+              animate={{ x: CURSOR_PATH.x, y: CURSOR_PATH.y }}
               transition={{
                 duration: TOTAL_DURATION,
                 repeat: Infinity,

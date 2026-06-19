@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
 import { syncItemVariantsJsonb } from '@/lib/feedback/ad-variation-sync';
+import { authRateLimit } from '@/lib/rate-limit';
 
 /** POST /api/campaigns/[id]/ad-variations/link
  *  Set which variations are linked to a review item. Replaces all existing
@@ -19,6 +20,10 @@ export async function POST(
 ) {
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'campaigns/ad-variations/link');
+    if (limited) return limited;
+
 
   const { id: projectId } = await params;
   const body = await req.json();
@@ -59,7 +64,10 @@ export async function POST(
     const { error } = await supabase
       .from('review_item_ad_variations')
       .insert(rows);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('ad-variations link error:', error.message);
+      return NextResponse.json({ error: 'Failed to link ad variations' }, { status: 500 });
+    }
   }
 
   // Sync the denormalized meta_ad_variants JSONB on the item

@@ -89,7 +89,7 @@ export default function EmojiPicker({ onSelect }: EmojiPickerProps) {
         <div
           ref={pickerRef}
           style={{ top: pos.top, left: pos.left }}
-          className="fixed z-[9999]"
+          className="fixed z-50"
         >
           <Picker
             onEmojiClick={handleSelect}

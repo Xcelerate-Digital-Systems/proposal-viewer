@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
+import { authRateLimit } from '@/lib/rate-limit';
 
 /** GET /api/campaigns/[id]/ad-variations
  *  List all ad copy variations in this campaign, including which items use each. */
@@ -10,6 +11,10 @@ export async function GET(
 ) {
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'campaigns/ad-variations');
+    if (limited) return limited;
+
 
   const { id: projectId } = await params;
   const supabase = createServiceClient();
@@ -29,7 +34,10 @@ export async function GET(
     .eq('review_project_id', projectId)
     .order('created_at', { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('ad-variations fetch error:', error.message);
+    return NextResponse.json({ error: 'Failed to load ad variations' }, { status: 500 });
+  }
 
   // Fetch junction links so the caller knows which items use which variations
   const variationIds = (variations || []).map((v) => v.id);
@@ -60,6 +68,10 @@ export async function POST(
 ) {
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'campaigns/ad-variations');
+    if (limited) return limited;
+
 
   const { id: projectId } = await params;
   const body = await req.json();
@@ -99,7 +111,8 @@ export async function POST(
     .select();
 
   if (error || !created) {
-    return NextResponse.json({ error: error?.message || 'Insert failed' }, { status: 500 });
+    console.error('ad-variations insert error:', error?.message);
+    return NextResponse.json({ error: 'Failed to create ad variations' }, { status: 500 });
   }
 
   // Auto-link to item if requested
@@ -126,6 +139,10 @@ export async function PATCH(
 ) {
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'campaigns/ad-variations');
+    if (limited) return limited;
+
 
   const { id: projectId } = await params;
   const body = await req.json();

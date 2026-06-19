@@ -39,7 +39,7 @@ export default function PackagesAppearanceSection({
   // to match the Pricing Design layout. Reset action moves up to the
   // SectionCard's `action` slot (handled in PackagesDesignPanel).
   return (
-    <div className="space-y-5 divide-y divide-gray-100 [&>*:not(:first-child)]:pt-5">
+    <div className="space-y-5 divide-y divide-edge [&>*:not(:first-child)]:pt-5">
 
       {/* ── Title colour ──────────────────────────────────── */}
       <div className="space-y-2">

@@ -123,10 +123,10 @@ function FeedbackProjectCard({
           </button>
           {menuOpen && menuPos && createPortal(
             <>
-              <div className="fixed inset-0 z-[9998]" onClick={() => setMenuOpen(false)} />
+              <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
               <div
                 onPointerDown={(e) => e.stopPropagation()}
-                className="fixed z-[9999] w-40 bg-white rounded-2xl shadow-lg border border-edge-strong overflow-hidden"
+                className="fixed z-50 w-40 bg-white rounded-2xl shadow-lg border border-edge-strong overflow-hidden"
                 style={{ top: menuPos.top, right: menuPos.right }}
               >
                 <button

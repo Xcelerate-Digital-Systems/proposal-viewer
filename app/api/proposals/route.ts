@@ -7,6 +7,7 @@ import { addPage } from '@/lib/page-operations';
 import { getCompanyEntityDefaults } from '@/lib/company-defaults';
 import { checkResourceLimit, buildLimitErrorBody } from '@/lib/billing/entitlements';
 import { upsertContact } from '@/lib/contacts';
+import { authRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,10 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'proposals');
+    if (limited) return limited;
+
 
     const supabase = createServiceClient();
     const body = await req.json().catch(() => null);
@@ -221,6 +226,10 @@ export async function PATCH(req: NextRequest) {
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'proposals');
+    if (limited) return limited;
+
 
     const supabase = createServiceClient();
     const body = await req.json().catch(() => null);

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { DEFAULT_SHARED_VIEWS, type FeedbackSharedViews } from '@/lib/types/feedback';
+import { authRateLimit } from '@/lib/rate-limit';
 
 /**
  * PATCH /api/reviews/[id]/share
@@ -15,6 +16,10 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'reviews/share');
+    if (limited) return limited;
+
 
     const supabase = createServiceClient();
 

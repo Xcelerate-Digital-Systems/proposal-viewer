@@ -12,6 +12,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -25,6 +26,7 @@ export default function GlobalError({ error, reset }: ErrorProps) {
   // (Next.js strips error messages from the client bundle but keeps digests).
   useEffect(() => {
     console.error('Uncaught route error:', error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (

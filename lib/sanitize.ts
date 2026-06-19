@@ -93,5 +93,6 @@ export function isValidWebhookUrl(url: string): boolean {
 
 /** Basic email format validation (RFC 5322 simplified). */
 export function isValidEmail(email: string): boolean {
+  if (!email || email.length > 254) return false;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }

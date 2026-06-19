@@ -178,7 +178,7 @@ export default function SwipeFileForm({ file, knownTags = [], uploadMedia, onClo
                   <video src={mediaUrl} controls className="max-h-full max-w-full" />
                 ) : (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={mediaUrl} alt="" className="max-h-full max-w-full object-contain" />
+                  <img src={mediaUrl} alt="" loading="lazy" className="max-h-full max-w-full object-contain" />
                 )}
               </div>
             )}

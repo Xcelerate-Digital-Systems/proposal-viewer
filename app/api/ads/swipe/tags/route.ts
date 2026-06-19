@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { STANDARD_SWIPE_TAGS } from '@/lib/swipe-files/standard-tags';
 import { visibleTypesOrFilter } from '@/lib/swipe-files/access';
+import { authRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,10 @@ export async function GET(req: NextRequest) {
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'ads/swipe/tags');
+    if (limited) return limited;
+
 
     const supabase = createServiceClient();
 

@@ -9,7 +9,7 @@ function PdfThumbnail({ item }: { item: NodeItemProps['item'] }) {
   if (src) {
     return (
       <div className="w-full h-full relative">
-        <img src={src} alt={item.title} className="w-full h-full object-cover" />
+        <img src={src} alt={item.title} loading="lazy" className="w-full h-full object-cover" />
       </div>
     );
   }

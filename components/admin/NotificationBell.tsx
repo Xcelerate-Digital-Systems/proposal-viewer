@@ -102,7 +102,7 @@ export default function NotificationBell({
       {open && pos && createPortal(
         <div
           ref={ref}
-          className="fixed w-[340px] max-h-[420px] bg-white rounded-2xl shadow-xl border border-edge overflow-hidden z-[9999] flex flex-col"
+          className="fixed w-[340px] max-h-[420px] bg-white rounded-2xl shadow-xl border border-edge overflow-hidden z-50 flex flex-col"
           style={{
             ...(pos.top != null ? { top: pos.top } : {}),
             ...(pos.bottom != null ? { bottom: pos.bottom } : {}),

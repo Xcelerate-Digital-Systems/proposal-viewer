@@ -1,6 +1,7 @@
 // app/api/member-badge/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { rateLimit, rateLimitHeaders, ipFromRequest } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,11 @@ async function pathToDataUrl(
 }
 
 export async function GET(req: NextRequest) {
+  const rl = await rateLimit({ key: `pub-badge:${ipFromRequest(req)}`, limit: 60, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: rateLimitHeaders(rl, 60) });
+  }
+
   const memberId = req.nextUrl.searchParams.get('member_id');
   const path     = req.nextUrl.searchParams.get('path');
 

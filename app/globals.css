@@ -212,7 +212,7 @@ body {
    list ships its own card chrome. */
 .tiptap-mention-input p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
-  color: #9CA3AF;
+  color: var(--color-muted, #9CA3AF);
   pointer-events: none;
   height: 0;
   float: left;

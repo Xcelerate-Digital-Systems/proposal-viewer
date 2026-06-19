@@ -80,7 +80,7 @@ export default function FeedbackItemThumb({ item }: Props) {
           </p>
         </div>
       ) : thumbnailUrl ? (
-        <img src={thumbnailUrl} alt={item.title} className="w-full h-full object-cover" />
+        <img src={thumbnailUrl} alt={item.title} loading="lazy" className="w-full h-full object-cover" />
       ) : (
         <div className="text-center">
           <div className="w-12 h-12 rounded-2xl bg-surface flex items-center justify-center mx-auto">

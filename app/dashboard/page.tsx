@@ -527,10 +527,12 @@ function TabbedPipeline({ tabs }: { tabs: PipelineTab[] }) {
   return (
     <div className="bg-white rounded-2xl shadow-card overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3 border-b border-edge">
-        <div className="flex gap-1">
+        <div className="flex gap-1" role="tablist" aria-label="Pipeline views">
           {tabs.map((t, i) => (
             <button
               key={t.label}
+              role="tab"
+              aria-selected={i === active}
               onClick={() => setActive(i)}
               className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
                 i === active

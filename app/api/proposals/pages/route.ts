@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { authRateLimit } from '@/lib/rate-limit';
 import {
   getPages,
   addPage,
@@ -68,6 +69,9 @@ export async function GET(req: NextRequest) {
     const ownership = await ownsProposal(req, proposalId);
     if (!ownership) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const limited = await authRateLimit(ownership.companyId, 'proposals/pages');
+    if (limited) return limited;
+
     const { pages, error } = await getPages(supabase, 'proposal', proposalId);
 
     if (error) {
@@ -107,6 +111,9 @@ export async function POST(req: NextRequest) {
     }
     const ownership = await ownsProposal(req, proposalId);
     if (!ownership) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(ownership.companyId, 'proposals/pages');
+    if (limited) return limited;
     // Force company_id to the verified value so handlers can't be tricked.
     body.company_id = ownership.companyId;
 
@@ -226,6 +233,9 @@ export async function PUT(req: NextRequest) {
     const ownership = await ownsPage(req, pageId);
     if (!ownership) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const limited = await authRateLimit(ownership.companyId, 'proposals/pages');
+    if (limited) return limited;
+
     const body = await req.json().catch(() => null);
     if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     const {
@@ -278,6 +288,9 @@ export async function DELETE(req: NextRequest) {
 
     const ownership = await ownsProposal(req, proposal_id);
     if (!ownership) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(ownership.companyId, 'proposals/pages');
+    if (limited) return limited;
 
     const { success, totalPages, error, status } = await deletePage(supabase, 'proposal', {
       entityId: proposal_id,

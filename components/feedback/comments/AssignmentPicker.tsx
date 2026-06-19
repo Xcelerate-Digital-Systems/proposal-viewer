@@ -114,7 +114,7 @@ export default function AssignmentPicker({
     <div
       ref={panelRef}
       style={{ top: pos.top, left: pos.left }}
-      className="fixed z-[9999] w-72 rounded-xl bg-white shadow-lg border border-edge ring-1 ring-black/5"
+      className="fixed z-50 w-72 rounded-xl bg-white shadow-lg border border-edge ring-1 ring-black/5"
     >
       <div className="flex items-center justify-between px-3 pt-3 pb-2">
         <span className="text-xs font-semibold text-ink">Assign to team member</span>

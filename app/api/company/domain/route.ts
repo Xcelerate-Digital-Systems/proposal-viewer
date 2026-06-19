@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { authRateLimit } from '@/lib/rate-limit';
 
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
 const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID;
@@ -37,7 +38,7 @@ async function vercelFetch(path: string, options: RequestInit = {}) {
  */
 async function checkDnsConfigured(domain: string): Promise<{ configured: boolean; misconfigured: boolean }> {
   try {
-    const { ok, data } = await vercelFetch(`/v6/domains/${domain}/config`);
+    const { ok, data } = await vercelFetch(`/v6/domains/${encodeURIComponent(domain)}/config`);
     if (!ok) {
       return { configured: false, misconfigured: true };
     }
@@ -59,6 +60,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const limited = await authRateLimit(auth.companyId, 'company/domain');
+    if (limited) return limited;
+
+
     const { companyId } = auth;
     const supabase = createServiceClient();
 
@@ -77,7 +82,7 @@ export async function GET(req: NextRequest) {
     if (company.custom_domain && VERCEL_TOKEN && VERCEL_PROJECT_ID) {
       // Check ownership verification status
       const { ok, data } = await vercelFetch(
-        `/v9/projects/${VERCEL_PROJECT_ID}/domains/${company.custom_domain}`
+        `/v9/projects/${VERCEL_PROJECT_ID}/domains/${encodeURIComponent(company.custom_domain)}`
       );
 
       if (ok) {
@@ -137,6 +142,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const limited = await authRateLimit(auth.companyId, 'company/domain');
+    if (limited) return limited;
+
+
     const { member, companyId } = auth;
     if (!member.is_super_admin && member.role !== 'owner') {
       return NextResponse.json({ error: 'Only owners can manage custom domains' }, { status: 403 });
@@ -185,7 +194,7 @@ export async function POST(req: NextRequest) {
     // If company already has a different domain, remove the old one from Vercel first
     if (company?.custom_domain && company.custom_domain !== domain) {
       await vercelFetch(
-        `/v9/projects/${VERCEL_PROJECT_ID}/domains/${company.custom_domain}`,
+        `/v9/projects/${VERCEL_PROJECT_ID}/domains/${encodeURIComponent(company.custom_domain)}`,
         { method: 'DELETE' }
       );
     }
@@ -249,6 +258,10 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const limited = await authRateLimit(auth.companyId, 'company/domain');
+    if (limited) return limited;
+
+
     const { member, companyId } = auth;
     if (!member.is_super_admin && member.role !== 'owner') {
       return NextResponse.json({ error: 'Only owners can manage custom domains' }, { status: 403 });
@@ -269,7 +282,7 @@ export async function DELETE(req: NextRequest) {
     // Remove from Vercel
     if (VERCEL_TOKEN && VERCEL_PROJECT_ID) {
       await vercelFetch(
-        `/v9/projects/${VERCEL_PROJECT_ID}/domains/${company.custom_domain}`,
+        `/v9/projects/${VERCEL_PROJECT_ID}/domains/${encodeURIComponent(company.custom_domain)}`,
         { method: 'DELETE' }
       );
     }
@@ -300,7 +313,7 @@ export async function DELETE(req: NextRequest) {
  */
 async function fetchDnsInstructions(domain: string) {
   try {
-    const { ok, data } = await vercelFetch(`/v6/domains/${domain}/config`);
+    const { ok, data } = await vercelFetch(`/v6/domains/${encodeURIComponent(domain)}/config`);
 
     if (!ok) {
       // Fallback to generic instructions if config endpoint fails

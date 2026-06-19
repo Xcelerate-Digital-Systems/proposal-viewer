@@ -14,7 +14,7 @@ function ThumbPreview({ item, textColor }: { item: FeedbackItem; textColor: stri
   if (thumbUrl) {
     return (
       <div className="w-full h-full" style={{ backgroundColor: bg }}>
-        <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
+        <img src={thumbUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
       </div>
     );
   }
@@ -105,7 +105,7 @@ export default function ItemThumbStrip({
         const activeClass = isAdmin
           ? (isActive
               ? 'ring-2 ring-teal ring-offset-1 ring-offset-white'
-              : 'ring-1 ring-gray-200 hover:ring-gray-300')
+              : 'ring-1 ring-edge hover:ring-edge-strong')
           : '';
 
         return (

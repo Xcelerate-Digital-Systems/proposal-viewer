@@ -293,7 +293,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
         <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
           isIncluded
             ? isGroup
-              ? 'bg-gray-400 border-edge-hover'
+              ? 'bg-muted border-edge-hover'
               : 'bg-teal border-teal'
             : 'border-edge-hover'
         }`}>
@@ -393,7 +393,7 @@ export default function TocTab({ entityId, entityType }: TocTabProps) {
                       <p className="text-xs text-faint mt-1">Add PDF pages, text pages, or pricing to see them here</p>
                     </div>
                   ) : (
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-edge">
                       {itemGroups.map((group, gi) => (
                         <div key={`group-${gi}`}>
                           {renderRow(group.parent)}

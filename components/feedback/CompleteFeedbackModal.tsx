@@ -295,7 +295,7 @@ export default function CompleteFeedbackModal({
                   : `${editableItems.length} item${editableItems.length > 1 ? 's' : ''} still need${editableItems.length === 1 ? 's' : ''} a decision:`}
               </p>
               {editableItems.length > 0 && (
-                <div className="border border-edge rounded-2xl divide-y divide-gray-100">
+                <div className="border border-edge rounded-2xl divide-y divide-edge">
                   {showBulkRow && (
                     <div className="flex items-center gap-3 px-3 py-2 bg-surface/60">
                       <p className="flex-1 min-w-0 text-caption font-medium text-prose">
@@ -326,7 +326,7 @@ export default function CompleteFeedbackModal({
             onChange={(e) => setMessage(e.target.value)}
             rows={3}
             placeholder="Add a message (optional)"
-            className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm text-ink placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:border-transparent"
+            className="w-full px-3 py-2 rounded-lg border border-edge-strong text-sm text-ink placeholder-muted resize-none focus:outline-none focus:ring-2 focus:border-transparent"
             style={{ ['--tw-ring-color' as string]: `${accentColor}25` }}
           />
 

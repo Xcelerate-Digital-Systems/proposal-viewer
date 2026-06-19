@@ -254,7 +254,7 @@ export default function InboxItem({ item, memberName, isLast, isSelected, trigge
               <button
                 type="button"
                 onClick={() => setShotPreviewOpen(true)}
-                className="relative shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-surface ring-1 ring-gray-200 hover:ring-primary/40 transition-all group"
+                className="relative shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-surface ring-1 ring-edge hover:ring-primary/40 transition-all group"
                 aria-label={`View screenshot for ${item.itemTitle}`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}

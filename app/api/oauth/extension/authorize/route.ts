@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes, createHash } from 'crypto';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext, API_KEY_PREFIX, hashApiKey } from '@/lib/api-auth';
+import { authRateLimit } from '@/lib/rate-limit';
+import { encryptOAuthToken } from '@/lib/oauth-token-crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +21,10 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'oauth/extension/authorize');
+    if (limited) return limited;
+
 
     const body = await req.json().catch(() => ({}));
     const label =
@@ -70,7 +76,7 @@ export async function POST(req: NextRequest) {
     const { error: codeErr } = await supabase.from('oauth_extension_codes').insert({
       code_hash,
       api_key_id: key.id,
-      plaintext_token: plaintext,
+      plaintext_token: encryptOAuthToken(plaintext),
       expires_at,
     });
 

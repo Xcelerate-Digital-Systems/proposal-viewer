@@ -79,7 +79,7 @@ export default function ImageItemForm({ onSubmit, onBack, onCancel, uploading }:
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
         {preview ? (
           <div className="relative">
-            <img src={preview} alt="Preview" className="w-full max-h-[240px] object-contain rounded-lg border border-edge-strong bg-surface" />
+            <img src={preview} alt="Preview" loading="lazy" className="w-full max-h-[240px] object-contain rounded-lg border border-edge-strong bg-surface" />
             <button
               type="button"
               onClick={clearFile}

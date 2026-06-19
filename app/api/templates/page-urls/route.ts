@@ -4,6 +4,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { getPageUrls, PageUrlEntry } from '@/lib/page-operations';
+import { authRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,10 @@ export async function GET(req: NextRequest) {
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: NO_CACHE });
+
+    const limited = await authRateLimit(auth.companyId, 'templates/page-urls');
+    if (limited) return limited;
+
 
     const { searchParams } = req.nextUrl;
     const entityId = searchParams.get('entity_id');

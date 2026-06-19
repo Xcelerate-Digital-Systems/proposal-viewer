@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { authRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,6 +69,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'quotes/save-as-template');
+    if (limited) return limited;
+
 
     const body = await req.json().catch(() => ({}));
     const name: string = (body.name || '').trim();

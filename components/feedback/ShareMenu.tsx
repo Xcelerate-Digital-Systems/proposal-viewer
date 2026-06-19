@@ -116,7 +116,7 @@ export default function ShareMenu({
 
       {menuOpen && (
         <div
-          className="fixed z-[9999] bg-white rounded-2xl border border-edge-strong shadow-lg w-[280px] py-2"
+          className="fixed z-50 bg-white rounded-2xl border border-edge-strong shadow-lg w-[280px] py-2"
           style={{
             top: (menuRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
             left: Math.min(

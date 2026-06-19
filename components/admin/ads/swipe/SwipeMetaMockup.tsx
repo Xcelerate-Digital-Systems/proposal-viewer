@@ -152,7 +152,7 @@ export default function SwipeMetaMockup({ file, compact = false, onShare }: Prop
             <video src={file.media_url} controls className="w-full block" />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={file.media_url} alt="" className="w-full block" />
+            <img src={file.media_url} alt="" loading="lazy" className="w-full block" />
           )
         ) : (
           <div className="aspect-square flex items-center justify-center text-xs text-[#65676b]">No media</div>

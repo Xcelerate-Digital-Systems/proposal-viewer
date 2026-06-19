@@ -7,7 +7,7 @@ function ImageThumbnail({ item }: { item: NodeItemProps['item'] }) {
   const src = item.image_url || item.ad_creative_url;
 
   if (src) {
-    return <img src={src} alt={item.title} className="w-full h-full object-cover" />;
+    return <img src={src} alt={item.title} loading="lazy" className="w-full h-full object-cover" />;
   }
 
   return (

@@ -4,6 +4,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { getPageUrls, PageUrlEntry } from '@/lib/page-operations';
+import { rateLimit, rateLimitHeaders, ipFromRequest } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,11 @@ type PageUrlsResult = { pages: PageUrlEntry[]; fallback: boolean; error?: string
 export async function GET(req: NextRequest) {
   noStore(); // Prevent Next.js Data Cache from caching Supabase fetch calls
   try {
+    const rl = await rateLimit({ key: `page-urls:${ipFromRequest(req)}`, limit: 60, windowSeconds: 60 });
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: { ...NO_CACHE, ...rateLimitHeaders(rl, 60) } });
+    }
+
     const { searchParams } = req.nextUrl;
     const shareToken = searchParams.get('share_token');
     const entityId   = searchParams.get('entity_id');

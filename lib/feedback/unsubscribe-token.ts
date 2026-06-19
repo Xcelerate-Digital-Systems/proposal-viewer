@@ -1,6 +1,10 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 
-const SECRET = () => process.env.SUPABASE_SERVICE_ROLE_KEY || 'dev-fallback';
+const SECRET = () => {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for unsubscribe tokens');
+  return key;
+};
 
 export function generateUnsubscribeToken(projectId: string, email: string): string {
   const payload = `${projectId}:${email.trim().toLowerCase()}`;

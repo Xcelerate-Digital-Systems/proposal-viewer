@@ -101,7 +101,7 @@ export default function PricingLineItems({
       </div>
 
       {/* Rows */}
-      <div className="divide-y divide-gray-50">
+      <div className="divide-y divide-edge">
         {items.length === 0 && (
           <div className="py-6 text-center text-xs text-faint">
             No line items yet — click <span className="text-teal font-medium">Add Line Item</span> to start.

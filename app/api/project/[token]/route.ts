@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { GUEST_VISIBLE_STAGES } from '@/lib/feedback/visibility';
+import { rateLimit, rateLimitHeaders, ipFromRequest } from '@/lib/rate-limit';
 
 // Prevent Next.js from caching this route
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
   try {
+    const rl = await rateLimit({ key: `pub-project:${ipFromRequest(_req)}`, limit: 60, windowSeconds: 60 });
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: rateLimitHeaders(rl, 60) });
+    }
+
     const supabase = createServiceClient();
 
     // Load project by share token

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { rateLimit, rateLimitHeaders, ipFromRequest } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
   try {
+    const rl = await rateLimit({ key: `pub-funnel:${ipFromRequest(_req)}`, limit: 60, windowSeconds: 60 });
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: rateLimitHeaders(rl, 60) });
+    }
+
     const supabase = createServiceClient();
     const { data, error } = await supabase.rpc('get_funnel_data', { p_token: params.token });
 

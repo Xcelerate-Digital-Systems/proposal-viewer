@@ -9,7 +9,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
-  AlertTriangle, CheckCircle2, Copy, Check, Settings,
+  AlertTriangle, CheckCircle2, Copy, Check, Settings, ShieldAlert,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import PageHeader from '@/components/ui/PageHeader';
@@ -254,8 +254,49 @@ function ConnectorSetupCard({
   );
 }
 
+type HealthData = {
+  status: 'healthy' | 'upgrade_available' | 'deprecated' | 'error';
+  pinned_version: string;
+  latest_version: string | null;
+  checked_at: string;
+};
+
+function ApiHealthBanner({ health }: { health: HealthData | null }) {
+  if (!health || health.status === 'healthy') return null;
+
+  const isUrgent = health.status === 'deprecated' || health.status === 'error';
+  const checkedDate = new Date(health.checked_at).toLocaleDateString('en-AU', {
+    day: 'numeric', month: 'short', year: 'numeric',
+  });
+
+  return (
+    <div className={`flex items-start gap-3 p-4 rounded-2xl mb-6 ${
+      isUrgent
+        ? 'bg-red-50 border border-red-200'
+        : 'bg-amber-50 border border-amber-200'
+    }`} role="alert">
+      <ShieldAlert size={18} className={`${isUrgent ? 'text-red-500' : 'text-amber-600'} mt-0.5 shrink-0`} />
+      <div className="flex-1">
+        <p className={`text-sm font-semibold ${isUrgent ? 'text-red-900' : 'text-amber-900'}`}>
+          {isUrgent ? 'Meta API Version Deprecated' : 'Meta API Upgrade Available'}
+        </p>
+        <p className={`text-xs ${isUrgent ? 'text-red-700' : 'text-amber-700'} mt-0.5`}>
+          {isUrgent
+            ? `The pinned version ${health.pinned_version} is no longer responding. ${health.latest_version ? `Upgrade to ${health.latest_version}.` : 'Check the Meta Graph API changelog for the latest version.'}`
+            : `Meta has released ${health.latest_version}. The connector is currently on ${health.pinned_version} — consider upgrading before it reaches end-of-life.`
+          }
+        </p>
+        <p className={`text-2xs ${isUrgent ? 'text-red-400' : 'text-amber-400'} mt-1`}>
+          Last checked {checkedDate}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function LookerStudioPage() {
   const [metaConnected, setMetaConnected] = useState(false);
+  const [apiHealth, setApiHealth] = useState<HealthData | null>(null);
 
   useEffect(() => {
     async function checkMeta() {
@@ -271,6 +312,14 @@ export default function LookerStudioPage() {
           (c: { status: string }) => c.status !== 'revoked',
         );
         setMetaConnected(active.length > 0);
+
+        const healthRes = await fetch('/api/connectors/meta/health', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (healthRes.ok) {
+          const healthJson = await healthRes.json();
+          if (healthJson.data) setApiHealth(healthJson.data);
+        }
       } catch {
         // Silent — just show the "Go to Integrations" fallback
       }
@@ -292,6 +341,8 @@ export default function LookerStudioPage() {
               <Suspense fallback={null}>
                 <Banners />
               </Suspense>
+
+              <ApiHealthBanner health={apiHealth} />
 
               <div data-tour="integrations-connectors" className="space-y-6">
                 <ConnectorSetupCard

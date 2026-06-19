@@ -360,7 +360,7 @@ export default function AdminSidebar({
         </div>
       )}
 
-      <nav className="flex-1 px-2 py-3 overflow-y-auto flex flex-col">
+      <nav className="flex-1 px-2 py-3 overflow-y-auto flex flex-col" aria-label="Primary navigation">
         {inSwipeSection
           ? <SwipeTypesSidebarNav onNavigate={() => setMobileOpen(false)} />
           : inFeedbackBoard
@@ -441,14 +441,18 @@ export default function AdminSidebar({
         onClick={() => setMobileOpen(true)}
         className={branded ? 'lg:hidden fixed top-4 left-4 z-50 w-10 h-10 border rounded-lg flex items-center justify-center transition-colors' : 'lg:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-surface-dark border border-surface-dark-border rounded-lg flex items-center justify-center text-white/70 hover:text-white transition-colors'}
         style={branded ? { backgroundColor: c.bg, borderColor: c.border, color: c.textMuted } : undefined}
+        aria-label="Open navigation"
       >
-        <Menu size={18} />
+        <Menu size={18} aria-hidden="true" />
       </button>
 
       {mobileOpen && (
         <div
           className="lg:hidden fixed inset-0 z-50 bg-black/40"
           onClick={() => setMobileOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navigation"
         >
           <div
             className={branded ? 'w-[260px] h-full border-r' : 'w-[260px] h-full bg-surface-dark border-r border-surface-dark-border'}
@@ -459,8 +463,9 @@ export default function AdminSidebar({
               onClick={() => setMobileOpen(false)}
               className="absolute top-4 right-4"
               style={branded ? { color: c.textFaint } : undefined}
+              aria-label="Close navigation"
             >
-              <X size={18} className={branded ? '' : 'text-white/40 hover:text-white'} />
+              <X size={18} className={branded ? '' : 'text-white/40 hover:text-white'} aria-hidden="true" />
             </button>
             {sidebarContent}
           </div>

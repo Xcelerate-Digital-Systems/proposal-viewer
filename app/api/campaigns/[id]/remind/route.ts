@@ -6,6 +6,7 @@ import { sendAndLogEmail } from '@/lib/email-log';
 import { buildReviewUrl } from '@/lib/proposal-url';
 import { buildReminderEmail, withUnsubscribeLink, type EmailBranding } from '@/lib/review-notification-emails';
 import { buildUnsubscribeUrl } from '@/lib/feedback/unsubscribe-token';
+import { authRateLimit } from '@/lib/rate-limit';
 
 // POST — send a manual reminder email to all active (non-removed) guests
 // on this project. Optionally accepts { emails: string[] } to target
@@ -14,6 +15,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const params = await props.params;
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'campaigns/remind');
+    if (limited) return limited;
+
 
   const body = await req.json().catch(() => ({}));
   const targetEmails = Array.isArray(body.emails)

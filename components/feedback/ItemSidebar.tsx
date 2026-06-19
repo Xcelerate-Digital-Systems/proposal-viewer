@@ -71,7 +71,7 @@ function ItemThumbnail({
         className="w-full aspect-video rounded overflow-hidden mb-1.5"
         style={{ backgroundColor: `${textColor}08` }}
       >
-        <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
+        <img src={thumbUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
       </div>
     );
   }

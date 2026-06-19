@@ -5,6 +5,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 import { getCompanyMarkupDefaults } from '@/lib/markup-notification-defaults';
 import { sendGuestInviteEmail } from '@/lib/feedback/send-guest-invite';
 import { upsertContact } from '@/lib/contacts';
+import { authRateLimit } from '@/lib/rate-limit';
 
 type GuestPrefs = {
   notify_comment: boolean;
@@ -34,6 +35,10 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
   const params = await props.params;
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'campaigns/guests');
+    if (limited) return limited;
+
 
   const supabase = createServiceClient();
 
@@ -156,6 +161,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const limited = await authRateLimit(auth.companyId, 'campaigns/guests');
+    if (limited) return limited;
+
+
   let body;
   try {
     body = await req.json();
@@ -225,6 +234,10 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const params = await props.params;
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'campaigns/guests');
+    if (limited) return limited;
+
 
   let body;
   try {

@@ -5,6 +5,7 @@ import { getAuthContext } from '@/lib/api-auth';
 import { fireWebhooks } from '@/lib/notifications';
 import { buildProposalUrl } from '@/lib/proposal-url';
 import { enqueueGhlSync, buildProposalSyncPayload } from '@/lib/connectors/ghl/sync';
+import { authRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,10 @@ export async function POST(req: NextRequest) {
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const limited = await authRateLimit(auth.companyId, 'proposals/mark-sent');
+    if (limited) return limited;
+
 
     const body = await req.json().catch(() => null);
     if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });

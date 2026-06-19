@@ -9,7 +9,7 @@ function VideoThumbnail({ item }: { item: NodeItemProps['item'] }) {
   if (src) {
     return (
       <div className="w-full h-full relative">
-        <img src={src} alt={item.title} className="w-full h-full object-cover" />
+        <img src={src} alt={item.title} loading="lazy" className="w-full h-full object-cover" />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center backdrop-blur-sm">
             <Play size={14} className="text-white ml-0.5" fill="white" />

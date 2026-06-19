@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { authRateLimit } from '@/lib/rate-limit';
 
 // PATCH - Resolve or unresolve a comment
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -11,6 +12,9 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const limited = await authRateLimit(auth.companyId, 'review-comments/resolve');
+    if (limited) return limited;
 
     // Feedback is team-facing. Super admins bypass the agency-only guard so
     // they can act on projects in any company they're viewing.

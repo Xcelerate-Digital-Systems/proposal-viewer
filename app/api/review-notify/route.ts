@@ -17,6 +17,7 @@ import {
 import { buildUnsubscribeUrl } from '@/lib/feedback/unsubscribe-token';
 import { syncCommentMentions, type PersistedMention } from '@/lib/feedback/persist-mentions';
 import { htmlToPlainText } from '@/lib/feedback/mention-html';
+import { constantTimeEquals } from '@/lib/oauth-clients/server';
 import {
   insertInAppNotifications,
   resolveUserIdsForCompanyEmails,
@@ -42,8 +43,13 @@ export async function POST(req: NextRequest) {
     // Auth gate: accept either an internal server secret (server-to-server) or
     // a valid Supabase Bearer token (admin browser calls).
     const internalSecret = req.headers.get('x-internal-secret');
-    const expectedSecret = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const hasInternalAuth = !!internalSecret && !!expectedSecret && internalSecret === expectedSecret;
+    const expectedSecret = process.env.INTERNAL_NOTIFY_SECRET;
+    const hasInternalAuth =
+      !!internalSecret &&
+      !!expectedSecret &&
+      constantTimeEquals(internalSecret, expectedSecret);
+
+    let authedUserId: string | null = null;
 
     if (!hasInternalAuth) {
       const authHeader = req.headers.get('authorization');
@@ -56,6 +62,7 @@ export async function POST(req: NextRequest) {
       if (authErr || !user) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
+      authedUserId = user.id;
     }
 
     const body = await req.json().catch(() => null);
@@ -121,6 +128,20 @@ export async function POST(req: NextRequest) {
 
     if (projErr || !project) {
       return NextResponse.json({ error: 'Feedback project not found' }, { status: 404 });
+    }
+
+    // Cross-tenant check: if authed via Bearer token, verify the user
+    // belongs to the company that owns this project.
+    if (authedUserId) {
+      const { data: membership } = await supabase
+        .from('team_members')
+        .select('id')
+        .eq('user_id', authedUserId)
+        .eq('company_id', project.company_id)
+        .maybeSingle();
+      if (!membership) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
     }
 
     // Validate that the review_comment_id belongs to this project

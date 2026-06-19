@@ -27,16 +27,8 @@ export async function GET(req: NextRequest) {
       .eq('token', token)
       .single();
 
-    if (!invite) {
-      return NextResponse.json({ error: 'Invalid invite link' }, { status: 404 });
-    }
-
-    if (invite.accepted_at) {
-      return NextResponse.json({ error: 'This invite has already been used' }, { status: 400 });
-    }
-
-    if (new Date(invite.expires_at) < new Date()) {
-      return NextResponse.json({ error: 'This invite has expired' }, { status: 400 });
+    if (!invite || invite.accepted_at || new Date(invite.expires_at) < new Date()) {
+      return NextResponse.json({ error: 'This invite link is invalid or has expired' }, { status: 400 });
     }
 
     const companyName = (invite.company as any)?.name || 'Unknown';

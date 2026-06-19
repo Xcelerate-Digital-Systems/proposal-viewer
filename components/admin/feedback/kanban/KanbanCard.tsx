@@ -159,11 +159,11 @@ export default function KanbanCard({
               </button>
               {showMoveMenu && moveMenuPos && createPortal(
                 <>
-                  <div className="fixed inset-0 z-[9998]" onClick={() => setShowMoveMenu(false)} />
+                  <div className="fixed inset-0 z-40" onClick={() => setShowMoveMenu(false)} />
                   <div
                     role="listbox"
                     aria-label="Move to stage"
-                    className="fixed z-[9999] bg-white rounded-xl border border-edge shadow-popover py-1 min-w-[160px]"
+                    className="fixed z-50 bg-white rounded-xl border border-edge shadow-popover py-1 min-w-[160px]"
                     style={{ top: moveMenuPos.top, left: moveMenuPos.left }}
                   >
                     {REVIEW_STATUS_ORDER.filter((s) => s !== item.status).map((s) => {

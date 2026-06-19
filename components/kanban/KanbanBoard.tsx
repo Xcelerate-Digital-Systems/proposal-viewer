@@ -207,6 +207,7 @@ function KanbanCardWrapper({ id, children }: { id: string; children: React.React
       {...listeners}
       style={{ opacity: isDragging ? 0.4 : 1 }}
       className="cursor-grab active:cursor-grabbing touch-none"
+      aria-roledescription="Draggable card"
     >
       {children}
     </div>

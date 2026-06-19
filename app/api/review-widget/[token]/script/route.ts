@@ -1,6 +1,7 @@
 // app/api/review-widget/[token]/script/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { rateLimit, ipFromRequest } from '@/lib/rate-limit';
 import { iconsJS } from './parts/icons';
 import { stylesJS } from './parts/styles';
 import { coreJS } from './parts/core';
@@ -34,6 +35,10 @@ function jsResponse(body: string, status = 200) {
 
 export async function GET(req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
+
+  const rl = await rateLimit({ key: `pub-widget:${ipFromRequest(req)}`, limit: 120, windowSeconds: 60 });
+  if (!rl.success) return jsResponse('/* AgencyViz: rate limited */', 429);
+
   const itemId = req.nextUrl.searchParams.get('item');
   const supabase = createServiceClient();
 

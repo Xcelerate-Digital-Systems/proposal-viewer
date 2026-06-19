@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { createServiceClient } from '@/lib/supabase-server';
 import { rateLimit, ipFromRequest } from '@/lib/rate-limit';
+import { decryptOAuthToken } from '@/lib/oauth-token-crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Code unusable' }, { status: 400 });
     }
 
-    const token = row.plaintext_token;
+    const token = decryptOAuthToken(row.plaintext_token);
 
     // Atomically consume: wipe the plaintext and stamp consumed_at. If the
     // update affects 0 rows, someone else raced us and we must not return.

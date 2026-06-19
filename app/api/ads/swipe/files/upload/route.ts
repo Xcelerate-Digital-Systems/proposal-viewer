@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     // Sanitize extension to alphanumeric only to prevent path injection
     const rawExt = filename.split('.').pop() || 'bin';
     const ext = rawExt.replace(/[^a-zA-Z0-9]/g, '') || 'bin';
-    const stub = swipe_id || `tmp-${Math.random().toString(36).slice(2, 10)}`;
+    const stub = swipe_id || `tmp-${crypto.randomUUID().slice(0, 8)}`;
     // Use auth.companyId (server-verified) — never trust company_id from the request body
     const path = `swipe-files/${auth.companyId}/${stub}-${Date.now()}.${ext}`;
 

@@ -177,7 +177,7 @@ export default function IntegrationsPage() {
             </p>
           </ScrollReveal>
           <div className="grid md:grid-cols-2 gap-5">
-            <ScrollReveal>
+            <ScrollReveal variant="slide-left">
               <div className="rounded-2xl border border-red-100 bg-red-50/30 p-8 h-full">
                 <span className="text-xs font-semibold uppercase tracking-wider text-red-400">Before</span>
                 <h3 className="mt-3 text-xl font-bold text-ink">Manual CSV exports every week.</h3>
@@ -190,7 +190,7 @@ export default function IntegrationsPage() {
                 </ul>
               </div>
             </ScrollReveal>
-            <ScrollReveal delay={100}>
+            <ScrollReveal variant="slide-right" delay={100}>
               <div className="rounded-2xl border border-teal/20 bg-teal/[0.03] p-8 h-full">
                 <span className="text-xs font-semibold uppercase tracking-wider text-teal">With Integrations</span>
                 <h3 className="mt-3 text-xl font-bold text-ink">Live data, zero exports.</h3>
@@ -224,7 +224,7 @@ export default function IntegrationsPage() {
       <section className="py-20 md:py-28">
         <div className="max-w-5xl mx-auto px-6">
           <div className="flex flex-col lg:flex-row gap-12 lg:gap-16 items-center">
-            <ScrollReveal className="flex-1 max-w-lg">
+            <ScrollReveal variant="slide-left" className="flex-1 max-w-lg">
               <h2 className="text-3xl md:text-4xl font-bold text-ink tracking-tight leading-tight">
                 Your data never sits in a third-party database.
               </h2>
@@ -251,7 +251,7 @@ export default function IntegrationsPage() {
                 </li>
               </ul>
             </ScrollReveal>
-            <ScrollReveal className="flex-1 w-full" delay={120}>
+            <ScrollReveal variant="slide-right" className="flex-1 w-full" delay={120}>
               <PassthroughDiagram />
             </ScrollReveal>
           </div>
@@ -266,7 +266,7 @@ export default function IntegrationsPage() {
               What you get in every report
             </h2>
           </ScrollReveal>
-          <ScrollReveal>
+          <ScrollReveal variant="stagger">
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5">
               {FEATURES.map(f => (
                 <div key={f.title} className="rounded-2xl border border-edge bg-white p-6 hover-lift group">
@@ -290,7 +290,7 @@ export default function IntegrationsPage() {
               Reports that update themselves
             </h2>
           </ScrollReveal>
-          <ScrollReveal>
+          <ScrollReveal variant="scale">
             <div className="grid md:grid-cols-3 gap-5">
               {USE_CASES.map(uc => (
                 <div key={uc.title} className="rounded-2xl border border-edge bg-white p-6 hover-lift">
@@ -358,7 +358,7 @@ export default function IntegrationsPage() {
           }}
         />
         <div className="max-w-3xl mx-auto px-6 py-20 md:py-28 text-center relative">
-          <ScrollReveal>
+          <ScrollReveal variant="scale">
             <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight leading-tight">
               Monday morning CSV exports<br className="hidden md:block" /> are over.
             </h2>

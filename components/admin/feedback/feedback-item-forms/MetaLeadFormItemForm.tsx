@@ -296,7 +296,7 @@ export default function MetaLeadFormItemForm({
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleCoverChange} className="hidden" />
             {coverPreview ? (
               <div className="relative">
-                <img src={coverPreview} alt="Cover" className="w-full max-h-[160px] object-cover rounded-lg border border-edge-strong bg-surface" />
+                <img src={coverPreview} alt="Cover" loading="lazy" className="w-full max-h-[160px] object-cover rounded-lg border border-edge-strong bg-surface" />
                 <button type="button" onClick={clearCover}
                   className="absolute top-2 right-2 p-1 bg-white/90 rounded-full border border-edge-strong text-dim hover:text-red-500">
                   <X size={12} />

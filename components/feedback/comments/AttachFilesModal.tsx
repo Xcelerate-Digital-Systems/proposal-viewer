@@ -160,7 +160,7 @@ export default function AttachFilesModal({
                   className="relative group w-16 h-16 rounded-lg border border-edge-strong overflow-hidden bg-surface flex items-center justify-center"
                 >
                   {f.preview ? (
-                    <img src={f.preview} alt={f.file.name} className="w-full h-full object-cover" />
+                    <img src={f.preview} alt={f.file.name} loading="lazy" className="w-full h-full object-cover" />
                   ) : (
                     <FileTextIcon size={20} className="text-faint" />
                   )}

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { authRateLimit } from '@/lib/rate-limit';
 
 // PATCH - Update a team member's role, name, or avatar
 export async function PATCH(
@@ -13,6 +14,9 @@ export async function PATCH(
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const limited = await authRateLimit(auth.companyId, 'team/[id]');
+    if (limited) return limited;
 
     const { member, companyId } = auth;
     const { id } = await params;
@@ -155,6 +159,9 @@ export async function DELETE(
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const limited = await authRateLimit(auth.companyId, 'team/[id]');
+    if (limited) return limited;
 
     const { member, companyId } = auth;
 

@@ -240,12 +240,12 @@ export default function FeedbackProjectHeader({
               {showHandoffMenu && hasHandoffLink && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowHandoffMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1.5 z-50 w-56 rounded-xl border border-gray-200 bg-white shadow-lg py-1.5">
+                  <div className="absolute right-0 top-full mt-1.5 z-50 w-56 rounded-xl border border-edge bg-white shadow-lg py-1.5">
                     <button
                       onClick={() => { copyHandoffLink(); setShowHandoffMenu(false); }}
-                      className="flex items-center gap-2.5 w-full px-3.5 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-2.5 w-full px-3.5 py-2 text-left text-sm text-prose hover:bg-paper transition-colors"
                     >
-                      <Link2 size={14} className="text-gray-400" />
+                      <Link2 size={14} className="text-muted" />
                       Copy handoff link
                     </button>
                     <button
@@ -253,12 +253,12 @@ export default function FeedbackProjectHeader({
                         window.open(`/handoff/${project.handoff_share_token}`, '_blank');
                         setShowHandoffMenu(false);
                       }}
-                      className="flex items-center gap-2.5 w-full px-3.5 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-2.5 w-full px-3.5 py-2 text-left text-sm text-prose hover:bg-paper transition-colors"
                     >
-                      <PackageCheck size={14} className="text-gray-400" />
+                      <PackageCheck size={14} className="text-muted" />
                       Open handoff page
                     </button>
-                    <div className="my-1 border-t border-gray-100" />
+                    <div className="my-1 border-t border-edge" />
                     <button
                       onClick={revokeHandoff}
                       className="flex items-center gap-2.5 w-full px-3.5 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"

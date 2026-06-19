@@ -216,7 +216,7 @@ export default function MarkupPage() {
             </p>
           </ScrollReveal>
           <div className="grid md:grid-cols-2 gap-5">
-            <ScrollReveal>
+            <ScrollReveal variant="slide-left">
               <div className="rounded-2xl border border-red-100 bg-red-50/30 p-8 h-full">
                 <span className="text-xs font-semibold uppercase tracking-wider text-red-400">Before</span>
                 <h3 className="mt-3 text-xl font-bold text-ink">The email thread nobody can follow.</h3>
@@ -229,7 +229,7 @@ export default function MarkupPage() {
                 </ul>
               </div>
             </ScrollReveal>
-            <ScrollReveal delay={100}>
+            <ScrollReveal variant="slide-right" delay={100}>
               <div className="rounded-2xl border border-teal/20 bg-teal/[0.03] p-8 h-full">
                 <span className="text-xs font-semibold uppercase tracking-wider text-teal">With Markup</span>
                 <h3 className="mt-3 text-xl font-bold text-ink">Pinned, assigned, tracked, signed off.</h3>
@@ -263,7 +263,7 @@ export default function MarkupPage() {
       <section className="py-20 md:py-28">
         <div className="max-w-5xl mx-auto px-6">
           <div className="flex flex-col lg:flex-row gap-12 lg:gap-16 items-center">
-            <ScrollReveal className="flex-1 max-w-lg">
+            <ScrollReveal variant="slide-left" className="flex-1 max-w-lg">
               <span className="text-xs font-semibold uppercase tracking-wider text-teal">Client experience</span>
               <h2 className="mt-3 text-3xl md:text-4xl font-bold text-ink tracking-tight leading-tight">
                 Your client sees only what&apos;s ready.
@@ -287,7 +287,7 @@ export default function MarkupPage() {
                 </li>
               </ul>
             </ScrollReveal>
-            <ScrollReveal className="flex-1 w-full" delay={120}>
+            <ScrollReveal variant="slide-right" className="flex-1 w-full" delay={120}>
               <StageVisibility />
             </ScrollReveal>
           </div>
@@ -303,7 +303,7 @@ export default function MarkupPage() {
               Everything you need for creative review.
             </h2>
           </ScrollReveal>
-          <ScrollReveal>
+          <ScrollReveal variant="stagger">
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5">
               {FEATURES.map(f => (
                 <div key={f.title} className="rounded-2xl border border-edge bg-white p-6 hover-lift group">
@@ -328,7 +328,7 @@ export default function MarkupPage() {
               Built for how agencies actually work.
             </h2>
           </ScrollReveal>
-          <ScrollReveal>
+          <ScrollReveal variant="scale">
             <div className="grid md:grid-cols-3 gap-5">
               {USE_CASES.map(uc => (
                 <div key={uc.title} className="rounded-2xl border border-edge bg-white p-6 hover-lift">
@@ -367,7 +367,7 @@ export default function MarkupPage() {
           }}
         />
         <div className="max-w-3xl mx-auto px-6 py-20 md:py-28 text-center relative">
-          <ScrollReveal>
+          <ScrollReveal variant="scale">
             <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight leading-tight">
               Stop decoding &ldquo;the headline<br className="hidden md:block" /> on the third one.&rdquo;
             </h2>

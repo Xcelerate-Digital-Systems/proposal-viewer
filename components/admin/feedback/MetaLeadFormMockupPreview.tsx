@@ -267,7 +267,7 @@ function IntroPage({
         }}
       >
         {data.cover_url ? (
-          <img src={data.cover_url} alt="Cover" className="w-full h-full object-cover" />
+          <img src={data.cover_url} alt="Cover" loading="lazy" className="w-full h-full object-cover" />
         ) : (
           <div className="flex flex-col items-center text-center px-4" style={{ color: subtle }}>
             <ImageIcon size={28} />

@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 import { GUEST_VISIBLE_STAGES, isGuestVisibleStage } from '@/lib/feedback/visibility';
 import { rateLimit } from '@/lib/rate-limit';
 
+// Wildcard origin is intentional — the review widget is embedded on arbitrary customer domains.
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',

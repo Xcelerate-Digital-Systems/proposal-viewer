@@ -3,12 +3,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getCompanyMarkupDefaults } from '@/lib/markup-notification-defaults';
+import { authRateLimit } from '@/lib/rate-limit';
 
 // GET — list current assignees for a project, plus all assignable team members.
 export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'campaigns/assignees');
+    if (limited) return limited;
+
 
   const supabase = createServiceClient();
 
@@ -45,6 +50,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const params = await props.params;
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'campaigns/assignees');
+    if (limited) return limited;
+
 
   let body;
   try {
@@ -115,6 +124,10 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const limited = await authRateLimit(auth.companyId, 'campaigns/assignees');
+    if (limited) return limited;
+
+
   let body;
   try {
     body = await req.json();
@@ -166,6 +179,10 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
   const params = await props.params;
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'campaigns/assignees');
+    if (limited) return limited;
+
 
   const team_member_id = req.nextUrl.searchParams.get('team_member_id');
   if (!team_member_id) {

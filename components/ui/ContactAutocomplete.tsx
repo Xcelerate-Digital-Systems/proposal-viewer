@@ -138,9 +138,9 @@ export default function ContactAutocomplete({
       {inputEl}
       {open && suggestions.length > 0 && dropPos && createPortal(
         <>
-          <div className="fixed inset-0 z-[9998]" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
-            className="fixed z-[9999] bg-white border border-edge rounded-xl shadow-lg py-1 max-h-60 overflow-y-auto"
+            className="fixed z-50 bg-white border border-edge rounded-xl shadow-lg py-1 max-h-60 overflow-y-auto"
             style={{ top: dropPos.top, left: dropPos.left, width: dropPos.width }}
           >
             {suggestions.map((c, i) => (

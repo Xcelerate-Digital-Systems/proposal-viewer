@@ -181,7 +181,7 @@ export default function ShareButton({
 
       {/* Dropdown menu */}
       {menuOpen && isActive && token && !permanent && (
-        <div className="fixed z-[9999] bg-white rounded-2xl border border-edge-strong shadow-lg w-[200px] py-1"
+        <div className="fixed z-50 bg-white rounded-2xl border border-edge-strong shadow-lg w-[200px] py-1"
           style={{
             top: (menuRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
             left: Math.min(

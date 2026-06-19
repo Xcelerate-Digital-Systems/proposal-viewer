@@ -15,7 +15,8 @@ export type EmailCategory =
   | 'campaign_task'
   | 'proposal_confirmation'
   | 'billing'
-  | 'auth';
+  | 'auth'
+  | 'integration_health';
 
 export interface SendAndLogOptions {
   from: string;

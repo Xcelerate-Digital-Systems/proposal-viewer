@@ -100,7 +100,7 @@ export default function GoogleBannerAdItemForm({ onSubmit, onBack, onCancel, upl
           <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
           {preview ? (
             <div className="relative">
-              <img src={preview} alt="Preview" className="w-full max-h-[200px] object-contain rounded-lg border border-edge-strong bg-surface" />
+              <img src={preview} alt="Preview" loading="lazy" className="w-full max-h-[200px] object-contain rounded-lg border border-edge-strong bg-surface" />
               <button type="button" onClick={clearFile} className="absolute top-2 right-2 p-1 bg-white/90 rounded-full border border-edge-strong text-dim hover:text-red-500 transition-colors">
                 <X size={12} />
               </button>

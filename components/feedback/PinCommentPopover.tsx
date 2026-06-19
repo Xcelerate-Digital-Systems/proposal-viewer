@@ -212,7 +212,7 @@ export default function PinCommentPopover({
               {comment.screenshot_url && (
                 <a href={comment.screenshot_url} target="_blank" rel="noopener noreferrer"
                   className="block mt-2 w-full max-w-[220px] rounded-lg border border-edge-strong overflow-hidden hover:border-teal/40 transition-colors">
-                  <img src={comment.screenshot_url} alt="Screenshot" className="w-full object-cover" />
+                  <img src={comment.screenshot_url} alt="Screenshot" loading="lazy" className="w-full object-cover" />
                 </a>
               )}
 

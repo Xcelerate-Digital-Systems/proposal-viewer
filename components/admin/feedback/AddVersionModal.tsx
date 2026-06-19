@@ -447,7 +447,7 @@ export default function AddVersionModal({
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
                 {previewUrl ? (
                   <div className="rounded-2xl border border-edge-strong bg-white overflow-hidden">
-                    <img src={previewUrl} alt="Creative" className="w-full aspect-square object-cover" />
+                    <img src={previewUrl} alt="Creative" loading="lazy" className="w-full aspect-square object-cover" />
                     <div className="flex items-center justify-between px-3 py-2 bg-surface border-t border-edge">
                       <p className="text-detail text-faint truncate">{file ? file.name : 'Current creative'}</p>
                       <button type="button" onClick={() => fileInputRef.current?.click()} className="text-detail font-semibold text-teal hover:text-teal-hover shrink-0">

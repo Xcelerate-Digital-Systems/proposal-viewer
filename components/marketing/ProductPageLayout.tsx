@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  useState, useId,
+  useState, useId, useRef, useEffect,
   type ReactNode,
 } from 'react';
 import Link from 'next/link';
@@ -406,12 +406,27 @@ export function ProductPageLayout({
 function CoreFeatureTabs({ tabs }: { tabs: CoreTab[] }) {
   const [active, setActive] = useState(0);
   const reduce = useReducedMotion();
+  const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  useEffect(() => { tabsRef.current[active]?.focus(); }, [active]);
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const len = tabs.length;
+    if (e.key === 'ArrowRight') setActive(i => (i + 1) % len);
+    else if (e.key === 'ArrowLeft') setActive(i => (i - 1 + len) % len);
+    else return;
+    e.preventDefault();
+  };
 
   return (
     <Reveal>
-      <div className="flex items-center justify-center gap-2 md:gap-4 mb-8">
+      <div role="tablist" className="flex items-center justify-center gap-2 md:gap-4 mb-8" onKeyDown={onKeyDown}>
         {tabs.map((tab, i) => (
-          <button key={tab.label} onClick={() => setActive(i)}
+          <button key={tab.label}
+            ref={el => { tabsRef.current[i] = el; }}
+            role="tab"
+            aria-selected={active === i}
+            tabIndex={active === i ? 0 : -1}
+            onClick={() => setActive(i)}
             className={`px-4 md:px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${
               active === i ? 'bg-teal text-white shadow-sm' : 'bg-surface text-muted hover:text-ink'
             }`}>
@@ -419,7 +434,7 @@ function CoreFeatureTabs({ tabs }: { tabs: CoreTab[] }) {
           </button>
         ))}
       </div>
-      <div className="rounded-2xl bg-surface/60 border border-edge p-6 md:p-10">
+      <div role="tabpanel" className="rounded-2xl bg-surface/60 border border-edge p-6 md:p-10">
         <AnimatePresence mode="wait">
           <motion.div key={active}
             initial={reduce ? false : { opacity: 0, y: 12 }}

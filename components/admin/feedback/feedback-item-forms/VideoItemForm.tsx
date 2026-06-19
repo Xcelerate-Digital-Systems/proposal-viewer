@@ -164,7 +164,7 @@ export default function VideoItemForm({ onSubmit, onBack, onCancel, uploading }:
           <input ref={thumbnailInputRef} type="file" accept="image/*" onChange={handleThumbnailChange} className="hidden" />
           {thumbnailPreview ? (
             <div className="relative">
-              <img src={thumbnailPreview} alt="Thumbnail" className="w-full max-h-[120px] object-contain rounded-lg border border-edge-strong bg-surface" />
+              <img src={thumbnailPreview} alt="Thumbnail" loading="lazy" className="w-full max-h-[120px] object-contain rounded-lg border border-edge-strong bg-surface" />
               <button
                 type="button"
                 onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); }}

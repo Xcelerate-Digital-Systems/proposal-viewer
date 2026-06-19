@@ -199,8 +199,8 @@ function KanbanColumn({
         style={ringStyle}
         className={`flex-1 rounded-2xl p-3 space-y-2.5 overflow-y-auto transition-colors border-2 border-dashed ${
           isOver ? 'border-transparent' :
-          dragActive && !isDropAllowed ? 'bg-surface/60 border-gray-200 opacity-60' :
-          items.length === 0 ? 'bg-gray-50 border-gray-200' :
+          dragActive && !isDropAllowed ? 'bg-surface/60 border-edge opacity-60' :
+          items.length === 0 ? 'bg-paper border-edge' :
           'bg-surface border-transparent'
         }`}
       >

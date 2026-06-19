@@ -8,11 +8,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { rateLimit, rateLimitHeaders, ipFromRequest } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
+    const rl = await rateLimit({ key: `member-info:${ipFromRequest(req)}`, limit: 60, windowSeconds: 60 });
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: rateLimitHeaders(rl, 60) });
+    }
+
     const memberId = req.nextUrl.searchParams.get('memberId');
     const shareToken = req.nextUrl.searchParams.get('share_token');
     if (!memberId) return NextResponse.json({ error: 'Missing memberId' }, { status: 400 });

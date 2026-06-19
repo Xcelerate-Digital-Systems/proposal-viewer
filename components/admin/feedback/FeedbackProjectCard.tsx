@@ -349,9 +349,9 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
 
               {showMenu && menuPos && createPortal(
                 <>
-                  <div className="fixed inset-0 z-[9998]" onClick={() => setShowMenu(false)} />
+                  <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
                   <div
-                    className="fixed z-[9999] bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[140px]"
+                    className="fixed z-50 bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[140px]"
                     style={{ bottom: menuPos.bottom, right: menuPos.right }}
                   >
                     <button

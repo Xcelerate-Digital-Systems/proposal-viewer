@@ -5,7 +5,9 @@
 // setup wizard can advance from "waiting for install" → "add first page".
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { rateLimit, ipFromRequest } from '@/lib/rate-limit';
 
+// Wildcard origin is intentional — the review widget is embedded on arbitrary customer domains.
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -19,6 +21,11 @@ export async function OPTIONS() {
 
 export async function POST(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
+  const rl = await rateLimit({ key: `pub-heartbeat:${ipFromRequest(_req)}`, limit: 120, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json({ ok: false }, { status: 429, headers: CORS_HEADERS });
+  }
+
   const supabase = createServiceClient();
   try {
     const { data: project } = await supabase

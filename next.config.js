@@ -1,3 +1,5 @@
+const { withSentryConfig } = require('@sentry/nextjs');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // pdf-lib / react-pdf import an optional `canvas` module that only exists
@@ -22,12 +24,12 @@ const nextConfig = {
 
     const csp = [
       `default-src 'self'`,
-      `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://unpkg.com ${posthogHost}`,
+      `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''} https://js.stripe.com https://unpkg.com ${posthogHost}`,
       `worker-src 'self' blob:`,
       `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com`,
       `font-src 'self' https://fonts.gstatic.com https://cdn.fontshare.com data:`,
       `img-src 'self' blob: data: https://${supabaseHost} https://*.supabase.co`,
-      `connect-src 'self' ${supabaseUrl} wss://${supabaseHost} ${posthogHost} https://api.stripe.com https://api.resend.com`,
+      `connect-src 'self' ${supabaseUrl} wss://${supabaseHost} ${posthogHost} https://api.stripe.com https://api.resend.com https://*.ingest.sentry.io`,
       `frame-src 'self' https://js.stripe.com`,
       `object-src 'none'`,
       `base-uri 'self'`,
@@ -72,4 +74,7 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withSentryConfig(nextConfig, {
+  silent: true,
+  disableLogger: true,
+});

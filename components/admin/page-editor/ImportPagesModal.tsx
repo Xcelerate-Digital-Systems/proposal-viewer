@@ -424,7 +424,7 @@ export default function ImportPagesModal({
                         {lp.type === 'pdf' && thumbUrl ? (
                           <div className="shrink-0 w-10 h-14 rounded border border-edge overflow-hidden bg-paper">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
+                            <img src={thumbUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
                           </div>
                         ) : (
                           <div className="shrink-0 w-8 h-8 rounded bg-surface flex items-center justify-center">

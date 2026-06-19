@@ -38,6 +38,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const email: string | undefined =
       typeof body.email === 'string' ? body.email.trim().toLowerCase() : undefined;
+    const name: string | null =
+      typeof body.name === 'string' && body.name.trim().length > 0
+        ? body.name.trim().slice(0, MAX_AGENCY_NAME)
+        : null;
     const agencyName: string | null =
       typeof body.agency_name === 'string' && body.agency_name.trim().length > 0
         ? body.agency_name.trim().slice(0, MAX_AGENCY_NAME)
@@ -55,6 +59,7 @@ export async function POST(req: NextRequest) {
     // Insert; swallow unique-violation so duplicate signups are silent.
     const { error } = await supabase.from('waitlist').insert({
       email,
+      name,
       agency_name: agencyName,
       source,
       ip,

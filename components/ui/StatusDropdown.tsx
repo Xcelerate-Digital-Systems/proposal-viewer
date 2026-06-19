@@ -121,10 +121,10 @@ export default function StatusDropdown<T extends string = string>({
       {/* Dropdown — rendered as a portal with fixed positioning to escape card stacking contexts */}
       {open && pos && createPortal(
         <>
-          <div className="fixed inset-0 z-[9998]" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
             ref={portalRef}
-            className="fixed z-[9999] bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]"
+            className="fixed z-50 bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1 min-w-[160px]"
             style={{ top: pos.top, left: pos.left, width: Math.max(pos.width, 160), maxHeight: 'calc(100vh - 16px)', overflowY: 'auto' }}
           >
             {options.map((opt) => (

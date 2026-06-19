@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
+import { rateLimit, rateLimitHeaders, ipFromRequest } from '@/lib/rate-limit';
 import {
   GUEST_VISIBLE_STAGES, isGuestVisibleStage, isInternalStage,
 } from '@/lib/feedback/visibility';
@@ -22,6 +23,11 @@ const VERSION_COLUMNS = 'id, review_item_id, version_number, notes, url, content
 export async function GET(req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
   try {
+    const rl = await rateLimit({ key: `pub-review:${ipFromRequest(req)}`, limit: 60, windowSeconds: 60 });
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: rateLimitHeaders(rl, 60) });
+    }
+
     const supabase = createServiceClient();
 
     /* ── 1. Try item share_token first ────────────────────────── */

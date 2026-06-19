@@ -4,6 +4,7 @@ import { PDFDocument } from 'pdf-lib';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { getCompanyEntityDefaults } from '@/lib/company-defaults';
+import { authRateLimit } from '@/lib/rate-limit';
 
 export const maxDuration = 60;
 
@@ -11,6 +12,10 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'templates/split');
+    if (limited) return limited;
+
 
     const body = await req.json().catch(() => null);
     if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });

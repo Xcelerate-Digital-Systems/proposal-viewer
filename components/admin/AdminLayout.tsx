@@ -129,7 +129,7 @@ function AdminLayoutInner({
           sidebarBranding={sidebarBranding}
         />
       )}
-      <main className="flex-1 min-w-0 h-full overflow-y-auto">
+      <main className="flex-1 min-w-0 h-full overflow-y-auto" aria-label="Main content">
         {children(auth)}
       </main>
     </div>

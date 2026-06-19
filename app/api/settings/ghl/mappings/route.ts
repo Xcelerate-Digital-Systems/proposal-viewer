@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { authRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,9 @@ export async function GET(req: NextRequest) {
   if (!auth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+    const limited = await authRateLimit(auth.companyId, 'settings/ghl/mappings');
+    if (limited) return limited;
 
   const supabase = createServiceClient();
 
@@ -62,6 +66,9 @@ export async function POST(req: NextRequest) {
   if (!auth || (auth.member?.role !== 'owner' && auth.member?.role !== 'admin' && !auth.member?.is_super_admin)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+    const limited = await authRateLimit(auth.companyId, 'settings/ghl/mappings');
+    if (limited) return limited;
 
   const body = await req.json().catch(() => null) as SaveBody | null;
   if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });

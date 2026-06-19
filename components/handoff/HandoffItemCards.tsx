@@ -203,7 +203,7 @@ function ImageItemCard({ item }: { item: HandoffItem }) {
         <h3 className="text-sm font-semibold text-gray-900">{item.title}</h3>
       </div>
       <div className="p-5 space-y-2">
-        <img src={url} alt={item.title} className="w-full max-h-[320px] rounded-lg object-contain bg-white border border-gray-100" />
+        <img src={url} alt={item.title} loading="lazy" className="w-full max-h-[320px] rounded-lg object-contain bg-white border border-gray-100" />
         <DownloadButton url={url} filename={item.title} />
       </div>
     </div>

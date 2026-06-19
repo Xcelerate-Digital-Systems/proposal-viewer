@@ -180,7 +180,7 @@ export default function CoverPreview({
                 aria-label="Client logo"
               />
             ) : (
-              <img src={clientLogoUrl} alt="" className="h-5 max-w-[100px] object-contain mb-2 opacity-90" />
+              <img src={clientLogoUrl} alt="" loading="lazy" className="h-5 max-w-[100px] object-contain mb-2 opacity-90" />
             )
           )}
 
@@ -227,7 +227,7 @@ export default function CoverPreview({
           {cfg.fields.preparedBy && showPreparedBy && resolvedMember && (
             <div className="flex items-center gap-1.5 mb-2">
               {showAvatar && resolvedMember.avatar_url && (
-                <img src={resolvedMember.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
+                <img src={resolvedMember.avatar_url} alt="" loading="lazy" className="w-4 h-4 rounded-full object-cover" />
               )}
               <span className="text-2xs opacity-80" style={{ color: colors.coverSubtitleColor }}>
                 Prepared by {resolvedMember.name}

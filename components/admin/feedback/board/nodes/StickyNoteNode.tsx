@@ -117,7 +117,7 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
                         key={c.value}
                         onClick={(e) => { e.stopPropagation(); handleColorChange(c.value); }}
                         className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-teal/30 ${
-                          note.color === c.value ? 'border-gray-600' : 'border-white'
+                          note.color === c.value ? 'border-prose' : 'border-white'
                         }`}
                         style={{ backgroundColor: c.value }}
                         title={c.label}

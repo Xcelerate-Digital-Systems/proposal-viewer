@@ -49,7 +49,7 @@ export default function TierEditor({
             : <ChevronDown size={12} className="text-faint shrink-0 ml-auto" />}
         </button>
         <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center border border-edge-strong rounded-lg overflow-hidden divide-x divide-gray-200 bg-white">
+          <div className="flex items-center border border-edge-strong rounded-lg overflow-hidden divide-x divide-edge bg-white">
             <button onClick={() => onMove('up')} disabled={tierIdx === 0} title="Move up"
               className="px-1.5 py-1 hover:bg-surface disabled:opacity-25 transition-colors text-dim">
               <ArrowUp size={11} />
@@ -95,7 +95,7 @@ export default function TierEditor({
 
       {/* Body — each section owns its own px-4 py-4, divide-y handles the borders */}
       {isExpanded && (
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-edge">
 
           {/* Name + price + prefix + suffix */}
           <div className="px-4 py-4 space-y-3">

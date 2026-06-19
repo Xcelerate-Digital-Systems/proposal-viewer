@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { randomUUID } from 'crypto';
+import { authRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +37,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     const params = await props.params;
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'proposals/duplicate');
+    if (limited) return limited;
+
 
     const supabase = createServiceClient();
 

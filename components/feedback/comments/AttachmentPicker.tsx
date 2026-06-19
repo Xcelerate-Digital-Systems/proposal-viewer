@@ -92,7 +92,7 @@ export default function AttachmentPicker({
               className="relative group w-12 h-12 rounded-lg border border-edge-strong overflow-hidden bg-surface flex items-center justify-center"
             >
               {a.preview ? (
-                <img src={a.preview} alt={a.file.name} className="w-full h-full object-cover" />
+                <img src={a.preview} alt={a.file.name} loading="lazy" className="w-full h-full object-cover" />
               ) : IMAGE_TYPES.includes(a.file.type) ? (
                 <ImageIcon size={16} className="text-faint" />
               ) : (

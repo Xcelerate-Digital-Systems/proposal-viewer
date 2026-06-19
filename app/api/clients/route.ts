@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { authRateLimit } from '@/lib/rate-limit';
 
 // Use the shared no-store-fetch service client. The bare createClient()
 // allows Next.js's Data Cache to cache PostgREST GETs, which has previously
@@ -47,6 +48,9 @@ export async function GET(req: NextRequest) {
   if (!verified) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
+
+  const limited = await authRateLimit(verified.agencyId, 'clients');
+  if (limited) return limited;
 
   const { agencyId } = verified;
 
@@ -118,6 +122,9 @@ export async function POST(req: NextRequest) {
   if (!verified) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
+
+  const limited = await authRateLimit(verified.agencyId, 'clients');
+  if (limited) return limited;
 
   const { agencyId } = verified;
 

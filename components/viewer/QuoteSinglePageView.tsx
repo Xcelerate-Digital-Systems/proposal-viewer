@@ -681,7 +681,7 @@ export default function QuoteSinglePageView({
           <Section>
             <SectionLabel style={labelStyle}>Breakdown</SectionLabel>
             <div className="overflow-x-auto -mx-2 px-2">
-            <table className="w-full min-w-[480px]" style={TABULAR}>
+            <table className="w-full min-w-0 sm:min-w-[480px]" style={TABULAR}>
               <thead>
                 <tr
                   className="text-2xs tracking-[0.18em] uppercase"

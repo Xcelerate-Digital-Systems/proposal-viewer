@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
+import { authRateLimit } from '@/lib/rate-limit';
 
 const VALID_STATUSES = ['draft', 'internal_review', 'client_review', 'approved', 'revision_needed', 'rejected'];
 
@@ -8,6 +9,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const params = await props.params;
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'campaigns/items/status');
+    if (limited) return limited;
+
   if (!auth.member.is_super_admin && auth.accountType !== 'agency') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

@@ -460,7 +460,7 @@ export default function CoverDesignPanel({
                           }}
                         />
                       ) : (
-                        <img src={clientLogoUrl} alt="" className="max-w-full max-h-full object-contain" />
+                        <img src={clientLogoUrl} alt="" loading="lazy" className="max-w-full max-h-full object-contain" />
                       )}
                     </div>
                     <div className="space-y-1.5">

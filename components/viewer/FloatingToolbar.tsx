@@ -125,7 +125,7 @@ export default function FloatingToolbar({
       </button>
       <div className="w-px h-5 mx-0.5" style={{ backgroundColor: `${accentColor}30` }} />
       <button onClick={handleShare}
-        className="p-1.5 sm:p-2 transition-colors rounded-lg"
+        className="p-2.5 transition-colors rounded-lg"
         style={btnStyle}
         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = btnHoverBg}
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -133,7 +133,7 @@ export default function FloatingToolbar({
         {shared ? <Check size={18} /> : <Share2 size={18} />}
       </button>
       <button onClick={handleDownload} disabled={downloading}
-        className="p-1.5 sm:p-2 transition-colors rounded-lg disabled:opacity-50"
+        className="p-2.5 transition-colors rounded-lg disabled:opacity-50"
         style={downloadError ? { color: '#dc2626' } : btnStyle}
         onMouseEnter={(e) => { if (!downloadError) e.currentTarget.style.backgroundColor = btnHoverBg; }}
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}

@@ -12,7 +12,7 @@ export default function GoogleBannerAdMockupPreview({ headline, displayUrl, crea
     <div className="w-full max-w-[336px] bg-white rounded-lg border border-edge-strong overflow-hidden">
       <div className="w-full aspect-[336/280] bg-surface relative">
         {creativeUrl ? (
-          <img src={creativeUrl} alt="Ad banner" className="w-full h-full object-cover" />
+          <img src={creativeUrl} alt="Ad banner" loading="lazy" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-faint text-sm">336 × 280</div>
         )}

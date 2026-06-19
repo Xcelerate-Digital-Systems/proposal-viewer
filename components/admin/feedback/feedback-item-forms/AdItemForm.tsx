@@ -257,7 +257,7 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
               {preview ? (
                 <div className="rounded-2xl border border-edge-strong bg-white overflow-hidden">
-                  <img src={preview} alt="Preview" className="w-full aspect-square object-cover" />
+                  <img src={preview} alt="Preview" loading="lazy" className="w-full aspect-square object-cover" />
                   <div className="flex items-center justify-between px-3 py-2 bg-surface border-t border-edge">
                     <p className="text-detail text-faint truncate">{file?.name || 'Creative loaded'}</p>
                     <div className="flex items-center gap-1.5 shrink-0">

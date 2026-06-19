@@ -228,9 +228,9 @@ export default function ClientDetailsSection({
           </button>
           {showDropdown && dropdownPos && createPortal(
             <>
-              <div className="fixed inset-0 z-[9998]" onClick={() => setShowDropdown(false)} />
+              <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
               <div
-                className="fixed z-[9999] bg-white rounded-lg border border-edge-strong shadow-lg max-h-72 overflow-y-auto"
+                className="fixed z-50 bg-white rounded-lg border border-edge-strong shadow-lg max-h-72 overflow-y-auto"
                 style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
               >
                 {savedCustomers.map((c, i) => (

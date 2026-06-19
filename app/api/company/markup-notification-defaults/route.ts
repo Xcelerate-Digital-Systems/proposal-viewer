@@ -14,11 +14,16 @@ import {
   getCompanyMarkupDefaults,
   type MarkupNotifyPrefs,
 } from '@/lib/markup-notification-defaults';
+import { authRateLimit } from '@/lib/rate-limit';
 
 export async function GET(req: NextRequest) {
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'company/markup-notification-defaults');
+    if (limited) return limited;
+
 
     const supabase = createServiceClient();
     const prefs = await getCompanyMarkupDefaults(supabase, auth.companyId);
@@ -33,6 +38,10 @@ export async function PATCH(req: NextRequest) {
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'company/markup-notification-defaults');
+    if (limited) return limited;
+
 
     const { member } = auth;
     const allowed =

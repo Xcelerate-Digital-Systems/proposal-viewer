@@ -269,7 +269,7 @@ export default function KanbanColumnAssignees({
       {open && pickerPos && createPortal(
         <div
           ref={popoverRef}
-          className="fixed z-[9999] w-64 rounded-2xl border border-edge-strong bg-white shadow-lg p-2"
+          className="fixed z-50 w-64 rounded-2xl border border-edge-strong bg-white shadow-lg p-2"
           style={{ top: pickerPos.top, left: pickerPos.left }}
         >
           <div className="text-detail font-semibold uppercase tracking-wider text-faint px-2 pb-1 pt-0.5">

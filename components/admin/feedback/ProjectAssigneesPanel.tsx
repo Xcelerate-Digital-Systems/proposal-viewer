@@ -453,7 +453,7 @@ export default function ProjectAssigneesPanel({
           Click a row to configure notifications and stages.
         </p>
 
-        <div className="border border-edge rounded-2xl bg-white divide-y divide-gray-100">
+        <div className="border border-edge rounded-2xl bg-white divide-y divide-edge">
           {assignedMembers.length === 0 ? (
             <div className="px-4 py-6 text-caption text-faint text-center">
               No one is assigned yet. Add a team member below.
@@ -647,7 +647,7 @@ export default function ProjectAssigneesPanel({
           or you can add them manually below.
         </p>
 
-        <div className="border border-edge rounded-2xl bg-white divide-y divide-gray-100">
+        <div className="border border-edge rounded-2xl bg-white divide-y divide-edge">
           {activeGuests.length === 0 && removedGuests.length === 0 ? (
             <div className="px-4 py-6 text-caption text-faint text-center">
               No guests yet. Add one manually or they&apos;ll appear when they leave a comment.

@@ -6,6 +6,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { decryptGhlToken } from '@/lib/connectors/ghl/token-crypto';
 import { listPipelines } from '@/lib/connectors/ghl/opportunities';
+import { authRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,9 @@ export async function GET(req: NextRequest) {
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const limited = await authRateLimit(auth.companyId, 'settings/ghl/pipelines');
+    if (limited) return limited;
 
     const supabase = createServiceClient();
     const { data: conn } = await supabase

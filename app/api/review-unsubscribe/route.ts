@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { verifyUnsubscribeToken } from '@/lib/feedback/unsubscribe-token';
+import { rateLimit, rateLimitHeaders, ipFromRequest } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +10,11 @@ export const dynamic = 'force-dynamic';
 // "Unsubscribe", which POSTs back here. No auth required — the HMAC
 // token proves the email address.
 export async function GET(req: NextRequest) {
+  const rl = await rateLimit({ key: `pub-unsubscribe:${ipFromRequest(req)}`, limit: 30, windowSeconds: 60 });
+  if (!rl.success) {
+    return new NextResponse('Too many requests', { status: 429, headers: rateLimitHeaders(rl, 30) });
+  }
+
   const token = req.nextUrl.searchParams.get('token') || '';
   const parsed = verifyUnsubscribeToken(token);
   if (!parsed) {

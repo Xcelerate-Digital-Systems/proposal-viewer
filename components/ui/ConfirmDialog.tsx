@@ -1,7 +1,7 @@
 // components/ui/ConfirmDialog.tsx
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Button } from './Button';
 
@@ -52,42 +52,97 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       {children}
 
       {state && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm border border-edge-strong overflow-hidden">
-            <div className="p-6">
-              <div className="flex items-start gap-4">
-                <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                  state.options.destructive ? 'bg-red-50' : 'bg-teal/10'
-                }`}>
-                  <AlertTriangle size={20} className={
-                    state.options.destructive ? 'text-red-500' : 'text-teal'
-                  } />
-                </div>
-                <div>
-                  <h3 className="text-ink font-semibold text-base mb-1">
-                    {state.options.title || 'Are you sure?'}
-                  </h3>
-                  <p className="text-sm text-dim leading-relaxed">
-                    {state.options.message}
-                  </p>
-                </div>
-              </div>
+        <ConfirmDialogPanel
+          options={state.options}
+          onConfirm={handleConfirm}
+          onCancel={handleCancel}
+        />
+      )}
+    </ConfirmContext.Provider>
+  );
+}
+
+function ConfirmDialogPanel({
+  options,
+  onConfirm,
+  onCancel,
+}: {
+  options: ConfirmOptions;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previousFocus = useRef<Element | null>(null);
+
+  useEffect(() => {
+    previousFocus.current = document.activeElement;
+    const firstButton = panelRef.current?.querySelector('button');
+    firstButton?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onCancel(); return; }
+      if (e.key !== 'Tab') return;
+      const focusable = panelRef.current?.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      (previousFocus.current as HTMLElement)?.focus?.();
+    };
+  }, [onCancel]);
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-dialog-title"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm border border-edge-strong overflow-hidden"
+      >
+        <div className="p-6">
+          <div className="flex items-start gap-4">
+            <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+              options.destructive ? 'bg-red-50' : 'bg-teal/10'
+            }`}>
+              <AlertTriangle size={20} className={
+                options.destructive ? 'text-red-500' : 'text-teal'
+              } aria-hidden="true" />
             </div>
-            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-edge-strong bg-surface">
-              <Button variant="ghost" size="sm" onClick={handleCancel}>
-                {state.options.cancelLabel || 'Cancel'}
-              </Button>
-              <Button
-                variant={state.options.destructive ? 'danger' : 'primary'}
-                size="sm"
-                onClick={handleConfirm}
-              >
-                {state.options.confirmLabel || 'Confirm'}
-              </Button>
+            <div>
+              <h3 id="confirm-dialog-title" className="text-ink font-semibold text-base mb-1">
+                {options.title || 'Are you sure?'}
+              </h3>
+              <p className="text-sm text-dim leading-relaxed">
+                {options.message}
+              </p>
             </div>
           </div>
         </div>
-      )}
-    </ConfirmContext.Provider>
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-edge-strong bg-surface">
+          <Button variant="ghost" size="sm" onClick={onCancel}>
+            {options.cancelLabel || 'Cancel'}
+          </Button>
+          <Button
+            variant={options.destructive ? 'danger' : 'primary'}
+            size="sm"
+            onClick={onConfirm}
+          >
+            {options.confirmLabel || 'Confirm'}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

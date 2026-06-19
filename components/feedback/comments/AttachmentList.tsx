@@ -29,7 +29,7 @@ export default function AttachmentList({ attachments, size = 'md' }: AttachmentL
             rel="noopener noreferrer"
             className={`block ${imgBox} rounded-lg border border-edge-strong overflow-hidden hover:border-teal/40 transition-colors`}
           >
-            <img src={a.url} alt={a.name} className="w-full h-full object-cover" />
+            <img src={a.url} alt={a.name} loading="lazy" className="w-full h-full object-cover" />
           </a>
         ) : (
           <a

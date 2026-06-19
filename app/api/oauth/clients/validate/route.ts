@@ -6,11 +6,17 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getOAuthClient, isRedirectUriAllowed } from '@/lib/oauth-clients/server';
+import { rateLimit, rateLimitHeaders, ipFromRequest } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
+    const rl = await rateLimit({ key: `oauth-validate:${ipFromRequest(req)}`, limit: 30, windowSeconds: 60 });
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: rateLimitHeaders(rl, 30) });
+    }
+
     const clientId = req.nextUrl.searchParams.get('client_id') || '';
     const redirectUri = req.nextUrl.searchParams.get('redirect_uri') || '';
 

@@ -6,6 +6,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { encryptGhlToken } from '@/lib/connectors/ghl/token-crypto';
 import { listPipelines } from '@/lib/connectors/ghl/opportunities';
+import { authRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,9 @@ export async function POST(req: NextRequest) {
     if (!auth || (auth.member?.role !== 'owner' && auth.member?.role !== 'admin' && !auth.member?.is_super_admin)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const limited = await authRateLimit(auth.companyId, 'settings/ghl/connect');
+    if (limited) return limited;
 
     const body = await req.json().catch(() => null);
     if (!body) {

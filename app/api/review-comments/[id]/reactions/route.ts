@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
+import { authRateLimit } from '@/lib/rate-limit';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -40,6 +41,9 @@ async function authoriseReactionAccess(req: NextRequest, commentId: string) {
     if (!auth) {
       return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
     }
+
+    const limited = await authRateLimit(auth.companyId, 'review-comments/reactions');
+    if (limited) return { error: limited };
     if (!auth.member.is_super_admin && comment.company_id !== auth.companyId) {
       return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
     }

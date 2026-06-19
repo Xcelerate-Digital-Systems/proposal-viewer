@@ -9,6 +9,7 @@ import { randomBytes } from 'crypto';
 import { createServiceClient } from '@/lib/supabase-server';
 import { requirePermission } from '@/lib/api-auth';
 import { API_KEY_PREFIX, hashApiKey } from '@/lib/api-auth';
+import { authRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,10 @@ export async function GET(req: NextRequest) {
   try {
     const auth = await requirePermission(req, 'manage_api_keys');
     if (auth instanceof NextResponse) return auth;
+
+    const limited = await authRateLimit(auth.companyId, 'settings/api-keys');
+    if (limited) return limited;
+
 
     const supabase = createServiceClient();
     // Only surface user-managed keys here. OAuth-issued tokens (Chrome extension,
@@ -44,6 +49,10 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await requirePermission(req, 'manage_api_keys');
     if (auth instanceof NextResponse) return auth;
+
+    const limited = await authRateLimit(auth.companyId, 'settings/api-keys');
+    if (limited) return limited;
+
 
     const body = await req.json().catch(() => ({}));
     const label = typeof body.label === 'string' ? body.label.trim() : '';
@@ -85,6 +94,10 @@ export async function DELETE(req: NextRequest) {
   try {
     const auth = await requirePermission(req, 'manage_api_keys');
     if (auth instanceof NextResponse) return auth;
+
+    const limited = await authRateLimit(auth.companyId, 'settings/api-keys');
+    if (limited) return limited;
+
 
     const id = req.nextUrl.searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });

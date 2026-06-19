@@ -17,6 +17,7 @@ import {
   fetchAdAccounts,
 } from '@/lib/connectors/meta/api-client';
 import { encryptToken } from '@/lib/connectors/meta/token-crypto';
+import { rateLimit, rateLimitHeaders, ipFromRequest } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,11 @@ function errorRedirect(appUrl: string, reason: string) {
 }
 
 export async function GET(req: NextRequest) {
+  const rl = await rateLimit({ key: `meta-oauth-cb:${ipFromRequest(req)}`, limit: 20, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: rateLimitHeaders(rl, 20) });
+  }
+
   // Strip trailing slash — Meta's OAuth exchange compares redirect_uri strings
   // exactly, and a double-slash breaks the flow.
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');

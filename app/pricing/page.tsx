@@ -7,6 +7,7 @@ import { SiteHeader } from '@/components/marketing/SiteHeader';
 import { SiteFooter } from '@/components/marketing/SiteFooter';
 import { FAQAccordion } from '@/components/marketing/FAQAccordion';
 import { ScrollReveal } from '@/components/marketing/ScrollReveal';
+import { PricingHero } from '@/components/marketing/PricingHero';
 
 export const metadata: Metadata = {
   title: 'Pricing — AgencyViz',
@@ -120,47 +121,25 @@ export default async function PricingPage() {
   const yearly = plan ? plan.yearly_price_cents / 100 : 490;
 
   return (
-    <div className="bg-white">
+    <div className="h-[100dvh] overflow-y-auto bg-white">
       <SiteHeader publicSignupOn={PUBLIC_SIGNUP_ON} />
 
       <main>
 
-      {/* ── Hero ─────────────────────────────────────────── */}
-      <section className="pt-32 md:pt-40 pb-16 md:pb-20">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <ScrollReveal>
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal bg-teal/10 rounded-full px-3 py-1 mb-5">
-              Founding-member pricing
-            </span>
-            <h1 className="text-4xl md:text-5xl font-bold text-ink tracking-tight mb-4">
-              One plan. Everything in.
-            </h1>
-            <p className="text-lg text-muted max-w-xl mx-auto">
-              Lock in our launch pricing for the life of your subscription.
-              7-day free trial, card required, cancel any time.
-            </p>
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* ── Plan card ────────────────────────────────────── */}
-      <section className="pb-20 md:pb-28">
-        <div className="max-w-3xl mx-auto px-6">
-          <ScrollReveal>
-            <AnimatedPricing
-              planName={plan?.name ?? 'Founders'}
-              monthly={monthly}
-              yearly={yearly}
-              features={FEATURES}
-              cta={
-                PUBLIC_SIGNUP_ON
-                  ? { mode: 'link', href: 'https://app.agencyviz.io/signup', label: 'Start your 7-day free trial' }
-                  : { mode: 'node', node: <WaitlistForm source="pricing" /> }
-              }
-            />
-          </ScrollReveal>
-        </div>
-      </section>
+      {/* ── Hero + Plan card ────────────────────────────── */}
+      <PricingHero>
+        <AnimatedPricing
+          planName={plan?.name ?? 'Founders'}
+          monthly={monthly}
+          yearly={yearly}
+          features={FEATURES}
+          cta={
+            PUBLIC_SIGNUP_ON
+              ? { mode: 'link', href: 'https://app.agencyviz.io/signup', label: 'Start your 7-day free trial' }
+              : { mode: 'node', node: <WaitlistForm source="pricing" /> }
+          }
+        />
+      </PricingHero>
 
       {/* ── Everything included ──────────────────────────── */}
       <section className="py-20 md:py-28 bg-surface/40 border-y border-edge/50">
