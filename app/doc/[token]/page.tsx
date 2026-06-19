@@ -120,6 +120,7 @@ export default function DocumentViewerPage(props: { params: Promise<{ token: str
   const accent = branding.accent_color || '#01434A';
   const border = palette.border;
   const sidebarText = branding.sidebar_text_color || '#ffffff';
+  const pageBg = branding.text_page_bg_color || bgPrimary;
   const pageOrientation = doc?.page_orientation === 'landscape' ? 'landscape' as const : 'portrait' as const;
 
   // ── Composite PDF download (includes text pages) ───────────────────
@@ -286,7 +287,7 @@ export default function DocumentViewerPage(props: { params: Promise<{ token: str
         {onTocPage && tocSettings ? (
           <div
             className="flex-1 relative"
-            style={{ backgroundColor: bgPrimary }}
+            style={{ backgroundColor: pageBg }}
           >
             <ViewerBackground branding={branding} />
             <div ref={mainRef} className="absolute inset-0 overflow-auto">
@@ -305,7 +306,7 @@ export default function DocumentViewerPage(props: { params: Promise<{ token: str
         ) : onTextPage && currentTextPage ? (
           <div
             className="flex-1 relative"
-            style={{ backgroundColor: bgPrimary }}
+            style={{ backgroundColor: pageBg }}
           >
             <ViewerBackground branding={branding} />
             <div ref={mainRef} className="absolute inset-0 overflow-auto">

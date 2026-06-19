@@ -128,6 +128,8 @@ export default function ViewerPageContent({
   onAccept, onDecline, onRequestRevision,
   requireSignature,
 }: ViewerPageContentProps) {
+  const pageBg = branding.text_page_bg_color || bgPrimary;
+
   if (onDecisionPage) {
     const tokens = buildDecisionTokens(proposal, branding);
     const acceptButtonText =
@@ -138,7 +140,7 @@ export default function ViewerPageContent({
     const hasSteps = extras.next_steps.length > 0;
     const hasTerms = extras.terms.trim().length > 0;
     return (
-      <div className="flex-1 relative" style={{ backgroundColor: bgPrimary }}>
+      <div className="flex-1 relative" style={{ backgroundColor: pageBg }}>
         <ViewerBackground branding={branding} />
         <div ref={scrollRef} className="absolute inset-0 overflow-auto">
           <div className="relative min-h-full flex items-start justify-center px-6 sm:px-14 py-12">
@@ -249,7 +251,7 @@ export default function ViewerPageContent({
   }
   if (onTocPage && tocSettings) {
     return (
-      <div className="flex-1 relative" style={{ backgroundColor: bgPrimary }}>
+      <div className="flex-1 relative" style={{ backgroundColor: pageBg }}>
         <ViewerBackground branding={branding} />
         <div ref={scrollRef} className="absolute inset-0 overflow-auto">
           <div className="relative min-h-full h-full">
@@ -269,7 +271,7 @@ export default function ViewerPageContent({
 
   if (onTextPage && currentTextPage) {
     return (
-      <div className="flex-1 relative" style={{ backgroundColor: bgPrimary }}>
+      <div className="flex-1 relative" style={{ backgroundColor: pageBg }}>
         <ViewerBackground branding={branding} />
         <div ref={scrollRef} className="absolute inset-0 overflow-auto">
           <div className="relative min-h-full h-full">
@@ -293,7 +295,7 @@ export default function ViewerPageContent({
 
   if (onPricingPage && pricing) {
     return (
-      <div className="flex-1 relative" style={{ backgroundColor: bgPrimary }}>
+      <div className="flex-1 relative" style={{ backgroundColor: pageBg }}>
         <ViewerBackground branding={branding} />
         <div ref={scrollRef} className="absolute inset-0 overflow-auto">
           <div className="relative min-h-full">
@@ -311,7 +313,7 @@ export default function ViewerPageContent({
 
   if (onPackagesPage && currentPackages) {
     return (
-      <div className="flex-1 relative" style={{ backgroundColor: bgPrimary }}>
+      <div className="flex-1 relative" style={{ backgroundColor: pageBg }}>
         <ViewerBackground branding={branding} />
         <div ref={scrollRef} className="absolute inset-0 overflow-auto">
           <div className="relative min-h-full">

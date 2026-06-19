@@ -142,6 +142,7 @@ export default function TemplatePreviewPage(props: { params: Promise<{ id: strin
   const accent = branding.accent_color || '#01434A';
   const border = deriveBorderColor(bgSecondary);
   const sidebarText = branding.sidebar_text_color || '#fff';
+  const pageBg = branding.text_page_bg_color || bgPrimary;
   const pageOrientation = template?.page_orientation === 'landscape' ? 'landscape' as const : 'portrait' as const;
 
   const isSectionPage = pageUrls[currentPage - 1]?.type === 'section';
@@ -277,11 +278,11 @@ export default function TemplatePreviewPage(props: { params: Promise<{ id: strin
         )}
         {/* Conditionally render Decision, PDF, Pricing, Packages, TOC, or Text page */}
         {onDecisionPage ? (
-          <DecisionPageBranch template={template} branding={branding} bgPrimary={bgPrimary} scrollRef={mainRef} />
+          <DecisionPageBranch template={template} branding={branding} bgPrimary={pageBg} scrollRef={mainRef} />
         ) : onPricingPage && (currentPricing || pricing) ? (
           <div
             className="flex-1 relative"
-            style={{ backgroundColor: bgPrimary }}
+            style={{ backgroundColor: pageBg }}
           >
             <ViewerBackground branding={branding} />
             <div ref={mainRef} className="absolute inset-0 overflow-auto">
@@ -298,7 +299,7 @@ export default function TemplatePreviewPage(props: { params: Promise<{ id: strin
         ) : onPackagesPage && currentPackages ? (
           <div
             className="flex-1 relative"
-            style={{ backgroundColor: bgPrimary }}
+            style={{ backgroundColor: pageBg }}
           >
             <ViewerBackground branding={branding} />
             <div ref={mainRef} className="absolute inset-0 overflow-auto">
@@ -315,7 +316,7 @@ export default function TemplatePreviewPage(props: { params: Promise<{ id: strin
         ) : onTocPage && tocSettings ? (
           <div
             className="flex-1 relative"
-            style={{ backgroundColor: bgPrimary }}
+            style={{ backgroundColor: pageBg }}
           >
             <ViewerBackground branding={branding} />
             <div ref={mainRef} className="absolute inset-0 overflow-auto">
@@ -334,7 +335,7 @@ export default function TemplatePreviewPage(props: { params: Promise<{ id: strin
         ) : onTextPage && currentTextPage ? (
           <div
             className="flex-1 relative"
-            style={{ backgroundColor: bgPrimary }}
+            style={{ backgroundColor: pageBg }}
           >
             <ViewerBackground branding={branding} />
             <div ref={mainRef} className="absolute inset-0 overflow-auto">

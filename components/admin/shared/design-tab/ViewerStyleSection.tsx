@@ -485,7 +485,7 @@ export default function ViewerStyleSection({
         <div className="flex-1 min-w-0 space-y-5">
           <SectionCard
             title="Global Page Defaults"
-            description="Orientation, typography, and a shared background image — applied behind text, pricing, and packages pages."
+            description="Orientation and typography — applied across text, pricing, and packages pages."
             icon={<LayoutPanelTop size={14} className="text-faint" />}
           >
             <div className="space-y-5">
@@ -588,21 +588,14 @@ export default function ViewerStyleSection({
                 </div>
               </div>
 
-              {/* Background image */}
-              <div className="pt-4 border-t border-edge">
-                <p className="text-detail font-semibold text-dim uppercase tracking-wider mb-2">Background Image</p>
-                {backgroundImageBlock}
-              </div>
             </div>
           </SectionCard>
 
-          {/* Page Colours — body bg / body text / heading. Pulled out of the
-              Global Page Defaults card so every colour-selector group on this
-              tab follows the same flat ColorPickerField stack the Pricing
-              Design card uses. */}
+          {/* Page Colours + Background Image — all page-level visual
+              settings in one card so they're easy to find together. */}
           <SectionCard
             title="Page Colours"
-            description="Background, body text and headings. Applies to text, pricing and packages pages."
+            description="Background, body text, headings, and background image. Applies to text, pricing and packages pages."
             icon={<Paintbrush size={14} className="text-faint" />}
             action={
               <button
@@ -633,6 +626,11 @@ export default function ViewerStyleSection({
                 fallback={companyDefaults.heading_color || companyDefaults.text_color}
                 onChange={setTpHeadingColor}
               />
+
+              <div className="pt-3 border-t border-edge">
+                <p className="text-detail font-semibold text-dim uppercase tracking-wider mb-2">Background Image</p>
+                {backgroundImageBlock}
+              </div>
             </div>
           </SectionCard>
 

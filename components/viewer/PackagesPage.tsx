@@ -54,7 +54,7 @@ function FeatureIcon({ icon, color, size = 'normal' }: { icon: PackageFeatureIco
 
 export default function PackagesPage({ packages, branding, clientName, orientation }: PackagesPageProps) {
   const isLandscape = orientation === 'landscape';
-  const bgPrimary = branding.bg_primary || '#0f0f0f';
+  const bgPrimary = branding.text_page_bg_color || branding.bg_primary || '#0f0f0f';
   const bgSecondary = branding.bg_secondary || '#141414';
   const accent = branding.accent_color || '#01434A';
   const textColor = branding.sidebar_text_color || '#ffffff';
