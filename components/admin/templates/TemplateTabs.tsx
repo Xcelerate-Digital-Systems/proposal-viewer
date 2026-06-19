@@ -61,9 +61,7 @@ export default function TemplateTabs({ templateId, entityType }: TemplateTabsPro
   const activeKey = activeKeyFromPath(pathname);
   const completion = useTabCompletion();
 
-  const visibleTabs = entityType === 'proposal'
-    ? tabs.filter((t) => t.key !== 'pricing' && t.key !== 'packages')
-    : tabs;
+  const visibleTabs = tabs;
 
   return (
     <div className="flex items-center gap-1 -mb-px">
