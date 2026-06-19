@@ -188,10 +188,20 @@ export default function PdfViewer({
   const zoomOut = useCallback(() => setScale((s) => Math.max(0.5, s - 0.25)), []);
   const resetZoom = useCallback(() => setScale(1), []);
 
-  // Never render wider than the PDF's native width (scaled)
-  let renderWidth = nativePdfWidth
-    ? Math.min(containerWidth, nativePdfWidth)
-    : containerWidth;
+  const PDF_PADDING = 32;
+  const isLandscape = pdfAspectRatio !== null && pdfAspectRatio >= 1;
+
+  let renderWidth: number;
+
+  if (isLandscape) {
+    // Landscape PDFs fill the container width (minus padding) so slides and
+    // wide designs use the available space instead of floating in a small box.
+    renderWidth = Math.max(0, containerWidth - PDF_PADDING);
+  } else if (nativePdfWidth) {
+    renderWidth = Math.min(containerWidth, nativePdfWidth);
+  } else {
+    renderWidth = containerWidth;
+  }
 
   // For portrait pages, also cap by container height so the page fits the
   // viewport without vertical scrolling (subject to user zoom).
