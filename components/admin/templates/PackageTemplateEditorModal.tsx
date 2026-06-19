@@ -8,13 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import TierEditor from '@/components/admin/shared/TierEditor';
 import type { PackageTier, PackageFeature } from '@/lib/types/packages';
-import { supabase } from '@/lib/supabase';
-
-async function authHeaders(): Promise<HeadersInit> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token ?? '';
-  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-}
+import { authedFetch } from '@/lib/api-fetch';
 
 interface PackageTemplateEditorModalProps {
   open: boolean;
@@ -84,9 +78,9 @@ export default function PackageTemplateEditorModal({
         ? `/api/package-templates/${template.id}`
         : '/api/package-templates';
       const method = template ? 'PUT' : 'POST';
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method,
-        headers: await authHeaders(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(),
           description: description.trim() || null,

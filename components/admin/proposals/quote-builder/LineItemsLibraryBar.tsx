@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { BookOpen, Save, ChevronDown, X, Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { authedFetch } from '@/lib/api-fetch';
 import { useToast } from '@/components/ui/Toast';
 import type { PricingLineItem } from '@/lib/types/packages';
 import { Button } from '@/components/ui/Button';
@@ -19,12 +19,6 @@ interface TemplateRow {
   description: string | null;
   items: PricingLineItem[];
   created_at: string;
-}
-
-async function authHeaders(): Promise<HeadersInit> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token ?? '';
-  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 }
 
 function regenIds(items: PricingLineItem[]): PricingLineItem[] {
@@ -49,7 +43,7 @@ export default function LineItemsLibraryBar({ items, replaceItems }: LineItemsLi
   const loadTemplates = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/line-item-templates', { headers: await authHeaders() });
+      const res = await authedFetch('/api/line-item-templates');
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to load');
       setTemplates(json.templates ?? []);
@@ -75,9 +69,8 @@ export default function LineItemsLibraryBar({ items, replaceItems }: LineItemsLi
   };
 
   const deleteTemplate = async (id: string) => {
-    const res = await fetch(`/api/line-item-templates/${id}`, {
+    const res = await authedFetch(`/api/line-item-templates/${id}`, {
       method: 'DELETE',
-      headers: await authHeaders(),
     });
     if (res.ok) {
       setTemplates((prev) => prev.filter((t) => t.id !== id));
@@ -98,9 +91,9 @@ export default function LineItemsLibraryBar({ items, replaceItems }: LineItemsLi
     }
     setSaving(true);
     try {
-      const res = await fetch('/api/line-item-templates', {
+      const res = await authedFetch('/api/line-item-templates', {
         method: 'POST',
-        headers: await authHeaders(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: saveName.trim(), items }),
       });
       const json = await res.json();

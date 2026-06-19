@@ -8,17 +8,11 @@
 
 import { useEffect, useState } from 'react';
 import { BookOpen, ChevronDown, Loader2, Save, X } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { authedFetch } from '@/lib/api-fetch';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import type { PackageTier } from '@/lib/types/packages';
-
-async function authHeaders(): Promise<HeadersInit> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token ?? '';
-  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-}
 
 interface TemplateRow {
   id: string;
@@ -49,7 +43,7 @@ export function PackageTemplatesLibraryBar({ onPick }: LibraryBarProps) {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/package-templates', { headers: await authHeaders() });
+      const res = await authedFetch('/api/package-templates');
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to load');
       setTemplates(json.templates ?? []);
@@ -74,9 +68,8 @@ export function PackageTemplatesLibraryBar({ onPick }: LibraryBarProps) {
   };
 
   const remove = async (id: string) => {
-    const res = await fetch(`/api/package-templates/${id}`, {
+    const res = await authedFetch(`/api/package-templates/${id}`, {
       method: 'DELETE',
-      headers: await authHeaders(),
     });
     if (res.ok) {
       setTemplates((prev) => prev.filter((t) => t.id !== id));
@@ -166,9 +159,9 @@ export function SavePackageTemplateModal({ tier, onClose, onSaved }: SaveModalPr
     }
     setSaving(true);
     try {
-      const res = await fetch('/api/package-templates', {
+      const res = await authedFetch('/api/package-templates', {
         method: 'POST',
-        headers: await authHeaders(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), tier }),
       });
       const json = await res.json();

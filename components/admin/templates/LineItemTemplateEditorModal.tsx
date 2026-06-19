@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { authedFetch } from '@/lib/api-fetch';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
 import CurrencyInput from '@/components/ui/CurrencyInput';
@@ -34,12 +34,6 @@ interface Props {
   template: LineItemTemplate | null;
   onSaved: (saved: LineItemTemplate) => void;
   currency?: CurrencyCode;
-}
-
-async function authHeaders(): Promise<HeadersInit> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token ?? '';
-  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 }
 
 function genId(): string {
@@ -109,9 +103,9 @@ export default function LineItemTemplateEditorModal({ open, onClose, template, o
       const url = isEdit ? `/api/line-item-templates/${template!.id}` : '/api/line-item-templates';
       const method = isEdit ? 'PATCH' : 'POST';
 
-      const res = await fetch(url, {
+      const res = await authedFetch(url, {
         method,
-        headers: await authHeaders(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       const json = await res.json();
@@ -182,7 +176,7 @@ export default function LineItemTemplateEditorModal({ open, onClose, template, o
               </div>
 
               {/* Rows */}
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-edge">
                 {items.map((item) => (
                   <div
                     key={item.id}
