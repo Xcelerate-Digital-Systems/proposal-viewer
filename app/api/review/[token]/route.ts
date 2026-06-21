@@ -197,7 +197,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
       const [edgesRes, notesRes, shapesRes] = await Promise.all([
         supabase
           .from('review_board_edges')
-          .select('id, review_project_id, source, target, type, animated, data, created_at')
+          .select('id, review_project_id, source_item_id, source_shape_id, target_item_id, target_shape_id, source_handle, target_handle, label, edge_type, animated, style, created_at')
           .eq('review_project_id', project.id),
         supabase
           .from('review_board_notes')
