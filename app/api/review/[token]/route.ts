@@ -201,11 +201,11 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
           .eq('review_project_id', project.id),
         supabase
           .from('review_board_notes')
-          .select('id, review_project_id, content, position_x, position_y, width, height, color, created_at')
+          .select('id, review_project_id, content, board_x, board_y, width, height, color, font_size, created_at')
           .eq('review_project_id', project.id),
         supabase
           .from('review_board_shapes')
-          .select('id, review_project_id, shape_type, position_x, position_y, width, height, color, label, data, created_at')
+          .select('id, review_project_id, company_id, shape_type, x, y, width, height, end_x, end_y, content, color, stroke_width, dashed, font_size, created_at')
           .eq('review_project_id', project.id),
       ]);
 
