@@ -8,7 +8,7 @@ import { type FeedbackItem } from '@/lib/supabase';
  * Directs users to visit the live page to leave feedback via the installed widget.
  * Replaces the identical renderWebpageClientView callback duplicated in review/project pages.
  */
-export default function WebpageClientPlaceholder({ item }: { item: FeedbackItem }) {
+export default function WebpageClientPlaceholder({ item, guestName, guestEmail }: { item: FeedbackItem; guestName?: string; guestEmail?: string }) {
   return (
     <div className="flex items-center justify-center h-full p-6">
       <div className="text-center max-w-sm">
@@ -24,7 +24,15 @@ export default function WebpageClientPlaceholder({ item }: { item: FeedbackItem 
         </p>
         {item.url && (
           <a
-            href={item.url}
+            href={(() => {
+              try {
+                if (!guestName?.trim()) return item.url!;
+                const u = new URL(item.url!);
+                u.searchParams.set('aviz_name', guestName.trim());
+                if (guestEmail?.trim()) u.searchParams.set('aviz_email', guestEmail.trim());
+                return u.toString();
+              } catch { return item.url!; }
+            })()}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold text-white bg-teal hover:bg-teal-hover transition-colors"

@@ -30,6 +30,15 @@ var participants=[];
 var boxStart=null;var boxEl=null;var boxDrawing=false;
 
 try{var g=JSON.parse(localStorage.getItem(SK)||"{}");guestName=g.name||"";guestEmail=g.email||"";}catch(e){}
+/* Pre-fill from URL params (team member or public reviewer clicking through) */
+try{var _qp=new URLSearchParams(window.location.search);var _qn=_qp.get("aviz_name");var _qe=_qp.get("aviz_email");
+if(_qn){guestName=_qn;guestEmail=_qe||guestEmail;
+try{localStorage.setItem(SK,JSON.stringify({name:guestName,email:guestEmail}));}catch(e){}
+/* Strip params from URL to keep it clean */
+_qp.delete("aviz_name");_qp.delete("aviz_email");
+var _clean=window.location.pathname+(_qp.toString()?"?"+_qp.toString():"")+window.location.hash;
+try{history.replaceState(null,"",_clean);}catch(e){}
+}}catch(e){}
 function saveGuest(){try{localStorage.setItem(SK,JSON.stringify({name:guestName,email:guestEmail}));}catch(e){}}
 function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML;}
 function ago(d){var m=Math.floor((Date.now()-new Date(d).getTime())/60000);if(m<1)return"just now";if(m<60)return m+"m ago";var h=Math.floor(m/60);if(h<24)return h+"h ago";return Math.floor(h/24)+"d ago";}

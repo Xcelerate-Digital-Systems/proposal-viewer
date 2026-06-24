@@ -742,7 +742,7 @@ export default function FeedbackDetailView({
                 onPinClick={handlePinClick}
                 containerRef={imageContainerRef}
                 shareToken={shareToken || ''}
-                renderWebpage={isClient ? (item) => <WebpageClientPlaceholder item={item} /> : undefined}
+                renderWebpage={isClient ? (item) => <WebpageClientPlaceholder item={item} guestName={guestName} guestEmail={reviewerEmail} /> : undefined}
                 emptyText="No items to show"
                 highlightComments={highlightComments}
                 highlightedCommentId={highlightedCommentId}

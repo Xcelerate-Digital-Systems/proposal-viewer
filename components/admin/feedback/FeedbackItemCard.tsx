@@ -343,15 +343,34 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
                     Copy Share Link
                   </button>
                   {item.type === 'webpage' && item.url && (
-                    <a href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => setShowMenu(false)}
+                    <button
+                      onClick={async () => {
+                        setShowMenu(false);
+                        try {
+                          const url = new URL(item.url!);
+                          const { data: { session } } = await supabase.auth.getSession();
+                          if (session?.user) {
+                            const { data: member } = await supabase
+                              .from('team_members')
+                              .select('name, email')
+                              .eq('user_id', session.user.id)
+                              .limit(1)
+                              .single();
+                            if (member?.name) {
+                              url.searchParams.set('aviz_name', member.name);
+                              if (member.email) url.searchParams.set('aviz_email', member.email);
+                            }
+                          }
+                          window.open(url.toString(), '_blank');
+                        } catch {
+                          window.open(item.url!, '_blank');
+                        }
+                      }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-prose hover:bg-surface"
                     >
                       <ExternalLink size={14} />
                       Open Page
-                    </a>
+                    </button>
                   )}
                   {item.type === 'webpage' && (
                     <button

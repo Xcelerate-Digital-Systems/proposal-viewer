@@ -309,7 +309,16 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
   const handleBoardItemClick = useCallback((itemId: string) => {
     const clickedItem = items.find((i) => i.id === itemId);
     if (clickedItem?.type === 'webpage' && clickedItem.url) {
-      window.open(clickedItem.url, '_blank');
+      try {
+        const url = new URL(clickedItem.url);
+        if (guestName.trim()) {
+          url.searchParams.set('aviz_name', guestName.trim());
+          if (guestEmail.trim()) url.searchParams.set('aviz_email', guestEmail.trim());
+        }
+        window.open(url.toString(), '_blank');
+      } catch {
+        window.open(clickedItem.url, '_blank');
+      }
       return;
     }
     setInitialItemId(itemId);

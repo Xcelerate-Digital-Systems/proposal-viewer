@@ -38,6 +38,12 @@ export function useGuestIdentity() {
           if (member?.name && !cancelled) {
             setGuestName(member.name);
             setGuestEmail(member.email ?? '');
+            try {
+              localStorage.setItem(
+                GUEST_STORAGE_KEY,
+                JSON.stringify({ name: member.name, email: member.email ?? '' }),
+              );
+            } catch {}
             setHydrated(true);
             return;
           }
