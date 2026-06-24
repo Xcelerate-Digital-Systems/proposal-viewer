@@ -66,7 +66,7 @@ export default function CreateFeedbackProjectModal({
     toast.success('Campaign created');
     onSuccess();
     onClose();
-    router.push(`/campaigns/${json.id}/setup`);
+    router.push(`/campaigns/${json.id}/assets`);
   };
 
   return (
