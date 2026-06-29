@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { authFetch } from '@/lib/auth-fetch';
 import { getFeedbackStatusDef } from '@/lib/feedback/status';
 import AdMockupPreview, { type AdPlatform } from '@/components/admin/feedback/AdMockupPreview';
+import EmailBodyEditor from '@/components/admin/feedback/EmailBodyEditor';
 import {
   DndContext, closestCenter, DragEndEvent,
   PointerSensor, useSensor, useSensors,
@@ -543,7 +544,7 @@ export default function AddVersionModal({
           <>
             <Field label="Subject"><input className={inputCls} value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} /></Field>
             <Field label="Preheader"><input className={inputCls} value={emailPreheader} onChange={(e) => setEmailPreheader(e.target.value)} /></Field>
-            <Field label="Body"><textarea className={`${inputCls} min-h-[120px]`} value={emailBody} onChange={(e) => setEmailBody(e.target.value)} /></Field>
+            <Field label="Body"><EmailBodyEditor content={emailBody} onChange={setEmailBody} /></Field>
           </>
         )}
 

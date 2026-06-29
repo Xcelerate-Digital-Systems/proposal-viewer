@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import EmailMockupPreview from '@/components/admin/feedback/EmailMockupPreview';
+import EmailBodyEditor from '@/components/admin/feedback/EmailBodyEditor';
 import FormActions from './FormActions';
 
 interface EmailItemFormProps {
@@ -89,12 +90,9 @@ export default function EmailItemForm({ onSubmit, onBack, onCancel, uploading, o
           <label className="block text-xs font-medium text-dim uppercase tracking-wider mb-1">
             Body Text
           </label>
-          <textarea
-            value={emailBody}
-            onChange={(e) => setEmailBody(e.target.value)}
-            rows={5}
-            placeholder="The main email body copy…"
-            className="w-full px-3 py-2 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20  resize-y min-h-[100px]"
+          <EmailBodyEditor
+            content={emailBody}
+            onChange={setEmailBody}
           />
         </div>
 

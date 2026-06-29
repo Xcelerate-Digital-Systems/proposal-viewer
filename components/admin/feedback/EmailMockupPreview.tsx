@@ -37,6 +37,10 @@ interface EmailMockupPreviewProps {
   dark?: boolean;
 }
 
+function isHtml(text: string): boolean {
+  return /<[a-z][\s\S]*>/i.test(text);
+}
+
 const CLIENT_OPTIONS: { key: EmailClient; label: string }[] = [
   { key: 'inbox_preview', label: 'Inbox' },
   { key: 'email', label: 'Email' },
@@ -322,12 +326,20 @@ function EmailOpenPreview({
 
       {/* Body */}
       <div className="px-6 pb-6 pl-[76px]">
-        <div
-          className="text-sm leading-relaxed whitespace-pre-wrap"
-          style={{ color: text }}
-        >
-          {body || 'Email body text will appear here…'}
-        </div>
+        {isHtml(body) ? (
+          <div
+            className="text-sm leading-relaxed prose prose-sm max-w-none [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5"
+            style={{ color: text }}
+            dangerouslySetInnerHTML={{ __html: body }}
+          />
+        ) : (
+          <div
+            className="text-sm leading-relaxed whitespace-pre-wrap"
+            style={{ color: text }}
+          >
+            {body || 'Email body text will appear here…'}
+          </div>
+        )}
       </div>
 
       {/* Reply / Forward buttons */}
