@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import NoResults from '@/components/ui/NoResults';
 import { supabase, ProposalTemplate } from '@/lib/supabase';
+import { authedFetch } from '@/lib/api-fetch';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
 import TemplateUploadModal from '@/components/admin/templates/TemplateUploadModal';
@@ -27,12 +28,6 @@ import { useConfirm } from '@/components/ui/ConfirmDialog';
 import PackageTemplateEditorModal from '@/components/admin/templates/PackageTemplateEditorModal';
 import LineItemTemplateEditorModal from '@/components/admin/templates/LineItemTemplateEditorModal';
 import type { PackageTier } from '@/lib/types/packages';
-
-async function authHeaders(): Promise<HeadersInit> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token ?? '';
-  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-}
 
 type TabKey = 'proposal' | 'quote' | 'line_items' | 'packages' | 'pages';
 
@@ -204,21 +199,21 @@ function TemplatesContent({ companyId }: { companyId: string }) {
   }, [companyId]);
 
   const fetchLineItemTemplates = useCallback(async () => {
-    const res = await fetch('/api/line-item-templates', { headers: await authHeaders() });
+    const res = await authedFetch('/api/line-item-templates');
     if (!res.ok) { console.error(`[templates] line-item-templates ${res.status}`); return; }
     const json = await res.json();
     setLineItemTemplates(json.templates ?? []);
   }, []);
 
   const fetchPackageTemplates = useCallback(async () => {
-    const res = await fetch('/api/package-templates', { headers: await authHeaders() });
+    const res = await authedFetch('/api/package-templates');
     if (!res.ok) { console.error(`[templates] package-templates ${res.status}`); return; }
     const json = await res.json();
     setPackageTemplates(json.templates ?? []);
   }, []);
 
   const fetchLibraryPages = useCallback(async () => {
-    const res = await fetch('/api/page-library', { headers: await authHeaders() });
+    const res = await authedFetch('/api/page-library');
     if (!res.ok) { console.error(`[templates] page-library ${res.status}`); return; }
     const json = await res.json();
     setLibraryPages(json ?? []);
@@ -334,9 +329,8 @@ function TemplatesContent({ companyId }: { companyId: string }) {
       destructive: true,
     });
     if (!ok) return;
-    const res = await fetch(`/api/package-templates/${t.id}`, {
+    const res = await authedFetch(`/api/package-templates/${t.id}`, {
       method: 'DELETE',
-      headers: await authHeaders(),
     });
     if (res.ok) {
       setPackageTemplates((prev) => prev.filter((x) => x.id !== t.id));
@@ -354,9 +348,8 @@ function TemplatesContent({ companyId }: { companyId: string }) {
       destructive: true,
     });
     if (!ok) return;
-    const res = await fetch(`/api/line-item-templates/${t.id}`, {
+    const res = await authedFetch(`/api/line-item-templates/${t.id}`, {
       method: 'DELETE',
-      headers: await authHeaders(),
     });
     if (res.ok) {
       setLineItemTemplates((prev) => prev.filter((x) => x.id !== t.id));
@@ -566,9 +559,9 @@ function TemplatesContent({ companyId }: { companyId: string }) {
                 destructive: true,
               });
               if (!ok) return;
-              const res = await fetch('/api/page-library', {
+              const res = await authedFetch('/api/page-library', {
                 method: 'DELETE',
-                headers: await authHeaders(),
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: p.id }),
               });
               if (res.ok) {
@@ -579,9 +572,9 @@ function TemplatesContent({ companyId }: { companyId: string }) {
               }
             }}
             onRename={async (p, newTitle) => {
-              const res = await fetch('/api/page-library', {
+              const res = await authedFetch('/api/page-library', {
                 method: 'PATCH',
-                headers: await authHeaders(),
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: p.id, title: newTitle }),
               });
               if (res.ok) {
@@ -602,9 +595,9 @@ function TemplatesContent({ companyId }: { companyId: string }) {
                 toast.error('Failed to upload file');
                 return;
               }
-              const res = await fetch('/api/page-library', {
+              const res = await authedFetch('/api/page-library', {
                 method: 'PATCH',
-                headers: await authHeaders(),
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: p.id, replace_file_path: tempPath }),
               });
               if (res.ok) {

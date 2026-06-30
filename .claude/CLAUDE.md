@@ -84,7 +84,7 @@ app/
 │   ├── oauth/{authorize,approve,token,clients}
 │   ├── onboarding/                   # Post-signup onboarding flow
 │   ├── package-templates/            # Reusable quote packages
-│   ├── page-library/                 # Template page library (community + custom)
+│   ├── page-library/                 # Template page library (company-scoped saved pages)
 │   ├── proposals/{[id],pages,share,split,mark-sent,member-info,page-urls}
 │   ├── quotes/                       # Quote CRUD
 │   ├── review/{[token]}/             # Public review viewer API
@@ -285,7 +285,7 @@ Anon clients have NO INSERT/UPDATE on proposals/views. Public writes go through 
 
 ### Template Library
 - Page-level and package-level templates for reuse across proposals/documents.
-- Page library (`/api/page-library`) with community and custom pages.
+- Page library (`/api/page-library`) with company-scoped saved pages.
 - Package templates (`/api/package-templates`) for reusable quote packages.
 - Line-item templates (`/api/line-item-templates`) for reusable quote line items.
 

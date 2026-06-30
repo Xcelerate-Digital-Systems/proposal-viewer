@@ -3,9 +3,10 @@
 
 import { useRouter } from 'next/navigation';
 import { ExternalLink, Eye, Plus } from 'lucide-react';
-import { supabase, type ProposalTemplate } from '@/lib/supabase';
+import { type ProposalTemplate } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
+import { authedFetch } from '@/lib/api-fetch';
 import EntityCard from '@/components/admin/EntityCard';
 
 interface TemplateListCardProps {
@@ -30,27 +31,8 @@ export default function TemplateListCard({ template: t, onRefresh, onCreatePropo
     });
     if (!ok) return;
 
-    // Delete template pages from storage
-    const { data: pages } = await supabase
-      .from('template_pages_v2')
-      .select('payload')
-      .eq('template_id', t.id);
-
-    if (pages && pages.length > 0) {
-      const paths = pages
-        .map((p) => (p.payload as Record<string, unknown>)?.file_path as string | undefined)
-        .filter(Boolean) as string[];
-      if (paths.length > 0) {
-        await supabase.storage.from('proposals').remove(paths);
-      }
-    }
-
-    if (t.cover_image_path) {
-      await supabase.storage.from('proposals').remove([t.cover_image_path]);
-    }
-
-    const { error } = await supabase.from('proposal_templates').delete().eq('id', t.id);
-    if (error) {
+    const res = await authedFetch(`/api/templates/${t.id}`, { method: 'DELETE' });
+    if (!res.ok) {
       toast.error('Failed to delete');
     } else {
       toast.success('Template deleted');

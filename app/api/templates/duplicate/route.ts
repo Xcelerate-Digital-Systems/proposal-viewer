@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
     for (const [k, v] of Object.entries(source)) {
       if (!PROTECTED_FIELDS.has(k)) fields[k] = v;
     }
+    fields.company_id = auth.companyId;
     fields.name = `${source.name} (copy)`;
     fields.page_count = 0;
 
