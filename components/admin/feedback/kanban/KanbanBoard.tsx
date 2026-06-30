@@ -274,10 +274,29 @@ export default function KanbanBoard({
         body: JSON.stringify({ status: targetStatus }),
       });
 
+      const body = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
         toast.error(body?.error || `Could not move to ${targetDef.label}. Check your connection and try again.`);
         onItemsChange(previousItems);
+        return;
+      }
+
+      // The auto-advance gate may hold the item at its current stage (e.g.
+      // not all reviewers have approved yet). Reconcile the optimistic update
+      // with the server's actual status so the card lands in the right column.
+      const actualStatus = body?.item?.status as FeedbackStatus | undefined;
+      if (actualStatus && actualStatus !== targetStatus) {
+        const corrected = previousItems.map((i) =>
+          i.id === itemId ? { ...i, status: actualStatus } : i
+        );
+        onItemsChange(corrected);
+        const actualDef = getFeedbackStatusDef(actualStatus);
+        if (body?.gate?.applied) {
+          toast.info(
+            `${body.gate.approvers}/${body.gate.assignees} reviewers approved — staying in ${actualDef.label}`,
+          );
+        }
         return;
       }
 
