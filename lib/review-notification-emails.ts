@@ -176,6 +176,7 @@ export type StatusEvent =
   | { kind: 'review_comment_resolved'; resolvedBy?: string; itemTitle?: string }
   | { kind: 'review_item_approved'; itemTitle?: string }
   | { kind: 'review_item_revision_needed'; itemTitle?: string }
+  | { kind: 'review_item_rejected'; itemTitle?: string; rejectedBy?: string; reason?: string }
   | { kind: 'review_feedback_marked_complete'; reviewer?: string; message?: string };
 
 export function buildStatusEmail(params: {
@@ -208,6 +209,16 @@ export function buildStatusEmail(params: {
       headline = 'Revision needed';
       body = `<p style="margin:0;color:#6b7280;font-size:15px;line-height:1.6;"><strong>"${escapeHtml(event.itemTitle || 'An item')}"</strong> needs revisions in <strong>"${escapeHtml(projectTitle)}"</strong>.</p>`;
       break;
+    case 'review_item_rejected': {
+      subject = `❌ Item rejected in "${projectTitle}"`;
+      headline = 'Item rejected';
+      const rejector = event.rejectedBy ? ` by <strong>${escapeHtml(event.rejectedBy)}</strong>` : '';
+      const reasonBlock = event.reason
+        ? `<div style="background:#fef2f2;border-left:3px solid #ef4444;padding:10px 14px;margin:12px 0 0;border-radius:4px;"><p style="margin:0;color:#991b1b;font-size:14px;">${escapeHtml(event.reason)}</p></div>`
+        : '';
+      body = `<p style="margin:0;color:#6b7280;font-size:15px;line-height:1.6;"><strong>"${escapeHtml(event.itemTitle || 'An item')}"</strong> was rejected${rejector} in <strong>"${escapeHtml(projectTitle)}"</strong>.</p>${reasonBlock}`;
+      break;
+    }
     case 'review_feedback_marked_complete': {
       subject = `✅ Review finished on "${projectTitle}"`;
       headline = 'Review complete';

@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { isGuestVisibleStage } from '@/lib/feedback/visibility';
-import { rateLimit } from '@/lib/rate-limit';
+import { rateLimit, ipFromRequest } from '@/lib/rate-limit';
 
 // Wildcard origin is intentional — the review widget is embedded on arbitrary customer domains.
 const CORS_HEADERS = {
@@ -98,7 +98,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
 export async function POST(req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
   try {
-    const rl = await rateLimit({ key: `review-widget:reactions:${params.token}`, limit: 60, windowSeconds: 60 });
+    const rl = await rateLimit({ key: `review-widget:reactions:${params.token}:${ipFromRequest(req)}`, limit: 60, windowSeconds: 60 });
     if (!rl.success) return corsJson({ error: 'Too many requests' }, 429);
 
     const supabase = createServiceClient();

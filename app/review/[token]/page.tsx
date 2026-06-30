@@ -155,10 +155,10 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
   useEffect(() => {
     if (project) {
       document.title = project.client_name
-        ? `Feedback for ${project.client_name}`
+        ? `Review for ${project.client_name}`
         : project.title;
     }
-    return () => { document.title = 'Feedback'; };
+    return () => { document.title = 'Review'; };
   }, [project]);
 
   // ── Version selection for the currently-selected item ──

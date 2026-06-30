@@ -48,8 +48,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
     .eq('share_token', params.token)
     .single();
 
-  if (!project || project.status === 'archived') {
-    return jsResponse('/* AgencyViz: invalid or archived project */');
+  if (!project || project.status === 'archived' || project.status === 'rejected') {
+    return jsResponse('/* AgencyViz: invalid or inactive project */');
   }
 
   // Pull the agency's brand accent so the widget chrome (active toolbar

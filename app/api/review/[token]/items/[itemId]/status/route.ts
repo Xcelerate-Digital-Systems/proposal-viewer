@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 import type { FeedbackStatus } from '@/lib/types/feedback';
+import { isGuestVisibleStage } from '@/lib/feedback/visibility';
 
 const CLIENT_ALLOWED_STATUSES: FeedbackStatus[] = [
   'client_review',
@@ -45,7 +46,7 @@ export async function POST(
 ) {
   const params = await props.params;
 
-  const rl = await rateLimit({ key: `review:status:${params.token || ipFromRequest(req)}`, limit: 20, windowSeconds: 60 });
+  const rl = await rateLimit({ key: `review:status:${params.token}:${ipFromRequest(req)}`, limit: 20, windowSeconds: 60 });
   if (!rl.success) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: rateLimitHeaders(rl, 20) });
   }
@@ -91,6 +92,10 @@ export async function POST(
 
     if (!target || target.review_project_id !== projectId) {
       return NextResponse.json({ error: 'Item not in this review' }, { status: 404 });
+    }
+
+    if (!isGuestVisibleStage(target.status)) {
+      return NextResponse.json({ error: 'Item not available for review' }, { status: 403 });
     }
 
     const reviewerEmail = typeof body?.reviewer_email === 'string'
@@ -165,12 +170,22 @@ export async function POST(
 
         // Pre-write count + this voter (use the voter's email so we count
         // them in the check that follows without a second round-trip).
-        const { data: priorApprovers } = await supabase
-          .from('review_item_decisions')
-          .select('reviewer_email')
-          .eq('review_item_id', params.itemId)
-          .eq('stage', currentStage)
-          .eq('decision', 'approved');
+        // Also fetch changes_requested votes — any outstanding rejection
+        // from an assignee blocks auto-advance even if everyone else approved.
+        const [{ data: priorApprovers }, { data: priorRejectors }] = await Promise.all([
+          supabase
+            .from('review_item_decisions')
+            .select('reviewer_email')
+            .eq('review_item_id', params.itemId)
+            .eq('stage', currentStage)
+            .eq('decision', 'approved'),
+          supabase
+            .from('review_item_decisions')
+            .select('reviewer_email')
+            .eq('review_item_id', params.itemId)
+            .eq('stage', currentStage)
+            .eq('decision', 'changes_requested'),
+        ]);
         const approverSet = new Set<string>(
           (priorApprovers ?? [])
             .map((r) => (r as { reviewer_email: string | null }).reviewer_email?.trim().toLowerCase())
@@ -178,19 +193,42 @@ export async function POST(
         );
         if (assigneeUniverse.has(reviewerEmail)) approverSet.add(reviewerEmail);
 
+        // Build a set of assignees who currently have a changes_requested vote.
+        // The current voter's new "approved" vote will overwrite their own
+        // rejection (upsert on reviewer_email+stage), so exclude them.
+        const rejectorSet = new Set<string>(
+          (priorRejectors ?? [])
+            .map((r) => (r as { reviewer_email: string | null }).reviewer_email?.trim().toLowerCase())
+            .filter((e): e is string => !!e && assigneeUniverse.has(e) && e !== reviewerEmail),
+        );
+
         gateInfo.approvers = approverSet.size;
 
-        // Are we at the threshold? Every assignee email must be in approver set.
-        let allApproved = true;
-        assigneeUniverse.forEach((a) => {
-          if (!approverSet.has(a)) allApproved = false;
-        });
+        // Are we at the threshold? Every assignee email must be in approver set,
+        // AND no assignee may have an outstanding changes_requested vote.
+        let allApproved = rejectorSet.size === 0;
+        if (allApproved) {
+          assigneeUniverse.forEach((a) => {
+            if (!approverSet.has(a)) allApproved = false;
+          });
+        }
 
         effectiveTargetStatus = allApproved
           ? NEXT_STAGE_ON_FULL_APPROVAL[currentStage]!
           : (currentStage as FeedbackStatus); // hold position
       }
       // assigneeUniverse.size === 0 → no gate, fall through to legacy direct-update.
+    }
+
+    // When moving backward to a review stage (e.g. re-opening client_review),
+    // clear stale approval/rejection votes so reviewers must re-evaluate.
+    const REVIEW_STAGES: string[] = ['internal_review', 'client_review'];
+    if (REVIEW_STAGES.includes(effectiveTargetStatus) && effectiveTargetStatus !== currentStage) {
+      await supabase
+        .from('review_item_decisions')
+        .delete()
+        .eq('review_item_id', params.itemId)
+        .eq('stage', effectiveTargetStatus);
     }
 
     // Conditional update: only apply if the item is still in the expected stage.

@@ -11,6 +11,7 @@ import {
 } from '@/lib/supabase';
 import { authFetch } from '@/lib/auth-fetch';
 import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import {
   REVIEW_STATUS_ORDER, getFeedbackStatusDef,
 } from '@/lib/feedback/status';
@@ -53,6 +54,7 @@ export default function KanbanBoard({
   items, commentCounts, onOpen, onItemsChange, projectId, companyId,
 }: KanbanBoardProps) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -244,6 +246,21 @@ export default function KanbanBoard({
       const current = items.find((i) => i.id === itemId);
       if (!current || current.status === targetStatus) return;
 
+      // Backward-transition guard: if the item is moving to an earlier stage
+      // in the pipeline, prompt for confirmation before proceeding.
+      const currentIndex = REVIEW_STATUS_ORDER.indexOf(current.status);
+      const targetIndex = REVIEW_STATUS_ORDER.indexOf(targetStatus);
+      if (currentIndex >= 0 && targetIndex >= 0 && targetIndex < currentIndex) {
+        const currentDef = getFeedbackStatusDef(current.status);
+        const tDef = getFeedbackStatusDef(targetStatus);
+        const ok = await confirm({
+          title: 'Move backward?',
+          message: `This will move the item from "${currentDef.label}" back to "${tDef.label}". Are you sure?`,
+          confirmLabel: 'Move',
+        });
+        if (!ok) return;
+      }
+
       const previousStatus = current.status;
       const previousItems = items;
       const targetDef = getFeedbackStatusDef(targetStatus);
@@ -271,7 +288,7 @@ export default function KanbanBoard({
         },
       });
     },
-    [items, onItemsChange, toast, projectId],
+    [items, onItemsChange, toast, confirm, projectId],
   );
 
   const handleDragStart = useCallback((ev: DragStartEvent) => {

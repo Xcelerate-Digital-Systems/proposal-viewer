@@ -150,7 +150,8 @@ export async function getResourceUsage(companyId: string): Promise<ResourceUsage
     supabase
       .from('proposals')
       .select('id', { count: 'exact', head: true })
-      .eq('company_id', companyId),
+      .eq('company_id', companyId)
+      .neq('status', 'declined'),
     supabase
       .from('documents')
       .select('id', { count: 'exact', head: true })
@@ -158,7 +159,8 @@ export async function getResourceUsage(companyId: string): Promise<ResourceUsage
     supabase
       .from('review_projects')
       .select('id', { count: 'exact', head: true })
-      .eq('company_id', companyId),
+      .eq('company_id', companyId)
+      .neq('status', 'archived'),
     supabase
       .from('meta_connections')
       .select('id', { count: 'exact', head: true })
@@ -306,7 +308,8 @@ async function countResource(companyId: string, resource: Resource): Promise<num
       const { count } = await supabase
         .from('proposals')
         .select('id', { count: 'exact', head: true })
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .neq('status', 'declined');
       return count ?? 0;
     }
     case 'documents': {
@@ -320,7 +323,8 @@ async function countResource(companyId: string, resource: Resource): Promise<num
       const { count } = await supabase
         .from('review_projects')
         .select('id', { count: 'exact', head: true })
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .neq('status', 'archived');
       return count ?? 0;
     }
     case 'seats': {

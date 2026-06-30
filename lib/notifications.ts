@@ -128,7 +128,7 @@ export async function sendNotifications(payload: NotifyPayload) {
 
 interface TeamNotifyParams {
   supabase:         ReturnType<typeof createServiceClient>;
-  proposal:         { id: string; title: string; client_name: string; share_token: string; company_id: string };
+  proposal:         { id: string; title: string; client_name: string; share_token: string; company_id: string; entity_type?: string | null };
   branding:         ProposalEmailBranding;
   viewerUrl:        string;
   dashboardUrl:     string;
@@ -233,6 +233,8 @@ async function notifyTeamMembers(params: TeamNotifyParams): Promise<number> {
         : event_type === 'proposal_revision_requested' ? 'proposal_revision_requested'
         : event_type === 'comment_added'    ? 'comment_added'
         : 'comment_resolved';
+      const entityType = proposal.entity_type ?? 'proposal';
+      const linkPrefix = entityType === 'quote' ? '/quotes' : entityType === 'document' ? '/documents' : '/proposals';
       await insertInAppNotifications({
         supabase,
         companyId: proposal.company_id,
@@ -240,7 +242,7 @@ async function notifyTeamMembers(params: TeamNotifyParams): Promise<number> {
         category: inAppCategory,
         title: subject,
         body: comment_content || feedback_text || null,
-        link: `/proposals/${proposal.id}`,
+        link: `${linkPrefix}/${proposal.id}`,
       });
     }
   } catch {
@@ -288,7 +290,7 @@ async function notifyClient(params: ClientNotifyParams): Promise<number> {
       clientEventRef = `client_comment_${comment_author || ''}_${(comment_content || '').slice(0, 50)}`;
     }
   } else if (event_type === 'comment_resolved') {
-    clientEventRef = `client_resolved_${resolved_by || ''}`;
+    clientEventRef = `client_resolved_${comment_id || ''}_${resolved_by || ''}`;
   } else {
     clientEventRef = `client_${event_type}`;
   }

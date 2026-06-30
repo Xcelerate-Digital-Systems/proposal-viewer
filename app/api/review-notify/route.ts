@@ -35,6 +35,7 @@ type ReviewEventType =
   | 'review_comment_resolved'
   | 'review_item_approved'
   | 'review_item_revision_needed'
+  | 'review_item_rejected'
   | 'review_feedback_marked_complete'
   | 'review_item_new_version';
 
@@ -99,7 +100,7 @@ export async function POST(req: NextRequest) {
 
     const validEvents: ReviewEventType[] = [
       'review_comment_added', 'review_comment_resolved',
-      'review_item_approved', 'review_item_revision_needed',
+      'review_item_approved', 'review_item_revision_needed', 'review_item_rejected',
       'review_feedback_marked_complete', 'review_item_new_version',
     ];
     if (!validEvents.includes(event_type)) {
@@ -451,6 +452,8 @@ export async function POST(req: NextRequest) {
                   ? { kind: 'review_item_approved', itemTitle: item_title }
                   : event_type === 'review_item_revision_needed'
                   ? { kind: 'review_item_revision_needed', itemTitle: item_title }
+                  : event_type === 'review_item_rejected'
+                  ? { kind: 'review_item_rejected', itemTitle: item_title, rejectedBy: resolved_by, reason: comment_content }
                   : { kind: 'review_feedback_marked_complete', reviewer: comment_author, message: comment_content },
             });
 
@@ -485,6 +488,7 @@ export async function POST(req: NextRequest) {
               event_type === 'review_comment_resolved' ? 'comment_resolved'
               : event_type === 'review_item_approved' ? 'review_status'
               : event_type === 'review_item_revision_needed' ? 'review_status'
+              : event_type === 'review_item_rejected' ? 'review_status'
               : event_type === 'review_item_new_version' ? 'review_new_version'
               : 'review_complete';
             await insertInAppNotifications({

@@ -1,7 +1,7 @@
 // app/api/review-widget/[token]/screenshot/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
-import { rateLimit } from '@/lib/rate-limit';
+import { rateLimit, ipFromRequest } from '@/lib/rate-limit';
 
 // Wildcard origin is intentional — the review widget is embedded on arbitrary customer domains.
 const CORS_HEADERS = {
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
   const params = await props.params;
   const supabase = createServiceClient();
   try {
-    const rl = await rateLimit({ key: `upload:${params.token}`, limit: 20, windowSeconds: 60 });
+    const rl = await rateLimit({ key: `upload:${params.token}:${ipFromRequest(req)}`, limit: 20, windowSeconds: 60 });
     if (!rl.success) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: CORS_HEADERS });
     }

@@ -156,14 +156,17 @@ export function useItemVersions({ item, companyId, userId }: UseItemVersionsOpti
         toast.error('Version saved, but failed to update the item preview');
       }
 
-      // Clear prior approval votes for the stage being reset to, so the new
-      // version doesn't auto-advance from stale votes.
-      if (input.resetToStage) {
+      // Clear prior approval votes so the new version doesn't auto-advance
+      // from stale votes. When resetting to a specific stage, clear that
+      // stage's decisions. When keeping the current stage, clear decisions
+      // for the item's current stage (new content still needs fresh review).
+      const stageToClear = input.resetToStage ?? item?.status;
+      if (stageToClear) {
         await supabase
           .from('review_item_decisions')
           .delete()
           .eq('review_item_id', itemId)
-          .eq('stage', input.resetToStage);
+          .eq('stage', stageToClear);
       }
 
       setCreating(false);

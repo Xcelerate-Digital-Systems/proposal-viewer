@@ -34,7 +34,7 @@ export async function POST(_req: NextRequest, props: { params: Promise<{ token: 
       .eq('share_token', params.token)
       .single();
 
-    if (!project || project.status === 'archived') {
+    if (!project || project.status === 'archived' || project.status === 'rejected') {
       return NextResponse.json({ ok: false }, { status: 404, headers: CORS_HEADERS });
     }
 

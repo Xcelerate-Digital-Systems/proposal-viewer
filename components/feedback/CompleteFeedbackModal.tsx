@@ -29,7 +29,6 @@ interface CompleteFeedbackModalProps {
 const CLIENT_STATUS_OPTIONS: FeedbackStatus[] = [
   'client_review',
   'revision_needed',
-  'approved',
   'rejected',
 ];
 
@@ -149,9 +148,6 @@ export default function CompleteFeedbackModal({
   // every item the client hasn't yet finalised — anything not approved,
   // rejected or archived.
   const PENDING_FOR_CLIENT = new Set<FeedbackStatus>([
-    'draft',
-    'in_progress',
-    'internal_review',
     'client_review',
     'revision_needed',
   ]);

@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, FileText, FilePlus2, LayoutGrid, List, Search, ChevronDown, Upload, LayoutTemplate, KanbanSquare, Trash2, Send, X as XIcon, Copy } from 'lucide-react';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import NoResults from '@/components/ui/NoResults';
@@ -53,6 +54,7 @@ function ProposalsContent({ companyId }: { companyId: string }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
+  const confirm = useConfirm();
 
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
@@ -81,7 +83,12 @@ function ProposalsContent({ companyId }: { companyId: string }) {
   const bulkDelete = async () => {
     if (selected.size === 0) return;
     const count = selected.size;
-    const ok = window.confirm(`Delete ${count} pitch${count !== 1 ? 'es' : ''}? This cannot be undone.`);
+    const ok = await confirm({
+      title: 'Delete pitches',
+      message: `Delete ${count} pitch${count !== 1 ? 'es' : ''}? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
     if (!ok) return;
     setBulkLoading(true);
     const ids = Array.from(selected);

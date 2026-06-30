@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { isValidHttpUrl } from '@/lib/sanitize';
-import { rateLimit } from '@/lib/rate-limit';
+import { rateLimit, ipFromRequest } from '@/lib/rate-limit';
 
 /**
  * Fire-and-forget notification dispatch. We resolve the parent project's
@@ -66,7 +66,7 @@ async function notifyParticipantsAsync(params: {
 export async function POST(req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
   try {
-    const rl = await rateLimit({ key: `review:comments:${params.token}`, limit: 30, windowSeconds: 60 });
+    const rl = await rateLimit({ key: `review:comments:${params.token}:${ipFromRequest(req)}`, limit: 30, windowSeconds: 60 });
     if (!rl.success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
     const supabase = createServiceClient();

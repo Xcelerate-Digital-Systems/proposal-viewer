@@ -78,9 +78,12 @@ function KanbanContent({
   // Aggregate comment counts per item so KanbanCard can show the badge without
   // each card triggering its own network request.
   const fetchCommentCounts = useCallback(async () => {
+    const itemIds = items.map((i) => i.id);
+    if (itemIds.length === 0) { setCommentCounts({}); return; }
     const { data } = await supabase
       .from('review_comments')
       .select('review_item_id, resolved')
+      .in('review_item_id', itemIds)
       .is('parent_comment_id', null);
     if (!data) return;
     const counts: Record<string, { total: number; unresolved: number }> = {};
@@ -92,7 +95,7 @@ function KanbanContent({
       if (!resolved) counts[id].unresolved += 1;
     }
     setCommentCounts(counts);
-  }, []);
+  }, [items]);
 
   const fetchCustomDomain = useCallback(async () => {
     const { data } = await supabase

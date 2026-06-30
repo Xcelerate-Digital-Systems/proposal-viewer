@@ -14,7 +14,7 @@ import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 export async function POST(req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
 
-  const rl = await rateLimit({ key: `review:complete:${params.token || ipFromRequest(req)}`, limit: 5, windowSeconds: 60 });
+  const rl = await rateLimit({ key: `review:complete:${params.token}:${ipFromRequest(req)}`, limit: 5, windowSeconds: 60 });
   if (!rl.success) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: rateLimitHeaders(rl, 5) });
   }
