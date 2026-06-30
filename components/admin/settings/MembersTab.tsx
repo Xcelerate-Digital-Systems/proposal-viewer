@@ -280,7 +280,7 @@ export default function MembersTab({
               const canEditProfile =
                 isSuperAdmin ||
                 isCurrentUser ||
-                (canManage && !isCurrentUser && m.role !== 'owner');
+                (canManage && !isCurrentUser);
               const canEditRoleOrRemove =
                 canManage &&
                 !isCurrentUser &&

@@ -95,16 +95,9 @@ export async function PATCH(
           );
         }
 
-        if (
-          member.role === 'admin' &&
-          !member.is_super_admin &&
-          target.role === 'owner'
-        ) {
-          return NextResponse.json(
-            { error: 'Admins cannot edit the owner' },
-            { status: 403 }
-          );
-        }
+        // No further restriction — any admin/owner can edit any member's
+        // profile fields (name, avatar, notification prefs). Role changes
+        // are handled separately above with stricter checks.
       }
 
       const updates: Record<string, unknown> = {
