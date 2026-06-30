@@ -291,6 +291,13 @@ export function usePageEditor(entityId: string, entityType: EntityType) {
   const reorderPages = useCallback(async (orderedIds: string[]): Promise<boolean> => {
     const prevIds = pages.map((p) => p.id);
 
+    // Cancel any pending debounced saves — their responses carry stale
+    // position data that would revert the optimistic reorder.
+    for (const [id, timer] of Object.entries(debounces.current)) {
+      clearTimeout(timer);
+      delete debounces.current[id];
+    }
+
     // Optimistic: re-sort local state immediately
     setPages((prev) => {
       const byId = Object.fromEntries(prev.map((p) => [p.id, p]));
@@ -313,6 +320,11 @@ export function usePageEditor(entityId: string, entityType: EntityType) {
         await loadPages();
         return false;
       }
+
+      // Re-fetch authoritative positions from the server so the client
+      // never drifts from the DB — covers edge cases where an in-flight
+      // updatePage response could overwrite the optimistic positions.
+      await loadPages();
 
       editorUndo?.push('Reorder pages', async () => {
         setPages((prev) => {
