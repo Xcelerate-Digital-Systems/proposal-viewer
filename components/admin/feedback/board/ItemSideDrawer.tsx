@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { X, Check } from 'lucide-react';
 import type { FeedbackItem } from '@/lib/supabase';
 import { FUNNEL_COLOR_PRESETS } from '@/lib/types/funnel';
@@ -32,7 +33,13 @@ export default function ItemSideDrawer({ item, onUpdateColor, onClose }: Props) 
   const isIconLayout = NODE_LAYOUTS[item.type] === 'icon';
 
   return (
-    <aside className="absolute top-0 right-0 h-full w-[340px] bg-white border-l border-edge shadow-xl flex flex-col z-30">
+    <motion.aside
+      data-side-drawer
+      initial={{ x: '100%' }}
+      animate={{ x: 0 }}
+      exit={{ x: '100%' }}
+      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+      className="absolute top-0 right-0 h-full w-[340px] bg-white border-l border-edge shadow-xl flex flex-col z-30">
       <div className="flex items-center justify-between px-4 py-3 border-b border-edge">
         <div className="flex items-center gap-2 min-w-0">
           <div
@@ -104,6 +111,6 @@ export default function ItemSideDrawer({ item, onUpdateColor, onClose }: Props) 
           </p>
         )}
       </div>
-    </aside>
+    </motion.aside>
   );
 }

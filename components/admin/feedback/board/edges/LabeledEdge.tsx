@@ -22,7 +22,6 @@ export interface LabeledEdgeData extends Record<string, unknown> {
   labelFontSize?: number;
   /** Label text color (hex). Defaults to ink. */
   labelColor?: string;
-  onEdgeClick?: (edgeId: string) => void;
 }
 
 const ARROW_LEN = 12;
@@ -104,10 +103,7 @@ function LabeledEdgeComponent({
     return parts.join(' ');
   }, [arrowDir, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition]);
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    edgeData.onEdgeClick?.(id);
-  };
+  // Click events bubble to React Flow's onEdgeClick handler.
 
   return (
     <>
@@ -118,10 +114,9 @@ function LabeledEdgeComponent({
         stroke="transparent"
         strokeWidth={22}
         style={{ cursor: 'pointer' }}
-        onClick={handleClick}
       />
 
-      <g style={{ cursor: 'pointer' }} onClick={handleClick}>
+      <g style={{ cursor: 'pointer' }}>
         <path
           d={edgePath}
           fill="none"
@@ -152,9 +147,9 @@ function LabeledEdgeComponent({
               transform: `translate(-50%, -50%) translate(${biasedLabelX}px,${biasedLabelY}px)`,
               pointerEvents: 'all',
               zIndex: 5,
+              cursor: 'pointer',
             }}
             className="nodrag nopan"
-            onClick={handleClick}
           >
             <div
               className={`px-2.5 py-1 rounded-lg leading-tight border cursor-pointer transition-colors shadow-[0_2px_6px_rgba(20,20,40,0.12)] ${

@@ -3,11 +3,12 @@
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import {
   ReactFlow, ReactFlowProvider, Controls, MiniMap, Background, BackgroundVariant, useReactFlow,
-  ConnectionMode, type NodeTypes, type EdgeTypes, type Node, type Edge, Panel,
+  ConnectionMode, type NodeTypes, type EdgeTypes, type Node, type Edge, type Connection, Panel,
   SelectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Loader2, MousePointer, Undo2, Redo2 } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
+import { Loader2, MousePointer, Undo2, Redo2, Cloud, CloudOff } from 'lucide-react';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { computeForecast, formatCount } from '@/lib/funnel/forecast';
 import { ForecastCtx } from './ForecastContext';
@@ -79,6 +80,14 @@ function FunnelBoardInner() {
   );
 
   const board = useFunnelBoard(forecast.flowByEdge);
+
+  const isValidConnection = useCallback((connection: Edge | Connection) => {
+    const src = connection.source;
+    const tgt = connection.target;
+    if (!src || !tgt) return false;
+    if (src === tgt) return false;
+    return !board.edges.some((e) => e.source === src && e.target === tgt);
+  }, [board.edges]);
 
   type ClipboardEntry =
     | { kind: 'step'; stepType: FunnelStepType; label: string; icon: string | null; url: string | null; color: string | null; metrics: unknown }
@@ -395,6 +404,7 @@ function FunnelBoardInner() {
     const onKey = (e: KeyboardEvent) => {
       const tgt = e.target as HTMLElement | null;
       if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable)) return;
+      if (tgt?.closest('[data-side-drawer]') || tgt?.closest('[role="dialog"]') || tgt?.closest('[role="listbox"]')) return;
 
       // Shift+Arrow: pan the canvas without a mouse
       if (e.shiftKey && !e.metaKey && !e.ctrlKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
@@ -482,6 +492,7 @@ function FunnelBoardInner() {
           onNodesChange={board.onNodesChange}
           onEdgesChange={board.onEdgesChange}
           onConnect={board.onConnect}
+          onReconnect={board.onReconnect}
           onEdgeClick={board.onEdgeClick}
           onNodeDrag={onNodeDrag}
           onNodeDragStop={onNodeDragStop}
@@ -491,6 +502,7 @@ function FunnelBoardInner() {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           connectionMode={ConnectionMode.Loose}
+          isValidConnection={isValidConnection}
           defaultEdgeOptions={defaultEdgeOptions}
           fitView
           fitViewOptions={{ padding: 0.2 }}
@@ -528,11 +540,19 @@ function FunnelBoardInner() {
             className="!bg-white !border !border-edge !shadow-sm !rounded-lg"
           />
           <MiniMap
-            nodeClassName={(node) => {
-              if (node.type === 'stickyNote') return 'fill-sticky-yellow';
-              if (node.type === 'shape') return 'fill-ink/40';
-              return 'fill-white stroke-ink/40';
+            nodeColor={(node) => {
+              if (node.type === 'stickyNote') {
+                const note = (node.data as Record<string, unknown>)?.note as { color?: string } | undefined;
+                return note?.color || '#FDE68A';
+              }
+              if (node.type === 'shape') {
+                const shape = (node.data as Record<string, unknown>)?.shape as { color?: string } | undefined;
+                return shape?.color || 'rgba(43,43,43,0.4)';
+              }
+              const step = (node.data as Record<string, unknown>)?.step as { color?: string | null } | undefined;
+              return step?.color || '#ffffff';
             }}
+            nodeStrokeColor={() => 'rgba(43,43,43,0.3)'}
             className="!bg-surface !border !border-edge !rounded-lg"
             style={{ width: 140, height: 90 }}
             zoomable
@@ -562,6 +582,7 @@ function FunnelBoardInner() {
                 </button>
               </div>
               <ExportMenu containerRef={containerRef} funnelName={ctx.funnel?.name || 'funnel'} />
+              <SyncStatusPill status={ctx.syncStatus} />
             </div>
           </Panel>
 
@@ -638,32 +659,37 @@ function FunnelBoardInner() {
           />
         )}
 
-        {selectedShape && (
-          <ShapeSideDrawer
-            shape={selectedShape}
-            onUpdate={(patch) => ctx.updateShape(selectedShape.id, patch)}
-            onDelete={() => { ctx.deleteShape(selectedShape.id); ctx.selectShape(null); }}
-            onClose={() => ctx.selectShape(null)}
-          />
-        )}
+        <AnimatePresence>
+          {selectedShape && (
+            <ShapeSideDrawer
+              key={`shape-${selectedShape.id}`}
+              shape={selectedShape}
+              onUpdate={(patch) => ctx.updateShape(selectedShape.id, patch)}
+              onDelete={() => { ctx.deleteShape(selectedShape.id); ctx.selectShape(null); }}
+              onClose={() => ctx.selectShape(null)}
+            />
+          )}
 
-        {selectedNote && (
-          <NoteSideDrawer
-            note={selectedNote}
-            onUpdate={(patch) => ctx.updateNote(selectedNote.id, patch)}
-            onDelete={() => { ctx.deleteNote(selectedNote.id); ctx.selectNote(null); }}
-            onClose={() => ctx.selectNote(null)}
-          />
-        )}
+          {selectedNote && (
+            <NoteSideDrawer
+              key={`note-${selectedNote.id}`}
+              note={selectedNote}
+              onUpdate={(patch) => ctx.updateNote(selectedNote.id, patch)}
+              onDelete={() => { ctx.deleteNote(selectedNote.id); ctx.selectNote(null); }}
+              onClose={() => ctx.selectNote(null)}
+            />
+          )}
 
-        {selectedStep && (
-          <StepSideDrawer
-            step={selectedStep}
-            onUpdate={(patch) => ctx.updateStep(selectedStep.id, patch)}
-            onDelete={() => ctx.deleteStep(selectedStep.id)}
-            onClose={() => ctx.selectStep(null)}
-          />
-        )}
+          {selectedStep && (
+            <StepSideDrawer
+              key={`step-${selectedStep.id}`}
+              step={selectedStep}
+              onUpdate={(patch) => ctx.updateStep(selectedStep.id, patch)}
+              onDelete={() => ctx.deleteStep(selectedStep.id)}
+              onClose={() => ctx.selectStep(null)}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </div>
     </ForecastCtx.Provider>
@@ -712,6 +738,29 @@ function CombinedEdgePanel({
           onUpdate={onUpdateSplit}
         />
       ) : null}
+    </div>
+  );
+}
+
+function SyncStatusPill({ status }: { status: 'idle' | 'saving' | 'error' }) {
+  if (status === 'idle') return null;
+  return (
+    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-medium border shadow-sm ${
+      status === 'saving'
+        ? 'bg-white border-edge text-muted'
+        : 'bg-red-50 border-red-200 text-red-600'
+    }`}>
+      {status === 'saving' ? (
+        <>
+          <Cloud size={12} className="animate-pulse" />
+          <span>Saving…</span>
+        </>
+      ) : (
+        <>
+          <CloudOff size={12} />
+          <span>Save failed</span>
+        </>
+      )}
     </div>
   );
 }

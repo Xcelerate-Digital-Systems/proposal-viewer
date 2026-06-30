@@ -31,6 +31,17 @@ interface Props {
  *
  * Closes on outside-click, Escape, or after any action runs.
  */
+const MENU_WIDTH = 180;
+const MENU_ITEM_HEIGHT = 28;
+const MENU_PADDING = 8;
+
+function clampPosition(clientX: number, clientY: number, itemCount: number) {
+  const menuH = itemCount * MENU_ITEM_HEIGHT + MENU_PADDING;
+  const left = Math.min(clientX, window.innerWidth - MENU_WIDTH - 8);
+  const top = Math.min(clientY, window.innerHeight - menuH - 8);
+  return { left: Math.max(0, left), top: Math.max(0, top) };
+}
+
 export default function CanvasContextMenu({
   target, onClose,
   onDuplicate, onDelete, onEdit, onLockToggle, isLocked,
@@ -79,7 +90,7 @@ export default function CanvasContextMenu({
         ref={ref}
         role="menu"
         className="fixed z-50 min-w-[180px] bg-white rounded-lg border border-edge shadow-xl py-1"
-        style={{ left: target.clientX, top: target.clientY }}
+        style={clampPosition(target.clientX, target.clientY, paneItems.length)}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleMenuKeyDown}
       >
@@ -115,7 +126,7 @@ export default function CanvasContextMenu({
       ref={ref}
       role="menu"
       className="fixed z-50 min-w-[180px] bg-white rounded-lg border border-edge shadow-xl py-1"
-      style={{ left: target.clientX, top: target.clientY }}
+      style={clampPosition(target.clientX, target.clientY, items.length)}
       onClick={(e) => e.stopPropagation()}
       onKeyDown={handleMenuKeyDown}
     >

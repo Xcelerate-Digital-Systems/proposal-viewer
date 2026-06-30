@@ -12,15 +12,6 @@ import { type StickyNoteNodeData } from '@/components/admin/feedback/board/nodes
 import { type ShapeNodeData } from '@/components/admin/feedback/board/nodes/ShapeNode';
 import { useFunnelBoardContextOrThrow } from './FunnelBoardContext';
 
-function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, delay: number) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  return useCallback((...args: Parameters<T>) => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => fn(...args), delay);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fn, delay]) as T;
-}
-
 /**
  * RF plumbing for the funnel board — mirrors useFeedbackBoard but renders
  * FunnelStep + reused Sticky/Shape nodes. ShapeNode's data type expects a
@@ -90,14 +81,6 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
 
   /* ── Build edges ───────────────────────────────────────────── */
 
-  const handleEdgeClickFromData = useCallback((edgeId: string) => {
-    setEdges((eds) => {
-      const edge = eds.find((e) => e.id === edgeId);
-      if (edge) setSelectedEdge(edge);
-      return eds;
-    });
-  }, [setEdges]);
-
   useEffect(() => {
     const flow: Edge[] = boardEdges.map((e) => {
       const style = (e.style || {}) as Record<string, unknown>;
@@ -113,7 +96,6 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
       const source = e.source_shape_id ? `shape-${e.source_shape_id}` : `step-${e.source_step_id}`;
       const target = e.target_shape_id ? `shape-${e.target_shape_id}` : `step-${e.target_step_id}`;
 
-      const isSelected = selectedEdge?.id === e.id;
       const userLabel = e.label || '';
       const edgeFlow = flowByEdge?.get(e.id);
       const flowLabel = edgeFlow && edgeFlow > 0 ? formatCount(edgeFlow) : '';
@@ -137,12 +119,11 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
           color: strokeColor, strokeWidth, dashed,
           animated: e.animated || false, arrowDir,
           labelFontSize, labelColor,
-          onEdgeClick: handleEdgeClickFromData,
         },
       } as Edge;
     });
     setEdges(flow);
-  }, [boardEdges, handleEdgeClickFromData, setEdges, selectedEdge?.id, flowByEdge]);
+  }, [boardEdges, setEdges, flowByEdge]);
 
   /* ── Drag save ─────────────────────────────────────────────── */
 
@@ -156,16 +137,29 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
     }
   }, [updateNote, updateShape, updateStep]);
 
-  const debouncedSavePosition = useDebouncedCallback(saveNodePosition, 250);
+  const pendingPositions = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const positionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushPositions = useCallback(() => {
+    const batch = new Map(pendingPositions.current);
+    pendingPositions.current.clear();
+    batch.forEach(({ x, y }, nodeId) => void saveNodePosition(nodeId, x, y));
+  }, [saveNodePosition]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     setNodes((nds) => applyNodeChanges(changes, nds));
+    let hasDragEnd = false;
     for (const c of changes) {
       if (c.type === 'position' && c.position && !c.dragging) {
-        debouncedSavePosition(c.id, c.position.x, c.position.y);
+        pendingPositions.current.set(c.id, c.position);
+        hasDragEnd = true;
       }
     }
-  }, [debouncedSavePosition, setNodes]);
+    if (hasDragEnd) {
+      if (positionTimer.current) clearTimeout(positionTimer.current);
+      positionTimer.current = setTimeout(flushPositions, 250);
+    }
+  }, [flushPositions, setNodes]);
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)),
@@ -268,9 +262,19 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
 
   const onEdgeClick = useCallback((_: React.MouseEvent, edge: Edge) => setSelectedEdge(edge), []);
 
+  const onReconnect = useCallback(
+    async (oldEdge: Edge, newConnection: Connection) => {
+      if (!newConnection.source || !newConnection.target) return;
+      if (newConnection.source === newConnection.target) return;
+      await deleteEdge(oldEdge.id);
+      await onConnect(newConnection);
+    },
+    [deleteEdge, onConnect]
+  );
+
   return {
     nodes, edges,
-    onNodesChange, onEdgesChange, onConnect, onEdgeClick,
+    onNodesChange, onEdgesChange, onConnect, onReconnect, onEdgeClick,
     selectedEdge, handleUpdateEdgeStyle, handleDeleteEdge,
     closeEdgeEditor: () => setSelectedEdge(null),
   };

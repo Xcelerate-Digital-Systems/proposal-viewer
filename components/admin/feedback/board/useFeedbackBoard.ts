@@ -18,15 +18,6 @@ import { type StickyNoteNodeData } from './nodes/StickyNoteNode';
 import { type ShapeNodeData } from './nodes/ShapeNode';
 import { useFeedbackBoardContextOrThrow } from './FeedbackBoardContext';
 
-function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, delay: number) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  return useCallback((...args: Parameters<T>) => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => fn(...args), delay);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fn, delay]) as T;
-}
-
 interface UseFeedbackBoardOptions {
   onNavigateToItem: (itemId: string) => void;
 }
@@ -42,7 +33,7 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
     placedItems, boardNotes, shapes, boardEdges,
     updateItemStatus, updateItemBoardPosition,
     updateNote, deleteNote, updateShape,
-    createEdge, updateEdge,
+    createEdge, updateEdge, commentStats,
   } = ctx;
 
   const [nodes, setNodes] = useNodesState<Node>([]);
@@ -80,6 +71,7 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
       data: {
         item,
         readOnly: false,
+        commentStats: commentStats.get(item.id),
         onNavigate: onNavigateToItem,
         onUpdateStatus: updateItemStatus,
       } satisfies ReviewItemNodeData,
@@ -109,17 +101,9 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
     }));
 
     setNodes([...itemNodes, ...noteNodes, ...shapeNodes]);
-  }, [placedItems, boardNotes, shapes, onNavigateToItem, updateItemStatus, updateNote, deleteNote, handleShapeContentUpdate, setNodes]);
+  }, [placedItems, boardNotes, shapes, commentStats, onNavigateToItem, updateItemStatus, updateNote, deleteNote, handleShapeContentUpdate, setNodes]);
 
   /* ─── Build RF edges from context data ─────────────────────── */
-
-  const handleEdgeClickFromData = useCallback((edgeId: string) => {
-    setEdges((eds) => {
-      const edge = eds.find((e) => e.id === edgeId);
-      if (edge) setSelectedEdge(edge);
-      return eds;
-    });
-  }, [setEdges]);
 
   useEffect(() => {
     const noteIds = new Set(boardNotes.map((n) => n.id));
@@ -165,13 +149,12 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
             arrowDir,
             labelFontSize,
             labelColor,
-            onEdgeClick: handleEdgeClickFromData,
           },
         } as Edge;
       })
       .filter((e): e is Edge => e !== null);
     setEdges(flowEdges);
-  }, [boardEdges, boardNotes, handleEdgeClickFromData, setEdges]);
+  }, [boardEdges, boardNotes, setEdges]);
 
   /* ─── Drag position save ──────────────────────────────────── */
 
@@ -185,18 +168,31 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
     }
   }, [updateNote, updateShape, updateItemBoardPosition]);
 
-  const debouncedSavePosition = useDebouncedCallback(saveNodePosition, 300);
+  const pendingPositions = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const positionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushPositions = useCallback(() => {
+    const batch = new Map(pendingPositions.current);
+    pendingPositions.current.clear();
+    batch.forEach(({ x, y }, nodeId) => void saveNodePosition(nodeId, x, y));
+  }, [saveNodePosition]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
       setNodes((nds) => applyNodeChanges(changes, nds));
+      let hasDragEnd = false;
       for (const change of changes) {
         if (change.type === 'position' && change.position && !change.dragging) {
-          debouncedSavePosition(change.id, change.position.x, change.position.y);
+          pendingPositions.current.set(change.id, change.position);
+          hasDragEnd = true;
         }
       }
+      if (hasDragEnd) {
+        if (positionTimer.current) clearTimeout(positionTimer.current);
+        positionTimer.current = setTimeout(flushPositions, 300);
+      }
     },
-    [debouncedSavePosition, setNodes]
+    [flushPositions, setNodes]
   );
 
   const onEdgesChange = useCallback(
@@ -242,7 +238,7 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
         style: { stroke: '#2B2B2B', strokeWidth: 2 },
       });
     },
-    [ctx.projectId, ctx.companyId, createEdge, handleEdgeClickFromData, setEdges]
+    [ctx.projectId, ctx.companyId, createEdge]
   );
 
   /* ─── Edge delete & style updates ─────────────────────────── */
@@ -326,12 +322,23 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
     setSelectedEdge(edge);
   }, []);
 
+  const onReconnect = useCallback(
+    async (oldEdge: Edge, newConnection: Connection) => {
+      if (!newConnection.source || !newConnection.target) return;
+      if (newConnection.source === newConnection.target) return;
+      await ctx.deleteEdge(oldEdge.id);
+      await onConnect(newConnection);
+    },
+    [ctx, onConnect]
+  );
+
   return {
     nodes,
     edges,
     onNodesChange,
     onEdgesChange,
     onConnect,
+    onReconnect,
     onEdgeClick,
     selectedEdge,
     handleUpdateEdgeStyle,

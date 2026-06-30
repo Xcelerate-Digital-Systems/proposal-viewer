@@ -13,12 +13,15 @@ import {
   type NodeTypes,
   type EdgeTypes,
   type Node,
+  type Edge,
+  type Connection,
   MarkerType,
   Panel,
   SelectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Loader2, MousePointer, Undo2, Redo2, HelpCircle, X } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
+import { Loader2, MousePointer, Undo2, Redo2, HelpCircle, X, Cloud, CloudOff } from 'lucide-react';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import FeedbackItemNode from './nodes/FeedbackItemNode';
 import StickyNoteNode from './nodes/StickyNoteNode';
@@ -102,6 +105,14 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
   );
 
   const board = useFeedbackBoard({ onNavigateToItem });
+
+  const isValidConnection = useCallback((connection: Edge | Connection) => {
+    const src = connection.source;
+    const tgt = connection.target;
+    if (!src || !tgt) return false;
+    if (src === tgt) return false;
+    return !board.edges.some((e) => e.source === src && e.target === tgt);
+  }, [board.edges]);
 
   const isDrawingTool =
     activeTool === 'rectangle' || activeTool === 'ellipse' ||
@@ -544,6 +555,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
     const onKey = (e: KeyboardEvent) => {
       const tgt = e.target as HTMLElement | null;
       if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable)) return;
+      if (tgt?.closest('[data-side-drawer]') || tgt?.closest('[role="dialog"]') || tgt?.closest('[role="listbox"]')) return;
       const mod = e.metaKey || e.ctrlKey;
 
       if (mod) {
@@ -629,6 +641,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
           onNodesChange={board.onNodesChange}
           onEdgesChange={board.onEdgesChange}
           onConnect={board.onConnect}
+          onReconnect={board.onReconnect}
           onEdgeClick={board.onEdgeClick}
           onNodeDrag={onNodeDrag}
           onNodeDragStop={onNodeDragStop}
@@ -638,6 +651,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           connectionMode={ConnectionMode.Loose}
+          isValidConnection={isValidConnection}
           defaultEdgeOptions={defaultEdgeOptions}
           fitView
           fitViewOptions={{ padding: 0.2 }}
@@ -693,11 +707,19 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
             className="!bg-white !border !border-edge !shadow-sm !rounded-lg"
           />
           <MiniMap
-            nodeClassName={(node) => {
-              if (node.type === 'stickyNote') return 'fill-sticky-yellow';
-              if (node.type === 'shape') return 'fill-ink/40';
-              return 'fill-white stroke-ink/40';
+            nodeColor={(node) => {
+              if (node.type === 'stickyNote') {
+                const color = (node.data as Record<string, unknown>)?.note as { color?: string } | undefined;
+                return color?.color || '#FDE68A';
+              }
+              if (node.type === 'shape') {
+                const shape = (node.data as Record<string, unknown>)?.shape as { color?: string } | undefined;
+                return shape?.color || 'rgba(43,43,43,0.4)';
+              }
+              const item = (node.data as Record<string, unknown>)?.item as { board_color?: string | null } | undefined;
+              return item?.board_color || '#ffffff';
             }}
+            nodeStrokeColor={() => 'rgba(43,43,43,0.3)'}
             className="!bg-surface !border !border-edge !rounded-lg"
             style={{ width: 140, height: 90 }}
             zoomable
@@ -731,6 +753,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
                 </button>
               </div>
               <ExportMenu containerRef={reactFlowRef} boardName={ctx.project?.title || 'whiteboard'} />
+              <SyncStatusPill status={ctx.syncStatus} />
               <ShortcutHelpButton />
             </div>
           </Panel>
@@ -793,43 +816,48 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
           />
         )}
 
-        {selectedShapeId && (() => {
-          const shape = ctx.shapes.find((s) => s.id === selectedShapeId);
-          if (!shape) return null;
-          return (
-            <ShapeSideDrawer
-              shape={shape}
-              onUpdate={(patch) => ctx.updateShape(shape.id, patch)}
-              onDelete={() => { ctx.deleteShape(shape.id); setSelectedShapeId(null); }}
-              onClose={() => setSelectedShapeId(null)}
-            />
-          );
-        })()}
+        <AnimatePresence>
+          {selectedShapeId && (() => {
+            const shape = ctx.shapes.find((s) => s.id === selectedShapeId);
+            if (!shape) return null;
+            return (
+              <ShapeSideDrawer
+                key={`shape-${selectedShapeId}`}
+                shape={shape}
+                onUpdate={(patch) => ctx.updateShape(shape.id, patch)}
+                onDelete={() => { ctx.deleteShape(shape.id); setSelectedShapeId(null); }}
+                onClose={() => setSelectedShapeId(null)}
+              />
+            );
+          })()}
 
-        {selectedNoteId && (() => {
-          const note = ctx.boardNotes.find((n) => n.id === selectedNoteId);
-          if (!note) return null;
-          return (
-            <NoteSideDrawer
-              note={note}
-              onUpdate={(patch) => ctx.updateNote(note.id, patch)}
-              onDelete={() => { ctx.deleteNote(note.id); setSelectedNoteId(null); }}
-              onClose={() => setSelectedNoteId(null)}
-            />
-          );
-        })()}
+          {selectedNoteId && (() => {
+            const note = ctx.boardNotes.find((n) => n.id === selectedNoteId);
+            if (!note) return null;
+            return (
+              <NoteSideDrawer
+                key={`note-${selectedNoteId}`}
+                note={note}
+                onUpdate={(patch) => ctx.updateNote(note.id, patch)}
+                onDelete={() => { ctx.deleteNote(note.id); setSelectedNoteId(null); }}
+                onClose={() => setSelectedNoteId(null)}
+              />
+            );
+          })()}
 
-        {selectedItemId && (() => {
-          const item = ctx.items.find((i) => i.id === selectedItemId);
-          if (!item) return null;
-          return (
-            <ItemSideDrawer
-              item={item}
-              onUpdateColor={(color) => ctx.updateItemBoardColor(item.id, color)}
-              onClose={() => setSelectedItemId(null)}
-            />
-          );
-        })()}
+          {selectedItemId && (() => {
+            const item = ctx.items.find((i) => i.id === selectedItemId);
+            if (!item) return null;
+            return (
+              <ItemSideDrawer
+                key={`item-${selectedItemId}`}
+                item={item}
+                onUpdateColor={(color) => ctx.updateItemBoardColor(item.id, color)}
+                onClose={() => setSelectedItemId(null)}
+              />
+            );
+          })()}
+        </AnimatePresence>
 
         {previewPaths && (
           <svg className="pointer-events-none absolute inset-0 w-full h-full">
@@ -866,6 +894,29 @@ const SHORTCUTS = [
   ['⌘⇧Z', 'Redo'],
   ['⌫', 'Delete'],
 ] as const;
+
+function SyncStatusPill({ status }: { status: 'idle' | 'saving' | 'error' }) {
+  if (status === 'idle') return null;
+  return (
+    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-medium border shadow-sm ${
+      status === 'saving'
+        ? 'bg-white border-edge text-muted'
+        : 'bg-red-50 border-red-200 text-red-600'
+    }`}>
+      {status === 'saving' ? (
+        <>
+          <Cloud size={12} className="animate-pulse" />
+          <span>Saving…</span>
+        </>
+      ) : (
+        <>
+          <CloudOff size={12} />
+          <span>Save failed</span>
+        </>
+      )}
+    </div>
+  );
+}
 
 function ShortcutHelpButton() {
   const [open, setOpen] = useState(false);

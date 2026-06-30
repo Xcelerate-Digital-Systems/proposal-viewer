@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { X, ExternalLink, Trash2, Check, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import type { FunnelStep, FunnelStepMetrics } from '@/lib/supabase';
 import {
@@ -66,7 +67,13 @@ export default function StepSideDrawer({
   const visibleIconGroups = FUNNEL_ICON_LIBRARY.filter((g) => relevantIconGroups.includes(g.group));
 
   return (
-    <aside className="absolute top-0 right-0 h-full w-[340px] bg-white border-l border-edge shadow-xl flex flex-col z-30 animate-slide-in-right">
+    <motion.aside
+      data-side-drawer
+      initial={{ x: '100%' }}
+      animate={{ x: 0 }}
+      exit={{ x: '100%' }}
+      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+      className="absolute top-0 right-0 h-full w-[340px] bg-white border-l border-edge shadow-xl flex flex-col z-30">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-edge">
         <div className="flex items-center gap-2 min-w-0">
@@ -309,7 +316,7 @@ export default function StepSideDrawer({
           Delete step
         </button>
       </div>
-    </aside>
+    </motion.aside>
   );
 }
 

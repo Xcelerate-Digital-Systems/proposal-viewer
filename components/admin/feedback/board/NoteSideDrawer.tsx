@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { X, Trash2 } from 'lucide-react';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import type { FeedbackBoardNote } from '@/lib/supabase';
@@ -23,7 +24,13 @@ export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Pr
   };
 
   return (
-    <aside className="absolute top-0 right-0 h-full w-[340px] bg-white border-l border-edge shadow-xl flex flex-col z-30">
+    <motion.aside
+      data-side-drawer
+      initial={{ x: '100%' }}
+      animate={{ x: 0 }}
+      exit={{ x: '100%' }}
+      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+      className="absolute top-0 right-0 h-full w-[340px] bg-white border-l border-edge shadow-xl flex flex-col z-30">
       <div className="flex items-center justify-between px-4 py-3 border-b border-edge">
         <div className="flex items-center gap-2 min-w-0">
           <div
@@ -97,7 +104,7 @@ export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Pr
           <Trash2 size={13} /> Delete note
         </button>
       </div>
-    </aside>
+    </motion.aside>
   );
 }
 

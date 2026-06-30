@@ -1,9 +1,10 @@
 'use client';
 
-import { memo, useState, useEffect, useCallback } from 'react';
+import { memo } from 'react';
 import type { NodeProps } from '@xyflow/react';
-import { supabase, type FeedbackItem, type FeedbackStatus } from '@/lib/supabase';
+import { type FeedbackItem, type FeedbackStatus } from '@/lib/supabase';
 import { type NodeItemProps } from './nodeConfig';
+import { type CommentStats } from '../FeedbackBoardContext';
 
 // Type-specific node components
 import WebsiteNode from './WebsiteNode';
@@ -21,6 +22,7 @@ import MetaLeadFormNode from './MetaLeadFormNode';
 export interface ReviewItemNodeData extends Record<string, unknown> {
   item: FeedbackItem;
   readOnly?: boolean;
+  commentStats?: CommentStats;
   onNavigate?: (itemId: string) => void;
   onUpdateStatus?: (itemId: string, status: FeedbackStatus) => void | Promise<void>;
 }
@@ -43,29 +45,10 @@ const NODE_COMPONENTS: Record<string, React.ComponentType<NodeItemProps>> = {
 /* ─── Dispatcher ───────────────────────────────────────────────── */
 
 function ReviewItemNodeComponent({ data, selected }: NodeProps) {
-  const { item, readOnly, onNavigate, onUpdateStatus } = data as ReviewItemNodeData;
-  const [commentCount, setCommentCount] = useState(0);
-  const [unresolvedCount, setUnresolvedCount] = useState(0);
-  const [commentsLoading, setCommentsLoading] = useState(true);
+  const { item, readOnly, commentStats, onNavigate, onUpdateStatus } = data as ReviewItemNodeData;
 
-  const fetchCommentStats = useCallback(async () => {
-    setCommentsLoading(true);
-    const { data: comments, error } = await supabase
-      .from('review_comments')
-      .select('resolved')
-      .eq('review_item_id', item.id)
-      .is('parent_comment_id', null);
-
-    if (!error && comments) {
-      setCommentCount(comments.length);
-      setUnresolvedCount(comments.filter((c: { resolved: boolean }) => !c.resolved).length);
-    }
-    setCommentsLoading(false);
-  }, [item.id]);
-
-  useEffect(() => {
-    fetchCommentStats();
-  }, [fetchCommentStats]);
+  const commentCount = commentStats?.total ?? 0;
+  const unresolvedCount = commentStats?.unresolved ?? 0;
 
   // Pick the right component (falls back to WebsiteNode for unknown types)
   const Component = NODE_COMPONENTS[item.type] || WebsiteNode;
@@ -77,7 +60,7 @@ function ReviewItemNodeComponent({ data, selected }: NodeProps) {
       readOnly={readOnly}
       commentCount={commentCount}
       unresolvedCount={unresolvedCount}
-      commentsLoading={commentsLoading}
+      commentsLoading={false}
       onNavigate={onNavigate}
       onUpdateStatus={onUpdateStatus}
     />
