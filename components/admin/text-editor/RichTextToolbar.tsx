@@ -82,12 +82,39 @@ function Separator() {
   return <div className="shrink-0 w-px h-6 bg-edge mx-1" />;
 }
 
+/* ─── Selection helpers ──────────────────────────────────────── */
+
+function useSavedSelection(editor: Editor) {
+  const savedSelection = useRef<{ from: number; to: number } | null>(null);
+
+  const save = useCallback(() => {
+    const { from, to } = editor.state.selection;
+    savedSelection.current = { from, to };
+  }, [editor]);
+
+  const restoreAndRun = useCallback(
+    (fn: (chain: ReturnType<typeof editor.chain>) => ReturnType<typeof editor.chain>) => {
+      const sel = savedSelection.current;
+      savedSelection.current = null;
+      let chain = editor.chain().focus();
+      if (sel && sel.from !== sel.to) {
+        chain = chain.setTextSelection(sel);
+      }
+      fn(chain).run();
+    },
+    [editor],
+  );
+
+  return { save, restoreAndRun };
+}
+
 /* ─── Font size input (commits on Enter / blur) ─────────────── */
 
 function FontSizeInput({ editor, currentFontSize }: { editor: Editor; currentFontSize: string }) {
   const [localValue, setLocalValue] = useState(currentFontSize);
   const [editing, setEditing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { save, restoreAndRun } = useSavedSelection(editor);
 
   useEffect(() => {
     if (!editing) setLocalValue(currentFontSize);
@@ -97,9 +124,9 @@ function FontSizeInput({ editor, currentFontSize }: { editor: Editor; currentFon
     setEditing(false);
     const num = parseInt(localValue, 10);
     if (localValue && num >= 1 && num <= 999) {
-      editor.chain().focus().setFontSize(`${num}px`).run();
+      restoreAndRun((chain) => chain.setFontSize(`${num}px`));
     } else if (!localValue) {
-      editor.chain().focus().unsetFontSize().run();
+      restoreAndRun((chain) => chain.unsetFontSize());
     }
   };
 
@@ -113,6 +140,7 @@ function FontSizeInput({ editor, currentFontSize }: { editor: Editor; currentFon
       max={96}
       placeholder="–"
       title="Font Size"
+      onMouseDown={() => save()}
       onFocus={() => {
         setEditing(true);
         setLocalValue(currentFontSize);
@@ -127,7 +155,6 @@ function FontSizeInput({ editor, currentFontSize }: { editor: Editor; currentFon
         if (e.key === 'Enter') { e.preventDefault(); commit(); }
         if (e.key === 'Escape') { setEditing(false); setLocalValue(currentFontSize); editor.commands.focus(); }
       }}
-      onMouseDown={(e) => e.stopPropagation()}
       className="shrink-0 h-8 w-16 px-1.5 text-xs text-prose bg-white border border-edge-strong rounded hover:border-edge-hover focus:outline-none focus:border-teal text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
     />
   );
@@ -147,6 +174,7 @@ export default function RichTextToolbar({ editor, className }: RichTextToolbarPr
   const [showHighlightPicker, setShowHighlightPicker] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [, setVersion] = useState(0);
+  const { save: saveSelectionForWeight, restoreAndRun: restoreAndRunWeight } = useSavedSelection(editor);
 
   // Re-render on selection/transaction changes so active states stay correct
   useEffect(() => {
@@ -199,10 +227,11 @@ export default function RichTextToolbar({ editor, className }: RichTextToolbarPr
       {/* Font weight */}
       <select
         value={currentFontWeight}
+        onMouseDown={() => saveSelectionForWeight()}
         onChange={(e) => {
           const val = e.target.value;
-          if (val) editor.chain().focus().setFontWeight(val).run();
-          else editor.chain().focus().unsetFontWeight().run();
+          if (val) restoreAndRunWeight((chain) => chain.setFontWeight(val));
+          else restoreAndRunWeight((chain) => chain.unsetFontWeight());
         }}
         title="Font Weight"
         className="shrink-0 h-8 px-2 text-xs text-prose bg-white border border-edge-strong rounded cursor-pointer hover:border-edge-hover focus:outline-none focus:border-teal"
