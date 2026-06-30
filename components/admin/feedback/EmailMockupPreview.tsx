@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import DOMPurify from 'isomorphic-dompurify';
 import {
   Star,
   Reply,
@@ -327,10 +328,10 @@ function EmailOpenPreview({
       {/* Body */}
       <div className="px-6 pb-6 pl-[76px]">
         {isHtml(body) ? (
-          <div
+          <SanitizedHtml
+            html={body}
             className="text-sm leading-relaxed prose prose-sm max-w-none [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5"
             style={{ color: text }}
-            dangerouslySetInnerHTML={{ __html: body }}
           />
         ) : (
           <div
@@ -361,4 +362,14 @@ function EmailOpenPreview({
       </div>
     </div>
   );
+}
+
+const SANITIZE_CONFIG = {
+  ALLOWED_TAGS: ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'a', 'ul', 'ol', 'li', 'span'],
+  ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'],
+};
+
+function SanitizedHtml({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {
+  const clean = useMemo(() => DOMPurify.sanitize(html, SANITIZE_CONFIG) as string, [html]);
+  return <div className={className} style={style} dangerouslySetInnerHTML={{ __html: clean }} />;
 }

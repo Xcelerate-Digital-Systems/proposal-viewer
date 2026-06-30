@@ -40,22 +40,43 @@ export default function EmailBodyEditor({
       }),
     ],
     content: content || '',
-    onUpdate: ({ editor: ed }) => onChange(ed.getHTML()),
     editorProps: {
       attributes: {
         class: 'prose prose-sm max-w-none focus:outline-none min-h-[100px] px-3 py-2 text-sm text-ink',
       },
+      transformPastedHTML(html: string) {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        doc.querySelectorAll('[style]').forEach((el) => el.removeAttribute('style'));
+        doc.querySelectorAll('[class]').forEach((el) => el.removeAttribute('class'));
+        return doc.body.innerHTML;
+      },
     },
   });
 
-  const contentRef = useRef(content);
+  const isInternalUpdate = useRef(false);
+  const handleUpdate = ({ editor: ed }: { editor: typeof editor }) => {
+    if (!ed) return;
+    isInternalUpdate.current = true;
+    const html = ed.getHTML();
+    onChange(ed.isEmpty ? '' : html);
+  };
+
   useEffect(() => {
-    if (editor && content !== contentRef.current) {
-      const currentHtml = editor.getHTML();
-      if (currentHtml !== content) {
-        editor.commands.setContent(content || '');
-      }
-      contentRef.current = content;
+    if (!editor) return;
+    editor.on('update', handleUpdate);
+    return () => { editor.off('update', handleUpdate); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor]);
+
+  useEffect(() => {
+    if (!editor) return;
+    if (isInternalUpdate.current) {
+      isInternalUpdate.current = false;
+      return;
+    }
+    const currentHtml = editor.getHTML();
+    if (currentHtml !== content) {
+      editor.commands.setContent(content || '');
     }
   }, [editor, content]);
 
