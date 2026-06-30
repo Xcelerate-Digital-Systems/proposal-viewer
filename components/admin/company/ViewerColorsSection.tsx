@@ -205,7 +205,7 @@ export default function ViewerColorsSection({
             <div className="space-y-2 mt-1.5">
               <ColorPickerField label="Light text" value={sidebarTextColor} fallback="#ffffff" onChange={setSidebarTextColor} disabled={!isOwner} />
               <ColorPickerField
-                label="Inactive text"
+                label="Secondary text"
                 value={sidebarInactiveTextColor}
                 fallback={generateBrandPalette(accentColor, bgPrimary, bgSecondary, sidebarTextColor).mutedText}
                 onChange={(v) => setSidebarInactiveTextColor(v || null)}
