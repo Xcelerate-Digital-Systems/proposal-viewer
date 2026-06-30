@@ -294,9 +294,11 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
       payload.cover_show_prepared_by = showPreparedBy;
       payload.cover_show_avatar = showAvatar;
     }
-    // Client-logo fields are owned by the Design tab now (cover_client_logo_path,
-    // cover_show_client_logo, cover_client_logo_tint_color). The Cover tab only
-    // reads them to render the preview, so they're intentionally not in this payload.
+    if (cfg.fields.clientLogo) {
+      payload.cover_client_logo_path = clientLogoPath || null;
+      payload.cover_show_client_logo = showClientLogo;
+      payload.cover_client_logo_tint_color = clientLogoTintColor;
+    }
 
     await supabase.from(cfg.table).update(payload).eq('id', entity.id);
     setSaveStatus('saved');
@@ -305,7 +307,8 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
   }, [
     cfg, entity.id, coverEnabled, imagePath, subtitle, buttonText,
     colors, coverDate, showDate, preparedByMemberId,
-    showPreparedBy, showAvatar, onSave,
+    showPreparedBy, showAvatar, clientLogoPath, showClientLogo,
+    clientLogoTintColor, onSave, contentOnly,
   ]);
 
   const scheduleSave = useCallback((delay = 800) => {
@@ -327,7 +330,7 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
   }, [
     coverEnabled, subtitle, buttonText, imagePath,
     colors, coverDate, showDate, preparedByMemberId, showPreparedBy,
-    showAvatar,
+    showAvatar, clientLogoPath, showClientLogo, clientLogoTintColor,
   ]);
 
   /* ══════════════════════════════════════════════════════════════ */

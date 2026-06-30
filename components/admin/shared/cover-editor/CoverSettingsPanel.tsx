@@ -2,7 +2,8 @@
 'use client';
 
 import { useRef } from 'react';
-import { Trash2, Image, Eye, EyeOff, Palette, User, Calendar, Type } from 'lucide-react';
+import { Trash2, Image, Eye, EyeOff, Palette, User, Calendar, Type, Loader2, Upload } from 'lucide-react';
+import ColorPickerField from '@/components/ui/ColorPickerField';
 import CoverColorControls, { CoverColorValues } from '@/components/admin/shared/CoverColorControls';
 import PreparedBySelector from '@/components/admin/shared/PreparedBySelector';
 import Chip from '@/components/ui/Chip';
@@ -149,6 +150,7 @@ export default function CoverSettingsPanel({
   onColorsChange,
 }: CoverSettingsPanelProps) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const clientLogoFileRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="space-y-5">
@@ -250,9 +252,104 @@ export default function CoverSettingsPanel({
 
       <div className="border-t border-edge" />
 
-      {/* Client logo controls moved to the Design tab → Client Logo card.
-          Keep the cover_show_client_logo flag here is no longer toggled from the
-          Cover tab; it's set alongside the upload on the Design tab. */}
+      {/* ── Client Logo ────────────────────────────────── */}
+      {cfg.fields.clientLogo && (
+        <>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <SectionHeader icon={<Image size={14} className="text-faint" />} label="Client Logo" />
+              <Chip enabled={showClientLogo} onClick={() => setShowClientLogo(!showClientLogo)}>
+                {showClientLogo ? 'Visible' : 'Hidden'}
+              </Chip>
+            </div>
+
+            <input
+              ref={clientLogoFileRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onClientLogoUpload(f);
+                e.target.value = '';
+              }}
+            />
+
+            {clientLogoUrl ? (
+              <div className="flex items-start gap-3">
+                <div className="w-24 h-16 rounded-lg border border-edge-strong bg-surface flex items-center justify-center shrink-0 overflow-hidden">
+                  {clientLogoTintColor ? (
+                    <div
+                      className="w-full h-full"
+                      style={{
+                        backgroundColor: clientLogoTintColor,
+                        WebkitMaskImage: `url("${clientLogoUrl}")`,
+                        maskImage: `url("${clientLogoUrl}")`,
+                        WebkitMaskRepeat: 'no-repeat',
+                        maskRepeat: 'no-repeat',
+                        WebkitMaskPosition: 'center',
+                        maskPosition: 'center',
+                        WebkitMaskSize: 'contain',
+                        maskSize: 'contain',
+                      }}
+                    />
+                  ) : (
+                    <img src={clientLogoUrl} alt="" loading="lazy" className="max-w-full max-h-full object-contain" />
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <button
+                    onClick={() => clientLogoFileRef.current?.click()}
+                    disabled={uploadingClientLogo}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-prose bg-surface border border-edge-strong rounded-lg hover:bg-surface disabled:opacity-50 transition-colors"
+                  >
+                    {uploadingClientLogo ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                    Replace
+                  </button>
+                  <button
+                    onClick={onClientLogoRemove}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <Trash2 size={12} />
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => clientLogoFileRef.current?.click()}
+                disabled={uploadingClientLogo}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-edge-strong text-sm text-faint hover:border-teal/30 hover:text-teal transition-colors disabled:opacity-50"
+              >
+                {uploadingClientLogo ? <Loader2 size={14} className="animate-spin" /> : <Image size={14} />}
+                {uploadingClientLogo ? 'Uploading...' : 'Upload client logo'}
+              </button>
+            )}
+
+            {clientLogoUrl && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-dim">
+                    Flatten the logo to a single colour (good for placing on dark covers).
+                  </p>
+                  <Chip enabled={!!clientLogoTintColor} onClick={() => setClientLogoTintColor(clientLogoTintColor ? null : '#ffffff')}>
+                    Color overlay
+                  </Chip>
+                </div>
+                {clientLogoTintColor && (
+                  <ColorPickerField
+                    label="Overlay colour"
+                    value={clientLogoTintColor}
+                    fallback="#ffffff"
+                    onChange={(v) => setClientLogoTintColor(v)}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+          <div className="border-t border-edge" />
+        </>
+      )}
 
       {/* ── Cover Button Text (proposals only) ──────────── */}
       {cfg.fields.acceptButtonText && (

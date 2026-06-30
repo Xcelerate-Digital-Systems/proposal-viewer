@@ -10,7 +10,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Image as ImageIcon, Loader2, Trash2, Upload, Paintbrush, Type, MousePointerClick, RotateCcw } from 'lucide-react';
-import Chip from '@/components/ui/Chip';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
@@ -67,15 +66,6 @@ export default function CoverDesignPanel({
   /* ── Button-only colours (HeaderStyleCard owns the rest) ────── */
   const [buttonBg, setButtonBg] = useState(entity.cover_button_bg || '#01434A');
   const [buttonTextColor, setButtonTextColor] = useState(entity.cover_button_text_color || '#ffffff');
-
-  /* ── Client logo state ─────────────────────────────────────── */
-  const [clientLogoPath, setClientLogoPath] = useState(entity.cover_client_logo_path || '');
-  const [showClientLogo, setShowClientLogo] = useState(entity.cover_show_client_logo ?? false);
-  const [clientLogoTintColor, setClientLogoTintColor] = useState<string | null>(
-    entity.cover_client_logo_tint_color ?? null,
-  );
-  const [uploadingClientLogo, setUploadingClientLogo] = useState(false);
-  const clientLogoRef = useRef<HTMLInputElement>(null);
 
   /* ── Preview-only state ─────────────────────────────────────── */
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
@@ -176,16 +166,16 @@ export default function CoverDesignPanel({
   }, [entity]);
 
   useEffect(() => {
-    if (!clientLogoPath) { setClientLogoUrl(null); return; }
+    if (!entity.cover_client_logo_path) { setClientLogoUrl(null); return; }
     let cancelled = false;
     supabase.storage
       .from('proposals')
-      .createSignedUrl(clientLogoPath, 3600)
+      .createSignedUrl(entity.cover_client_logo_path, 3600)
       .then(({ data }) => {
         if (!cancelled && data?.signedUrl) setClientLogoUrl(data.signedUrl);
       });
     return () => { cancelled = true; };
-  }, [clientLogoPath]);
+  }, [entity.cover_client_logo_path]);
 
   useEffect(() => {
     if (!entity.prepared_by_member_id) { setResolvedMember(null); return; }
@@ -248,68 +238,6 @@ export default function CoverDesignPanel({
     }
     setImagePath('');
     await persist({ cover_image_path: null });
-  };
-
-  /* ── Client logo handlers ───────────────────────────────────── */
-  const handleClientLogoUpload = async (file: File) => {
-    if (file.size > 4 * 1024 * 1024) {
-      toast.error('Client logo must be 4 MB or smaller');
-      return;
-    }
-    setUploadingClientLogo(true);
-    try {
-      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const ext = safe.split('.').pop() || 'png';
-      const path = `${cfg.coverPrefix}client-logo/${entity.id}/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage
-        .from('proposals')
-        .upload(path, file, { upsert: true });
-      if (error) throw error;
-      setClientLogoPath(path);
-      // Auto-enable display the first time someone uploads — saves a click.
-      const nextShow = showClientLogo || true;
-      setShowClientLogo(nextShow);
-      await persist({ cover_client_logo_path: path, cover_show_client_logo: nextShow });
-    } catch {
-      toast.error('Logo upload failed');
-    } finally {
-      setUploadingClientLogo(false);
-      if (clientLogoRef.current) clientLogoRef.current.value = '';
-    }
-  };
-
-  const removeClientLogo = async () => {
-    if (clientLogoPath) {
-      await supabase.storage.from('proposals').remove([clientLogoPath]).catch(() => {});
-    }
-    setClientLogoPath('');
-    setClientLogoTintColor(null);
-    await persist({ cover_client_logo_path: null, cover_client_logo_tint_color: null });
-  };
-
-  const toggleShowClientLogo = () => {
-    const next = !showClientLogo;
-    setShowClientLogo(next);
-    persist({ cover_show_client_logo: next });
-  };
-
-  // Color-overlay chip: turns the tint on/off without throwing away the chosen
-  // colour. Off = null in the DB; On with no prior choice defaults to #ffffff
-  // (white-out on a dark cover is by far the most common use case).
-  const toggleColorOverlay = () => {
-    if (clientLogoTintColor) {
-      setClientLogoTintColor(null);
-      persist({ cover_client_logo_tint_color: null });
-    } else {
-      const next = '#ffffff';
-      setClientLogoTintColor(next);
-      persist({ cover_client_logo_tint_color: next });
-    }
-  };
-
-  const updateTintColor = (v: string) => {
-    setClientLogoTintColor(v);
-    persist({ cover_client_logo_tint_color: v });
   };
 
   /* ── Build colors object for the preview ───────────────────── */
@@ -418,103 +346,6 @@ export default function CoverDesignPanel({
               </p>
             </div>
 
-            {/* Client logo */}
-            {cfg.fields.clientLogo && (
-              <div className="pt-4 border-t border-edge space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-dim uppercase tracking-wider">Client Logo</p>
-                  <Chip enabled={showClientLogo} onClick={toggleShowClientLogo}>
-                    Show on cover
-                  </Chip>
-                </div>
-
-                <input
-                  ref={clientLogoRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) handleClientLogoUpload(f);
-                  }}
-                />
-
-                {clientLogoUrl ? (
-                  <div className="flex items-start gap-3">
-                    {/* Live preview of the upload — flips to the silhouette when the
-                        Color overlay chip is on so the user sees the rendered result. */}
-                    <div className="w-24 h-16 rounded-lg border border-edge-strong bg-surface flex items-center justify-center shrink-0 overflow-hidden">
-                      {clientLogoTintColor ? (
-                        <div
-                          className="w-full h-full"
-                          style={{
-                            backgroundColor: clientLogoTintColor,
-                            WebkitMaskImage: `url("${clientLogoUrl}")`,
-                            maskImage: `url("${clientLogoUrl}")`,
-                            WebkitMaskRepeat: 'no-repeat',
-                            maskRepeat: 'no-repeat',
-                            WebkitMaskPosition: 'center',
-                            maskPosition: 'center',
-                            WebkitMaskSize: 'contain',
-                            maskSize: 'contain',
-                          }}
-                        />
-                      ) : (
-                        <img src={clientLogoUrl} alt="" loading="lazy" className="max-w-full max-h-full object-contain" />
-                      )}
-                    </div>
-                    <div className="space-y-1.5">
-                      <button
-                        onClick={() => clientLogoRef.current?.click()}
-                        disabled={uploadingClientLogo}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-prose bg-surface border border-edge-strong rounded-lg hover:bg-surface disabled:opacity-50 transition-colors"
-                      >
-                        {uploadingClientLogo ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
-                        Replace
-                      </button>
-                      <button
-                        onClick={removeClientLogo}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={12} />
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => clientLogoRef.current?.click()}
-                    disabled={uploadingClientLogo}
-                    className="flex items-center gap-2 px-4 py-2.5 w-full rounded-lg border-2 border-dashed border-edge-strong text-faint hover:border-teal/40 hover:text-teal transition-colors disabled:opacity-50"
-                  >
-                    {uploadingClientLogo ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
-                    <span className="text-xs font-medium">Upload client logo</span>
-                  </button>
-                )}
-
-                {clientLogoUrl && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-detail text-dim">
-                        Flatten the logo to a single colour (good for placing on dark covers).
-                      </p>
-                      <Chip enabled={!!clientLogoTintColor} onClick={toggleColorOverlay}>
-                        Color overlay
-                      </Chip>
-                    </div>
-                    {clientLogoTintColor && (
-                      <ColorPickerField
-                        label="Overlay colour"
-                        value={clientLogoTintColor}
-                        fallback="#ffffff"
-                        onChange={updateTintColor}
-                      />
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
           </div>
         </SectionCard>
 
@@ -611,9 +442,9 @@ export default function CoverDesignPanel({
             bodyFontWeight={liveFontBodyWeight || bodyFontWeight}
             buttonFont={liveFontButtonFamily || buttonFont}
             buttonFontWeight={liveFontButtonWeight || buttonFontWeight}
-            showClientLogo={showClientLogo}
+            showClientLogo={entity.cover_show_client_logo ?? false}
             clientLogoUrl={clientLogoUrl}
-            clientLogoTintColor={clientLogoTintColor}
+            clientLogoTintColor={entity.cover_client_logo_tint_color ?? null}
             showDate={entity.cover_show_date ?? false}
             coverDate={entity.cover_date || ''}
             showPreparedBy={entity.cover_show_prepared_by ?? true}
