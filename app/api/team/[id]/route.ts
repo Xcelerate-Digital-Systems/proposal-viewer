@@ -98,10 +98,10 @@ export async function PATCH(
         if (
           member.role === 'admin' &&
           !member.is_super_admin &&
-          (target.role === 'owner' || target.role === 'admin')
+          target.role === 'owner'
         ) {
           return NextResponse.json(
-            { error: 'Admins can only edit members' },
+            { error: 'Admins cannot edit the owner' },
             { status: 403 }
           );
         }

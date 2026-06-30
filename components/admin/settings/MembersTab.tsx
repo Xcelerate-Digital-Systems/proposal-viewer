@@ -280,13 +280,13 @@ export default function MembersTab({
               const canEditProfile =
                 isSuperAdmin ||
                 isCurrentUser ||
-                (canManage && !isCurrentUser && (isOwner || isSuperAdmin || (isAdmin && m.role === 'member')));
+                (canManage && !isCurrentUser && m.role !== 'owner');
               const canEditRoleOrRemove =
                 canManage &&
                 !isCurrentUser &&
                 (isOwner || isSuperAdmin || (isAdmin && m.role === 'member'));
 
-              const canEditNotifs = isSuperAdmin || isCurrentUser || canEditRoleOrRemove;
+              const canEditNotifs = isSuperAdmin || isCurrentUser || canEditProfile;
 
               const showMenu = actionMenuId === m.id;
 
