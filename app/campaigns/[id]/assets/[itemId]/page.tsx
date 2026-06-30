@@ -747,25 +747,52 @@ function ItemViewerContent({
         );
       })()}
 
-      {editingVersionId !== undefined && currentItem && (() => {
-        const editing = versions.find((v) => (v.id ?? null) === editingVersionId);
-        if (!editing) {
-          setEditingVersionId(undefined);
-          return null;
-        }
-        return (
-          <AddVersionModal
-            item={currentItem}
-            nextVersionNumber={editing.versionNumber}
-            creating={false}
-            editingVersion={editing}
-            onUpdate={updateVersion}
-            onSubmit={createVersion}
-            onClose={() => setEditingVersionId(undefined)}
-            onUploadAsset={uploadAsset}
-          />
-        );
-      })()}
+      <EditVersionModalSlot
+        editingVersionId={editingVersionId}
+        versions={versions}
+        currentItem={mergedItem}
+        updateVersion={updateVersion}
+        createVersion={createVersion}
+        uploadAsset={uploadAsset}
+        onClose={() => setEditingVersionId(undefined)}
+      />
     </>
+  );
+}
+
+import type { VersionView } from '@/lib/feedback/versions';
+
+function EditVersionModalSlot({
+  editingVersionId,
+  versions,
+  currentItem,
+  updateVersion,
+  createVersion,
+  uploadAsset,
+  onClose,
+}: {
+  editingVersionId: string | null | undefined;
+  versions: VersionView[];
+  currentItem: FeedbackItem | null;
+  updateVersion: (id: string | null, patch: { notes?: string | null; assets: Partial<import('@/lib/supabase').FeedbackItemVersion> }) => Promise<boolean>;
+  createVersion: (data: { notes?: string | null; assets: Partial<import('@/lib/supabase').FeedbackItemVersion>; resetToStage?: FeedbackStatus | null }) => Promise<import('@/lib/supabase').FeedbackItemVersion | null>;
+  uploadAsset: (file: File) => Promise<string | null>;
+  onClose: () => void;
+}) {
+  if (editingVersionId === undefined || !currentItem) return null;
+  const editing = versions.find((v) => (v.id ?? null) === editingVersionId);
+  if (!editing) return null;
+
+  return (
+    <AddVersionModal
+      item={currentItem}
+      nextVersionNumber={editing.versionNumber}
+      creating={false}
+      editingVersion={editing}
+      onUpdate={updateVersion}
+      onSubmit={createVersion}
+      onClose={onClose}
+      onUploadAsset={uploadAsset}
+    />
   );
 }
