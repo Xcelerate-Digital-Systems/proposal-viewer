@@ -404,6 +404,8 @@ export type FeedbackItem = {
   updated_at: string;
   board_x: number | null;
   board_y: number | null;
+  /** Custom node colour on the whiteboard. Null uses the default type tint. */
+  board_color: string | null;
   share_token: string | null;
   /** When set, the viewer renders the assets from this row in `review_item_versions`.
    *  Null means render the v1 fields already on the item itself. */

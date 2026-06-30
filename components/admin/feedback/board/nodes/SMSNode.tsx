@@ -7,7 +7,7 @@ export default function SMSNode(props: NodeItemProps) {
   return (
     <IconShell
       {...props}
-      icon={<MessageSquare size={32} strokeWidth={1.8} className="text-white" />}
+      icon={<MessageSquare size={40} strokeWidth={1.8} className="text-white" />}
       label="SMS"
       tint="#10B981"
       solid

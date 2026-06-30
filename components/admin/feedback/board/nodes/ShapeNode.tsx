@@ -694,16 +694,9 @@ function DecisionShape({
 
 // Solid colored 45°-rotated square with an upright white icon centered.
 //
-// Sizes are tuned so every node type shares the same left/right connection
-// Y of 100. That means a diamond, an Email/SMS circle, and a webpage card
-// dropped on the same row connect with straight horizontal arrows.
-//
-//   circle center Y  = ICON_LABEL_AREA (56) + ICON_SIZE/2 (44)           = 100
-//   diamond corner Y = DIAMOND_LABEL_AREA (79) + DIAMOND_BOX_SIZE/2 (21) = 100
-//   card side Y      = CARD_SIDE_HANDLE_Y                                = 100
-//
-// Diamonds are deliberately small — events / logic markers shouldn't
-// dominate the channel (Email/SMS) or page nodes visually.
+// Left/right handles sit at DIAMOND_BOX_SIZE/2 from the node's top edge.
+// When nodes are dropped on the same row, the canvas Y offset determines
+// horizontal alignment between diamonds, circles, and page cards.
 const DIAMOND_SIDE = 30;
 const DIAMOND_BOX_SIZE = 42;                       // 2 * 21 — keeps corner Y on integer px
 const DIAMOND_INSET = (DIAMOND_BOX_SIZE - DIAMOND_SIDE) / 2;
@@ -845,7 +838,7 @@ function DiamondVisual({
         }}
       />
       <div className="absolute inset-0 flex items-center justify-center text-white pointer-events-none">
-        <Icon size={14} strokeWidth={2} />
+        <Icon size={16} strokeWidth={2} />
       </div>
     </div>
   );

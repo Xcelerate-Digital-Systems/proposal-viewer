@@ -34,6 +34,7 @@ import CanvasContextMenu, { type ContextTarget } from './CanvasContextMenu';
 import AlignmentGuides from './AlignmentGuides';
 import ShapeSideDrawer from './ShapeSideDrawer';
 import NoteSideDrawer from './NoteSideDrawer';
+import ItemSideDrawer from './ItemSideDrawer';
 import ExportMenu from './ExportMenu';
 import { useFeedbackBoard } from './useFeedbackBoard';
 import { useFeedbackBoardContextOrThrow, type NewShape } from './FeedbackBoardContext';
@@ -89,6 +90,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
   const [contextMenu, setContextMenu] = useState<ContextTarget | null>(null);
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   type ClipboardEntry =
     | { kind: 'shape'; data: Omit<NewShape, never> }
@@ -518,10 +520,13 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
     if (node.id.startsWith('shape-')) {
       setSelectedShapeId(node.id.slice(6));
       setSelectedNoteId(null);
+      setSelectedItemId(null);
     } else if (node.id.startsWith('note-')) {
       setSelectedNoteId(node.id.slice(5));
       setSelectedShapeId(null);
+      setSelectedItemId(null);
     } else {
+      setSelectedItemId(node.id);
       setSelectedShapeId(null);
       setSelectedNoteId(null);
     }
@@ -530,6 +535,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
   const clearDrawerSelection = useCallback(() => {
     setSelectedShapeId(null);
     setSelectedNoteId(null);
+    setSelectedItemId(null);
   }, []);
 
   /* ── Keyboard shortcuts ────────────────────────────────── */
@@ -773,9 +779,15 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
               if (contextMenu.nodeId.startsWith('shape-')) {
                 setSelectedShapeId(contextMenu.nodeId.slice(6));
                 setSelectedNoteId(null);
+                setSelectedItemId(null);
               } else if (contextMenu.nodeId.startsWith('note-')) {
                 setSelectedNoteId(contextMenu.nodeId.slice(5));
                 setSelectedShapeId(null);
+                setSelectedItemId(null);
+              } else {
+                setSelectedItemId(contextMenu.nodeId);
+                setSelectedShapeId(null);
+                setSelectedNoteId(null);
               }
             } : undefined}
           />
@@ -803,6 +815,18 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
               onUpdate={(patch) => ctx.updateNote(note.id, patch)}
               onDelete={() => { ctx.deleteNote(note.id); setSelectedNoteId(null); }}
               onClose={() => setSelectedNoteId(null)}
+            />
+          );
+        })()}
+
+        {selectedItemId && (() => {
+          const item = ctx.items.find((i) => i.id === selectedItemId);
+          if (!item) return null;
+          return (
+            <ItemSideDrawer
+              item={item}
+              onUpdateColor={(color) => ctx.updateItemBoardColor(item.id, color)}
+              onClose={() => setSelectedItemId(null)}
             />
           );
         })()}

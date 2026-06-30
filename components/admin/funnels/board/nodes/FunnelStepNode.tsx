@@ -310,7 +310,7 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
       }`}
       style={{ width: ICON_SIZE, height: ICON_SIZE, backgroundColor: tint }}
     >
-      <StepIcon slug={iconSlug} size={48} />
+      <StepIcon slug={iconSlug} size={56} />
       {!readOnly && (
         <div className="absolute inset-0 rounded-full bg-ink/55 text-white flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
           {step.url && (

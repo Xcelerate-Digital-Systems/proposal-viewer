@@ -50,6 +50,7 @@ interface ContextValue {
   removeItemFromBoard: (itemId: string) => Promise<void>;
   updateItemStatus: (itemId: string, status: FeedbackStatus) => Promise<void>;
   updateItemBoardPosition: (itemId: string, x: number, y: number) => Promise<void>;
+  updateItemBoardColor: (itemId: string, color: string | null) => Promise<void>;
 
   // Sticky notes
   boardNotes: FeedbackBoardNote[];
@@ -318,6 +319,21 @@ export function FeedbackBoardProvider({
     [toast, refreshItems]
   );
 
+  const updateItemBoardColor = useCallback(
+    async (itemId: string, color: string | null) => {
+      setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, board_color: color } : i)));
+      const { error } = await supabase
+        .from('review_items')
+        .update({ board_color: color, updated_at: new Date().toISOString() })
+        .eq('id', itemId);
+      if (error) {
+        toast.error('Failed to save colour');
+        refreshItems();
+      }
+    },
+    [toast, refreshItems]
+  );
+
   /* ─── Sticky notes ─────────────────────────────────────────── */
 
   const addNote = useCallback(async (): Promise<FeedbackBoardNote | null> => {
@@ -523,6 +539,7 @@ export function FeedbackBoardProvider({
       removeItemFromBoard,
       updateItemStatus,
       updateItemBoardPosition,
+      updateItemBoardColor,
       boardNotes,
       addNote,
       updateNote,
@@ -545,7 +562,7 @@ export function FeedbackBoardProvider({
       items, placedItems, unplacedItems,
       customDomain, loading,
       refreshItems,
-      placeItem, removeItemFromBoard, updateItemStatus, updateItemBoardPosition,
+      placeItem, removeItemFromBoard, updateItemStatus, updateItemBoardPosition, updateItemBoardColor,
       boardNotes, addNote, updateNote, deleteNote,
       boardEdges, createEdge, updateEdge, deleteEdge,
       shapes, createShape, updateShape, deleteShape,

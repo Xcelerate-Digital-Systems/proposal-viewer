@@ -469,6 +469,8 @@ export function IconShell({
     onNavigate?.(item.id);
   };
 
+  const activeTint = item.board_color || tint;
+
   // Label area (56) + circle (88) + view link (20) = 164.
   const ICON_SHELL_H = 56 + ICON_SIZE + 20;
 
@@ -494,7 +496,7 @@ export function IconShell({
           className={`group relative shrink-0 flex items-center justify-center rounded-full shadow-[0_3px_8px_rgba(20,20,40,0.18)] transition-shadow ${
             selected ? 'ring-2 ring-teal ring-offset-2 ring-offset-white' : 'hover:shadow-lg'
           } ${solid ? '' : 'border border-edge'}`}
-          style={{ width: ICON_SIZE, height: ICON_SIZE, backgroundColor: tint }}
+          style={{ width: ICON_SIZE, height: ICON_SIZE, backgroundColor: activeTint }}
         >
           <div className={`relative z-10 ${solid ? '' : 'text-ink'}`}>{icon}</div>
           <StatusPicker
