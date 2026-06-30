@@ -13,115 +13,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { authFetch } from '@/lib/auth-fetch';
 import {
-  Loader2, Upload, Trash2, ChevronDown,
-  Image as ImageIcon, RotateCcw, Hash, LayoutPanelTop,
-  Paintbrush, Package, DollarSign, ArrowUpRight, CheckSquare,
+  Loader2, Upload, Trash2,
+  Image as ImageIcon, RotateCcw,
 } from 'lucide-react';
-import Link from 'next/link';
-import { fontFamily } from '@/lib/google-fonts';
-import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
-import FontSelect from '@/components/admin/shared/FontSelect';
 import Slider from '@/components/ui/Slider';
-import ColorPickerField from '@/components/ui/ColorPickerField';
-import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
-import CoverDesignPanel from '@/components/admin/builder-sections/CoverDesignPanel';
-import PackagesDesignPanel from '@/components/admin/builder-sections/PackagesDesignPanel';
-import { PricingDesignPreview, DecisionDesignPreview, type FontLiveOverrides } from '@/components/admin/builder-sections/DesignPreviews';
-import StickyPreviewAside from '@/components/admin/shared/StickyPreviewAside';
+import type { FontLiveOverrides } from '@/components/admin/builder-sections/DesignPreviews';
 import type { CoverEditorEntity } from '@/components/admin/shared/cover-editor/CoverEditorTypes';
 import {
-  EntityType, PageOrientation, TextPageDefaults,
-  orientationOptions, SaveStatus,
+  EntityType, PageOrientation, TextPageDefaults, SaveStatus,
 } from './DesignTabTypes';
-
-/* ------------------------------------------------------------------ */
-/*  FontSizeInput — number input with a px suffix                      */
-/* ------------------------------------------------------------------ */
-
-function FontSizeInput({
-  label,
-  value,
-  onChange,
-  placeholder,
-  min = 8,
-  max = 96,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  min?: number;
-  max?: number;
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="block text-xs font-medium text-prose">{label}</label>
-      <div className="relative">
-        <input
-          type="number"
-          inputMode="numeric"
-          min={min}
-          max={max}
-          value={value}
-          placeholder={placeholder}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full pl-3 pr-9 py-2 text-sm border border-edge-strong rounded-lg bg-white text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 transition-colors"
-        />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-detail text-faint pointer-events-none">px</span>
-      </div>
-      <p className="text-detail text-faint">Leave blank to use the workspace default.</p>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  TipTap → plain text                                                */
-/* ------------------------------------------------------------------ */
-
-interface TipTapNode {
-  type?: string;
-  text?: string;
-  content?: TipTapNode[];
-}
-
-/** Flatten a TipTap document to plain text. Walks `content` recursively and
- *  concatenates `text` nodes, inserting a space between block siblings. */
-function tipTapToPlainText(node: unknown): string {
-  const n = node as TipTapNode | null;
-  if (!n) return '';
-  if (typeof n.text === 'string') return n.text;
-  if (!Array.isArray(n.content)) return '';
-  return n.content
-    .map((child) => tipTapToPlainText(child))
-    .filter(Boolean)
-    .join(' ');
-}
-
-/* ------------------------------------------------------------------ */
-/*  Group heading                                                      */
-/* ------------------------------------------------------------------ */
-
-function GroupHeading({ title, hint, open, onToggle }: { title: string; hint?: string; open: boolean; onToggle: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="w-full pt-4 text-left group"
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-baseline gap-3 flex-wrap min-w-0">
-          <h3 className="text-xl font-semibold text-ink">{title}</h3>
-          {hint && <span className="text-xs text-faint">{hint}</span>}
-        </div>
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-faint group-hover:text-dim transition-transform ${open ? 'rotate-180' : ''}`}
-        />
-      </div>
-      <div className="mt-2 h-px bg-edge" />
-    </button>
-  );
-}
+import { GroupHeading, tipTapToPlainText } from './design-helpers';
+import GlobalsGroup from './GlobalsGroup';
+import CoverGroup from './CoverGroup';
+import PricingGroup from './PricingGroup';
+import PackageGroup from './PackageGroup';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -377,9 +282,11 @@ export default function ViewerStyleSection({
     })();
     return () => { cancelled = true; };
   }, [entityId, type]);
-  const basePath = type === 'template' ? `/templates/${entityId}` : `/proposals/${entityId}`;
 
-  /* ── Reusable Background Image block (used inside Text Page card) ── */
+  const basePath = type === 'template' ? `/templates/${entityId}` : `/proposals/${entityId}`;
+  const entityKey = type === 'template' ? 'template_id' as const : 'proposal_id' as const;
+
+  /* ── Reusable Background Image block (passed to GlobalsGroup) ── */
   const backgroundImageBlock = (
     <div className="space-y-3">
       <div className="flex gap-2">
@@ -481,257 +388,67 @@ export default function ViewerStyleSection({
           ============================================================ */}
       <GroupHeading title="Globals" hint="Apply across every page" open={openGroups.has('Globals')} onToggle={() => toggleGroup('Globals')} />
 
-      {openGroups.has('Globals') && <div className="flex gap-6 items-start">
-        <div className="flex-1 min-w-0 space-y-5">
-          <SectionCard
-            title="Global Page Defaults"
-            description="Orientation and typography — applied across text, pricing, and packages pages."
-            icon={<LayoutPanelTop size={14} className="text-faint" />}
-          >
-            <div className="space-y-5">
-              {/* Orientation — compact chip row */}
-              <div>
-                <p className="text-detail font-semibold text-dim uppercase tracking-wider mb-2">Orientation</p>
-                <div className="flex gap-2">
-                  {orientationOptions.map((opt) => (
-                    <button
-                      key={opt.key}
-                      onClick={() => setPageOrientation(opt.key)}
-                      className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border transition-colors ${
-                        pageOrientation === opt.key
-                          ? 'bg-teal/10 border-teal/40 text-teal font-medium'
-                          : 'bg-white border-edge-strong text-dim hover:bg-surface'
-                      }`}
-                    >
-                      <span className={`rounded-sm border-2 flex-shrink-0 ${
-                        pageOrientation === opt.key ? 'border-teal' : 'border-edge-hover'
-                      } ${opt.key === 'landscape' ? 'w-4 h-3.5' : 'w-3.5 h-4'}`} />
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Typography — 3 fonts grouped together. hidePreview drops the
-                  per-font inline preview tile (the sticky aside shows them now). */}
-              <div className="pt-4 border-t border-edge">
-                <p className="text-detail font-semibold text-dim uppercase tracking-wider mb-3">Typography</p>
-                <div className="space-y-4">
-                  <FontSelect
-                    label="Page title font"
-                    description="The big H1 at the top of every page. Leave blank to use the Heading font."
-                    value={titleFontFamily}
-                    onChange={setTitleFontFamily}
-                    weight={titleFontWeight}
-                    onWeightChange={setTitleFontWeight}
-                    transform={titleFontTransform}
-                    onTransformChange={setTitleFontTransform}
-                    hideInlinePreview
-                  />
-                  <FontSizeInput
-                    label="Title size"
-                    value={titleFontSize}
-                    onChange={setTitleFontSize}
-                    placeholder="36"
-                  />
-                  <FontSelect
-                    label="Heading font"
-                    description={
-                      companyDefaults.font_heading
-                        ? `Section H2/H3 inside body. Workspace default: ${companyDefaults.font_heading}.`
-                        : 'Section H2/H3 inside body. Leave blank to inherit the workspace default.'
-                    }
-                    value={fontHeadingFamily}
-                    onChange={setFontHeadingFamily}
-                    weight={fontHeadingWeight}
-                    onWeightChange={setFontHeadingWeight}
-                    transform={fontHeadingTransform}
-                    onTransformChange={setFontHeadingTransform}
-                    hideInlinePreview
-                  />
-                  <FontSizeInput
-                    label="Heading size"
-                    value={fontHeadingSize}
-                    onChange={setFontHeadingSize}
-                    placeholder="18"
-                  />
-                  <FontSelect
-                    label="Body font"
-                    description={
-                      companyDefaults.font_body
-                        ? `Paragraph copy. Workspace default: ${companyDefaults.font_body}.`
-                        : 'Paragraph copy. Leave blank to inherit the workspace default.'
-                    }
-                    value={fontBodyFamily}
-                    onChange={setFontBodyFamily}
-                    weight={fontBodyWeight}
-                    onWeightChange={setFontBodyWeight}
-                    transform={fontBodyTransform}
-                    onTransformChange={setFontBodyTransform}
-                    hideInlinePreview
-                  />
-                  <FontSizeInput
-                    label="Body size"
-                    value={fontBodySize}
-                    onChange={setFontBodySize}
-                    placeholder={companyDefaults.font_size || '14'}
-                  />
-                  <FontSelect
-                    label="Button font"
-                    description="Cover call-to-action button. Leave blank to use the Heading font."
-                    value={fontButtonFamily}
-                    onChange={setFontButtonFamily}
-                    weight={fontButtonWeight}
-                    onWeightChange={setFontButtonWeight}
-                    hideInlinePreview
-                  />
-                </div>
-              </div>
-
-            </div>
-          </SectionCard>
-
-          {/* Page Colours + Background Image — all page-level visual
-              settings in one card so they're easy to find together. */}
-          <SectionCard
-            title="Page Colours"
-            description="Background, body text, headings, and background image. Applies to text, pricing and packages pages."
-            icon={<Paintbrush size={14} className="text-faint" />}
-            action={
-              <button
-                onClick={onTpResetToCompany}
-                className="flex items-center gap-1.5 text-xs text-faint hover:text-teal transition-colors"
-              >
-                <RotateCcw size={12} />
-                Reset
-              </button>
-            }
-          >
-            <div className="space-y-4">
-              <ColorPickerField
-                label="Background"
-                value={tpBgColor}
-                fallback={companyDefaults.bg_color}
-                onChange={setTpBgColor}
-              />
-              <ColorPickerField
-                label="Body Text"
-                value={tpTextColor}
-                fallback={companyDefaults.text_color}
-                onChange={setTpTextColor}
-              />
-              <ColorPickerField
-                label="Headings"
-                value={tpHeadingColor}
-                fallback={companyDefaults.heading_color || companyDefaults.text_color}
-                onChange={setTpHeadingColor}
-              />
-
-              <div className="pt-3 border-t border-edge">
-                <p className="text-detail font-semibold text-dim uppercase tracking-wider mb-2">Background Image</p>
-                {backgroundImageBlock}
-              </div>
-            </div>
-          </SectionCard>
-
-          {/* Page Number Badge — body pages only; sits alongside Globals so it
-              shares the typography preview aside. */}
-          <SectionCard
-            title="Page Number Badge"
-            description="Leave blank to use your accent colour (circle) and white (text)."
-            icon={<Hash size={14} className="text-faint" />}
-            action={
-              <button
-                onClick={() => {
-                  setPageNumCircleColor(null);
-                  setPageNumTextColor(null);
-                }}
-                className="flex items-center gap-1.5 text-xs text-faint hover:text-teal transition-colors"
-              >
-                <RotateCcw size={12} />
-                Reset
-              </button>
-            }
-          >
-            <div className="space-y-4">
-              <ColorPickerField
-                label="Circle Colour"
-                value={pageNumCircleColor}
-                fallback={companyDefaults.accent_color}
-                onChange={setPageNumCircleColor}
-                onReset={() => setPageNumCircleColor(null)}
-              />
-              <ColorPickerField
-                label="Text Colour"
-                value={pageNumTextColor}
-                fallback="#ffffff"
-                onChange={setPageNumTextColor}
-                onReset={() => setPageNumTextColor(null)}
-              />
-            </div>
-          </SectionCard>
-        </div>
-
-        <StickyPreviewAside>
-          <GoogleFontLoader fonts={[
-            titleFontFamily || fontHeadingFamily || companyDefaults.font_heading,
-            fontHeadingFamily || companyDefaults.font_heading,
-            fontBodyFamily || companyDefaults.font_body,
-          ]} />
-          <div
-            className="rounded-lg overflow-hidden border border-edge-strong bg-surface p-8 space-y-4"
-            style={{ backgroundColor: tpBgColor || companyDefaults.bg_color }}
-          >
-            <p
-              className="leading-tight"
-              style={{
-                color: tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color,
-                fontFamily: fontFamily(titleFontFamily || fontHeadingFamily || companyDefaults.font_heading, 'system-ui, sans-serif'),
-                fontWeight: Number(titleFontWeight || fontHeadingWeight || '600'),
-                fontSize: titleFontSize ? `${titleFontSize}px` : '36px',
-                textTransform: (titleFontTransform || fontHeadingTransform || 'none') as React.CSSProperties['textTransform'],
-              }}
-            >
-              {entityTitle || 'Sample page title'}
-            </p>
-            <p
-              className="leading-snug"
-              style={{
-                color: tpHeadingColor || companyDefaults.heading_color || companyDefaults.text_color,
-                fontFamily: fontFamily(fontHeadingFamily || companyDefaults.font_heading, 'system-ui, sans-serif'),
-                fontWeight: fontHeadingWeight ? Number(fontHeadingWeight) : undefined,
-                fontSize: fontHeadingSize ? `${fontHeadingSize}px` : '22px',
-                textTransform: (fontHeadingTransform || 'none') as React.CSSProperties['textTransform'],
-              }}
-            >
-              A section heading
-            </p>
-            <p
-              className="leading-relaxed"
-              style={{
-                color: tpTextColor || companyDefaults.text_color,
-                fontFamily: fontFamily(fontBodyFamily || companyDefaults.font_body, 'system-ui, sans-serif'),
-                fontWeight: Number(fontBodyWeight || '400'),
-                fontSize: fontBodySize ? `${fontBodySize}px` : `${companyDefaults.font_size || '15'}px`,
-                textTransform: (fontBodyTransform || 'none') as React.CSSProperties['textTransform'],
-              }}
-            >
-              {bodySnippet || 'Body text on a proposal page. This is what your client will read — adjust the body font, weight, and colour to match your brand voice.'}
-            </p>
-          </div>
-        </StickyPreviewAside>
-      </div>}
+      {openGroups.has('Globals') && (
+        <GlobalsGroup
+          pageOrientation={pageOrientation}
+          setPageOrientation={setPageOrientation}
+          titleFontFamily={titleFontFamily}
+          setTitleFontFamily={setTitleFontFamily}
+          titleFontWeight={titleFontWeight}
+          setTitleFontWeight={setTitleFontWeight}
+          titleFontSize={titleFontSize}
+          setTitleFontSize={setTitleFontSize}
+          titleFontTransform={titleFontTransform}
+          setTitleFontTransform={setTitleFontTransform}
+          fontHeadingFamily={fontHeadingFamily}
+          setFontHeadingFamily={setFontHeadingFamily}
+          fontHeadingWeight={fontHeadingWeight}
+          setFontHeadingWeight={setFontHeadingWeight}
+          fontHeadingSize={fontHeadingSize}
+          setFontHeadingSize={setFontHeadingSize}
+          fontHeadingTransform={fontHeadingTransform}
+          setFontHeadingTransform={setFontHeadingTransform}
+          fontBodyFamily={fontBodyFamily}
+          setFontBodyFamily={setFontBodyFamily}
+          fontBodyWeight={fontBodyWeight}
+          setFontBodyWeight={setFontBodyWeight}
+          fontBodySize={fontBodySize}
+          setFontBodySize={setFontBodySize}
+          fontBodyTransform={fontBodyTransform}
+          setFontBodyTransform={setFontBodyTransform}
+          fontButtonFamily={fontButtonFamily}
+          setFontButtonFamily={setFontButtonFamily}
+          fontButtonWeight={fontButtonWeight}
+          setFontButtonWeight={setFontButtonWeight}
+          tpBgColor={tpBgColor}
+          setTpBgColor={setTpBgColor}
+          tpTextColor={tpTextColor}
+          setTpTextColor={setTpTextColor}
+          tpHeadingColor={tpHeadingColor}
+          setTpHeadingColor={setTpHeadingColor}
+          pageNumCircleColor={pageNumCircleColor}
+          setPageNumCircleColor={setPageNumCircleColor}
+          pageNumTextColor={pageNumTextColor}
+          setPageNumTextColor={setPageNumTextColor}
+          companyDefaults={companyDefaults}
+          onTpResetToCompany={onTpResetToCompany}
+          backgroundImageBlock={backgroundImageBlock}
+          entityTitle={entityTitle}
+          bodySnippet={bodySnippet}
+        />
+      )}
 
       {/* ============================================================
           2. COVER PAGE
           ============================================================ */}
       <GroupHeading title="Cover Page" hint="Logo, avatar and titles live in the Cover tab" open={openGroups.has('Cover Page')} onToggle={() => toggleGroup('Cover Page')} />
 
-      {openGroups.has('Cover Page') && (coverEntity ? (
-        <CoverDesignPanel
-          type={type === 'document' ? 'document' : type}
-          entity={coverEntity}
-          onSave={onCoverSave}
+      {openGroups.has('Cover Page') && (
+        <CoverGroup
+          type={type}
+          basePath={basePath}
+          coverEntity={coverEntity}
+          onCoverSave={onCoverSave}
           liveTitleFontFamily={titleFontFamily}
           liveTitleFontWeight={titleFontWeight}
           liveFontHeadingFamily={fontHeadingFamily}
@@ -741,25 +458,7 @@ export default function ViewerStyleSection({
           liveFontButtonFamily={fontButtonFamily}
           liveFontButtonWeight={fontButtonWeight}
         />
-      ) : (
-        <SectionCard
-          title="Cover Design"
-          description="Cover-specific colours, background image, and gradient."
-          icon={<Paintbrush size={14} className="text-faint" />}
-          action={
-            <Link
-              href={`${basePath}/cover`}
-              className="flex items-center gap-1 text-xs font-medium text-teal hover:underline"
-            >
-              Open Cover tab <ArrowUpRight size={12} />
-            </Link>
-          }
-        >
-          <p className="text-xs text-faint">
-            Cover design controls appear here when the page passes a cover entity.
-          </p>
-        </SectionCard>
-      ))}
+      )}
 
       {/* ============================================================
           3. PRICING PAGE — quote pages
@@ -768,109 +467,30 @@ export default function ViewerStyleSection({
         <>
           <GroupHeading title="Pricing Page" hint="Line item table, totals, payment schedule" open={openGroups.has('Pricing Page')} onToggle={() => toggleGroup('Pricing Page')} />
 
-          {openGroups.has('Pricing Page') && <div className="flex gap-6 items-start">
-            <div className="flex-1 min-w-0">
-              <SectionCard
-                title="Pricing Design"
-                description="Colour the pricing page that appears inside the proposal. Body background, card chrome and headings still inherit from Globals."
-                icon={<DollarSign size={14} className="text-faint" />}
-                action={
-                  <button
-                    onClick={() => {
-                      setPricingHeaderTextColor(null);
-                      setPricingTextColor(null);
-                      setPricingPriceTitleColor(null);
-                      setPricingPriceColor(null);
-                      setPricingPaymentScheduleNameColor(null);
-                      setPricingPaymentSchedulePriceColor(null);
-                      setPricingAccentBarColor(null);
-                      setPricingDotColor(null);
-                    }}
-                    className="flex items-center gap-1.5 text-xs text-faint hover:text-teal transition-colors"
-                  >
-                    <RotateCcw size={12} />
-                    Reset
-                  </button>
-                }
-              >
-                <div className="space-y-4">
-                  <ColorPickerField
-                    label="Header Text"
-                    value={pricingHeaderTextColor}
-                    fallback={companyDefaults.heading_color || companyDefaults.text_color}
-                    onChange={setPricingHeaderTextColor}
-                    onReset={() => setPricingHeaderTextColor(null)}
-                  />
-                  <ColorPickerField
-                    label="Text"
-                    value={pricingTextColor}
-                    fallback={companyDefaults.text_color}
-                    onChange={setPricingTextColor}
-                    onReset={() => setPricingTextColor(null)}
-                  />
-                  <ColorPickerField
-                    label="Price Title"
-                    value={pricingPriceTitleColor}
-                    fallback={companyDefaults.heading_color || companyDefaults.text_color}
-                    onChange={setPricingPriceTitleColor}
-                    onReset={() => setPricingPriceTitleColor(null)}
-                  />
-                  <ColorPickerField
-                    label="Price"
-                    value={pricingPriceColor}
-                    fallback={companyDefaults.heading_color || companyDefaults.text_color}
-                    onChange={setPricingPriceColor}
-                    onReset={() => setPricingPriceColor(null)}
-                  />
-                  <ColorPickerField
-                    label="Payment Schedule Name"
-                    value={pricingPaymentScheduleNameColor}
-                    fallback={companyDefaults.accent_color}
-                    onChange={setPricingPaymentScheduleNameColor}
-                    onReset={() => setPricingPaymentScheduleNameColor(null)}
-                  />
-                  <ColorPickerField
-                    label="Payment Schedule Price"
-                    value={pricingPaymentSchedulePriceColor}
-                    fallback={companyDefaults.accent_color}
-                    onChange={setPricingPaymentSchedulePriceColor}
-                    onReset={() => setPricingPaymentSchedulePriceColor(null)}
-                  />
-                  <ColorPickerField
-                    label="Top Border Bar"
-                    value={pricingAccentBarColor}
-                    fallback={companyDefaults.accent_color}
-                    onChange={setPricingAccentBarColor}
-                    onReset={() => setPricingAccentBarColor(null)}
-                  />
-                  <ColorPickerField
-                    label="Dot / Bullet Colour"
-                    value={pricingDotColor}
-                    fallback={companyDefaults.accent_color}
-                    onChange={setPricingDotColor}
-                    onReset={() => setPricingDotColor(null)}
-                  />
-                </div>
-              </SectionCard>
-            </div>
-            <StickyPreviewAside>
-              <PricingDesignPreview
-                entityId={entityId}
-                entityKey={type === 'template' ? 'template_id' : 'proposal_id'}
-                live={{
-                  pricing_header_text_color: pricingHeaderTextColor,
-                  pricing_text_color: pricingTextColor,
-                  pricing_price_title_color: pricingPriceTitleColor,
-                  pricing_price_color: pricingPriceColor,
-                  pricing_payment_schedule_name_color: pricingPaymentScheduleNameColor,
-                  pricing_payment_schedule_price_color: pricingPaymentSchedulePriceColor,
-                  pricing_accent_bar_color: pricingAccentBarColor,
-                  pricing_dot_color: pricingDotColor,
-                }}
-                liveFonts={liveFonts}
-              />
-            </StickyPreviewAside>
-          </div>}
+          {openGroups.has('Pricing Page') && (
+            <PricingGroup
+              entityId={entityId}
+              entityKey={entityKey}
+              companyDefaults={companyDefaults}
+              liveFonts={liveFonts}
+              pricingHeaderTextColor={pricingHeaderTextColor}
+              setPricingHeaderTextColor={setPricingHeaderTextColor}
+              pricingTextColor={pricingTextColor}
+              setPricingTextColor={setPricingTextColor}
+              pricingPriceTitleColor={pricingPriceTitleColor}
+              setPricingPriceTitleColor={setPricingPriceTitleColor}
+              pricingPriceColor={pricingPriceColor}
+              setPricingPriceColor={setPricingPriceColor}
+              pricingPaymentScheduleNameColor={pricingPaymentScheduleNameColor}
+              setPricingPaymentScheduleNameColor={setPricingPaymentScheduleNameColor}
+              pricingPaymentSchedulePriceColor={pricingPaymentSchedulePriceColor}
+              setPricingPaymentSchedulePriceColor={setPricingPaymentSchedulePriceColor}
+              pricingAccentBarColor={pricingAccentBarColor}
+              setPricingAccentBarColor={setPricingAccentBarColor}
+              pricingDotColor={pricingDotColor}
+              setPricingDotColor={setPricingDotColor}
+            />
+          )}
         </>
       )}
 
@@ -879,20 +499,13 @@ export default function ViewerStyleSection({
           ============================================================ */}
       <GroupHeading title="Package Page" hint="Gradient picker, feature icons, tier colours" open={openGroups.has('Package Page')} onToggle={() => toggleGroup('Package Page')} />
 
-      {openGroups.has('Package Page') && (type === 'document' ? (
-        <SectionCard
-          title="Packages Design"
-          description="Documents don't have packages pages."
-          icon={<Package size={14} className="text-faint" />}
-        >
-          <p className="text-xs text-faint">Not applicable to documents.</p>
-        </SectionCard>
-      ) : (
-        <PackagesDesignPanel
+      {openGroups.has('Package Page') && (
+        <PackageGroup
+          type={type}
           entityId={entityId}
-          entityKey={type === 'template' ? 'template_id' : 'proposal_id'}
+          entityKey={entityKey}
         />
-      ))}
+      )}
 
       {/* Decision design is now at company level (Brand Kit). */}
 

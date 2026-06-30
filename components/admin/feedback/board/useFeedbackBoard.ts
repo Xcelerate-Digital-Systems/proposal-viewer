@@ -17,6 +17,7 @@ import { type ReviewItemNodeData } from './nodes/FeedbackItemNode';
 import { type StickyNoteNodeData } from './nodes/StickyNoteNode';
 import { type ShapeNodeData } from './nodes/ShapeNode';
 import { useFeedbackBoardContextOrThrow } from './FeedbackBoardContext';
+import { computeSnapPosition, genericVisualCentre, ALIGNMENT_TOLERANCE } from '@/components/admin/shared/board-utils';
 
 interface UseFeedbackBoardOptions {
   onNavigateToItem: (itemId: string) => void;
@@ -179,17 +180,33 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
-      setNodes((nds) => applyNodeChanges(changes, nds));
-      let hasDragEnd = false;
-      for (const change of changes) {
-        if (change.type === 'position' && change.position && !change.dragging) {
-          pendingPositions.current.set(change.id, change.position);
-          hasDragEnd = true;
+      const dragEndIds = new Set<string>();
+      for (const c of changes) {
+        if (c.type === 'position' && c.position && !c.dragging) {
+          dragEndIds.add(c.id);
         }
       }
-      if (hasDragEnd) {
+
+      setNodes((nds) => {
+        let updated = applyNodeChanges(changes, nds);
+        if (dragEndIds.size === 0) return updated;
+
+        for (const id of Array.from(dragEndIds)) {
+          const node = updated.find((n) => n.id === id);
+          if (!node) continue;
+          const snapped = computeSnapPosition(node, updated, ALIGNMENT_TOLERANCE, genericVisualCentre);
+          const finalPos = snapped || node.position;
+          if (snapped) {
+            updated = updated.map((n) => n.id === id ? { ...n, position: snapped } : n);
+          }
+          pendingPositions.current.set(id, finalPos);
+        }
+        return updated;
+      });
+
+      if (dragEndIds.size > 0) {
         if (positionTimer.current) clearTimeout(positionTimer.current);
-        positionTimer.current = setTimeout(flushPositions, 300);
+        positionTimer.current = setTimeout(flushPositions, 250);
       }
     },
     [flushPositions, setNodes]

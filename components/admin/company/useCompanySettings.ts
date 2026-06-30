@@ -1,103 +1,33 @@
 // components/admin/company/useCompanySettings.ts
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { CompanyData, isValidHex6 } from '@/lib/company-utils';
-import { setBrandingColors } from '@/components/ui/ColorPickerField';
-import { useConfirm } from '@/components/ui/ConfirmDialog';
-import { hexToOklch } from '@/lib/branding/color-math';
-
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
-
-/* ─── Auth helper ────────────────────────────────────────────────────────── */
-
-async function getAuthHeaders() {
-  const { data: { session } } = await supabase.auth.getSession();
-  return { 'Authorization': `Bearer ${session?.access_token}` };
-}
-
-/* ─── Hook ───────────────────────────────────────────────────────────────── */
+import { useState, useEffect, useCallback } from 'react';
+import { CompanyData } from '@/lib/company-utils';
+import { getAuthHeaders } from './useCompanySettingsTypes';
+import { useCompanyProfile } from './useCompanyProfile';
+import { useCompanySidebarColors } from './useCompanySidebarColors';
+import { useCompanyContentPage } from './useCompanyContentPage';
+import { useCompanyDecisionDesign } from './useCompanyDecisionDesign';
+import { useCompanyFonts } from './useCompanyFonts';
+import { useCompanyBrandColors } from './useCompanyBrandColors';
+import { useCompanyImages } from './useCompanyImages';
 
 export function useCompanySettings(companyId: string) {
-  const confirm = useConfirm();
   const [company, setCompany] = useState<CompanyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState<string | null>(null);
   const [error, setError]     = useState('');
   const [success, setSuccess] = useState('');
 
-  // Profile fields
-  const [name, setName]       = useState('');
-  const [slug, setSlug]       = useState('');
-  const [website, setWebsite] = useState('');
-  const [profileSaved, setProfileSaved] = useState(false);
-
-  // Color fields
-  const [accentColor, setAccentColor]           = useState('#01434A');
-  const [bgPrimary, setBgPrimary]               = useState('#0f0f0f');
-  const [bgSecondary, setBgSecondary]           = useState('#141414');
-  const [bgDivider, setBgDivider]               = useState<string | null>(null);
-  const [sidebarTextColor, setSidebarTextColor] = useState('#ffffff');
-  const [sidebarInactiveTextColor, setSidebarInactiveTextColor] = useState<string | null>(null);
-  const [acceptTextColor, setAcceptTextColor]   = useState('#ffffff');
-  const [colorsSaved, setColorsSaved]           = useState(false);
-
-  // Content page defaults
-  const [textPageBgColor, setTextPageBgColor]           = useState('#141414');
-  const [textPageTextColor, setTextPageTextColor]       = useState('#ffffff');
-  const [textPageHeadingColor, setTextPageHeadingColor] = useState<string | null>(null);
-  const [contentPageSaved, setContentPageSaved]         = useState(false);
-
-  // Decision design (global)
-  const [decisionBgColor, setDecisionBgColor]                     = useState<string | null>(null);
-  const [decisionTextColor, setDecisionTextColor]                 = useState<string | null>(null);
-  const [decisionHeadingColor, setDecisionHeadingColor]           = useState<string | null>(null);
-  const [decisionAcceptButtonColor, setDecisionAcceptButtonColor] = useState<string | null>(null);
-  const [decisionDeclineButtonColor, setDecisionDeclineButtonColor] = useState<string | null>(null);
-  const [decisionRevisionButtonColor, setDecisionRevisionButtonColor] = useState<string | null>(null);
-  const [decisionCheckboxColor, setDecisionCheckboxColor]         = useState<string | null>(null);
-  const [decisionDesignSaved, setDecisionDesignSaved]             = useState(false);
-
-  // Brand palette
-  const [brandColors, setBrandColors]           = useState<string[]>([]);
-  const [brandColorsSaved, setBrandColorsSaved] = useState(false);
-  const [brandColorsError, setBrandColorsError] = useState<string | null>(null);
-
-  // Background image
-  const [bgImagePath, setBgImagePath]                     = useState<string | null>(null);
-  const [bgImageUrl, setBgImageUrl]                       = useState<string | null>(null);
-  const [bgImageUploading, setBgImageUploading]           = useState(false);
-  const [bgImageOverlayOpacity, setBgImageOverlayOpacity] = useState(0.85);
-
-  // Cover image (company default for new proposals)
-  const [coverImagePath, setCoverImagePath]         = useState<string | null>(null);
-  const [coverImageUrl, setCoverImageUrl]           = useState<string | null>(null);
-  const [coverImageUploading, setCoverImageUploading] = useState(false);
-
-
-  // Font fields
-  const [fontHeading, setFontHeading]             = useState<string | null>(null);
-  const [fontBody, setFontBody]                   = useState<string | null>(null);
-  const [fontSidebar, setFontSidebar]             = useState<string | null>(null);
-  const [fontHeadingWeight, setFontHeadingWeight] = useState<string | null>(null);
-  const [fontBodyWeight, setFontBodyWeight]       = useState<string | null>(null);
-  const [fontSidebarWeight, setFontSidebarWeight] = useState<string | null>(null);
-  const [fontsSaved, setFontsSaved]               = useState(false);
-
-  // Logo
-  const [logoUploading, setLogoUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const isOwner = company?.current_role === 'owner';
 
   /* ── Feedback ──────────────────────────────────────────────── */
 
-  const showFeedback = (msg: string, isError = false) => {
+  const showFeedback = useCallback((msg: string, isError = false) => {
     if (isError) { setError(msg); setSuccess(''); }
     else { setSuccess(msg); setError(''); }
     setTimeout(() => { setError(''); setSuccess(''); }, 3000);
-  };
+  }, []);
 
   /* ── Fetch ─────────────────────────────────────────────────── */
 
@@ -109,60 +39,6 @@ export function useCompanySettings(companyId: string) {
       const data = await res.json();
       if (res.ok) {
         setCompany(data);
-        setName(data.name);
-        setSlug(data.slug);
-        setAccentColor(data.accent_color || '#01434A');
-        setBgPrimary(data.bg_primary || '#0f0f0f');
-        setBgSecondary(data.bg_secondary || '#141414');
-        setBgDivider(data.bg_divider || null);
-        setSidebarTextColor(data.sidebar_text_color || '#ffffff');
-        setSidebarInactiveTextColor(data.sidebar_inactive_text_color || null);
-        setAcceptTextColor(data.accept_text_color || '#ffffff');
-        setWebsite(data.website || '');
-        setFontHeading(data.font_heading || null);
-        setFontBody(data.font_body || null);
-        setFontSidebar(data.font_sidebar || null);
-        setFontHeadingWeight(data.font_heading_weight || null);
-        setFontBodyWeight(data.font_body_weight || null);
-        setFontSidebarWeight(data.font_sidebar_weight || null);
-        setBgImagePath(data.bg_image_path || null);
-        setBgImageOverlayOpacity(data.bg_image_overlay_opacity ?? 0.85);
-        setCoverImagePath(data.cover_image_path || null);
-        setTextPageBgColor(data.text_page_bg_color || '#141414');
-        setTextPageTextColor(data.text_page_text_color || '#ffffff');
-        setTextPageHeadingColor(data.text_page_heading_color || null);
-
-        // Decision design
-        setDecisionBgColor(data.decision_action_bg_color || null);
-        setDecisionTextColor(data.decision_action_text_color || null);
-        setDecisionHeadingColor(data.decision_action_heading_color || null);
-        setDecisionAcceptButtonColor(data.decision_action_accent_color || null);
-        setDecisionDeclineButtonColor(data.decision_decline_button_color || null);
-        setDecisionRevisionButtonColor(data.decision_revision_button_color || null);
-        setDecisionCheckboxColor(data.decision_checkbox_color || null);
-
-        // Brand palette
-        const palette: string[] = Array.isArray(data.brand_colors) ? data.brand_colors : [];
-        setBrandColors(palette);
-        setBrandingColors(palette);
-
-        if (data.bg_image_path) {
-          const { data: bgUrl } = supabase.storage
-            .from('company-assets')
-            .getPublicUrl(data.bg_image_path);
-          setBgImageUrl(bgUrl?.publicUrl || null);
-        } else {
-          setBgImageUrl(null);
-        }
-
-        if (data.cover_image_path) {
-          const { data: coverUrl } = supabase.storage
-            .from('company-assets')
-            .getPublicUrl(data.cover_image_path);
-          setCoverImageUrl(coverUrl?.publicUrl || null);
-        } else {
-          setCoverImageUrl(null);
-        }
       }
     } finally {
       setLoading(false);
@@ -174,496 +50,31 @@ export function useCompanySettings(companyId: string) {
     fetchCompany();
   }, [fetchCompany]);
 
-  /* ── Save field ────────────────────────────────────────────── */
+  /* ── Shared context ────────────────────────────────────────── */
 
-  const handleSaveField = async (field: string, value: string) => {
-    if (!isOwner) return;
-    setSaving(field);
-    const headers = await getAuthHeaders();
-    const res = await fetch(`/api/company?company_id=${companyId}`, {
-      method: 'PATCH',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ [field]: value }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showFeedback(data.error || 'Failed to save', true);
-    } else {
-      setCompany(prev => prev ? { ...prev, ...data } : prev);
-      setProfileSaved(true);
-      setTimeout(() => setProfileSaved(false), 2000);
-    }
-    setSaving(null);
+  const ctx = {
+    companyId,
+    company,
+    isOwner,
+    saving,
+    setSaving,
+    showFeedback,
+    setCompany,
   };
 
-  // Autosave profile fields (debounced). Each field has its own validity
-  // guard so in-progress typing doesn't PATCH an empty name or tiny slug.
-  useEffect(() => {
-    if (!isOwner || !company) return;
-    const trimmed = name.trim();
-    if (!trimmed || trimmed === company.name) return;
-    const timer = setTimeout(() => handleSaveField('name', trimmed), 800);
-    return () => clearTimeout(timer);
-  }, [name]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* ── Sub-hooks ─────────────────────────────────────────────── */
 
-  useEffect(() => {
-    if (!isOwner || !company) return;
-    if (slug.length < 2 || slug === company.slug) return;
-    const timer = setTimeout(() => handleSaveField('slug', slug), 800);
-    return () => clearTimeout(timer);
-  }, [slug]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!isOwner || !company) return;
-    if (website === (company.website || '')) return;
-    const timer = setTimeout(() => handleSaveField('website', website), 800);
-    return () => clearTimeout(timer);
-  }, [website]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const profileChanged = !!company && (
-    name.trim() !== company.name ||
-    slug !== company.slug ||
-    website !== (company.website || '')
-  );
-
-  /* ── Save colors ───────────────────────────────────────────── */
-
-  const handleSaveColors = async () => {
-    if (!isOwner) return;
-    setSaving('colors');
-    const headers = await getAuthHeaders();
-    const res = await fetch(`/api/company?company_id=${companyId}`, {
-      method: 'PATCH',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        accent_color: accentColor,
-        bg_primary: bgPrimary,
-        bg_secondary: bgSecondary,
-        bg_divider: bgDivider,
-        sidebar_text_color: sidebarTextColor,
-        sidebar_inactive_text_color: sidebarInactiveTextColor,
-        accept_text_color: acceptTextColor,
-        bg_image_overlay_opacity: bgImageOverlayOpacity,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showFeedback(data.error || 'Failed to save', true);
-    } else {
-      setCompany(prev => prev ? { ...prev, ...data } : prev);
-      setColorsSaved(true);
-      setTimeout(() => setColorsSaved(false), 2000);
-    }
-    setSaving(null);
-  };
-
-  // Autosave viewer colours (debounced). Skips invalid hex values so
-  // we don't PATCH while a user is mid-typing in the hex input.
-  const colorsChanged =
-    accentColor !== (company?.accent_color || '#01434A') ||
-    bgPrimary !== (company?.bg_primary || '#0f0f0f') ||
-    bgSecondary !== (company?.bg_secondary || '#141414') ||
-    bgDivider !== (company?.bg_divider || null) ||
-    sidebarTextColor !== (company?.sidebar_text_color || '#ffffff') ||
-    (sidebarInactiveTextColor || null) !== (company?.sidebar_inactive_text_color || null) ||
-    acceptTextColor !== (company?.accept_text_color || '#ffffff') ||
-    bgImageOverlayOpacity !== (company?.bg_image_overlay_opacity ?? 0.85);
-
-  useEffect(() => {
-    if (!colorsChanged || !isOwner || !company) return;
-    if (
-      !isValidHex6(accentColor) ||
-      !isValidHex6(bgPrimary) ||
-      !isValidHex6(bgSecondary) ||
-      (bgDivider !== null && !isValidHex6(bgDivider)) ||
-      !isValidHex6(sidebarTextColor) ||
-      (sidebarInactiveTextColor !== null && !isValidHex6(sidebarInactiveTextColor)) ||
-      !isValidHex6(acceptTextColor)
-    ) return;
-    const timer = setTimeout(() => {
-      handleSaveColors();
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [accentColor, bgPrimary, bgSecondary, bgDivider, sidebarTextColor, sidebarInactiveTextColor, acceptTextColor, bgImageOverlayOpacity]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Auto-contrast: when bgPrimary crosses the dark/light threshold,
-  // flip text colors so they remain readable. Only fires when the
-  // theme actually changes direction, not on every color tweak.
-  const prevIsDark = useRef<boolean | null>(null);
-  useEffect(() => {
-    if (!isOwner || !company || !isValidHex6(bgPrimary)) return;
-    const isDark = hexToOklch(bgPrimary).L < 0.5;
-    if (prevIsDark.current !== null && prevIsDark.current !== isDark) {
-      if (isDark) {
-        setSidebarTextColor('#ffffff');
-        setSidebarInactiveTextColor(null);
-        setAcceptTextColor('#ffffff');
-        setTextPageBgColor('#141414');
-        setTextPageTextColor('#ffffff');
-        setTextPageHeadingColor(null);
-      } else {
-        setSidebarTextColor('#1a1a1a');
-        setSidebarInactiveTextColor(null);
-        setAcceptTextColor('#ffffff');
-        setTextPageBgColor('#ffffff');
-        setTextPageTextColor('#1a1a1a');
-        setTextPageHeadingColor(null);
-      }
-      showFeedback('Text colours adjusted for ' + (isDark ? 'dark' : 'light') + ' theme');
-    }
-    prevIsDark.current = isDark;
-  }, [bgPrimary]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /* ── Save content page defaults ────────────────────────────── */
-
-  const handleSaveContentPage = async () => {
-    if (!isOwner) return;
-    setSaving('content_page');
-    const headers = await getAuthHeaders();
-    const res = await fetch(`/api/company?company_id=${companyId}`, {
-      method: 'PATCH',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text_page_bg_color: textPageBgColor,
-        text_page_text_color: textPageTextColor,
-        text_page_heading_color: textPageHeadingColor,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showFeedback(data.error || 'Failed to save', true);
-    } else {
-      setCompany(prev => prev ? { ...prev, ...data } : prev);
-      setContentPageSaved(true);
-      setTimeout(() => setContentPageSaved(false), 2000);
-    }
-    setSaving(null);
-  };
-
-  const contentPageChanged =
-    textPageBgColor !== (company?.text_page_bg_color || '#141414') ||
-    textPageTextColor !== (company?.text_page_text_color || '#ffffff') ||
-    (textPageHeadingColor || null) !== (company?.text_page_heading_color || null);
-
-  useEffect(() => {
-    if (!contentPageChanged || !isOwner || !company) return;
-    if (!isValidHex6(textPageBgColor) || !isValidHex6(textPageTextColor)) return;
-    if (textPageHeadingColor && !isValidHex6(textPageHeadingColor)) return;
-    const timer = setTimeout(() => handleSaveContentPage(), 800);
-    return () => clearTimeout(timer);
-  }, [textPageBgColor, textPageTextColor, textPageHeadingColor]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /* ── Save decision design ───────────────────────────────────── */
-
-  const handleSaveDecisionDesign = async () => {
-    if (!isOwner) return;
-    setSaving('decision_design');
-    const headers = await getAuthHeaders();
-    const res = await fetch(`/api/company?company_id=${companyId}`, {
-      method: 'PATCH',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        decision_action_bg_color: decisionBgColor,
-        decision_action_text_color: decisionTextColor,
-        decision_action_heading_color: decisionHeadingColor,
-        decision_action_accent_color: decisionAcceptButtonColor,
-        decision_decline_button_color: decisionDeclineButtonColor,
-        decision_revision_button_color: decisionRevisionButtonColor,
-        decision_checkbox_color: decisionCheckboxColor,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showFeedback(data.error || 'Failed to save', true);
-    } else {
-      setCompany(prev => prev ? { ...prev, ...data } : prev);
-      setDecisionDesignSaved(true);
-      setTimeout(() => setDecisionDesignSaved(false), 2000);
-    }
-    setSaving(null);
-  };
-
-  const decisionDesignChanged =
-    (decisionBgColor || null) !== (company?.decision_action_bg_color || null) ||
-    (decisionTextColor || null) !== (company?.decision_action_text_color || null) ||
-    (decisionHeadingColor || null) !== (company?.decision_action_heading_color || null) ||
-    (decisionAcceptButtonColor || null) !== (company?.decision_action_accent_color || null) ||
-    (decisionDeclineButtonColor || null) !== (company?.decision_decline_button_color || null) ||
-    (decisionRevisionButtonColor || null) !== (company?.decision_revision_button_color || null) ||
-    (decisionCheckboxColor || null) !== (company?.decision_checkbox_color || null);
-
-  useEffect(() => {
-    if (!decisionDesignChanged || !isOwner || !company) return;
-    const timer = setTimeout(() => handleSaveDecisionDesign(), 800);
-    return () => clearTimeout(timer);
-  }, [decisionBgColor, decisionTextColor, decisionHeadingColor, decisionAcceptButtonColor, decisionDeclineButtonColor, decisionRevisionButtonColor, decisionCheckboxColor]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /* ── Save fonts ────────────────────────────────────────────── */
-
-  const handleSaveFonts = async () => {
-    if (!isOwner) return;
-    setSaving('fonts');
-    setError('');
-    const headers = await getAuthHeaders();
-    const res = await fetch(`/api/company?company_id=${companyId}`, {
-      method: 'PATCH',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        font_heading: fontHeading,
-        font_body: fontBody,
-        font_sidebar: fontSidebar,
-        font_heading_weight: fontHeadingWeight,
-        font_body_weight: fontBodyWeight,
-        font_sidebar_weight: fontSidebarWeight,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showFeedback(data.error || 'Failed to save fonts', true);
-    } else {
-      setCompany(prev => prev ? { ...prev, ...data } : prev);
-      setFontsSaved(true);
-      setTimeout(() => setFontsSaved(false), 2000);
-    }
-    setSaving(null);
-  };
-
-  // Autosave fonts
-  const fontsChanged =
-    fontHeading !== (company?.font_heading || null) ||
-    fontBody !== (company?.font_body || null) ||
-    fontSidebar !== (company?.font_sidebar || null) ||
-    fontHeadingWeight !== (company?.font_heading_weight || null) ||
-    fontBodyWeight !== (company?.font_body_weight || null) ||
-    fontSidebarWeight !== (company?.font_sidebar_weight || null);
-
-  useEffect(() => {
-    if (!fontsChanged || !isOwner || !company) return;
-    const timer = setTimeout(() => {
-      handleSaveFonts();
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [fontHeading, fontBody, fontSidebar, fontHeadingWeight, fontBodyWeight, fontSidebarWeight]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /* ── Brand colors ──────────────────────────────────────────── */
-
-  const handleSaveBrandColors = async (colors: string[]) => {
-    if (!isOwner) return;
-    setSaving('brand_colors');
-    const headers = await getAuthHeaders();
-    const res = await fetch(`/api/company?company_id=${companyId}`, {
-      method: 'PATCH',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ brand_colors: colors }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setBrandColorsError(data.error || 'Failed to save brand colours');
-    } else {
-      setBrandColorsError(null);
-      setCompany(prev => prev ? { ...prev, ...data } : prev);
-      setBrandColorsSaved(true);
-      setTimeout(() => setBrandColorsSaved(false), 2000);
-    }
-    setSaving(null);
-  };
-
-  // Sync global picker palette whenever brand colors change
-  // and autosave after a short debounce
-  const brandColorsChanged =
-    JSON.stringify(brandColors) !== JSON.stringify(Array.isArray(company?.brand_colors) ? company.brand_colors : []);
-
-  useEffect(() => {
-    setBrandingColors(brandColors);
-  }, [brandColors]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!brandColorsChanged || !isOwner || !company) return;
-    const timer = setTimeout(() => {
-      handleSaveBrandColors(brandColors);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [brandColors]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /* ── Logo ──────────────────────────────────────────────────── */
-
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setLogoUploading(true);
-    const headers = await getAuthHeaders();
-    const formData = new FormData();
-    formData.append('logo', file);
-    const res = await fetch(`/api/company/logo?company_id=${companyId}`, { method: 'POST', headers, body: formData });
-    const data = await res.json();
-    if (!res.ok) {
-      showFeedback(data.error || 'Upload failed', true);
-    } else {
-      setCompany(prev => prev ? { ...prev, logo_path: data.logo_path, logo_url: `${data.logo_url}?t=${Date.now()}` } : prev);
-      showFeedback('Logo uploaded');
-    }
-    setLogoUploading(false);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const handleLogoRemove = async () => {
-    const ok = await confirm({ title: 'Remove logo', message: 'Remove company logo?', confirmLabel: 'Remove', destructive: true });
-    if (!ok) return;
-    setLogoUploading(true);
-    const headers = await getAuthHeaders();
-    const res = await fetch(`/api/company/logo?company_id=${companyId}`, { method: 'DELETE', headers });
-    if (res.ok) {
-      setCompany(prev => prev ? { ...prev, logo_path: null, logo_url: null } : prev);
-      showFeedback('Logo removed');
-    }
-    setLogoUploading(false);
-  };
-
-  /* ── Background image ──────────────────────────────────────── */
-
-  const handleBgImageUpload = async (file: File) => {
-    if (!isOwner) return;
-    if (file.size > MAX_IMAGE_SIZE) {
-      showFeedback('Image must be under 5 MB', true);
-      return;
-    }
-    setBgImageUploading(true);
-    try {
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
-      const safeName = `bg-image.${ext}`.replace(/[^a-zA-Z0-9._-]/g, '');
-      const storagePath = `${companyId}/bg-image/${safeName}`;
-
-      if (bgImagePath) {
-        await supabase.storage.from('company-assets').remove([bgImagePath]);
-      }
-
-      const { error: uploadError } = await supabase.storage
-        .from('company-assets')
-        .upload(storagePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const headers = await getAuthHeaders();
-      const res = await fetch(`/api/company?company_id=${companyId}`, {
-        method: 'PATCH',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bg_image_path: storagePath }),
-      });
-
-      if (!res.ok) throw new Error('Failed to save');
-
-      setBgImagePath(storagePath);
-      const { data: urlData } = supabase.storage
-        .from('company-assets')
-        .getPublicUrl(storagePath);
-      setBgImageUrl(urlData?.publicUrl || null);
-      setCompany(prev => prev ? { ...prev, bg_image_path: storagePath } : prev);
-      showFeedback('Background image uploaded');
-    } catch (err) {
-      console.error(err);
-      const msg = err instanceof Error ? err.message : 'Unknown error';
-      showFeedback(`Upload failed: ${msg}`, true);
-    } finally {
-      setBgImageUploading(false);
-    }
-  };
-
-  const handleBgImageRemove = async () => {
-    if (!isOwner || !bgImagePath) return;
-    const ok = await confirm({ title: 'Remove background image', message: 'Remove the background texture from your viewer?', confirmLabel: 'Remove', destructive: true });
-    if (!ok) return;
-    try {
-      await supabase.storage.from('company-assets').remove([bgImagePath]);
-
-      const headers = await getAuthHeaders();
-      await fetch(`/api/company?company_id=${companyId}`, {
-        method: 'PATCH',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bg_image_path: null }),
-      });
-
-      setBgImagePath(null);
-      setBgImageUrl(null);
-      setCompany(prev => prev ? { ...prev, bg_image_path: null } : prev);
-      showFeedback('Background image removed');
-    } catch (err) {
-      console.error(err);
-      showFeedback('Failed to remove background image', true);
-    }
-  };
-
-  /* ── Cover image (company default for new proposals) ─────── */
-
-  const handleCoverImageUpload = async (file: File) => {
-    if (!isOwner) return;
-    if (file.size > MAX_IMAGE_SIZE) {
-      showFeedback('Image must be under 5 MB', true);
-      return;
-    }
-    setCoverImageUploading(true);
-    try {
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
-      const safeName = `cover-image.${ext}`.replace(/[^a-zA-Z0-9._-]/g, '');
-      const storagePath = `${companyId}/cover-image/${safeName}`;
-
-      if (coverImagePath) {
-        await supabase.storage.from('company-assets').remove([coverImagePath]);
-      }
-
-      const { error: uploadError } = await supabase.storage
-        .from('company-assets')
-        .upload(storagePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const headers = await getAuthHeaders();
-      const res = await fetch(`/api/company?company_id=${companyId}`, {
-        method: 'PATCH',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cover_image_path: storagePath }),
-      });
-
-      if (!res.ok) throw new Error('Failed to save');
-
-      setCoverImagePath(storagePath);
-      const { data: urlData } = supabase.storage
-        .from('company-assets')
-        .getPublicUrl(storagePath);
-      setCoverImageUrl(urlData?.publicUrl || null);
-      setCompany(prev => prev ? { ...prev, cover_image_path: storagePath } : prev);
-      showFeedback('Cover image uploaded');
-    } catch (err) {
-      console.error(err);
-      const msg = err instanceof Error ? err.message : 'Unknown error';
-      showFeedback(`Upload failed: ${msg}`, true);
-    } finally {
-      setCoverImageUploading(false);
-    }
-  };
-
-  const handleCoverImageRemove = async () => {
-    if (!isOwner || !coverImagePath) return;
-    const ok = await confirm({ title: 'Remove cover image', message: 'Remove the default cover image? New proposals will use a plain background.', confirmLabel: 'Remove', destructive: true });
-    if (!ok) return;
-    try {
-      await supabase.storage.from('company-assets').remove([coverImagePath]);
-
-      const headers = await getAuthHeaders();
-      await fetch(`/api/company?company_id=${companyId}`, {
-        method: 'PATCH',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cover_image_path: null }),
-      });
-
-      setCoverImagePath(null);
-      setCoverImageUrl(null);
-      setCompany(prev => prev ? { ...prev, cover_image_path: null } : prev);
-      showFeedback('Cover image removed');
-    } catch (err) {
-      console.error(err);
-      showFeedback('Failed to remove cover image', true);
-    }
-  };
+  const profile = useCompanyProfile(ctx);
+  const contentPage = useCompanyContentPage(ctx);
+  const sidebarColors = useCompanySidebarColors(ctx, {
+    setTextPageBgColor: contentPage.setTextPageBgColor,
+    setTextPageTextColor: contentPage.setTextPageTextColor,
+    setTextPageHeadingColor: contentPage.setTextPageHeadingColor,
+  });
+  const decisionDesign = useCompanyDecisionDesign(ctx);
+  const fonts = useCompanyFonts(ctx);
+  const brandColors = useCompanyBrandColors(ctx);
+  const images = useCompanyImages(ctx);
 
   return {
     // Core
@@ -675,75 +86,75 @@ export function useCompanySettings(companyId: string) {
     isOwner,
 
     // Profile
-    name, setName,
-    slug, setSlug,
-    website, setWebsite,
-    profileChanged,
-    profileSaved,
+    name: profile.name, setName: profile.setName,
+    slug: profile.slug, setSlug: profile.setSlug,
+    website: profile.website, setWebsite: profile.setWebsite,
+    profileChanged: profile.profileChanged,
+    profileSaved: profile.profileSaved,
 
     // Logo
-    logoUploading,
-    fileInputRef,
-    handleLogoUpload,
-    handleLogoRemove,
+    logoUploading: images.logoUploading,
+    fileInputRef: images.fileInputRef,
+    handleLogoUpload: images.handleLogoUpload,
+    handleLogoRemove: images.handleLogoRemove,
 
     // Colors
-    accentColor, setAccentColor,
-    bgPrimary, setBgPrimary,
-    bgSecondary, setBgSecondary,
-    bgDivider, setBgDivider,
-    sidebarTextColor, setSidebarTextColor,
-    sidebarInactiveTextColor, setSidebarInactiveTextColor,
-    acceptTextColor, setAcceptTextColor,
-    colorsChanged,
-    colorsSaved,
-    handleSaveColors,
+    accentColor: sidebarColors.accentColor, setAccentColor: sidebarColors.setAccentColor,
+    bgPrimary: sidebarColors.bgPrimary, setBgPrimary: sidebarColors.setBgPrimary,
+    bgSecondary: sidebarColors.bgSecondary, setBgSecondary: sidebarColors.setBgSecondary,
+    bgDivider: sidebarColors.bgDivider, setBgDivider: sidebarColors.setBgDivider,
+    sidebarTextColor: sidebarColors.sidebarTextColor, setSidebarTextColor: sidebarColors.setSidebarTextColor,
+    sidebarInactiveTextColor: sidebarColors.sidebarInactiveTextColor, setSidebarInactiveTextColor: sidebarColors.setSidebarInactiveTextColor,
+    acceptTextColor: sidebarColors.acceptTextColor, setAcceptTextColor: sidebarColors.setAcceptTextColor,
+    colorsChanged: sidebarColors.colorsChanged,
+    colorsSaved: sidebarColors.colorsSaved,
+    handleSaveColors: sidebarColors.handleSaveColors,
 
     // Background image
-    bgImageUrl,
-    bgImageUploading,
-    bgImageOverlayOpacity, setBgImageOverlayOpacity,
-    handleBgImageUpload,
-    handleBgImageRemove,
+    bgImageUrl: images.bgImageUrl,
+    bgImageUploading: images.bgImageUploading,
+    bgImageOverlayOpacity: sidebarColors.bgImageOverlayOpacity, setBgImageOverlayOpacity: sidebarColors.setBgImageOverlayOpacity,
+    handleBgImageUpload: images.handleBgImageUpload,
+    handleBgImageRemove: images.handleBgImageRemove,
 
     // Cover image
-    coverImageUrl,
-    coverImageUploading,
-    handleCoverImageUpload,
-    handleCoverImageRemove,
+    coverImageUrl: images.coverImageUrl,
+    coverImageUploading: images.coverImageUploading,
+    handleCoverImageUpload: images.handleCoverImageUpload,
+    handleCoverImageRemove: images.handleCoverImageRemove,
 
     // Fonts
-    fontHeading, setFontHeading,
-    fontBody, setFontBody,
-    fontSidebar, setFontSidebar,
-    fontHeadingWeight, setFontHeadingWeight,
-    fontBodyWeight, setFontBodyWeight,
-    fontSidebarWeight, setFontSidebarWeight,
-    fontsChanged,
-    fontsSaved,
-    handleSaveFonts,
+    fontHeading: fonts.fontHeading, setFontHeading: fonts.setFontHeading,
+    fontBody: fonts.fontBody, setFontBody: fonts.setFontBody,
+    fontSidebar: fonts.fontSidebar, setFontSidebar: fonts.setFontSidebar,
+    fontHeadingWeight: fonts.fontHeadingWeight, setFontHeadingWeight: fonts.setFontHeadingWeight,
+    fontBodyWeight: fonts.fontBodyWeight, setFontBodyWeight: fonts.setFontBodyWeight,
+    fontSidebarWeight: fonts.fontSidebarWeight, setFontSidebarWeight: fonts.setFontSidebarWeight,
+    fontsChanged: fonts.fontsChanged,
+    fontsSaved: fonts.fontsSaved,
+    handleSaveFonts: fonts.handleSaveFonts,
 
     // Content page defaults
-    textPageBgColor, setTextPageBgColor,
-    textPageTextColor, setTextPageTextColor,
-    textPageHeadingColor, setTextPageHeadingColor,
-    contentPageChanged,
-    contentPageSaved,
+    textPageBgColor: contentPage.textPageBgColor, setTextPageBgColor: contentPage.setTextPageBgColor,
+    textPageTextColor: contentPage.textPageTextColor, setTextPageTextColor: contentPage.setTextPageTextColor,
+    textPageHeadingColor: contentPage.textPageHeadingColor, setTextPageHeadingColor: contentPage.setTextPageHeadingColor,
+    contentPageChanged: contentPage.contentPageChanged,
+    contentPageSaved: contentPage.contentPageSaved,
 
     // Decision design
-    decisionBgColor, setDecisionBgColor,
-    decisionTextColor, setDecisionTextColor,
-    decisionHeadingColor, setDecisionHeadingColor,
-    decisionAcceptButtonColor, setDecisionAcceptButtonColor,
-    decisionDeclineButtonColor, setDecisionDeclineButtonColor,
-    decisionRevisionButtonColor, setDecisionRevisionButtonColor,
-    decisionCheckboxColor, setDecisionCheckboxColor,
-    decisionDesignChanged,
-    decisionDesignSaved,
+    decisionBgColor: decisionDesign.decisionBgColor, setDecisionBgColor: decisionDesign.setDecisionBgColor,
+    decisionTextColor: decisionDesign.decisionTextColor, setDecisionTextColor: decisionDesign.setDecisionTextColor,
+    decisionHeadingColor: decisionDesign.decisionHeadingColor, setDecisionHeadingColor: decisionDesign.setDecisionHeadingColor,
+    decisionAcceptButtonColor: decisionDesign.decisionAcceptButtonColor, setDecisionAcceptButtonColor: decisionDesign.setDecisionAcceptButtonColor,
+    decisionDeclineButtonColor: decisionDesign.decisionDeclineButtonColor, setDecisionDeclineButtonColor: decisionDesign.setDecisionDeclineButtonColor,
+    decisionRevisionButtonColor: decisionDesign.decisionRevisionButtonColor, setDecisionRevisionButtonColor: decisionDesign.setDecisionRevisionButtonColor,
+    decisionCheckboxColor: decisionDesign.decisionCheckboxColor, setDecisionCheckboxColor: decisionDesign.setDecisionCheckboxColor,
+    decisionDesignChanged: decisionDesign.decisionDesignChanged,
+    decisionDesignSaved: decisionDesign.decisionDesignSaved,
 
     // Brand colors
-    brandColors, setBrandColors,
-    brandColorsSaved,
-    brandColorsError,
+    brandColors: brandColors.brandColors, setBrandColors: brandColors.setBrandColors,
+    brandColorsSaved: brandColors.brandColorsSaved,
+    brandColorsError: brandColors.brandColorsError,
   };
 }

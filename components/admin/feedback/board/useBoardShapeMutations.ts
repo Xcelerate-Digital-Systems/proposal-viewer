@@ -45,6 +45,7 @@ export function useBoardShapeMutations({
         setShapes((prev) => [...prev, data]);
         const created = data;
         recordHistory({
+          label: `Add ${shape.shape_type}`,
           undo: async () => {
             setShapes((prev) => prev.filter((s) => s.id !== created.id));
             await supabase.from('review_board_shapes').delete().eq('id', created.id);
@@ -85,6 +86,7 @@ export function useBoardShapeMutations({
       if (before) {
         toast.info('Shape deleted', { action: { label: 'Undo', onClick: () => void undo() } });
         recordHistory({
+          label: 'Delete shape',
           undo: async () => {
             setShapes((prev) => prev.some((s) => s.id === before.id) ? prev : [...prev, before]);
             await supabase.from('review_board_shapes').insert(before);

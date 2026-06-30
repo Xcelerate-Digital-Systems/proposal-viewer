@@ -11,6 +11,8 @@ import { type FunnelStepNodeData } from './nodes/FunnelStepNode';
 import { type StickyNoteNodeData } from '@/components/admin/feedback/board/nodes/StickyNoteNode';
 import { type ShapeNodeData } from '@/components/admin/feedback/board/nodes/ShapeNode';
 import { useFunnelBoardContextOrThrow } from './FunnelBoardContext';
+import { computeSnapPosition, ALIGNMENT_TOLERANCE } from '@/components/admin/shared/board-utils';
+import { visualCentre } from './funnel-board-config';
 
 /**
  * RF plumbing for the funnel board — mirrors useFeedbackBoard but renders
@@ -147,15 +149,31 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
   }, [saveNodePosition]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
-    setNodes((nds) => applyNodeChanges(changes, nds));
-    let hasDragEnd = false;
+    const dragEndIds = new Set<string>();
     for (const c of changes) {
       if (c.type === 'position' && c.position && !c.dragging) {
-        pendingPositions.current.set(c.id, c.position);
-        hasDragEnd = true;
+        dragEndIds.add(c.id);
       }
     }
-    if (hasDragEnd) {
+
+    setNodes((nds) => {
+      let updated = applyNodeChanges(changes, nds);
+      if (dragEndIds.size === 0) return updated;
+
+      for (const id of Array.from(dragEndIds)) {
+        const node = updated.find((n) => n.id === id);
+        if (!node) continue;
+        const snapped = computeSnapPosition(node, updated, ALIGNMENT_TOLERANCE, visualCentre);
+        const finalPos = snapped || node.position;
+        if (snapped) {
+          updated = updated.map((n) => n.id === id ? { ...n, position: snapped } : n);
+        }
+        pendingPositions.current.set(id, finalPos);
+      }
+      return updated;
+    });
+
+    if (dragEndIds.size > 0) {
       if (positionTimer.current) clearTimeout(positionTimer.current);
       positionTimer.current = setTimeout(flushPositions, 250);
     }

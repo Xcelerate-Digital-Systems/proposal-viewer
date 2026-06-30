@@ -68,6 +68,7 @@ export function useBoardNoteMutations({
     await supabase.from('review_board_notes').delete().eq('id', noteId);
     if (before) {
       recordHistory({
+        label: 'Delete note',
         undo: async () => {
           setBoardNotes((prev) => prev.some((n) => n.id === before.id) ? prev : [...prev, before]);
           await supabase.from('review_board_notes').insert(before);

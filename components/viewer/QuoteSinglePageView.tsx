@@ -6,25 +6,15 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
-import {
-  supabase,
-  type Proposal,
-  type ProposalPricing,
-  type PricingLineItem,
-  type PricingOptionalItem,
-  formatCurrency,
-  pricingEffectiveSubtotal,
-  type CurrencyCode,
-} from '@/lib/supabase';
+import type { Proposal, ProposalPricing } from '@/lib/supabase';
 import type { CompanyBranding } from '@/hooks/useProposal';
-import { useBrandPalette } from '@/hooks/useBrandPalette';
-import { parseQuoteExtras } from '@/lib/types/quote-extras';
 import { formatQuoteNumber } from '@/lib/quote-number';
-import { buildGradientCss, resolveStops } from '@/lib/gradient-stops';
 import ProposalDecisionPanel from '@/components/viewer/ProposalDecisionPanel';
-import { parseDecisionExtras } from '@/lib/types/decision-extras';
 import { Clock, AlertTriangle } from 'lucide-react';
+
+import { TABULAR, withAlpha } from './quote-view/quote-view-helpers';
+import { Section, SectionLabel, Hairline, AttachmentLink } from './quote-view/QuoteViewPrimitives';
+import { useQuoteTokens } from './quote-view/useQuoteTokens';
 
 interface QuoteSinglePageViewProps {
   proposal: Proposal;
@@ -48,202 +38,6 @@ interface QuoteSinglePageViewProps {
   compact?: boolean;
 }
 
-/* ── Style helpers ──────────────────────────────────────────────────────── */
-
-const TABULAR: React.CSSProperties = { fontVariantNumeric: 'tabular-nums' };
-
-function fontStack(name: string | null | undefined, fallback: string): string {
-  if (!name) return fallback;
-  return `'${name}', ${fallback}`;
-}
-
-/** Convert any CSS colour to rgba with explicit alpha. Falls back gracefully. */
-function withAlpha(color: string, alpha: number): string {
-  const hex = color.trim();
-  if (hex.startsWith('#')) {
-    const h = hex.slice(1);
-    const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
-    if (full.length === 6) {
-      const r = parseInt(full.slice(0, 2), 16);
-      const g = parseInt(full.slice(2, 4), 16);
-      const b = parseInt(full.slice(4, 6), 16);
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    }
-  }
-  // Already rgb()/rgba()/named — wrap in color-mix for alpha overlay.
-  return `color-mix(in srgb, ${hex} ${alpha * 100}%, transparent)`;
-}
-
-/* ── Domain helpers ─────────────────────────────────────────────────────── */
-
-function buildHeaderBackground(p: Proposal): string {
-  // Quote body header band uses quote_header_* with fallback to cover_*
-  // (so existing quotes keep their look until the user explicitly diverges).
-  const style = (p.quote_header_bg_style ?? p.cover_bg_style) === 'solid' ? 'solid' : 'gradient';
-  const c1    = p.quote_header_bg_color_1 ?? p.cover_bg_color_1 ?? '#0f172a';
-  const c2    = p.quote_header_bg_color_2 ?? p.cover_bg_color_2 ?? '#1e293b';
-  const angle = p.quote_header_gradient_angle ?? p.cover_gradient_angle ?? 135;
-  const cx    = p.quote_header_gradient_position_x ?? p.cover_gradient_position_x ?? 50;
-  const cy    = p.quote_header_gradient_position_y ?? p.cover_gradient_position_y ?? 50;
-  const type  = (p.quote_header_gradient_type ?? p.cover_gradient_type ?? 'linear') as 'linear' | 'radial' | 'conic';
-  const stopsRaw = p.quote_header_gradient_stops ?? p.cover_gradient_stops;
-  const stops = resolveStops(stopsRaw, c1, c2);
-  return buildGradientCss(style, type, angle, cx, cy, stops);
-}
-
-function deriveDeposit(pricing: ProposalPricing | null, total: number) {
-  if (!pricing?.payment_schedule) return null;
-  const sched = pricing.payment_schedule;
-  if (sched.milestones?.enabled && sched.milestones.payments.length > 0) {
-    const first = sched.milestones.payments[0];
-    const amount =
-      first.type === 'percentage'
-        ? Math.round(total * (first.value / 100) * 100) / 100
-        : first.value;
-    const pct = first.type === 'percentage' ? first.value : Math.round((first.value / total) * 100);
-    return { amount, pct, label: first.label || 'Deposit' };
-  }
-  if (sched.one_off?.enabled && sched.one_off.amount > 0) {
-    return {
-      amount: sched.one_off.amount,
-      pct: total > 0 ? Math.round((sched.one_off.amount / total) * 100) : 0,
-      label: sched.one_off.label || 'Deposit',
-    };
-  }
-  return null;
-}
-
-function formatValidUntil(pricing: ProposalPricing | null): string | null {
-  if (!pricing?.validity_days || !pricing.proposal_date) return null;
-  const start = new Date(pricing.proposal_date);
-  start.setDate(start.getDate() + pricing.validity_days);
-  return start.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
-}
-
-function parsePhotos(raw: unknown): string[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter((p): p is string => typeof p === 'string');
-}
-
-/* ── Expiry urgency helpers ─────────────────────────────────────────────── */
-
-type ExpiryState =
-  | { kind: 'none' }
-  | { kind: 'expired' }
-  | { kind: 'today' }
-  | { kind: 'tomorrow' }
-  | { kind: 'soon'; days: number }   // 2–3 days
-  | { kind: 'valid'; label: string }; // >3 days — just show the date
-
-function computeExpiryState(
-  proposal: { valid_until: string | null },
-  pricing: { validity_days?: number | null; proposal_date?: string | null } | null,
-): ExpiryState {
-  let expiryDate: Date | null = null;
-
-  if (proposal.valid_until) {
-    expiryDate = new Date(proposal.valid_until);
-  } else if (pricing?.validity_days && pricing.proposal_date) {
-    expiryDate = new Date(pricing.proposal_date);
-    expiryDate.setDate(expiryDate.getDate() + pricing.validity_days);
-  }
-
-  if (!expiryDate || isNaN(expiryDate.getTime())) return { kind: 'none' };
-
-  // Compare at day granularity in local time
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const expiryStart = new Date(
-    expiryDate.getFullYear(),
-    expiryDate.getMonth(),
-    expiryDate.getDate(),
-  );
-  const diffMs = expiryStart.getTime() - todayStart.getTime();
-  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays < 0) return { kind: 'expired' };
-  if (diffDays === 0) return { kind: 'today' };
-  if (diffDays === 1) return { kind: 'tomorrow' };
-  if (diffDays <= 3) return { kind: 'soon', days: diffDays };
-
-  const label = expiryDate.toLocaleDateString('en-AU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-  return { kind: 'valid', label };
-}
-
-/* ── Layout primitives — hoisted out of the component so they don't get
-   remounted on every keystroke. Defining components inline causes React to
-   treat each render as a new component type, which destroys the DOM tree
-   inside them and resets focus / scroll position. */
-
-function Section({ children }: { children: React.ReactNode }) {
-  return <section className="px-8 sm:px-14 py-10 print:py-7">{children}</section>;
-}
-
-function SectionLabel({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style: React.CSSProperties;
-}) {
-  return <div style={style}>{children}</div>;
-}
-
-function Hairline({ color }: { color: string }) {
-  return (
-    <div
-      className="mx-8 sm:mx-14 print:mx-0"
-      style={{ height: 1, backgroundColor: color }}
-    />
-  );
-}
-
-/* Resolves a Supabase storage path to a short-lived signed URL so the
-   recipient can download an attachment without needing a Supabase account. */
-function AttachmentLink({
-  path,
-  name,
-  mime,
-  muted,
-}: {
-  path: string;
-  name: string;
-  mime: string;
-  muted: string;
-}) {
-  const [url, setUrl] = useState<string | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    supabase.storage
-      .from('proposals')
-      .createSignedUrl(path, 3600)
-      .then(({ data }) => {
-        if (!cancelled && data?.signedUrl) setUrl(data.signedUrl);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [path]);
-  return (
-    <a
-      href={url ?? '#'}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center gap-2 underline decoration-dotted underline-offset-4 hover:no-underline"
-      style={{ color: 'inherit' }}
-    >
-      <span>{name}</span>
-      <span className="text-detail uppercase tracking-wider" style={{ color: muted }}>
-        {mime.split('/').pop()?.slice(0, 6) ?? 'file'}
-      </span>
-    </a>
-  );
-}
-
 /* ── Component ──────────────────────────────────────────────────────────── */
 
 export default function QuoteSinglePageView({
@@ -264,178 +58,52 @@ export default function QuoteSinglePageView({
   companyAbn,
   quoteNumberFormat,
 }: QuoteSinglePageViewProps) {
-  const palette = useBrandPalette(branding);
-  const decisionExtras = parseDecisionExtras(
-    (proposal as { decision_extras?: unknown }).decision_extras,
-  );
-  const photoPaths = parsePhotos(proposal.project_photos);
-  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
-  const [coverImgUrl, setCoverImgUrl] = useState<string | null>(resolvedBgUrl ?? null);
-  const extras = parseQuoteExtras(proposal.quote_extras);
-
-  // Resolve signed URLs for project photos
-  useEffect(() => {
-    if (photoPaths.length === 0) return;
-    let cancelled = false;
-    (async () => {
-      const next: Record<string, string> = {};
-      for (const path of photoPaths) {
-        const { data } = await supabase.storage
-          .from('proposals')
-          .createSignedUrl(path, 3600);
-        if (data?.signedUrl) next[path] = data.signedUrl;
-      }
-      if (!cancelled) setPhotoUrls(next);
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [photoPaths.join('|')]);
-
-  // Fallback cover image (only used when no project photos set)
-  useEffect(() => {
-    if (resolvedBgUrl !== undefined && resolvedBgUrl !== null) return;
-    if (photoPaths.length > 0) return;
-    if (!proposal.cover_image_path) return;
-    let cancelled = false;
-    supabase.storage
-      .from('proposals')
-      .createSignedUrl(proposal.cover_image_path, 3600)
-      .then(({ data }) => {
-        if (!cancelled && data?.signedUrl) setCoverImgUrl(data.signedUrl);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [proposal.cover_image_path, resolvedBgUrl, photoPaths.length]);
-
-  /* ── Pricing maths ──────────────────────────────────────────── */
-  // Quote-V2 columns (include_gst / gst_rate / require_deposit / deposit_percent
-  // / valid_until on the proposal row) take precedence when non-null. Legacy
-  // quotes fall back to the pricing-page payload so nothing regresses.
-
-  const proposalCurrency = ((proposal as Record<string, unknown>).currency as CurrencyCode) || 'AUD';
-  const fmt = (amount: number) => formatCurrency(amount, proposalCurrency);
-
-  const items: PricingLineItem[] = pricing?.items ?? [];
-  const optionalItems: PricingOptionalItem[] = pricing?.optional_items ?? [];
-  const subtotal = pricingEffectiveSubtotal(items);
-
-  const gstEnabled =
-    proposal.include_gst !== null && proposal.include_gst !== undefined
-      ? proposal.include_gst
-      : !!pricing?.tax_enabled;
-  const gstRatePct =
-    proposal.gst_rate !== null && proposal.gst_rate !== undefined
-      ? proposal.gst_rate * 100
-      : (pricing?.tax_rate ?? 10);
-  const taxRate = gstEnabled ? gstRatePct : 0;
-  const taxAmount = Math.round(subtotal * (taxRate / 100) * 100) / 100;
-  const total = subtotal + taxAmount;
-
-  // Prefer the flat deposit columns; fall back to legacy payment_schedule.
-  const useFlatDeposit =
-    proposal.require_deposit !== null && proposal.require_deposit !== undefined;
-  const deposit = useFlatDeposit
-    ? (proposal.require_deposit
-        ? {
-            amount: Math.round(total * ((proposal.deposit_percent ?? 0) / 100) * 100) / 100,
-            pct: proposal.deposit_percent ?? 0,
-            label: 'Deposit',
-          }
-        : null)
-    : deriveDeposit(pricing, total);
-
-  // Full milestone schedule (when more than one payment exists)
-  const milestones = (!useFlatDeposit && pricing?.payment_schedule?.milestones?.enabled
-    && pricing.payment_schedule.milestones.payments.length > 1)
-    ? pricing.payment_schedule.milestones.payments
-    : [];
-
-  const validUntil = proposal.valid_until
-    ? new Date(proposal.valid_until).toLocaleDateString('en-AU', {
-        day: 'numeric', month: 'long', year: 'numeric',
-      })
-    : formatValidUntil(pricing);
-
-  const expiryState = computeExpiryState(proposal, pricing);
-
-  const quoteDate = (pricing?.proposal_date || proposal.created_at)
-    ? new Date(pricing?.proposal_date || proposal.created_at).toLocaleDateString('en-AU', {
-        day: 'numeric', month: 'long', year: 'numeric',
-      })
-    : null;
-
-  // Prefer the new scope_of_works field; fall back to legacy description.
-  const scopeOfWorks = proposal.scope_of_works || proposal.description || '';
-  const attachments = Array.isArray(proposal.attachments) ? proposal.attachments : [];
-
-  /* ── Cover header tokens ───────────────────────────────────── */
-
-  const headerBg = buildHeaderBackground(proposal);
-  // Quote body header text/subtitle — prefer quote_header_* with cover_* as
-  // a fallback so legacy quotes keep their existing look.
-  const headerText = proposal.quote_header_text_color ?? proposal.cover_text_color ?? '#ffffff';
-  const headerSubtle = proposal.quote_header_subtitle_color ?? proposal.cover_subtitle_color ?? withAlpha(headerText, 0.55);
-  const displayCompanyName = companyName || branding.name;
-
-  /* ── Body design tokens — 3-tier cascade ───────────────────── */
-
-  const bodyBg =
-    proposal.text_page_bg_color || branding.text_page_bg_color || '#ffffff';
-  const bodyText =
-    proposal.text_page_text_color || branding.text_page_text_color || '#1E2432';
-  const headingColor =
-    proposal.text_page_heading_color || branding.text_page_heading_color || bodyText;
-  const muted = palette.mutedText;
-  const faint = palette.faintText;
-  const hairline = palette.borderSubtle;
-
-  const bodyFontFamily = fontStack(branding.font_body, 'inherit');
-  const headingFontFamily = fontStack(branding.font_heading, 'inherit');
-  const titleFontFamily = fontStack(
-    proposal.title_font_family || branding.title_font_family || branding.font_heading,
-    'inherit',
-  );
-  const titleFontWeight = proposal.title_font_weight || branding.title_font_weight || '600';
-
-  /* ── Style snippets, applied inline so they take precedence over Tailwind ─ */
-
-  const bodyFontWeight = branding.font_body_weight ? Number(branding.font_body_weight) : undefined;
-  const headingFontWeight = branding.font_heading_weight ? Number(branding.font_heading_weight) : undefined;
-
-  const articleStyle: React.CSSProperties = {
-    backgroundColor: bodyBg,
-    color: bodyText,
-    fontFamily: bodyFontFamily,
-    fontWeight: bodyFontWeight,
-    ...TABULAR,
-  };
-  const labelStyle: React.CSSProperties = {
-    color: faint,
-    fontFamily: headingFontFamily,
-    fontSize: '10px',
-    fontWeight: 500,
-    letterSpacing: '0.18em',
-    textTransform: 'uppercase',
-    marginBottom: '0.75rem',
-  };
-  const headingTextStyle: React.CSSProperties = {
-    color: headingColor,
-    fontFamily: headingFontFamily,
-  };
-  const titleStyle: React.CSSProperties = {
-    fontFamily: titleFontFamily,
-    fontWeight: Number(titleFontWeight) || 600,
-    color: headingColor,
-  };
-  const mutedStyle: React.CSSProperties = { color: muted };
-
-  /* ── Photo positioning ─────────────────────────────────────── */
-
-  const heroUrl = photoPaths[0] ? photoUrls[photoPaths[0]] : coverImgUrl;
-  const featureUrl = photoPaths[1] ? photoUrls[photoPaths[1]] : null;
+  const {
+    palette,
+    decisionExtras,
+    extras,
+    fmt,
+    items,
+    optionalItems,
+    subtotal,
+    gstEnabled,
+    gstRatePct,
+    taxAmount,
+    total,
+    deposit,
+    milestones,
+    validUntil,
+    expiryState,
+    quoteDate,
+    scopeOfWorks,
+    attachments,
+    headerBg,
+    headerText,
+    headerSubtle,
+    displayCompanyName,
+    bodyBg,
+    bodyText,
+    headingColor,
+    muted,
+    faint,
+    hairline,
+    headingFontFamily,
+    titleFontFamily,
+    titleFontWeight,
+    articleStyle,
+    labelStyle,
+    titleStyle,
+    mutedStyle,
+    heroUrl,
+    featureUrl,
+  } = useQuoteTokens({
+    proposal,
+    pricing,
+    branding,
+    resolvedBgUrl,
+    companyName,
+    quoteNumberFormat,
+  });
 
   /* ── Render ────────────────────────────────────────────────── */
 

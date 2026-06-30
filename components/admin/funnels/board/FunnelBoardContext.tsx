@@ -7,7 +7,6 @@ import {
   useCallback,
   useState,
   useEffect,
-  useRef,
   type ReactNode,
 } from 'react';
 import { useRouter } from 'next/navigation';
@@ -20,9 +19,12 @@ import {
   type FunnelBoardNote,
   type FunnelBoardShape,
 } from '@/lib/supabase';
-import { useToast } from '@/components/ui/Toast';
-import { FUNNEL_STEP_DEFAULTS } from '@/lib/types/funnel';
-import { NOTE_COLORS } from '@/components/admin/feedback/board/nodes/StickyNoteNode';
+import { useBoardSyncStatus } from '@/components/admin/feedback/board/useBoardSyncStatus';
+import { useBoardHistory } from '@/components/admin/feedback/board/useBoardHistory';
+import { useFunnelStepMutations } from './useFunnelStepMutations';
+import { useFunnelNoteMutations } from './useFunnelNoteMutations';
+import { useFunnelEdgeMutations } from './useFunnelEdgeMutations';
+import { useFunnelShapeMutations } from './useFunnelShapeMutations';
 
 export type NewStep = Omit<FunnelStep, 'id' | 'funnel_id' | 'company_id' | 'created_at' | 'updated_at'>;
 export type NewShape = Omit<FunnelBoardShape, 'id' | 'funnel_id' | 'company_id' | 'created_at' | 'updated_at'>;
@@ -37,8 +39,6 @@ interface ContextValue {
   setFunnel: (updater: (prev: Funnel | null) => Funnel | null) => void;
   loading: boolean;
 
-  // Selection (drives the side drawer). Mutually exclusive — selecting one
-  // clears the others so only a single right-hand editor is ever visible.
   selectedStepId: string | null;
   selectStep: (id: string | null) => void;
   selectedShapeId: string | null;
@@ -47,33 +47,30 @@ interface ContextValue {
   selectNote: (id: string | null) => void;
   clearSelection: () => void;
 
-  // Steps
   steps: FunnelStep[];
   createStep: (stepType: FunnelStepType, position: { x: number; y: number }) => Promise<FunnelStep | null>;
   updateStep: (id: string, patch: Partial<FunnelStep>) => Promise<void>;
   deleteStep: (id: string) => Promise<void>;
 
-  // Undo/redo. Wired into create/update/delete for steps and edges.
   undo: () => Promise<void>;
   redo: () => Promise<void>;
   canUndo: boolean;
   canRedo: boolean;
+  undoLabels: string[];
+  redoLabels: string[];
 
   syncStatus: 'idle' | 'saving' | 'error';
 
-  // Notes
   boardNotes: FunnelBoardNote[];
   addNote: (position?: { x: number; y: number }) => Promise<FunnelBoardNote | null>;
   updateNote: (id: string, changes: Partial<FunnelBoardNote>) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
 
-  // Edges
   boardEdges: FunnelBoardEdge[];
   createEdge: (edge: NewEdge) => Promise<FunnelBoardEdge | null>;
   updateEdge: (id: string, patch: Partial<FunnelBoardEdge>) => Promise<void>;
   deleteEdge: (id: string) => Promise<void>;
 
-  // Shapes
   shapes: FunnelBoardShape[];
   createShape: (shape: NewShape) => Promise<FunnelBoardShape | null>;
   updateShape: (id: string, patch: Partial<FunnelBoardShape>) => Promise<void>;
@@ -101,7 +98,6 @@ interface ProviderProps {
 
 export function FunnelBoardProvider({ funnelId, companyId, userId, children }: ProviderProps) {
   const router = useRouter();
-  const toast = useToast();
 
   const [funnel, setFunnelState] = useState<Funnel | null>(null);
   const [steps, setSteps] = useState<FunnelStep[]>([]);
@@ -109,6 +105,8 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
   const [boardNotes, setBoardNotes] = useState<FunnelBoardNote[]>([]);
   const [shapes, setShapes] = useState<FunnelBoardShape[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Selection — mutually exclusive
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
@@ -127,44 +125,12 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
   const clearSelection = useCallback(() => {
     setSelectedStepId(null); setSelectedShapeId(null); setSelectedNoteId(null);
   }, []);
-  // ─── Undo/redo facility ─────────────────────────────────────────
-  //
-  // Each undoable mutation pushes an inverse pair { undo, redo } onto the
-  // stack. While an entry is being replayed we set `suppress` so the
-  // mutation doesn't re-record itself.
-  type HistoryOp = { undo: () => Promise<void>; redo: () => Promise<void> };
-  const historyRef = useRef<{ undo: HistoryOp[]; redo: HistoryOp[]; suppress: boolean }>({
-    undo: [], redo: [], suppress: false,
-  });
-  const [, forceRender] = useState(0);
-  const bumpHistoryUI = useCallback(() => forceRender((n) => n + 1), []);
 
-  const recordHistory = useCallback((op: HistoryOp) => {
-    if (historyRef.current.suppress) return;
-    historyRef.current.undo.push(op);
-    if (historyRef.current.undo.length > 30) historyRef.current.undo.shift();
-    historyRef.current.redo.length = 0;
-    bumpHistoryUI();
-  }, [bumpHistoryUI]);
+  // Shared infrastructure
+  const { syncStatus, markSaving, markDone } = useBoardSyncStatus();
+  const { recordHistory, undo, redo, canUndo, canRedo, undoLabels, redoLabels } = useBoardHistory();
 
-  const undo = useCallback(async () => {
-    const op = historyRef.current.undo.pop();
-    if (!op) return;
-    historyRef.current.suppress = true;
-    try { await op.undo(); } finally { historyRef.current.suppress = false; }
-    historyRef.current.redo.push(op);
-    bumpHistoryUI();
-  }, [bumpHistoryUI]);
-
-  const redo = useCallback(async () => {
-    const op = historyRef.current.redo.pop();
-    if (!op) return;
-    historyRef.current.suppress = true;
-    try { await op.redo(); } finally { historyRef.current.suppress = false; }
-    historyRef.current.undo.push(op);
-    bumpHistoryUI();
-  }, [bumpHistoryUI]);
-
+  // Data loading
   const fetchFunnel = useCallback(async () => {
     const { data, error } = await supabase
       .from('funnels').select('*').eq('id', funnelId).eq('company_id', companyId).single();
@@ -198,345 +164,29 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
       .finally(() => setLoading(false));
   }, [fetchFunnel, loadSteps, loadEdges, loadNotes, loadShapes]);
 
-  /* ─── Steps ─────────────────────────────────────────────────── */
+  // Mutation hooks
+  const stepMutations = useFunnelStepMutations({
+    funnelId, companyId, steps, setSteps, setSelectedStepId,
+    boardEdges, setBoardEdges, markSaving, markDone, recordHistory, loadSteps,
+  });
 
-  // Low-level write that re-inserts an entire step row (used by undo of delete
-  // and redo of create). Preserves the original id so edges still resolve.
-  const insertStepRow = useCallback(async (row: FunnelStep) => {
-    setSteps((prev) => prev.some((s) => s.id === row.id) ? prev : [...prev, row]);
-    await supabase.from('funnel_steps').insert(row);
-  }, []);
+  const noteMutations = useFunnelNoteMutations({
+    funnelId, companyId, boardNotes, setBoardNotes, markSaving, markDone, recordHistory,
+  });
 
-  const createStep = useCallback(
-    async (stepType: FunnelStepType, position: { x: number; y: number }): Promise<FunnelStep | null> => {
-      const defaults = FUNNEL_STEP_DEFAULTS[stepType];
-      markSaving();
-      const { data, error } = await supabase
-        .from('funnel_steps')
-        .insert({
-          funnel_id: funnelId,
-          company_id: companyId,
-          step_type: stepType,
-          label: defaults.label,
-          icon: defaults.icon,
-          url: null,
-          color: null,
-          board_x: Math.round(position.x),
-          board_y: Math.round(position.y),
-          metrics: {},
-        })
-        .select().single();
-      markDone(!error);
-      if (error || !data) { toast.error('Failed to add step'); return null; }
-      setSteps((prev) => [...prev, data]);
-      setSelectedStepId(data.id);
-      // History: undo deletes the row; redo re-inserts the same row.
-      const created: FunnelStep = data;
-      recordHistory({
-        undo: async () => {
-          setSteps((prev) => prev.filter((s) => s.id !== created.id));
-          setSelectedStepId((prev) => (prev === created.id ? null : prev));
-          await supabase.from('funnel_steps').delete().eq('id', created.id);
-        },
-        redo: async () => { await insertStepRow(created); },
-      });
-      return data;
-    },
-    [funnelId, companyId, toast, recordHistory, insertStepRow]
-  );
+  const edgeMutations = useFunnelEdgeMutations({
+    funnelId, companyId, boardEdges, setBoardEdges, markSaving, markDone, recordHistory, loadEdges,
+  });
 
-  const updateStep = useCallback(async (id: string, patch: Partial<FunnelStep>) => {
-    // Snapshot the "before" values of just the patched fields, so undo
-    // restores them without clobbering anything else the user has changed.
-    const before = steps.find((s) => s.id === id);
-    const beforePatch: Partial<FunnelStep> | null = before
-      ? Object.keys(patch).reduce<Partial<FunnelStep>>((acc, key) => {
-          (acc as Record<string, unknown>)[key] = (before as Record<string, unknown>)[key];
-          return acc;
-        }, {})
-      : null;
-
-    setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
-    markSaving();
-    const { error } = await supabase
-      .from('funnel_steps')
-      .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq('id', id);
-    markDone(!error);
-    if (error) { toast.error('Failed to save step'); loadSteps(); return; }
-
-    if (beforePatch) {
-      recordHistory({
-        undo: async () => {
-          setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, ...beforePatch } : s)));
-          await supabase.from('funnel_steps').update({ ...beforePatch, updated_at: new Date().toISOString() }).eq('id', id);
-        },
-        redo: async () => {
-          setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
-          await supabase.from('funnel_steps').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
-        },
-      });
-    }
-  }, [steps, toast, loadSteps, recordHistory]);
-
-  const deleteStep = useCallback(async (id: string) => {
-    // Snapshot the step and all incident edges so undo can fully restore.
-    const before = steps.find((s) => s.id === id);
-    const incidentEdges = boardEdges.filter((e) => e.source_step_id === id || e.target_step_id === id);
-
-    setSteps((prev) => prev.filter((s) => s.id !== id));
-    setBoardEdges((prev) => prev.filter((e) => e.source_step_id !== id && e.target_step_id !== id));
-    setSelectedStepId((prev) => (prev === id ? null : prev));
-    markSaving();
-    await supabase.from('funnel_steps').delete().eq('id', id);
-    markDone(true);
-
-    if (before) {
-      recordHistory({
-        undo: async () => {
-          await insertStepRow(before);
-          // Restore incident edges
-          if (incidentEdges.length > 0) {
-            setBoardEdges((prev) => {
-              const known = new Set(prev.map((e) => e.id));
-              return [...prev, ...incidentEdges.filter((e) => !known.has(e.id))];
-            });
-            await supabase.from('funnel_board_edges').insert(incidentEdges);
-          }
-        },
-        redo: async () => {
-          setSteps((prev) => prev.filter((s) => s.id !== id));
-          setBoardEdges((prev) => prev.filter((e) => e.source_step_id !== id && e.target_step_id !== id));
-          await supabase.from('funnel_steps').delete().eq('id', id);
-        },
-      });
-    }
-  }, [steps, boardEdges, recordHistory, insertStepRow]);
-
-  /* ─── Notes ─────────────────────────────────────────────────── */
-
-  const addNote = useCallback(async (position?: { x: number; y: number }): Promise<FunnelBoardNote | null> => {
-    const existing = boardNotes.length;
-    const x = position ? Math.round(position.x) : 50 + (existing % 3) * 240;
-    const y = position ? Math.round(position.y) : 400 + Math.floor(existing / 3) * 200;
-    markSaving();
-    const { data, error } = await supabase
-      .from('funnel_board_notes')
-      .insert({
-        funnel_id: funnelId,
-        company_id: companyId,
-        content: '',
-        color: NOTE_COLORS[existing % NOTE_COLORS.length].value,
-        board_x: x, board_y: y, width: 200, height: 150, font_size: 14,
-      })
-      .select().single();
-    markDone(!error);
-    if (error || !data) { toast.error('Failed to add note'); return null; }
-    setBoardNotes((prev) => [...prev, data]);
-    return data;
-  }, [funnelId, companyId, boardNotes.length, toast]);
-
-  const updateNote = useCallback(async (id: string, changes: Partial<FunnelBoardNote>) => {
-    setBoardNotes((prev) => prev.map((n) => (n.id === id ? { ...n, ...changes } : n)));
-    markSaving();
-    await supabase.from('funnel_board_notes').update({ ...changes, updated_at: new Date().toISOString() }).eq('id', id);
-    markDone(true);
-  }, []);
-
-  const deleteNote = useCallback(async (id: string) => {
-    const before = boardNotes.find((n) => n.id === id);
-    setBoardNotes((prev) => prev.filter((n) => n.id !== id));
-    markSaving();
-    await supabase.from('funnel_board_notes').delete().eq('id', id);
-    markDone(true);
-    if (before) {
-      recordHistory({
-        undo: async () => {
-          setBoardNotes((prev) => prev.some((n) => n.id === before.id) ? prev : [...prev, before]);
-          await supabase.from('funnel_board_notes').insert(before);
-        },
-        redo: async () => {
-          setBoardNotes((prev) => prev.filter((n) => n.id !== id));
-          await supabase.from('funnel_board_notes').delete().eq('id', id);
-        },
-      });
-    }
-  }, [boardNotes, recordHistory]);
-
-  /* ─── Edges ─────────────────────────────────────────────────── */
-
-  const insertEdgeRow = useCallback(async (row: FunnelBoardEdge) => {
-    setBoardEdges((prev) => prev.some((e) => e.id === row.id) ? prev : [...prev, row]);
-    await supabase.from('funnel_board_edges').insert(row);
-  }, []);
-
-  const createEdge = useCallback(async (edge: NewEdge): Promise<FunnelBoardEdge | null> => {
-    markSaving();
-    const { data, error } = await supabase
-      .from('funnel_board_edges')
-      .insert({ ...edge, funnel_id: funnelId, company_id: companyId })
-      .select().single();
-    markDone(!error);
-    if (error) { toast.error('Failed to create connection'); return null; }
-    if (data) {
-      setBoardEdges((prev) => [...prev, data]);
-      const created = data as FunnelBoardEdge;
-      recordHistory({
-        undo: async () => {
-          setBoardEdges((prev) => prev.filter((e) => e.id !== created.id));
-          await supabase.from('funnel_board_edges').delete().eq('id', created.id);
-        },
-        redo: async () => { await insertEdgeRow(created); },
-      });
-    }
-    return data;
-  }, [funnelId, companyId, toast, recordHistory, insertEdgeRow]);
-
-  const updateEdge = useCallback(async (id: string, patch: Partial<FunnelBoardEdge>) => {
-    const before = boardEdges.find((e) => e.id === id);
-    const beforePatch: Partial<FunnelBoardEdge> | null = before
-      ? Object.keys(patch).reduce<Partial<FunnelBoardEdge>>((acc, key) => {
-          (acc as Record<string, unknown>)[key] = (before as Record<string, unknown>)[key];
-          return acc;
-        }, {})
-      : null;
-
-    setBoardEdges((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
-    markSaving();
-    const { error } = await supabase
-      .from('funnel_board_edges')
-      .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq('id', id);
-    markDone(!error);
-    if (error) { toast.error('Failed to update connection'); loadEdges(); return; }
-
-    if (beforePatch) {
-      recordHistory({
-        undo: async () => {
-          setBoardEdges((prev) => prev.map((e) => (e.id === id ? { ...e, ...beforePatch } : e)));
-          await supabase.from('funnel_board_edges').update({ ...beforePatch, updated_at: new Date().toISOString() }).eq('id', id);
-        },
-        redo: async () => {
-          setBoardEdges((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
-          await supabase.from('funnel_board_edges').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
-        },
-      });
-    }
-  }, [boardEdges, toast, loadEdges, recordHistory]);
-
-  const deleteEdge = useCallback(async (id: string) => {
-    const before = boardEdges.find((e) => e.id === id);
-    setBoardEdges((prev) => prev.filter((e) => e.id !== id));
-    markSaving();
-    await supabase.from('funnel_board_edges').delete().eq('id', id);
-    markDone(true);
-    if (before) {
-      recordHistory({
-        undo: async () => { await insertEdgeRow(before); },
-        redo: async () => {
-          setBoardEdges((prev) => prev.filter((e) => e.id !== id));
-          await supabase.from('funnel_board_edges').delete().eq('id', id);
-        },
-      });
-    }
-  }, [boardEdges, recordHistory, insertEdgeRow]);
-
-  /* ─── Shapes ────────────────────────────────────────────────── */
-
-  const createShape = useCallback(async (shape: NewShape): Promise<FunnelBoardShape | null> => {
-    markSaving();
-    const { data, error } = await supabase
-      .from('funnel_board_shapes')
-      .insert({ ...shape, funnel_id: funnelId, company_id: companyId })
-      .select().single();
-    markDone(!error);
-    if (error) { toast.error('Failed to create shape'); return null; }
-    if (data) {
-      setShapes((prev) => [...prev, data]);
-      const created = data;
-      recordHistory({
-        undo: async () => {
-          setShapes((prev) => prev.filter((s) => s.id !== created.id));
-          await supabase.from('funnel_board_shapes').delete().eq('id', created.id);
-        },
-        redo: async () => {
-          setShapes((prev) => prev.some((s) => s.id === created.id) ? prev : [...prev, created]);
-          await supabase.from('funnel_board_shapes').insert(created);
-        },
-      });
-    }
-    return data;
-  }, [funnelId, companyId, toast, recordHistory]);
-
-  const updateShape = useCallback(async (id: string, patch: Partial<FunnelBoardShape>) => {
-    setShapes((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
-    markSaving();
-    const { error } = await supabase
-      .from('funnel_board_shapes')
-      .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq('id', id);
-    markDone(!error);
-    if (error) { toast.error('Failed to save shape'); loadShapes(); }
-  }, [toast, loadShapes]);
-
-  const deleteShape = useCallback(async (id: string) => {
-    const before = shapes.find((s) => s.id === id);
-    const incidentEdges = boardEdges.filter((e) => e.source_shape_id === id || e.target_shape_id === id);
-    setShapes((prev) => prev.filter((s) => s.id !== id));
-    setBoardEdges((prev) => prev.filter((e) => e.source_shape_id !== id && e.target_shape_id !== id));
-    markSaving();
-    await supabase.from('funnel_board_shapes').delete().eq('id', id);
-    markDone(true);
-    if (before) {
-      recordHistory({
-        undo: async () => {
-          setShapes((prev) => prev.some((s) => s.id === before.id) ? prev : [...prev, before]);
-          await supabase.from('funnel_board_shapes').insert(before);
-          if (incidentEdges.length > 0) {
-            setBoardEdges((prev) => {
-              const known = new Set(prev.map((e) => e.id));
-              return [...prev, ...incidentEdges.filter((e) => !known.has(e.id))];
-            });
-            await supabase.from('funnel_board_edges').insert(incidentEdges);
-          }
-        },
-        redo: async () => {
-          setShapes((prev) => prev.filter((s) => s.id !== id));
-          setBoardEdges((prev) => prev.filter((e) => e.source_shape_id !== id && e.target_shape_id !== id));
-          await supabase.from('funnel_board_shapes').delete().eq('id', id);
-        },
-      });
-    }
-  }, [shapes, boardEdges, recordHistory]);
+  const shapeMutations = useFunnelShapeMutations({
+    funnelId, companyId, shapes, setShapes, boardEdges, setBoardEdges,
+    markSaving, markDone, recordHistory, loadShapes,
+  });
 
   const setFunnel = useCallback(
     (updater: (prev: Funnel | null) => Funnel | null) => setFunnelState((prev) => updater(prev)),
     []
   );
-
-  // ─── Sync status (inflight mutation tracking) ────────────────
-  const inflightRef = useRef(0);
-  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'error'>('idle');
-  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const markSaving = useCallback(() => {
-    inflightRef.current++;
-    if (syncTimerRef.current) { clearTimeout(syncTimerRef.current); syncTimerRef.current = null; }
-    setSyncStatus('saving');
-  }, []);
-
-  const markDone = useCallback((ok: boolean) => {
-    inflightRef.current = Math.max(0, inflightRef.current - 1);
-    if (!ok) {
-      setSyncStatus('error');
-      syncTimerRef.current = setTimeout(() => setSyncStatus('idle'), 4000);
-    } else if (inflightRef.current === 0) {
-      syncTimerRef.current = setTimeout(() => setSyncStatus('idle'), 800);
-    }
-  }, []);
-
-  const canUndo = historyRef.current.undo.length > 0;
-  const canRedo = historyRef.current.redo.length > 0;
 
   const value = useMemo<ContextValue>(
     () => ({
@@ -546,12 +196,16 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
       selectedShapeId, selectShape,
       selectedNoteId, selectNote,
       clearSelection,
-      steps, createStep, updateStep, deleteStep,
-      undo, redo, canUndo, canRedo,
+      steps,
+      ...stepMutations,
+      undo, redo, canUndo, canRedo, undoLabels, redoLabels,
       syncStatus,
-      boardNotes, addNote, updateNote, deleteNote,
-      boardEdges, createEdge, updateEdge, deleteEdge,
-      shapes, createShape, updateShape, deleteShape,
+      boardNotes,
+      ...noteMutations,
+      boardEdges,
+      ...edgeMutations,
+      shapes,
+      ...shapeMutations,
     }),
     [
       funnelId, companyId, userId, funnel, setFunnel, loading,
@@ -559,12 +213,12 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
       selectedShapeId, selectShape,
       selectedNoteId, selectNote,
       clearSelection,
-      steps, createStep, updateStep, deleteStep,
-      undo, redo, canUndo, canRedo,
+      steps, stepMutations,
+      undo, redo, canUndo, canRedo, undoLabels, redoLabels,
       syncStatus,
-      boardNotes, addNote, updateNote, deleteNote,
-      boardEdges, createEdge, updateEdge, deleteEdge,
-      shapes, createShape, updateShape, deleteShape,
+      boardNotes, noteMutations,
+      boardEdges, edgeMutations,
+      shapes, shapeMutations,
     ]
   );
 

@@ -2,7 +2,11 @@
 
 import { useCallback, useRef, useState } from 'react';
 
-export type HistoryOp = { undo: () => Promise<void>; redo: () => Promise<void> };
+export type HistoryOp = {
+  undo: () => Promise<void>;
+  redo: () => Promise<void>;
+  label?: string;
+};
 
 export function useBoardHistory() {
   const historyRef = useRef<{ undo: HistoryOp[]; redo: HistoryOp[]; suppress: boolean }>({
@@ -40,5 +44,8 @@ export function useBoardHistory() {
   const canUndo = historyRef.current.undo.length > 0;
   const canRedo = historyRef.current.redo.length > 0;
 
-  return { historyRef, recordHistory, undo, redo, canUndo, canRedo };
+  const undoLabels = historyRef.current.undo.map((op) => op.label || 'Action').reverse();
+  const redoLabels = historyRef.current.redo.map((op) => op.label || 'Action').reverse();
+
+  return { historyRef, recordHistory, undo, redo, canUndo, canRedo, undoLabels, redoLabels };
 }

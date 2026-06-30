@@ -8,8 +8,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Plus, FileText, Upload, LayoutGrid, List, Search, Trash2, Pencil,
-  Type, Image, DollarSign, Package, ListOrdered, Check, X, Loader2, ArrowUpDown,
+  Plus, FileText, Upload, LayoutGrid, List, Search, ArrowUpDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
@@ -29,41 +28,11 @@ import PackageTemplateEditorModal from '@/components/admin/templates/PackageTemp
 import LineItemTemplateEditorModal from '@/components/admin/templates/LineItemTemplateEditorModal';
 import type { PackageTier } from '@/lib/types/packages';
 
-type TabKey = 'proposal' | 'quote' | 'line_items' | 'packages' | 'pages';
-
-interface LineItemTemplateRow {
-  id: string;
-  name: string;
-  description: string | null;
-  items: unknown[];
-  created_at: string;
-}
-
-interface PackageTemplateRow {
-  id: string;
-  name: string;
-  description: string | null;
-  tier: { name?: string; features?: unknown[] } | null;
-  created_at: string;
-}
-
-interface PageLibraryRow {
-  id: string;
-  type: string;
-  title: string;
-  label: string | null;
-  payload: Record<string, unknown> | null;
-  created_at: string;
-  updated_at: string;
-}
-
-const TABS: Array<{ key: TabKey; label: string }> = [
-  { key: 'proposal', label: 'Proposals' },
-  { key: 'quote', label: 'Quotes' },
-  { key: 'line_items', label: 'Line items' },
-  { key: 'packages', label: 'Packages' },
-  { key: 'pages', label: 'Pages' },
-];
+import type { TabKey, LineItemTemplateRow, PackageTemplateRow, PageLibraryRow, SortKey } from './templates-types';
+import { TABS, sortItems } from './templates-types';
+import LineItemTemplatesView from './LineItemTemplatesView';
+import PackageTemplatesView from './PackageTemplatesView';
+import PageLibraryView from './PageLibraryView';
 
 export default function TemplatesPage() {
   return (
@@ -71,32 +40,6 @@ export default function TemplatesPage() {
       {(auth) => <TemplatesContent companyId={auth.companyId ?? ''} />}
     </AdminLayout>
   );
-}
-
-type SortKey = 'updated' | 'newest' | 'oldest' | 'name_asc' | 'name_desc';
-
-function sortItems<T extends { name?: string; title?: string; created_at: string; updated_at?: string }>(
-  items: T[],
-  sortBy: SortKey,
-): T[] {
-  return [...items].sort((a, b) => {
-    switch (sortBy) {
-      case 'updated':
-        return ((b as { updated_at?: string }).updated_at || b.created_at).localeCompare(
-          (a as { updated_at?: string }).updated_at || a.created_at,
-        );
-      case 'newest':
-        return b.created_at.localeCompare(a.created_at);
-      case 'oldest':
-        return a.created_at.localeCompare(b.created_at);
-      case 'name_asc':
-        return (a.name || a.title || '').localeCompare(b.name || b.title || '');
-      case 'name_desc':
-        return (b.name || b.title || '').localeCompare(a.name || a.title || '');
-      default:
-        return 0;
-    }
-  });
 }
 
 function TemplatesContent({ companyId }: { companyId: string }) {
@@ -612,7 +555,7 @@ function TemplatesContent({ companyId }: { companyId: string }) {
             }}
           />
         ) : filteredProposalTemplates.length === 0 && searchQuery ? (
-          <NoResults message={`No templates matching “${searchQuery}”`} />
+          <NoResults message={`No templates matching "${searchQuery}"`} />
         ) : scoped.length === 0 ? (
           <EmptyState
             icon={FileText}
@@ -686,301 +629,6 @@ function TemplatesContent({ companyId }: { companyId: string }) {
         )}
       </div>
 
-    </div>
-  );
-}
-
-/* ── Line-item templates view ─────────────────────────────────────── */
-
-function LineItemTemplatesView({
-  templates,
-  allCount,
-  searchQuery,
-  onDelete,
-  onEdit,
-}: {
-  templates: LineItemTemplateRow[];
-  allCount: number;
-  searchQuery: string;
-  onDelete: (t: LineItemTemplateRow) => void;
-  onEdit: (t: LineItemTemplateRow) => void;
-}) {
-  if (templates.length === 0 && searchQuery) {
-    return <NoResults message={`No line-item templates matching “${searchQuery}”`} />;
-  }
-  if (allCount === 0) {
-    return (
-      <EmptyState
-        icon={FileText}
-        title="No line-item templates yet"
-        description="Inside any quote's line items, click “Save as Template” to save the current item set to your library. It will show up here."
-      />
-    );
-  }
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
-      {templates.map((t) => (
-        <div
-          key={t.id}
-          role="button"
-          tabIndex={0}
-          onClick={() => onEdit(t)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(t); } }}
-          className="group relative bg-white rounded-2xl border border-edge-strong p-4 hover:shadow-md hover:border-teal/30 transition-all text-left cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-teal"
-        >
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <h3 className="text-sm font-semibold text-ink truncate">{t.name}</h3>
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition">
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onEdit(t); }}
-                className="p-1 text-faint hover:text-teal"
-                title="Edit"
-              >
-                <Pencil size={13} />
-              </button>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onDelete(t); }}
-                className="p-1 text-faint hover:text-red-500"
-                title="Delete"
-              >
-                <Trash2 size={13} />
-              </button>
-            </div>
-          </div>
-          {t.description && (
-            <p className="text-xs text-muted line-clamp-2 mb-3">{t.description}</p>
-          )}
-          <div className="flex items-center justify-between text-detail text-faint">
-            <span>
-              {Array.isArray(t.items) ? t.items.length : 0} item
-              {Array.isArray(t.items) && t.items.length === 1 ? '' : 's'}
-            </span>
-            <span>{new Date(t.created_at).toLocaleDateString()}</span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function PackageTemplatesView({
-  templates,
-  allCount,
-  searchQuery,
-  onDelete,
-  onEdit,
-}: {
-  templates: PackageTemplateRow[];
-  allCount: number;
-  searchQuery: string;
-  onDelete: (t: PackageTemplateRow) => void;
-  onEdit: (t: PackageTemplateRow) => void;
-}) {
-  if (templates.length === 0 && searchQuery) {
-    return <NoResults message={`No package templates matching "${searchQuery}"`} />;
-  }
-  if (allCount === 0) {
-    return (
-      <EmptyState
-        icon={Package}
-        title="No package templates yet"
-        description={'Click "New Package" to create one, or save from any quote’s packages page using the bookmark icon.'}
-      />
-    );
-  }
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
-      {templates.map((t) => {
-        const featureCount = Array.isArray(t.tier?.features) ? t.tier!.features!.length : 0;
-        return (
-          <div
-            key={t.id}
-            role="button"
-            tabIndex={0}
-            onClick={() => onEdit(t)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(t); } }}
-            className="group relative bg-white rounded-2xl border border-edge-strong p-4 hover:shadow-md hover:border-teal/30 transition-all text-left cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-teal"
-          >
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <h3 className="text-sm font-semibold text-ink truncate">{t.name}</h3>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition">
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); onEdit(t); }}
-                  className="p-1 text-faint hover:text-teal"
-                  title="Edit"
-                >
-                  <Pencil size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); onDelete(t); }}
-                  className="p-1 text-faint hover:text-red-500"
-                  title="Delete"
-                >
-                  <Trash2 size={13} />
-                </button>
-              </div>
-            </div>
-            {t.description && (
-              <p className="text-xs text-muted line-clamp-2 mb-3">{t.description}</p>
-            )}
-            <div className="flex items-center justify-between text-detail text-faint">
-              <span>
-                {featureCount} feature{featureCount === 1 ? '' : 's'}
-              </span>
-              <span>{new Date(t.created_at).toLocaleDateString()}</span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ── Page library view ──────────────────────────────────────────── */
-
-const PAGE_TYPE_ICONS: Record<string, typeof FileText> = {
-  text: Type,
-  pdf: Image,
-  pricing: DollarSign,
-  packages: Package,
-  toc: ListOrdered,
-  section: FileText,
-  decision: FileText,
-};
-
-const PAGE_TYPE_LABELS: Record<string, string> = {
-  text: 'Text',
-  pdf: 'PDF',
-  pricing: 'Pricing',
-  packages: 'Packages',
-  toc: 'Table of Contents',
-  section: 'Section',
-  decision: 'Decision',
-};
-
-function PageLibraryView({
-  pages,
-  allCount,
-  searchQuery,
-  onDelete,
-  onRename,
-  onReplacePdf,
-}: {
-  pages: PageLibraryRow[];
-  allCount: number;
-  searchQuery: string;
-  onDelete: (p: PageLibraryRow) => void;
-  onRename: (p: PageLibraryRow, newTitle: string) => void;
-  onReplacePdf: (p: PageLibraryRow, file: File) => Promise<void>;
-}) {
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
-  const [replacingId, setReplacingId] = useState<string | null>(null);
-
-  if (pages.length === 0 && searchQuery) {
-    return <NoResults message={`No saved pages matching "${searchQuery}"`} />;
-  }
-  if (allCount === 0) {
-    return (
-      <EmptyState
-        icon={FileText}
-        title="No saved pages yet"
-        description="Inside any proposal, quote, or template editor, click the bookmark icon on a page row to save it to your library. Saved pages can be imported into any entity."
-      />
-    );
-  }
-
-  const handleReplace = async (p: PageLibraryRow, file: File) => {
-    setReplacingId(p.id);
-    try {
-      await onReplacePdf(p, file);
-    } finally {
-      setReplacingId(null);
-    }
-  };
-
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 stagger-children">
-      {pages.map((p) => {
-        const Icon = PAGE_TYPE_ICONS[p.type] ?? FileText;
-        const typeLabel = PAGE_TYPE_LABELS[p.type] ?? p.type;
-        const isEditing = editingId === p.id;
-        const isReplacing = replacingId === p.id;
-
-        return (
-          <div
-            key={p.id}
-            className="group relative bg-white rounded-xl border border-edge-strong p-3 hover:shadow-md hover:border-teal/30 transition-all"
-          >
-            <div className="flex items-start justify-between gap-1.5 mb-1">
-              {isEditing ? (
-                <div className="flex items-center gap-1 flex-1 min-w-0">
-                  <input
-                    type="text"
-                    value={editValue}
-                    onChange={(e) => setEditValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && editValue.trim()) {
-                        onRename(p, editValue.trim());
-                        setEditingId(null);
-                      }
-                      if (e.key === 'Escape') setEditingId(null);
-                    }}
-                    autoFocus
-                    aria-label="Page name"
-                    maxLength={120}
-                    className="flex-1 min-w-0 px-1.5 py-0.5 rounded border border-edge bg-surface text-xs text-ink focus:outline-none focus:ring-1 focus:ring-teal/20"
-                  />
-                  <button onClick={() => { if (editValue.trim()) { onRename(p, editValue.trim()); setEditingId(null); } }} className="p-0.5 text-teal"><Check size={12} /></button>
-                  <button onClick={() => setEditingId(null)} className="p-0.5 text-faint"><X size={12} /></button>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <div className="shrink-0 w-6 h-6 rounded bg-surface flex items-center justify-center">
-                      <Icon size={14} className="text-dim" />
-                    </div>
-                    <p className="text-xs font-semibold text-ink truncate">
-                      {p.label || p.title}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition shrink-0">
-                    {p.type === 'pdf' && (
-                      <label
-                        className={`p-0.5 text-faint hover:text-teal cursor-pointer ${isReplacing ? 'pointer-events-none' : ''}`}
-                        title="Replace PDF"
-                      >
-                        {isReplacing ? <Loader2 size={11} className="animate-spin text-teal" /> : <Upload size={11} />}
-                        <input
-                          type="file"
-                          accept=".pdf"
-                          className="hidden"
-                          disabled={isReplacing}
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) handleReplace(p, f);
-                            e.target.value = '';
-                          }}
-                        />
-                      </label>
-                    )}
-                    <button onClick={() => { setEditingId(p.id); setEditValue(p.label || p.title); }} className="p-0.5 text-faint hover:text-teal" title="Rename" aria-label={`Rename ${p.label || p.title}`}><Pencil size={13} /></button>
-                    <button onClick={() => onDelete(p)} className="p-0.5 text-faint hover:text-red-500" title="Delete" aria-label={`Delete ${p.label || p.title}`}><Trash2 size={13} /></button>
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="flex items-center justify-between text-detail text-faint">
-              <span>{typeLabel}</span>
-              <span>{new Date(p.created_at).toLocaleDateString()}</span>
-            </div>
-          </div>
-        );
-      })}
     </div>
   );
 }

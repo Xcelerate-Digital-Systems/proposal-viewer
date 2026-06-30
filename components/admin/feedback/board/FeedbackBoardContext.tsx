@@ -84,6 +84,8 @@ interface ContextValue {
   redo: () => Promise<void>;
   canUndo: boolean;
   canRedo: boolean;
+  undoLabels: string[];
+  redoLabels: string[];
 }
 
 const Ctx = createContext<ContextValue | null>(null);
@@ -138,7 +140,7 @@ export function FeedbackBoardProvider({
   const { syncStatus, markSaving, markDone } = useBoardSyncStatus();
 
   // Undo/redo
-  const { recordHistory, undo, redo, canUndo, canRedo } = useBoardHistory();
+  const { recordHistory, undo, redo, canUndo, canRedo, undoLabels, redoLabels } = useBoardHistory();
 
   // Derived lists
   const placedItems = useMemo(
@@ -246,6 +248,8 @@ export function FeedbackBoardProvider({
       undo, redo,
       canUndo,
       canRedo,
+      undoLabels,
+      redoLabels,
     }),
     [
       projectId, companyId, userId,
@@ -258,7 +262,7 @@ export function FeedbackBoardProvider({
       boardNotes, addNote, updateNote, deleteNote,
       boardEdges, createEdge, updateEdge, deleteEdge,
       shapes, createShape, updateShape, deleteShape,
-      undo, redo, canUndo, canRedo,
+      undo, redo, canUndo, canRedo, undoLabels, redoLabels,
     ]
   );
 
