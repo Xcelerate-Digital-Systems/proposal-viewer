@@ -4,7 +4,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import TiptapLink from '@tiptap/extension-link';
-import { useEffect, useRef } from 'react';
+import { useRef, useCallback } from 'react';
 import {
   Bold, Italic, List, ListOrdered, Link, Link2Off,
   Undo, Redo,
@@ -17,12 +17,28 @@ interface EmailBodyEditorProps {
   className?: string;
 }
 
+function normalizeHtml(html: string): string {
+  return html.replace(/<p><\/p>/g, '<p><br></p>');
+}
+
 export default function EmailBodyEditor({
   content,
   onChange,
   placeholder = 'The main email body copy…',
   className,
 }: EmailBodyEditorProps) {
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  const handleUpdate = useCallback(({ editor: ed }: { editor: ReturnType<typeof useEditor> }) => {
+    if (!ed) return;
+    if (ed.isEmpty) {
+      onChangeRef.current('');
+      return;
+    }
+    onChangeRef.current(normalizeHtml(ed.getHTML()));
+  }, []);
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -40,6 +56,7 @@ export default function EmailBodyEditor({
       }),
     ],
     content: content || '',
+    onUpdate: handleUpdate,
     editorProps: {
       attributes: {
         class: 'prose prose-sm max-w-none focus:outline-none min-h-[100px] px-3 py-2 text-sm text-ink',
@@ -52,36 +69,6 @@ export default function EmailBodyEditor({
       },
     },
   });
-
-  const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
-
-  const lastEmittedHtml = useRef(content || '');
-
-  useEffect(() => {
-    if (!editor) return;
-    const handler = () => {
-      if (editor.isEmpty) {
-        lastEmittedHtml.current = '';
-        onChangeRef.current('');
-        return;
-      }
-      const raw = editor.getHTML();
-      const html = raw.replace(/<p><\/p>/g, '<p><br></p>');
-      lastEmittedHtml.current = html;
-      onChangeRef.current(html);
-    };
-    editor.on('update', handler);
-    return () => { editor.off('update', handler); };
-  }, [editor]);
-
-  useEffect(() => {
-    if (!editor) return;
-    const normalized = (content || '').replace(/<p><\/p>/g, '<p><br></p>');
-    if (normalized === lastEmittedHtml.current) return;
-    editor.commands.setContent(content || '');
-    lastEmittedHtml.current = normalized;
-  }, [editor, content]);
 
   if (!editor) return null;
 
