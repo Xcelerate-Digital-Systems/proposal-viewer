@@ -330,7 +330,7 @@ function EmailOpenPreview({
         {isHtml(body) ? (
           <SanitizedHtml
             html={body}
-            className="text-sm leading-relaxed prose prose-sm max-w-none [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5"
+            className="text-sm leading-relaxed prose prose-sm max-w-none [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5 [&_p]:min-h-[1.5em]"
             style={{ color: text }}
           />
         ) : (

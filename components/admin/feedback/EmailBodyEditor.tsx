@@ -53,31 +53,34 @@ export default function EmailBodyEditor({
     },
   });
 
-  const isInternalUpdate = useRef(false);
-  const handleUpdate = ({ editor: ed }: { editor: typeof editor }) => {
-    if (!ed) return;
-    isInternalUpdate.current = true;
-    const html = ed.getHTML();
-    onChange(ed.isEmpty ? '' : html);
-  };
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  const lastEmittedHtml = useRef(content || '');
 
   useEffect(() => {
     if (!editor) return;
-    editor.on('update', handleUpdate);
-    return () => { editor.off('update', handleUpdate); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    const handler = () => {
+      if (editor.isEmpty) {
+        lastEmittedHtml.current = '';
+        onChangeRef.current('');
+        return;
+      }
+      const raw = editor.getHTML();
+      const html = raw.replace(/<p><\/p>/g, '<p><br></p>');
+      lastEmittedHtml.current = html;
+      onChangeRef.current(html);
+    };
+    editor.on('update', handler);
+    return () => { editor.off('update', handler); };
   }, [editor]);
 
   useEffect(() => {
     if (!editor) return;
-    if (isInternalUpdate.current) {
-      isInternalUpdate.current = false;
-      return;
-    }
-    const currentHtml = editor.getHTML();
-    if (currentHtml !== content) {
-      editor.commands.setContent(content || '');
-    }
+    const normalized = (content || '').replace(/<p><\/p>/g, '<p><br></p>');
+    if (normalized === lastEmittedHtml.current) return;
+    editor.commands.setContent(content || '');
+    lastEmittedHtml.current = normalized;
   }, [editor, content]);
 
   if (!editor) return null;
