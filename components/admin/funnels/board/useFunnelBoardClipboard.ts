@@ -1,12 +1,13 @@
 'use client';
 
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { useReactFlow } from '@xyflow/react';
+import { useReactFlow, type Node } from '@xyflow/react';
 import { useFunnelBoardContextOrThrow } from './FunnelBoardContext';
 import type { FunnelStep, FunnelStepType } from '@/lib/supabase';
 import type { NewShape } from './FunnelBoardContext';
 import { alignNodesCentre, distributeNodes, autoLayout } from '@/components/admin/shared/board-utils';
 import { visualCentre } from './funnel-board-config';
+import { nextGroupColor, type GroupNodeData } from '@/components/admin/shared/GroupNode';
 
 type ClipboardEntry =
   | { kind: 'step'; stepType: FunnelStepType; label: string; icon: string | null; url: string | null; color: string | null; metrics: unknown }
@@ -85,7 +86,31 @@ export function useFunnelBoardClipboard(
 
   const deleteSelected = useCallback(async () => {
     const selected = rf.getNodes().filter((n) => n.selected);
+    const groupIds = new Set(selected.filter((n) => n.type === 'group').map((n) => n.id));
+    if (groupIds.size > 0) {
+      rf.setNodes((nds) => {
+        const groups = new Map<string, Node>();
+        for (const n of nds) {
+          if (groupIds.has(n.id)) groups.set(n.id, n);
+        }
+        return nds
+          .filter((n) => !groupIds.has(n.id))
+          .map((n) => {
+            if (n.parentId && groupIds.has(n.parentId)) {
+              const parent = groups.get(n.parentId);
+              return {
+                ...n,
+                parentId: undefined,
+                extent: undefined,
+                position: { x: n.position.x + (parent?.position.x ?? 0), y: n.position.y + (parent?.position.y ?? 0) },
+              };
+            }
+            return n;
+          });
+      });
+    }
     for (const node of selected) {
+      if (node.type === 'group') continue;
       if (node.id.startsWith('note-'))       await ctx.deleteNote(node.id.slice(5));
       else if (node.id.startsWith('shape-')) await ctx.deleteShape(node.id.slice(6));
       else if (node.id.startsWith('step-'))  await ctx.deleteStep(node.id.slice(5));
@@ -177,6 +202,88 @@ export function useFunnelBoardClipboard(
     }
   }, [ctx, viewportCentre]);
 
+  /* ─── Group / ungroup ─── */
+
+  const GROUP_PAD = 30;
+
+  const groupSelected = useCallback(() => {
+    const selected = rf.getNodes().filter((n) => n.selected && n.type !== 'group');
+    if (selected.length < 2) return;
+
+    const xs = selected.map((n) => n.position.x);
+    const ys = selected.map((n) => n.position.y);
+    const ws = selected.map((n) => (n as Node & { measured?: { width?: number } }).measured?.width ?? 200);
+    const hs = selected.map((n) => (n as Node & { measured?: { height?: number } }).measured?.height ?? 120);
+
+    const minX = Math.min(...xs) - GROUP_PAD;
+    const minY = Math.min(...ys) - GROUP_PAD;
+    const maxX = Math.max(...xs.map((x, i) => x + ws[i])) + GROUP_PAD;
+    const maxY = Math.max(...ys.map((y, i) => y + hs[i])) + GROUP_PAD;
+
+    const groupId = `group-${Date.now()}`;
+    const color = nextGroupColor();
+
+    const groupNode: Node = {
+      id: groupId,
+      type: 'group',
+      position: { x: minX, y: minY },
+      style: { width: maxX - minX, height: maxY - minY },
+      data: { label: 'Group', color } satisfies GroupNodeData,
+    };
+
+    rf.setNodes((nds) => {
+      const reparented = nds.map((n) => {
+        if (!n.selected || n.type === 'group') return n;
+        return {
+          ...n,
+          parentId: groupId,
+          extent: 'parent' as const,
+          position: { x: n.position.x - minX, y: n.position.y - minY },
+          selected: false,
+        };
+      });
+      return [groupNode, ...reparented];
+    });
+  }, [rf]);
+
+  const ungroupSelected = useCallback(() => {
+    const selected = rf.getNodes().filter((n) => n.selected);
+    const groupIds = new Set(selected.filter((n) => n.type === 'group').map((n) => n.id));
+    if (groupIds.size === 0) {
+      const parentIds = new Set(selected.map((n) => n.parentId).filter(Boolean) as string[]);
+      parentIds.forEach((id) => groupIds.add(id));
+    }
+    if (groupIds.size === 0) return;
+
+    rf.setNodes((nds) => {
+      const groups = new Map<string, Node>();
+      for (const n of nds) {
+        if (groupIds.has(n.id) && n.type === 'group') groups.set(n.id, n);
+      }
+      return nds
+        .filter((n) => !groupIds.has(n.id))
+        .map((n) => {
+          if (n.parentId && groupIds.has(n.parentId)) {
+            const parent = groups.get(n.parentId);
+            const px = parent?.position.x ?? 0;
+            const py = parent?.position.y ?? 0;
+            return {
+              ...n,
+              parentId: undefined,
+              extent: undefined,
+              position: { x: n.position.x + px, y: n.position.y + py },
+            };
+          }
+          return n;
+        });
+    });
+  }, [rf]);
+
+  const hasGroupInSelection = useCallback(() => {
+    const selected = rf.getNodes().filter((n) => n.selected);
+    return selected.some((n) => n.type === 'group' || n.parentId);
+  }, [rf]);
+
   /* ─── Keyboard: pan, Cmd-Z/Y undo+redo, Cmd-C/V copy+paste, Cmd-D duplicate ─── */
 
   useEffect(() => {
@@ -244,11 +351,15 @@ export function useFunnelBoardClipboard(
       } else if (e.key === 'd' || e.key === 'D') {
         e.preventDefault();
         void duplicateSelected();
+      } else if (e.key === 'g' || e.key === 'G') {
+        e.preventDefault();
+        if (e.shiftKey) ungroupSelected();
+        else groupSelected();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [ctx, rf, duplicateSelected, copySelected, pasteAtViewport]);
+  }, [ctx, rf, duplicateSelected, copySelected, pasteAtViewport, groupSelected, ungroupSelected]);
 
   const savePosition = useCallback((nodeId: string, x: number, y: number) => {
     if (nodeId.startsWith('note-')) void ctx.updateNote(nodeId.slice(5), { board_x: x, board_y: y });
@@ -302,5 +413,8 @@ export function useFunnelBoardClipboard(
     distributeH,
     distributeV,
     tidyLayout,
+    groupSelected,
+    ungroupSelected,
+    hasGroupInSelection,
   };
 }

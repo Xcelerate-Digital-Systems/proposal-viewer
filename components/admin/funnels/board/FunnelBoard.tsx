@@ -3,7 +3,7 @@
 import { useRef, useCallback, useMemo } from 'react';
 import {
   ReactFlow, ReactFlowProvider, Controls, MiniMap, Background, BackgroundVariant, useReactFlow,
-  ConnectionMode, type NodeTypes, type EdgeTypes, type Edge, type Connection, Panel,
+  ConnectionMode, type NodeTypes, type EdgeTypes, type Edge, type Connection, type Node, Panel,
   SelectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -32,11 +32,13 @@ import { useFunnelBoardContextOrThrow } from './FunnelBoardContext';
 import { useFunnelBoardInteractions } from './useFunnelBoardInteractions';
 import { useFunnelBoardClipboard } from './useFunnelBoardClipboard';
 import BulkSelectionToolbar from '@/components/admin/shared/BulkSelectionToolbar';
+import GroupNode from '@/components/admin/shared/GroupNode';
 
 const nodeTypes: NodeTypes = {
   funnelStep: FunnelStepNode,
   stickyNote: StickyNoteNode,
   shape: ShapeNode,
+  group: GroupNode,
 };
 const edgeTypes: EdgeTypes = { labeled: LabeledEdge };
 
@@ -69,6 +71,22 @@ function FunnelBoardInner() {
 
   const interactions = useFunnelBoardInteractions(containerRef, viewportCentre);
   const clipboard = useFunnelBoardClipboard(viewportCentre);
+
+  const minimapNodeColor = useCallback((node: Node) => {
+    if (node.type === 'group') return 'rgba(1,124,135,0.08)';
+    if (node.type === 'stickyNote') {
+      const note = (node.data as Record<string, unknown>)?.note as { color?: string } | undefined;
+      return note?.color || '#FDE68A';
+    }
+    if (node.type === 'shape') {
+      const shape = (node.data as Record<string, unknown>)?.shape as { color?: string } | undefined;
+      return shape?.color || 'rgba(43,43,43,0.4)';
+    }
+    const step = (node.data as Record<string, unknown>)?.step as { color?: string | null } | undefined;
+    return step?.color || '#ffffff';
+  }, []);
+
+  const minimapStrokeColor = useCallback(() => 'rgba(43,43,43,0.25)', []);
 
   if (ctx.loading) {
     return (
@@ -169,23 +187,13 @@ function FunnelBoardInner() {
             className="!bg-white !border !border-edge !shadow-sm !rounded-lg"
           />
           <MiniMap
-            nodeColor={(node) => {
-              if (node.type === 'stickyNote') {
-                const note = (node.data as Record<string, unknown>)?.note as { color?: string } | undefined;
-                return note?.color || '#FDE68A';
-              }
-              if (node.type === 'shape') {
-                const shape = (node.data as Record<string, unknown>)?.shape as { color?: string } | undefined;
-                return shape?.color || 'rgba(43,43,43,0.4)';
-              }
-              const step = (node.data as Record<string, unknown>)?.step as { color?: string | null } | undefined;
-              return step?.color || '#ffffff';
-            }}
-            nodeStrokeColor={() => 'rgba(43,43,43,0.3)'}
-            className="!bg-surface !border !border-edge !rounded-lg"
-            style={{ width: 140, height: 90 }}
+            nodeColor={minimapNodeColor}
+            nodeStrokeColor={minimapStrokeColor}
+            className="!bg-surface/80 !border !border-edge !rounded-xl !shadow-sm backdrop-blur-sm"
+            style={{ width: 160, height: 100 }}
             zoomable
             pannable
+            maskColor="rgba(0,0,0,0.06)"
           />
 
           <Panel position="top-left">
@@ -255,6 +263,9 @@ function FunnelBoardInner() {
                 onDistributeH={clipboard.distributeH}
                 onDistributeV={clipboard.distributeV}
                 onDelete={clipboard.deleteSelected}
+                onGroup={clipboard.groupSelected}
+                onUngroup={clipboard.ungroupSelected}
+                hasGroup={clipboard.hasGroupInSelection()}
               />
             </Panel>
           )}

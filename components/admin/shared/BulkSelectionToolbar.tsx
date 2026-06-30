@@ -1,6 +1,6 @@
 'use client';
 
-import { AlignCenterHorizontal, AlignCenterVertical, GripHorizontal, GripVertical, Trash2 } from 'lucide-react';
+import { AlignCenterHorizontal, AlignCenterVertical, GripHorizontal, GripVertical, Group, Ungroup, Trash2 } from 'lucide-react';
 
 interface Props {
   count: number;
@@ -9,10 +9,14 @@ interface Props {
   onDistributeH: () => void;
   onDistributeV: () => void;
   onDelete: () => void;
+  onGroup?: () => void;
+  onUngroup?: () => void;
+  hasGroup?: boolean;
 }
 
 export default function BulkSelectionToolbar({
   count, onAlignH, onAlignV, onDistributeH, onDistributeV, onDelete,
+  onGroup, onUngroup, hasGroup,
 }: Props) {
   if (count < 2) return null;
   return (
@@ -25,6 +29,17 @@ export default function BulkSelectionToolbar({
         <>
           <Btn icon={GripHorizontal} title="Distribute horizontally" onClick={onDistributeH} />
           <Btn icon={GripVertical} title="Distribute vertically" onClick={onDistributeV} />
+        </>
+      )}
+      {(onGroup || onUngroup) && (
+        <>
+          <div className="w-px h-5 bg-edge mx-0.5" />
+          {hasGroup && onUngroup && (
+            <Btn icon={Ungroup} title="Ungroup" onClick={onUngroup} />
+          )}
+          {onGroup && !hasGroup && (
+            <Btn icon={Group} title="Group selected" onClick={onGroup} />
+          )}
         </>
       )}
       <div className="w-px h-5 bg-edge mx-0.5" />

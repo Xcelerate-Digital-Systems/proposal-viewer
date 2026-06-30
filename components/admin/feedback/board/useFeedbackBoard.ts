@@ -101,7 +101,24 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
       } satisfies ShapeNodeData,
     }));
 
-    setNodes([...itemNodes, ...noteNodes, ...shapeNodes]);
+    setNodes((prev) => {
+      const groupNodes = prev.filter((n) => n.type === 'group');
+      const parentMap = new Map<string, { parentId: string; extent: string }>();
+      for (const n of prev) {
+        if (n.parentId) parentMap.set(n.id, { parentId: n.parentId, extent: n.extent as string });
+      }
+      const newNodes = [...itemNodes, ...noteNodes, ...shapeNodes].map((n) => {
+        const group = parentMap.get(n.id);
+        if (group) {
+          const parent = groupNodes.find((g) => g.id === group.parentId);
+          if (parent) {
+            return { ...n, parentId: group.parentId, extent: group.extent as 'parent' };
+          }
+        }
+        return n;
+      });
+      return [...groupNodes, ...newNodes];
+    });
   }, [placedItems, boardNotes, shapes, commentStats, onNavigateToItem, updateItemStatus, updateNote, deleteNote, handleShapeContentUpdate, setNodes]);
 
   /* ─── Build RF edges from context data ─────────────────────── */
