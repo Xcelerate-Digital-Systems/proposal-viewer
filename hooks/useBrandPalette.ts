@@ -19,6 +19,7 @@ export function useBrandPalette(branding: CompanyBranding): BrandPalette {
         branding.sidebar_text_color,
         branding.accept_text_color,
         branding.bg_divider,
+        branding.sidebar_inactive_text_color,
       ),
     [
       branding.accent_color,
@@ -27,6 +28,7 @@ export function useBrandPalette(branding: CompanyBranding): BrandPalette {
       branding.sidebar_text_color,
       branding.accept_text_color,
       branding.bg_divider,
+      branding.sidebar_inactive_text_color,
     ],
   );
 }

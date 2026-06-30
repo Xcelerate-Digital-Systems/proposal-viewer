@@ -39,6 +39,7 @@ export function useCompanySettings(companyId: string) {
   const [bgSecondary, setBgSecondary]           = useState('#141414');
   const [bgDivider, setBgDivider]               = useState<string | null>(null);
   const [sidebarTextColor, setSidebarTextColor] = useState('#ffffff');
+  const [sidebarInactiveTextColor, setSidebarInactiveTextColor] = useState<string | null>(null);
   const [acceptTextColor, setAcceptTextColor]   = useState('#ffffff');
   const [colorsSaved, setColorsSaved]           = useState(false);
 
@@ -115,6 +116,7 @@ export function useCompanySettings(companyId: string) {
         setBgSecondary(data.bg_secondary || '#141414');
         setBgDivider(data.bg_divider || null);
         setSidebarTextColor(data.sidebar_text_color || '#ffffff');
+        setSidebarInactiveTextColor(data.sidebar_inactive_text_color || null);
         setAcceptTextColor(data.accept_text_color || '#ffffff');
         setWebsite(data.website || '');
         setFontHeading(data.font_heading || null);
@@ -239,6 +241,7 @@ export function useCompanySettings(companyId: string) {
         bg_secondary: bgSecondary,
         bg_divider: bgDivider,
         sidebar_text_color: sidebarTextColor,
+        sidebar_inactive_text_color: sidebarInactiveTextColor,
         accept_text_color: acceptTextColor,
         bg_image_overlay_opacity: bgImageOverlayOpacity,
       }),
@@ -262,6 +265,7 @@ export function useCompanySettings(companyId: string) {
     bgSecondary !== (company?.bg_secondary || '#141414') ||
     bgDivider !== (company?.bg_divider || null) ||
     sidebarTextColor !== (company?.sidebar_text_color || '#ffffff') ||
+    (sidebarInactiveTextColor || null) !== (company?.sidebar_inactive_text_color || null) ||
     acceptTextColor !== (company?.accept_text_color || '#ffffff') ||
     bgImageOverlayOpacity !== (company?.bg_image_overlay_opacity ?? 0.85);
 
@@ -273,13 +277,14 @@ export function useCompanySettings(companyId: string) {
       !isValidHex6(bgSecondary) ||
       (bgDivider !== null && !isValidHex6(bgDivider)) ||
       !isValidHex6(sidebarTextColor) ||
+      (sidebarInactiveTextColor !== null && !isValidHex6(sidebarInactiveTextColor)) ||
       !isValidHex6(acceptTextColor)
     ) return;
     const timer = setTimeout(() => {
       handleSaveColors();
     }, 800);
     return () => clearTimeout(timer);
-  }, [accentColor, bgPrimary, bgSecondary, bgDivider, sidebarTextColor, acceptTextColor, bgImageOverlayOpacity]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [accentColor, bgPrimary, bgSecondary, bgDivider, sidebarTextColor, sidebarInactiveTextColor, acceptTextColor, bgImageOverlayOpacity]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-contrast: when bgPrimary crosses the dark/light threshold,
   // flip text colors so they remain readable. Only fires when the
@@ -291,12 +296,14 @@ export function useCompanySettings(companyId: string) {
     if (prevIsDark.current !== null && prevIsDark.current !== isDark) {
       if (isDark) {
         setSidebarTextColor('#ffffff');
+        setSidebarInactiveTextColor(null);
         setAcceptTextColor('#ffffff');
         setTextPageBgColor('#141414');
         setTextPageTextColor('#ffffff');
         setTextPageHeadingColor(null);
       } else {
         setSidebarTextColor('#1a1a1a');
+        setSidebarInactiveTextColor(null);
         setAcceptTextColor('#ffffff');
         setTextPageBgColor('#ffffff');
         setTextPageTextColor('#1a1a1a');
@@ -686,6 +693,7 @@ export function useCompanySettings(companyId: string) {
     bgSecondary, setBgSecondary,
     bgDivider, setBgDivider,
     sidebarTextColor, setSidebarTextColor,
+    sidebarInactiveTextColor, setSidebarInactiveTextColor,
     acceptTextColor, setAcceptTextColor,
     colorsChanged,
     colorsSaved,

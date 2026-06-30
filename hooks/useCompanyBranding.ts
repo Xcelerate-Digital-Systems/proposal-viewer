@@ -17,6 +17,7 @@ export interface SidebarBranding {
   bgDivider: string | null;
   accentColor: string;
   sidebarTextColor: string;
+  sidebarInactiveTextColor: string | null;
   companyName: string;
   palette: BrandPalette;
 }
@@ -58,6 +59,7 @@ export function useCompanyBranding(
         bgDivider: data.bg_divider || null,
         accentColor: data.accent_color || '#01434A',
         sidebarTextColor: data.sidebar_text_color || '#ffffff',
+        sidebarInactiveTextColor: data.sidebar_inactive_text_color || null,
         companyName: data.name || '',
       });
     })();
@@ -69,7 +71,7 @@ export function useCompanyBranding(
     if (!raw) return null;
     return {
       ...raw,
-      palette: generateBrandPalette(raw.accentColor, raw.bgPrimary, raw.bgSecondary, raw.sidebarTextColor, undefined, raw.bgDivider),
+      palette: generateBrandPalette(raw.accentColor, raw.bgPrimary, raw.bgSecondary, raw.sidebarTextColor, undefined, raw.bgDivider, raw.sidebarInactiveTextColor),
     };
   }, [raw]);
 

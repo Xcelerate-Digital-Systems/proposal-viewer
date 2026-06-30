@@ -14,6 +14,7 @@ export type CompanyBranding = {
   /** Explicit divider/line colour. Null = auto-derived from bg_secondary. */
   bg_divider: string | null;
   sidebar_text_color: string;
+  sidebar_inactive_text_color: string | null;
   accept_text_color: string;
   cover_bg_style: 'gradient' | 'solid';
   cover_bg_color_1: string;

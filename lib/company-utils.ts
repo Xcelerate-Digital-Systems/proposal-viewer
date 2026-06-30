@@ -11,6 +11,7 @@ export type CompanyData = {
   bg_secondary: string;
   bg_divider: string | null;
   sidebar_text_color: string;
+  sidebar_inactive_text_color: string | null;
   accept_text_color: string;
   website: string | null;
   current_role: string;

@@ -49,6 +49,7 @@ export function generateBrandPalette(
   sidebarTextHex: string = '#ffffff',
   acceptTextHex: string = '#ffffff',
   bgDividerHex: string | null = null,
+  sidebarInactiveTextHex: string | null = null,
 ): BrandPalette {
   const accent = accentHex || '#01434A';
   const bgPrimary = bgPrimaryHex || '#0f0f0f';
@@ -88,13 +89,12 @@ export function generateBrandPalette(
     ? adjustLightness(bgDividerHex, dir * -0.03)
     : adjustLightness(bgSecondary, dir * 0.05);
 
-  // Text shades — target absolute lightness for consistent readability
-  const mutedText = isDark
-    ? adjustLightness(bgPrimary, 0.40)
-    : adjustLightness(bgPrimary, -0.40);
-  const faintText = isDark
-    ? adjustLightness(bgPrimary, 0.28)
-    : adjustLightness(bgPrimary, -0.28);
+  // Text shades — use explicit inactive colour when set, else derive from bg
+  const mutedText = sidebarInactiveTextHex
+    || (isDark ? adjustLightness(bgPrimary, 0.40) : adjustLightness(bgPrimary, -0.40));
+  const faintText = sidebarInactiveTextHex
+    ? withAlpha(sidebarInactiveTextHex, 0.6)
+    : (isDark ? adjustLightness(bgPrimary, 0.28) : adjustLightness(bgPrimary, -0.28));
 
   return {
     accent,

@@ -22,6 +22,8 @@ interface ViewerColorsSectionProps {
   setBgDivider: (v: string | null) => void;
   sidebarTextColor: string;
   setSidebarTextColor: (v: string) => void;
+  sidebarInactiveTextColor: string | null;
+  setSidebarInactiveTextColor: (v: string | null) => void;
   acceptTextColor: string;
   setAcceptTextColor: (v: string) => void;
   lastSaved?: boolean;
@@ -49,6 +51,8 @@ export default function ViewerColorsSection({
   setBgDivider,
   sidebarTextColor,
   setSidebarTextColor,
+  sidebarInactiveTextColor,
+  setSidebarInactiveTextColor,
   acceptTextColor,
   setAcceptTextColor,
   lastSaved,
@@ -200,6 +204,14 @@ export default function ViewerColorsSection({
             <span className="text-xs font-medium text-dim">Text on Dark Surfaces</span>
             <div className="space-y-2 mt-1.5">
               <ColorPickerField label="Light text" value={sidebarTextColor} fallback="#ffffff" onChange={setSidebarTextColor} disabled={!isOwner} />
+              <ColorPickerField
+                label="Inactive text"
+                value={sidebarInactiveTextColor}
+                fallback={generateBrandPalette(accentColor, bgPrimary, bgSecondary, sidebarTextColor).mutedText}
+                onChange={(v) => setSidebarInactiveTextColor(v || null)}
+                onReset={() => setSidebarInactiveTextColor(null)}
+                disabled={!isOwner}
+              />
               <ColorPickerField label="Button text" value={acceptTextColor} fallback="#ffffff" onChange={setAcceptTextColor} disabled={!isOwner} />
             </div>
           </div>

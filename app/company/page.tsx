@@ -113,6 +113,8 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           setBgDivider={s.setBgDivider}
           sidebarTextColor={s.sidebarTextColor}
           setSidebarTextColor={s.setSidebarTextColor}
+          sidebarInactiveTextColor={s.sidebarInactiveTextColor}
+          setSidebarInactiveTextColor={s.setSidebarInactiveTextColor}
           acceptTextColor={s.acceptTextColor}
           setAcceptTextColor={s.setAcceptTextColor}
           lastSaved={s.colorsSaved}
@@ -130,6 +132,7 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
             bgSecondary={isValidHex6(s.bgSecondary) ? s.bgSecondary : '#141414'}
             bgDivider={s.bgDivider}
             sidebarTextColor={isValidHex6(s.sidebarTextColor) ? s.sidebarTextColor : '#ffffff'}
+            sidebarInactiveTextColor={s.sidebarInactiveTextColor}
             acceptTextColor={isValidHex6(s.acceptTextColor) ? s.acceptTextColor : '#ffffff'}
             logoUrl={s.company?.logo_url || null}
             companyName={s.name}
