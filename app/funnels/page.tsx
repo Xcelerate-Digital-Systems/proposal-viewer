@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Workflow, Search, Trash2, Copy, ExternalLink, FileText, GitBranch, Bookmark, MoreHorizontal } from 'lucide-react';
+import { Plus, Workflow, Search, Trash2, Copy, ExternalLink, FileText, GitBranch, Bookmark, MoreHorizontal, Archive, CircleDot, CopyPlus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ui/ErrorState';
@@ -112,6 +112,24 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
     router.push(`/funnels/${created.id}/board`);
   };
 
+  const duplicateAsCopy = async (source: Funnel) => {
+    const created = await duplicateFunnelAsScenario({
+      source, companyId, userId,
+      scenarioName: `${source.name} (Copy)`,
+      parentFunnelIdOverride: null,
+    });
+    if (!created) { toast.error('Failed to duplicate funnel'); return; }
+    toast.success('Funnel duplicated');
+    await load();
+    router.push(`/funnels/${created.id}/board`);
+  };
+
+  const updateStatus = async (id: string, status: 'draft' | 'active' | 'archived') => {
+    const { error } = await supabase.from('funnels').update({ status }).eq('id', id);
+    if (error) { toast.error('Failed to update status'); return; }
+    setFunnels((prev) => prev.map((f) => f.id === id ? { ...f, status } : f));
+  };
+
   const remove = async (id: string) => {
     const ok = await confirm({ title: 'Delete funnel', message: 'Delete this funnel? All steps and connections will be removed.', confirmLabel: 'Delete', destructive: true });
     if (!ok) return;
@@ -203,7 +221,9 @@ function FunnelsContent({ companyId, userId }: { companyId: string; userId: stri
                 funnel={f}
                 onOpen={() => router.push(`/funnels/${f.id}/board`)}
                 onCopyLink={() => copyShareLink(f.share_token)}
-                onDuplicate={() => duplicateAsScenario(f)}
+                onDuplicate={() => duplicateAsCopy(f)}
+                onCreateScenario={() => duplicateAsScenario(f)}
+                onStatusChange={(status) => updateStatus(f.id, status)}
                 onDelete={() => remove(f.id)}
               />
             ))}
@@ -235,12 +255,14 @@ const STATUS_STYLES: Record<string, { label: string; cls: string }> = {
 };
 
 function FunnelCard({
-  funnel: f, onOpen, onCopyLink, onDuplicate, onDelete,
+  funnel: f, onOpen, onCopyLink, onDuplicate, onCreateScenario, onStatusChange, onDelete,
 }: {
   funnel: Funnel;
   onOpen: () => void;
   onCopyLink: () => void;
   onDuplicate: () => void;
+  onCreateScenario: () => void;
+  onStatusChange: (status: 'draft' | 'active' | 'archived') => void;
   onDelete: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -300,15 +322,59 @@ function FunnelCard({
           </button>
           {menuOpen && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 bottom-full mb-1 w-44 bg-white border border-edge shadow-popover rounded-lg py-1 z-50">
+              <div className="fixed inset-0 z-[60]" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-edge shadow-popover rounded-lg py-1 z-[70]">
+                {f.status === 'draft' && (
+                  <button
+                    onClick={() => { onStatusChange('active'); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-ink hover:bg-surface transition-colors"
+                  >
+                    <CircleDot size={12} className="text-emerald-600" />
+                    Mark as active
+                  </button>
+                )}
+                {f.status === 'active' && (
+                  <button
+                    onClick={() => { onStatusChange('draft'); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-ink hover:bg-surface transition-colors"
+                  >
+                    <CircleDot size={12} className="text-muted" />
+                    Move to draft
+                  </button>
+                )}
+                {f.status === 'archived' && (
+                  <button
+                    onClick={() => { onStatusChange('draft'); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-ink hover:bg-surface transition-colors"
+                  >
+                    <CircleDot size={12} className="text-muted" />
+                    Unarchive
+                  </button>
+                )}
                 <button
                   onClick={() => { onDuplicate(); setMenuOpen(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-ink hover:bg-surface transition-colors"
+                >
+                  <CopyPlus size={12} className="text-muted" />
+                  Duplicate
+                </button>
+                <button
+                  onClick={() => { onCreateScenario(); setMenuOpen(false); }}
                   className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-ink hover:bg-surface transition-colors"
                 >
                   <GitBranch size={12} className="text-muted" />
                   Create scenario
                 </button>
+                {f.status !== 'archived' && (
+                  <button
+                    onClick={() => { onStatusChange('archived'); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-muted hover:bg-surface transition-colors"
+                  >
+                    <Archive size={12} />
+                    Archive
+                  </button>
+                )}
+                <div className="border-t border-edge my-1" />
                 <button
                   onClick={() => { onDelete(); setMenuOpen(false); }}
                   className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 transition-colors"
