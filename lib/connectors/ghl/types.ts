@@ -1,4 +1,4 @@
-// GoHighLevel API v2 response types.
+// GoHighLevel API response types.
 
 export interface GhlContact {
   id: string;
@@ -68,6 +68,74 @@ export interface GhlCustomFieldDefinition {
 
 export interface GhlOpportunityResponse {
   opportunity: GhlOpportunity;
+}
+
+// ── Invoice / Estimate types (v3 API) ──────────────────────────────────
+
+export interface GhlInvoiceItem {
+  _id: string;
+  name: string;
+  description?: string;
+  currency: string;
+  amount: number;
+  qty: number;
+  taxInclusive?: boolean;
+  type?: 'one_time' | 'recurring';
+}
+
+export interface GhlInvoice {
+  _id: string;
+  altId: string;
+  name: string;
+  status: 'draft' | 'sent' | 'payment_processing' | 'paid' | 'void' | 'partially_paid';
+  currency: string;
+  total: number;
+  amountPaid: number;
+  amountDue: number;
+  invoiceNumber: number;
+  invoiceNumberPrefix?: string;
+  issueDate: string;
+  dueDate: string;
+  liveMode: boolean;
+  contactDetails: {
+    id: string;
+    name: string;
+    email: string;
+    phoneNo?: string;
+    companyName?: string;
+  };
+  invoiceItems: GhlInvoiceItem[];
+  title?: string;
+  createdAt: string;
+  updatedAt: string;
+  totalSummary?: { subTotal: number; discount: number; tax: number };
+  discount?: { value: number; type: 'percentage' | 'fixed' };
+}
+
+export interface GhlEstimate {
+  _id: string;
+  altId: string;
+  name: string;
+  status?: 'draft' | 'sent' | 'accepted' | 'declined' | 'invoiced' | 'viewed';
+  currency: string;
+  total: number;
+  estimateNumber?: number;
+  estimateNumberPrefix?: string;
+  issueDate: string;
+  expiryDate?: string;
+  liveMode: boolean;
+  contactDetails: {
+    id: string;
+    name: string;
+    email: string;
+    phoneNo?: string;
+    companyName?: string;
+  };
+  items: GhlInvoiceItem[];
+  title?: string;
+  createdAt: string;
+  updatedAt: string;
+  discount?: { value: number; type: 'percentage' | 'fixed' };
 }
 
 export interface GhlApiError {

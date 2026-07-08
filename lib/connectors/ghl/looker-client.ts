@@ -4,6 +4,7 @@
 import { ghlFetch, type GhlResult } from './client';
 import type {
   GhlPipeline, GhlOpportunity, GhlContact, GhlCustomFieldDefinition,
+  GhlInvoice, GhlEstimate,
 } from './types';
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -199,6 +200,102 @@ export async function listCustomFields(
   }
 
   return { ...result, data: result.data.customFields };
+}
+
+// ── Invoice fetching (v3, offset-paginated) ────────────────────────────
+
+interface GhlInvoicesListResponse {
+  invoices: GhlInvoice[];
+  total: number;
+}
+
+export interface FetchInvoicesParams {
+  token: string;
+  locationId: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export async function fetchAllInvoices(
+  params: FetchInvoicesParams,
+): Promise<{ rows: GhlInvoice[] }> {
+  const { token, locationId } = params;
+  const allInvoices: GhlInvoice[] = [];
+  const PAGE_SIZE = 100;
+  const MAX_PAGES = 50;
+
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const queryParams: Record<string, string> = {
+      altId: locationId,
+      altType: 'location',
+      limit: String(PAGE_SIZE),
+      offset: String(page * PAGE_SIZE),
+    };
+    if (params.dateFrom) queryParams.startAt = params.dateFrom;
+    if (params.dateTo) queryParams.endAt = params.dateTo;
+
+    const result = await ghlFetch<GhlInvoicesListResponse>(
+      token, '/invoices/', { method: 'GET', params: queryParams },
+    );
+
+    if (!result.ok || !result.data) break;
+
+    const invoices = result.data.invoices;
+    if (invoices.length === 0) break;
+    allInvoices.push(...invoices);
+
+    if (allInvoices.length >= result.data.total) break;
+  }
+
+  return { rows: allInvoices };
+}
+
+// ── Estimate fetching (v3, offset-paginated) ───────────────────────────
+
+interface GhlEstimatesListResponse {
+  estimates: GhlEstimate[];
+  total: number;
+}
+
+export interface FetchEstimatesParams {
+  token: string;
+  locationId: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export async function fetchAllEstimates(
+  params: FetchEstimatesParams,
+): Promise<{ rows: GhlEstimate[] }> {
+  const { token, locationId } = params;
+  const allEstimates: GhlEstimate[] = [];
+  const PAGE_SIZE = 100;
+  const MAX_PAGES = 50;
+
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const queryParams: Record<string, string> = {
+      altId: locationId,
+      altType: 'location',
+      limit: String(PAGE_SIZE),
+      offset: String(page * PAGE_SIZE),
+    };
+    if (params.dateFrom) queryParams.startAt = params.dateFrom;
+    if (params.dateTo) queryParams.endAt = params.dateTo;
+
+    const result = await ghlFetch<GhlEstimatesListResponse>(
+      token, '/invoices/estimate/list', { method: 'GET', params: queryParams },
+    );
+
+    if (!result.ok || !result.data) break;
+
+    const estimates = result.data.estimates;
+    if (!Array.isArray(estimates) || estimates.length === 0) break;
+    allEstimates.push(...estimates);
+
+    if (allEstimates.length >= result.data.total) break;
+  }
+
+  return { rows: allEstimates };
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────

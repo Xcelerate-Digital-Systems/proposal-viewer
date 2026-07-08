@@ -1,10 +1,9 @@
 // Schema.gs
 //
 // Unified field catalog for the AgencyViz GoHighLevel connector. All rows
-// (opportunities + contacts) share a single schema. A "Record Type"
-// dimension distinguishes them. Fields that only apply to one type
-// (e.g. pipeline_name for opportunities, tags for contacts) are empty
-// on the other type's rows.
+// (opportunities, contacts, invoices, estimates) share a single schema.
+// A "Record Type" dimension distinguishes them. Fields that only apply to
+// one type are empty on other types' rows.
 //
 // Custom fields are fetched dynamically from the GHL API and appended
 // under a "Custom Fields" group.
@@ -28,7 +27,7 @@ var DIMENSIONS = [
   { id: 'day_of_week',      name: 'Day of Week',        type: 'DAY_OF_WEEK',    group: 'Date & Time' },
   { id: 'date_updated',     name: 'Date Updated',       type: 'YEAR_MONTH_DAY', group: 'Date & Time' },
 
-  { id: 'record_type',      name: 'Record Type',        type: 'TEXT',  group: 'Record',       desc: '"opportunity" or "contact".' },
+  { id: 'record_type',      name: 'Record Type',        type: 'TEXT',  group: 'Record',       desc: 'opportunity, contact, invoice, or estimate.' },
   { id: 'record_id',        name: 'Record ID',          type: 'TEXT',  group: 'Record' },
   { id: 'record_name',      name: 'Record Name',        type: 'TEXT',  group: 'Record',       desc: 'Opportunity name or contact full name.' },
 
@@ -46,6 +45,17 @@ var DIMENSIONS = [
   { id: 'tags',             name: 'Tags',               type: 'TEXT',  group: 'Contact',      desc: 'Comma-separated tags.' },
 
   { id: 'location_id',      name: 'Location ID',        type: 'TEXT',  group: 'Location' },
+
+  // Invoice-specific
+  { id: 'invoice_number',   name: 'Invoice Number',     type: 'TEXT',  group: 'Invoice',      desc: 'Full invoice number (prefix + number).' },
+  { id: 'issue_date',       name: 'Issue Date',         type: 'YEAR_MONTH_DAY', group: 'Invoice' },
+  { id: 'due_date',         name: 'Due Date',           type: 'YEAR_MONTH_DAY', group: 'Invoice' },
+  { id: 'currency',         name: 'Currency',           type: 'TEXT',  group: 'Invoice' },
+  { id: 'company_name',     name: 'Company Name',       type: 'TEXT',  group: 'Contact',      desc: 'Contact company name (invoices/estimates).' },
+
+  // Estimate-specific
+  { id: 'estimate_number',  name: 'Estimate Number',    type: 'TEXT',  group: 'Estimate',     desc: 'Full estimate number (prefix + number).' },
+  { id: 'expiry_date',      name: 'Expiry Date',        type: 'YEAR_MONTH_DAY', group: 'Estimate' },
 ];
 
 // ── Unified Metrics ────────────────────────────────────────────────────
@@ -55,7 +65,20 @@ var METRICS = [
   { id: 'opp_count',        name: 'Opportunity Count',  type: 'NUMBER', group: 'Opportunity', desc: '1 per opportunity row, 0 for contacts.' },
   { id: 'won_count',        name: 'Won Count',          type: 'NUMBER', group: 'Opportunity', desc: '1 if status=won, else 0.' },
   { id: 'lost_count',       name: 'Lost Count',         type: 'NUMBER', group: 'Opportunity', desc: '1 if status=lost, else 0.' },
-  { id: 'contact_count',    name: 'Contact Count',      type: 'NUMBER', group: 'Contact',     desc: '1 per contact row, 0 for opportunities.' },
+  { id: 'contact_count',    name: 'Contact Count',      type: 'NUMBER', group: 'Contact',     desc: '1 per contact row, 0 for others.' },
+
+  // Invoice metrics
+  { id: 'invoice_total',    name: 'Invoice Total',      type: 'NUMBER', semantic: 'CURRENCY_AUD', group: 'Invoice', desc: 'Total invoice amount.' },
+  { id: 'amount_paid',      name: 'Amount Paid',        type: 'NUMBER', semantic: 'CURRENCY_AUD', group: 'Invoice', desc: 'Amount paid on invoice.' },
+  { id: 'amount_due',       name: 'Amount Due',         type: 'NUMBER', semantic: 'CURRENCY_AUD', group: 'Invoice', desc: 'Remaining amount due.' },
+  { id: 'invoice_count',    name: 'Invoice Count',      type: 'NUMBER', group: 'Invoice',     desc: '1 per invoice row.' },
+  { id: 'paid_invoice_count', name: 'Paid Invoice Count', type: 'NUMBER', group: 'Invoice',   desc: '1 if invoice status=paid.' },
+  { id: 'line_item_count',  name: 'Line Item Count',    type: 'NUMBER', group: 'Invoice',     desc: 'Number of line items.' },
+
+  // Estimate metrics
+  { id: 'estimate_total',   name: 'Estimate Total',     type: 'NUMBER', semantic: 'CURRENCY_AUD', group: 'Estimate', desc: 'Total estimate amount.' },
+  { id: 'estimate_count',   name: 'Estimate Count',     type: 'NUMBER', group: 'Estimate',   desc: '1 per estimate row.' },
+  { id: 'accepted_estimate_count', name: 'Accepted Estimate Count', type: 'NUMBER', group: 'Estimate', desc: '1 if estimate status=accepted.' },
 ];
 
 // ── Date rollup lookup ──────────────────────────────────────────────────

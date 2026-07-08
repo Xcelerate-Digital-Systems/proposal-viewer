@@ -3,8 +3,8 @@
 // Hot path — stateless passthrough to GHL. Called by the Apps Script Looker
 // Studio connector during getData(). Auth via AgencyViz OAuth.
 //
-// Returns a unified dataset: opportunities + contacts combined, each tagged
-// with record_type so Looker Studio users can filter/group by type.
+// Returns a unified dataset: opportunities, contacts, invoices, and estimates
+// combined, each tagged with record_type so Looker Studio users can filter/group.
 //
 // Looks up the per-location token from ghl_looker_connections.
 
@@ -15,6 +15,8 @@ import { decryptGhlToken } from '@/lib/connectors/ghl/token-crypto';
 import {
   fetchAllOpportunities,
   fetchAllContacts,
+  fetchAllInvoices,
+  fetchAllEstimates,
 } from '@/lib/connectors/ghl/looker-client';
 
 export const dynamic = 'force-dynamic';
@@ -83,8 +85,8 @@ export async function POST(req: NextRequest) {
   const start = Date.now();
 
   try {
-    // Fetch opportunities and contacts in parallel
-    const [oppResult, contactResult] = await Promise.all([
+    // Fetch all record types in parallel
+    const [oppResult, contactResult, invoiceResult, estimateResult] = await Promise.all([
       fetchAllOpportunities({
         token,
         locationId: location_id,
@@ -98,6 +100,18 @@ export async function POST(req: NextRequest) {
         dateFrom: date_from,
         dateTo: date_to,
       }),
+      fetchAllInvoices({
+        token,
+        locationId: location_id,
+        dateFrom: date_from,
+        dateTo: date_to,
+      }).catch(() => ({ rows: [] })),
+      fetchAllEstimates({
+        token,
+        locationId: location_id,
+        dateFrom: date_from,
+        dateTo: date_to,
+      }).catch(() => ({ rows: [] })),
     ]);
 
     const allRows: Record<string, unknown>[] = [];
@@ -136,6 +150,56 @@ export async function POST(req: NextRequest) {
       }
       delete flat.customFields;
       allRows.push(flat);
+    }
+
+    // Enrich invoices
+    for (const inv of invoiceResult.rows) {
+      allRows.push({
+        record_type: 'invoice',
+        id: inv._id,
+        name: inv.name || inv.title || '',
+        status: inv.status || '',
+        dateAdded: inv.createdAt || inv.issueDate,
+        dateUpdated: inv.updatedAt,
+        invoiceNumber: inv.invoiceNumber,
+        invoiceNumberPrefix: inv.invoiceNumberPrefix || 'INV-',
+        issueDate: inv.issueDate,
+        dueDate: inv.dueDate,
+        currency: inv.currency,
+        total: inv.total || 0,
+        amountPaid: inv.amountPaid || 0,
+        amountDue: inv.amountDue || 0,
+        contactName: inv.contactDetails?.name || '',
+        contactEmail: inv.contactDetails?.email || '',
+        contactPhone: inv.contactDetails?.phoneNo || '',
+        companyName: inv.contactDetails?.companyName || '',
+        lineItemCount: inv.invoiceItems?.length || 0,
+        locationId: inv.altId || location_id,
+      });
+    }
+
+    // Enrich estimates
+    for (const est of estimateResult.rows) {
+      allRows.push({
+        record_type: 'estimate',
+        id: est._id,
+        name: est.name || est.title || '',
+        status: est.status || '',
+        dateAdded: est.createdAt || est.issueDate,
+        dateUpdated: est.updatedAt,
+        estimateNumber: est.estimateNumber,
+        estimateNumberPrefix: est.estimateNumberPrefix || 'EST-',
+        issueDate: est.issueDate,
+        expiryDate: est.expiryDate || '',
+        currency: est.currency,
+        total: est.total || 0,
+        contactName: est.contactDetails?.name || '',
+        contactEmail: est.contactDetails?.email || '',
+        contactPhone: est.contactDetails?.phoneNo || '',
+        companyName: est.contactDetails?.companyName || '',
+        lineItemCount: est.items?.length || 0,
+        locationId: est.altId || location_id,
+      });
     }
 
     // Fire-and-forget last_used_at

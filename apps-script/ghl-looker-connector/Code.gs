@@ -123,6 +123,27 @@ function resolveFieldValue(row, fieldId) {
     case 'won_count':      return row.status === 'won' ? 1 : 0;
     case 'lost_count':     return row.status === 'lost' ? 1 : 0;
     case 'contact_count':  return row.record_type === 'contact' ? 1 : 0;
+
+    // Invoice fields
+    case 'invoice_number': return row.invoiceNumber ? (row.invoiceNumberPrefix || 'INV-') + row.invoiceNumber : '';
+    case 'issue_date':     return row.issueDate || '';
+    case 'due_date':       return row.dueDate || '';
+    case 'currency':       return row.currency || '';
+    case 'company_name':   return row.companyName || '';
+    case 'invoice_total':  return row.total || 0;
+    case 'amount_paid':    return row.amountPaid || 0;
+    case 'amount_due':     return row.amountDue || 0;
+    case 'invoice_count':  return row.record_type === 'invoice' ? 1 : 0;
+    case 'paid_invoice_count': return (row.record_type === 'invoice' && row.status === 'paid') ? 1 : 0;
+    case 'line_item_count': return row.lineItemCount || 0;
+
+    // Estimate fields
+    case 'estimate_number': return row.estimateNumber ? (row.estimateNumberPrefix || 'EST-') + row.estimateNumber : '';
+    case 'expiry_date':    return row.expiryDate || '';
+    case 'estimate_total': return row.record_type === 'estimate' ? (row.total || 0) : 0;
+    case 'estimate_count': return row.record_type === 'estimate' ? 1 : 0;
+    case 'accepted_estimate_count': return (row.record_type === 'estimate' && row.status === 'accepted') ? 1 : 0;
+
     default:               return '';
   }
 }
@@ -176,7 +197,8 @@ function formatValue(value, fieldId) {
     if (isNumericField(fieldId)) return 0;
     return '';
   }
-  if (fieldId === 'date_added' || fieldId === 'date_updated') {
+  if (fieldId === 'date_added' || fieldId === 'date_updated'
+      || fieldId === 'issue_date' || fieldId === 'due_date' || fieldId === 'expiry_date') {
     var ds = String(value);
     if (ds.length >= 10) return ds.slice(0, 10).replace(/-/g, '');
     return ds;
@@ -191,7 +213,9 @@ function formatValue(value, fieldId) {
 
 var NUMERIC_FIELD_IDS = {
   monetary_value: true, opp_count: true, won_count: true, lost_count: true,
-  contact_count: true,
+  contact_count: true, invoice_total: true, amount_paid: true, amount_due: true,
+  invoice_count: true, paid_invoice_count: true, line_item_count: true,
+  estimate_total: true, estimate_count: true, accepted_estimate_count: true,
 };
 
 function isNumericField(fieldId) {

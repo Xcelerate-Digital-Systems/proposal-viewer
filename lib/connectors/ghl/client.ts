@@ -1,11 +1,11 @@
-// Authenticated fetch wrapper for GoHighLevel API v2.
+// Authenticated fetch wrapper for GoHighLevel API v3.
 //
 // Base URL: https://services.leadconnectorhq.com
 // Auth: Authorization: Bearer <private_integration_token>
 // Version header required on all requests.
 
 const GHL_BASE_URL = 'https://services.leadconnectorhq.com';
-const GHL_API_VERSION = '2021-07-28';
+const GHL_API_VERSION = 'v3';
 
 export interface GhlRequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
