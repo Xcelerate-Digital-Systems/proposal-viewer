@@ -128,29 +128,34 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, data: { connected: false } });
   }
 
-  // Optionally verify the token is still valid by listing locations
+  // Optionally verify the token is still valid by listing locations.
+  // Only mark invalid on a definitive 401 — not on rate limits, timeouts, etc.
   let locationCount = 0;
-  try {
-    const token = decryptGhlToken(
-      (await supabase
-        .from('ghl_agency_connections')
-        .select('api_token_encrypted')
-        .eq('id', connection.id)
-        .single()
-      ).data!.api_token_encrypted,
-    );
-    const result = await listLocations(token);
-    if (result.ok && result.data) {
-      locationCount = result.data.length;
-    } else if (result.status === 401) {
-      await supabase
-        .from('ghl_agency_connections')
-        .update({ token_valid: false, updated_at: new Date().toISOString() })
-        .eq('id', connection.id);
-      connection.token_valid = false;
+  if (connection.token_valid) {
+    try {
+      const token = decryptGhlToken(
+        (await supabase
+          .from('ghl_agency_connections')
+          .select('api_token_encrypted')
+          .eq('id', connection.id)
+          .single()
+        ).data!.api_token_encrypted,
+      );
+      const result = await listLocations(token);
+      if (result.ok && result.data) {
+        locationCount = result.data.length;
+      } else if (result.status === 401) {
+        console.error('[ghl/agency-connect] GET: token rejected by GHL (401)');
+        await supabase
+          .from('ghl_agency_connections')
+          .update({ token_valid: false, updated_at: new Date().toISOString() })
+          .eq('id', connection.id);
+        connection.token_valid = false;
+      }
+      // Any other error (rate limit, timeout, 5xx) — don't mark invalid
+    } catch {
+      // Decrypt or network error — don't mark invalid
     }
-  } catch {
-    // Non-fatal — just report what we have
   }
 
   return NextResponse.json({

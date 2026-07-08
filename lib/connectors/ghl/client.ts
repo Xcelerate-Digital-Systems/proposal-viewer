@@ -66,8 +66,10 @@ export async function ghlFetch<T>(
     try {
       const errBody = await res.json();
       errorMessage = errBody.message || errBody.error || `HTTP ${res.status}`;
+      console.error(`[ghlFetch] ${method} ${path} → ${res.status}:`, JSON.stringify(errBody).slice(0, 500));
     } catch {
       errorMessage = `HTTP ${res.status} ${res.statusText}`;
+      console.error(`[ghlFetch] ${method} ${path} → ${res.status} ${res.statusText}`);
     }
     return {
       ok: false,
