@@ -50,6 +50,20 @@ export interface GhlOpportunity {
   assignedTo?: string;
   dateAdded?: string;
   dateUpdated?: string;
+  customFields?: GhlCustomFieldValue[];
+}
+
+export interface GhlCustomFieldValue {
+  id: string;
+  fieldValue: string | string[] | number | boolean | null;
+}
+
+export interface GhlCustomFieldDefinition {
+  id: string;
+  name: string;
+  fieldKey: string;
+  dataType: string;
+  model?: string;
 }
 
 export interface GhlOpportunityResponse {

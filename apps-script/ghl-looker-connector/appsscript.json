@@ -1,0 +1,26 @@
+{
+  "timeZone": "Australia/Perth",
+  "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "OAuth2",
+        "libraryId": "1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF",
+        "version": "43"
+      }
+    ]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "dataStudio": {
+    "name": "AgencyViz GoHighLevel",
+    "company": "AgencyViz",
+    "companyUrl": "https://app.agencyviz.io",
+    "addonUrl": "https://app.agencyviz.io/integrations/looker-studio",
+    "logoUrl": "https://app.agencyviz.io/integrations/go-high-level-icon.svg",
+    "supportUrl": "https://app.agencyviz.io/support",
+    "description": "GoHighLevel pipeline opportunities and contact data for Looker Studio, powered by AgencyViz. Pull pipeline stages, deal values, lead data, and custom fields from any location you've connected.",
+    "sources": [
+      "ghl"
+    ]
+  }
+}

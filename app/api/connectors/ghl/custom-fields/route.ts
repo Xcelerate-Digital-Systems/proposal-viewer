@@ -1,0 +1,73 @@
+// app/api/connectors/ghl/custom-fields/route.ts
+//
+// Returns custom field definitions for a GHL location. Used by the Apps
+// Script connector to build a dynamic schema that includes custom fields.
+
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthContext } from '@/lib/api-auth';
+import { createServiceClient } from '@/lib/supabase-server';
+import { decryptGhlToken } from '@/lib/connectors/ghl/token-crypto';
+import { listCustomFields } from '@/lib/connectors/ghl/looker-client';
+import { authRateLimit } from '@/lib/rate-limit';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: NextRequest) {
+  try {
+    const auth = await getAuthContext(req);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await authRateLimit(auth.companyId, 'connectors/ghl/custom-fields');
+    if (limited) return limited;
+
+    const locationId = req.nextUrl.searchParams.get('location_id');
+    if (!locationId) {
+      return NextResponse.json({ error: 'location_id is required' }, { status: 400 });
+    }
+
+    const model = req.nextUrl.searchParams.get('model') || undefined;
+
+    const supabase = createServiceClient();
+    const { data: connection } = await supabase
+      .from('ghl_agency_connections')
+      .select('id, api_token_encrypted, token_valid')
+      .eq('company_id', auth.companyId)
+      .single();
+
+    if (!connection || !connection.token_valid) {
+      return NextResponse.json({ error: 'No active GHL agency connection' }, { status: 404 });
+    }
+
+    let token: string;
+    try {
+      token = decryptGhlToken(connection.api_token_encrypted);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'decrypt failed';
+      return NextResponse.json({ error: `Token decrypt failed: ${msg}` }, { status: 500 });
+    }
+
+    const result = await listCustomFields(token, locationId, model);
+
+    if (!result.ok) {
+      if (result.status === 401) {
+        await supabase
+          .from('ghl_agency_connections')
+          .update({ token_valid: false, updated_at: new Date().toISOString() })
+          .eq('id', connection.id);
+        return NextResponse.json(
+          { error: 'GHL token is invalid', reauth_required: true },
+          { status: 401 },
+        );
+      }
+      return NextResponse.json({ error: result.error || 'GHL API error' }, { status: 502 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: { custom_fields: result.data || [] },
+    });
+  } catch (err) {
+    console.error('[api/connectors/ghl/custom-fields] GET:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

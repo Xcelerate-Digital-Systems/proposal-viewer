@@ -10,11 +10,13 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   AlertTriangle, CheckCircle2, Copy, Check, Settings, ShieldAlert,
+  Loader2, Trash2, Eye, EyeOff,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { supabase } from '@/lib/supabase';
+import { authFetch } from '@/lib/auth-fetch';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -111,6 +113,137 @@ function CopyDeploymentButton({ text }: { text: string }) {
   );
 }
 
+// ── GHL Agency Token Connection ───────────────────────────────────────
+
+function GhlAgencyConnect({
+  connected,
+  tokenValid,
+  locationCount,
+  onStatusChange,
+}: {
+  connected: boolean;
+  tokenValid: boolean;
+  locationCount: number;
+  onStatusChange: () => void;
+}) {
+  const [token, setToken] = useState('');
+  const [showToken, setShowToken] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleConnect = async () => {
+    if (!token.trim()) return;
+    setSaving(true);
+    setError('');
+    try {
+      const res = await authFetch('/api/connectors/ghl/agency-connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: token.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || 'Connection failed');
+        return;
+      }
+      setToken('');
+      onStatusChange();
+    } catch {
+      setError('Network error — try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setDisconnecting(true);
+    try {
+      await authFetch('/api/connectors/ghl/agency-connect', { method: 'DELETE' });
+      onStatusChange();
+    } catch {
+      setError('Failed to disconnect.');
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
+  if (connected && tokenValid) {
+    return (
+      <div className="ml-7 space-y-2">
+        <div className="flex items-center gap-2">
+          <CheckCircle2 size={14} className="text-teal" />
+          <span className="text-xs font-medium text-teal">
+            Connected — {locationCount} location{locationCount !== 1 ? 's' : ''} available
+          </span>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleDisconnect}
+          disabled={disconnecting}
+          leftIcon={disconnecting ? Loader2 : Trash2}
+        >
+          {disconnecting ? 'Disconnecting…' : 'Disconnect'}
+        </Button>
+      </div>
+    );
+  }
+
+  if (connected && !tokenValid) {
+    return (
+      <div className="ml-7 space-y-2">
+        <div className="flex items-center gap-2">
+          <AlertTriangle size={14} className="text-amber-600" />
+          <span className="text-xs font-medium text-amber-700">
+            Token invalid — reconnect with a new agency token
+          </span>
+        </div>
+        <Button variant="ghost" size="sm" onClick={handleDisconnect} leftIcon={Trash2}>
+          Remove & reconnect
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="ml-7 space-y-2">
+      <p className="text-xs text-faint">
+        Paste your GoHighLevel <strong>Agency-level</strong> Private Integration Token.
+        Create one in GHL → Settings → Integrations → Private Integrations with <em>Locations (Read)</em>, <em>Opportunities (Read)</em>, and <em>Contacts (Read)</em> scopes.
+      </p>
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <input
+            type={showToken ? 'text' : 'password'}
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder="pit_xxxxxxxx..."
+            className="w-full px-3 py-1.5 text-xs bg-surface border border-edge rounded-lg pr-8 focus:outline-none focus:ring-1 focus:ring-teal"
+          />
+          <button
+            type="button"
+            onClick={() => setShowToken(!showToken)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-faint hover:text-muted"
+          >
+            {showToken ? <EyeOff size={14} /> : <Eye size={14} />}
+          </button>
+        </div>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={handleConnect}
+          disabled={saving || !token.trim()}
+          leftIcon={saving ? Loader2 : undefined}
+        >
+          {saving ? 'Connecting…' : 'Connect'}
+        </Button>
+      </div>
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  );
+}
+
 function ConnectorSetupCard({
   logo,
   name,
@@ -118,6 +251,7 @@ function ConnectorSetupCard({
   description,
   status,
   connected,
+  children,
 }: {
   logo: string;
   name: string;
@@ -125,6 +259,7 @@ function ConnectorSetupCard({
   description: string;
   status: 'available' | 'coming-soon';
   connected?: boolean;
+  children?: React.ReactNode;
 }) {
   const isAvailable = status === 'available';
 
@@ -165,7 +300,9 @@ function ConnectorSetupCard({
               <span className="w-5 h-5 rounded-full bg-teal-tint text-teal text-xs font-bold flex items-center justify-center">1</span>
               <span className="text-xs font-semibold text-ink">Connect your account</span>
             </div>
-            {connected ? (
+            {children ? (
+              children
+            ) : connected ? (
               <div className="ml-7 flex items-center gap-2">
                 <CheckCircle2 size={14} className="text-teal" />
                 <span className="text-xs font-medium text-teal">Connected</span>
@@ -236,7 +373,7 @@ function ConnectorSetupCard({
             <ul className="text-xs text-muted space-y-1">
               <li className="flex items-start gap-2">
                 <CheckCircle2 size={12} className="text-teal shrink-0 mt-0.5" />
-                The connector appears as <strong className="text-ink">AgencyViz — Meta Ads</strong> after validation.
+                The connector appears as <strong className="text-ink">AgencyViz — {name}</strong> after validation.
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 size={12} className="text-teal shrink-0 mt-0.5" />
@@ -244,7 +381,7 @@ function ConnectorSetupCard({
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 size={12} className="text-teal shrink-0 mt-0.5" />
-                Once authorized, choose your ad account and date range to start pulling data.
+                Once authorized, choose your data source and date range to start pulling data.
               </li>
             </ul>
           </div>
@@ -297,6 +434,10 @@ function ApiHealthBanner({ health }: { health: HealthData | null }) {
 export default function LookerStudioPage() {
   const [metaConnected, setMetaConnected] = useState(false);
   const [apiHealth, setApiHealth] = useState<HealthData | null>(null);
+  const [ghlConnected, setGhlConnected] = useState(false);
+  const [ghlTokenValid, setGhlTokenValid] = useState(true);
+  const [ghlLocationCount, setGhlLocationCount] = useState(0);
+  const [ghlVersion, setGhlVersion] = useState(0);
 
   useEffect(() => {
     async function checkMeta() {
@@ -326,6 +467,24 @@ export default function LookerStudioPage() {
     }
     checkMeta();
   }, []);
+
+  useEffect(() => {
+    async function checkGhl() {
+      try {
+        const res = await authFetch('/api/connectors/ghl/agency-connect');
+        if (!res.ok) return;
+        const json = await res.json();
+        if (json.data) {
+          setGhlConnected(json.data.connected);
+          setGhlTokenValid(json.data.token_valid ?? true);
+          setGhlLocationCount(json.data.location_count ?? 0);
+        }
+      } catch {
+        // Silent
+      }
+    }
+    checkGhl();
+  }, [ghlVersion]);
 
   return (
     <AdminLayout>
@@ -359,8 +518,16 @@ export default function LookerStudioPage() {
                   name="GoHighLevel"
                   deploymentId={GHL_DEPLOYMENT_ID}
                   description="Pull leads, opportunities, pipeline stages, and contact activity into Looker Studio reports."
-                  status="coming-soon"
-                />
+                  status="available"
+                  connected={ghlConnected && ghlTokenValid}
+                >
+                  <GhlAgencyConnect
+                    connected={ghlConnected}
+                    tokenValid={ghlTokenValid}
+                    locationCount={ghlLocationCount}
+                    onStatusChange={() => setGhlVersion((v) => v + 1)}
+                  />
+                </ConnectorSetupCard>
               </div>
             </div>
           </div>

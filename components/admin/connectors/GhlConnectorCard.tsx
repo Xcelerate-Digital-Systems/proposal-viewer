@@ -38,7 +38,7 @@ export default function GhlConnectorCard() {
           />
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-base font-semibold text-ink">GoHighLevel</h2>
+              <h2 className="text-base font-semibold text-ink">GoHighLevel — CRM Sync</h2>
               {ghl.connected && (
                 <span className={`inline-flex items-center px-2 py-0.5 text-detail font-medium rounded-full ${
                   ghl.connection?.token_valid
@@ -50,7 +50,7 @@ export default function GhlConnectorCard() {
               )}
             </div>
             <p className="text-xs text-faint mt-1 leading-relaxed max-w-[58ch]">
-              Two-way pipeline sync for proposals and quotes. Stage changes push to GHL as opportunity updates.
+              Sub-account pipeline sync for proposals and quotes. Stage changes push to GHL as opportunity updates.
             </p>
           </div>
         </div>
