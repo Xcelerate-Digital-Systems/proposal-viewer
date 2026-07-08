@@ -130,6 +130,7 @@ function GhlLocationManager({
   onStatusChange: () => void;
 }) {
   const [locationName, setLocationName] = useState('');
+  const [locationId, setLocationId] = useState('');
   const [token, setToken] = useState('');
   const [showToken, setShowToken] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -137,14 +138,14 @@ function GhlLocationManager({
   const [error, setError] = useState('');
 
   const handleConnect = async () => {
-    if (!token.trim() || !locationName.trim()) return;
+    if (!token.trim() || !locationName.trim() || !locationId.trim()) return;
     setSaving(true);
     setError('');
     try {
       const res = await authFetch('/api/connectors/ghl/agency-connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: token.trim(), location_name: locationName.trim() }),
+        body: JSON.stringify({ token: token.trim(), location_name: locationName.trim(), location_id: locationId.trim() }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -153,6 +154,7 @@ function GhlLocationManager({
       }
       setToken('');
       setLocationName('');
+      setLocationId('');
       onStatusChange();
     } catch {
       setError('Network error — try again.');
@@ -214,14 +216,24 @@ function GhlLocationManager({
         <p className="text-xs text-faint">
           Add a GHL sub-account. Create a Private Integration Token in the sub-account&apos;s
           Settings → Integrations with <em>Contacts (Read)</em> and <em>Opportunities (Read)</em> scopes.
+          The Location ID is in the sub-account URL: <code className="text-2xs bg-surface-dark/10 px-1 rounded">app.gohighlevel.com/location/<strong>xxxxxxxx</strong>/...</code>
         </p>
-        <input
-          type="text"
-          value={locationName}
-          onChange={(e) => setLocationName(e.target.value)}
-          placeholder="Location name (e.g. Client ABC)"
-          className="w-full max-w-sm px-3 py-1.5 text-xs bg-surface border border-edge rounded-lg focus:outline-none focus:ring-1 focus:ring-teal"
-        />
+        <div className="flex gap-2 max-w-sm">
+          <input
+            type="text"
+            value={locationName}
+            onChange={(e) => setLocationName(e.target.value)}
+            placeholder="Location name (e.g. Client ABC)"
+            className="flex-1 px-3 py-1.5 text-xs bg-surface border border-edge rounded-lg focus:outline-none focus:ring-1 focus:ring-teal"
+          />
+          <input
+            type="text"
+            value={locationId}
+            onChange={(e) => setLocationId(e.target.value)}
+            placeholder="Location ID"
+            className="w-40 px-3 py-1.5 text-xs bg-surface border border-edge rounded-lg focus:outline-none focus:ring-1 focus:ring-teal"
+          />
+        </div>
         <div className="flex items-center gap-2">
           <div className="relative flex-1 max-w-sm">
             <input
@@ -243,7 +255,7 @@ function GhlLocationManager({
             variant="primary"
             size="sm"
             onClick={handleConnect}
-            disabled={saving || !token.trim() || !locationName.trim()}
+            disabled={saving || !token.trim() || !locationName.trim() || !locationId.trim()}
             leftIcon={saving ? Loader2 : undefined}
           >
             {saving ? 'Connecting…' : 'Add location'}

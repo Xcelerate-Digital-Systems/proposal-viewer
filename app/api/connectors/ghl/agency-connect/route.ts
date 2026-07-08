@@ -29,61 +29,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Body must be JSON' }, { status: 400 });
   }
 
-  const { token: rawToken, location_name } = body as { token?: string; location_name?: string };
+  const { token: rawToken, location_name, location_id: rawLocationId } = body as {
+    token?: string; location_name?: string; location_id?: string;
+  };
   if (typeof rawToken !== 'string' || !rawToken.trim()) {
     return NextResponse.json({ error: 'token is required' }, { status: 400 });
   }
   if (typeof location_name !== 'string' || !location_name.trim()) {
     return NextResponse.json({ error: 'location_name is required' }, { status: 400 });
   }
+  if (typeof rawLocationId !== 'string' || !rawLocationId.trim()) {
+    return NextResponse.json({ error: 'location_id is required' }, { status: 400 });
+  }
 
-  // Validate the sub-account token by searching for its location
+  const locationId = rawLocationId.trim();
+
+  // Validate the token works by calling /contacts/ with the provided locationId
   const { ghlFetch } = await import('@/lib/connectors/ghl/client');
-  const locResult = await ghlFetch<{ locations: Array<{ id: string; name: string }> }>(
-    rawToken.trim(),
-    '/locations/search',
-    { method: 'GET' },
+  const validation = await ghlFetch<unknown>(
+    rawToken.trim(), '/contacts/', { method: 'GET', params: { locationId, limit: '1' } },
   );
-
-  let locationId: string;
-  if (locResult.ok && locResult.data?.locations?.length) {
-    locationId = locResult.data.locations[0].id;
-  } else if (locResult.status === 401) {
+  if (validation.status === 401) {
     return NextResponse.json({ error: 'Invalid token — GHL rejected it.' }, { status: 400 });
-  } else {
-    // Sub-account PITs typically can't call /locations/search (403).
-    // Fall back to a contacts call to validate the token and extract the real locationId.
-    const fallback = await ghlFetch<{ contacts: Array<{ locationId?: string }> }>(
-      rawToken.trim(), '/contacts/', { method: 'GET', params: { limit: '1' } },
+  }
+  if (!validation.ok) {
+    return NextResponse.json(
+      { error: validation.error || 'Token could not access this location. Check the Location ID and token scopes.' },
+      { status: 400 },
     );
-    if (fallback.status === 401) {
-      return NextResponse.json({ error: 'Invalid token — GHL rejected it.' }, { status: 400 });
-    }
-    if (!fallback.ok) {
-      return NextResponse.json(
-        { error: fallback.error || 'Could not validate token with GHL' },
-        { status: 400 },
-      );
-    }
-    // Extract the real locationId from the contact record
-    const contacts = fallback.data?.contacts || [];
-    const extractedLocId = contacts[0]?.locationId;
-    if (extractedLocId) {
-      locationId = extractedLocId;
-    } else {
-      // No contacts yet — try /opportunities/search to get the locationId
-      const oppFallback = await ghlFetch<{ opportunities: Array<{ locationId?: string }> }>(
-        rawToken.trim(), '/opportunities/search', { method: 'GET', params: { limit: '1' } },
-      );
-      const opps = oppFallback.data?.opportunities || [];
-      if (opps[0]?.locationId) {
-        locationId = opps[0].locationId;
-      } else {
-        // No data at all — use a hash as last resort
-        const { createHash } = await import('crypto');
-        locationId = 'loc_' + createHash('sha256').update(rawToken.trim()).digest('hex').slice(0, 16);
-      }
-    }
   }
 
   const encrypted = encryptGhlToken(rawToken.trim());
