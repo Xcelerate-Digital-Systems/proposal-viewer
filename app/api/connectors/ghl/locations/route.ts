@@ -37,8 +37,8 @@ export async function GET(req: NextRequest) {
 
     if (!connection.token_valid) {
       return NextResponse.json(
-        { error: 'GHL agency token is marked invalid. Reconnect in Settings.', reauth_required: true },
-        { status: 401 },
+        { error: 'GHL agency token is invalid. Reconnect at Integrations → Looker Studio.', ghl_token_invalid: true },
+        { status: 502 },
       );
     }
 
@@ -59,8 +59,8 @@ export async function GET(req: NextRequest) {
           .update({ token_valid: false, updated_at: new Date().toISOString() })
           .eq('id', connection.id);
         return NextResponse.json(
-          { error: 'GHL token is invalid or expired', reauth_required: true },
-          { status: 401 },
+          { error: 'GHL token is invalid or expired. Reconnect at Integrations → Looker Studio.', ghl_token_invalid: true },
+          { status: 502 },
         );
       }
       return NextResponse.json({ error: result.error || 'GHL API error' }, { status: 502 });

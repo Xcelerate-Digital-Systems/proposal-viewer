@@ -60,8 +60,8 @@ export async function GET(req: NextRequest) {
             .update({ token_valid: false, updated_at: new Date().toISOString() })
             .eq('id', connection.id);
           return NextResponse.json(
-            { error: 'GHL token is invalid', reauth_required: true },
-            { status: 401 },
+            { error: 'GHL token is invalid. Reconnect at Integrations → Looker Studio.', ghl_token_invalid: true },
+            { status: 502 },
           );
         }
         continue;
