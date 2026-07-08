@@ -128,9 +128,10 @@ export async function POST(req: NextRequest) {
         ...contact,
         record_type: 'contact',
       };
-      if (contact.customFields && typeof contact.customFields === 'object') {
-        for (const [key, val] of Object.entries(contact.customFields)) {
-          flat[`cf_${key}`] = Array.isArray(val) ? val.join(', ') : (val ?? '');
+      if (Array.isArray(contact.customFields)) {
+        for (const cf of contact.customFields) {
+          const val = cf.value;
+          flat[`cf_${cf.id}`] = Array.isArray(val) ? val.join(', ') : (val ?? '');
         }
       }
       delete flat.customFields;

@@ -9,7 +9,7 @@ export interface GhlContact {
   lastName?: string;
   name?: string;
   tags?: string[];
-  customFields?: Record<string, string>;
+  customFields?: Array<{ id: string; value: string | string[] | number | boolean | null }>;
   dateAdded?: string;
   dateUpdated?: string;
 }
