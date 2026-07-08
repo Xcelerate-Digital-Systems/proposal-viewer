@@ -1,57 +1,22 @@
 // Schema.gs
 //
-// Field catalog for the AgencyViz GoHighLevel connector. Two data types:
-// Opportunities (pipeline deals) and Contacts (leads).
+// Unified field catalog for the AgencyViz GoHighLevel connector. All rows
+// (opportunities + contacts) share a single schema. A "Record Type"
+// dimension distinguishes them. Fields that only apply to one type
+// (e.g. pipeline_name for opportunities, tags for contacts) are empty
+// on the other type's rows.
 //
-// Custom fields are fetched dynamically from the GHL API based on the
-// selected location, and appended to the schema under a "Custom Fields"
-// group. The schema is rebuilt each time getSchema() is called.
+// Custom fields are fetched dynamically from the GHL API and appended
+// under a "Custom Fields" group.
 
 var CC = function () { return DataStudioApp.createCommunityConnector(); };
 
-// ── Opportunity Dimensions ──────────────────────────────────────────────
+// ── Unified Dimensions ─────────────────────────────────────────────────
 
-var OPP_DIMENSIONS = [
-  { id: 'date_added',       name: 'Date Added',        type: 'YEAR_MONTH_DAY', group: 'Date & Time', desc: 'Date the opportunity was created.' },
+var DIMENSIONS = [
+  { id: 'date_added',       name: 'Date Added',        type: 'YEAR_MONTH_DAY', group: 'Date & Time', desc: 'Date the record was created.' },
 
   // Date rollups — derived client-side from date_added
-  { id: 'year',             name: 'Year',               type: 'YEAR',           group: 'Date & Time', desc: 'Year (YYYY). Derived from Date Added.' },
-  { id: 'year_quarter',     name: 'Year-Quarter',       type: 'YEAR_QUARTER',   group: 'Date & Time', desc: 'Year + quarter (YYYYQ). Derived from Date Added.' },
-  { id: 'year_month',       name: 'Year-Month',         type: 'YEAR_MONTH',     group: 'Date & Time', desc: 'Year + month (YYYYMM). Derived from Date Added.' },
-  { id: 'year_week',        name: 'Year-Week (ISO)',    type: 'YEAR_WEEK',      group: 'Date & Time', desc: 'Year + ISO week (YYYYWW). Derived from Date Added.' },
-  { id: 'quarter',          name: 'Quarter',            type: 'QUARTER',        group: 'Date & Time', desc: 'Quarter (1-4). Derived from Date Added.' },
-  { id: 'month',            name: 'Month',              type: 'MONTH',          group: 'Date & Time', desc: 'Month number (01-12). Derived from Date Added.' },
-  { id: 'week',             name: 'Week (ISO)',         type: 'WEEK',           group: 'Date & Time', desc: 'ISO week number (01-53). Derived from Date Added.' },
-  { id: 'day',              name: 'Day of Month',       type: 'DAY',            group: 'Date & Time', desc: 'Day of month (01-31). Derived from Date Added.' },
-  { id: 'day_of_week',      name: 'Day of Week',        type: 'DAY_OF_WEEK',    group: 'Date & Time', desc: 'Day of week (0=Sunday … 6=Saturday).' },
-
-  { id: 'opp_id',           name: 'Opportunity ID',     type: 'TEXT',  group: 'Opportunity' },
-  { id: 'opp_name',         name: 'Opportunity Name',   type: 'TEXT',  group: 'Opportunity' },
-  { id: 'pipeline_name',    name: 'Pipeline',           type: 'TEXT',  group: 'Opportunity', desc: 'Name of the GHL pipeline.' },
-  { id: 'stage_name',       name: 'Stage',              type: 'TEXT',  group: 'Opportunity', desc: 'Current pipeline stage name.' },
-  { id: 'status',           name: 'Status',             type: 'TEXT',  group: 'Opportunity', desc: 'open, won, lost, or abandoned.' },
-  { id: 'source',           name: 'Source',             type: 'TEXT',  group: 'Opportunity', desc: 'Lead/opportunity source.' },
-  { id: 'assigned_to',      name: 'Assigned To',        type: 'TEXT',  group: 'Opportunity', desc: 'User assigned to the opportunity.' },
-  { id: 'contact_name',     name: 'Contact Name',       type: 'TEXT',  group: 'Contact',     desc: 'Primary contact name.' },
-  { id: 'contact_email',    name: 'Contact Email',      type: 'TEXT',  group: 'Contact' },
-  { id: 'date_updated',     name: 'Date Updated',       type: 'YEAR_MONTH_DAY', group: 'Date & Time' },
-  { id: 'location_id',      name: 'Location ID',        type: 'TEXT',  group: 'Location' },
-];
-
-// ── Opportunity Metrics ─────────────────────────────────────────────────
-
-var OPP_METRICS = [
-  { id: 'monetary_value',   name: 'Monetary Value',     type: 'NUMBER', semantic: 'CURRENCY_AUD', group: 'Opportunity', desc: 'Deal value in currency.' },
-  { id: 'opp_count',        name: 'Opportunity Count',  type: 'NUMBER', group: 'Opportunity', desc: 'Count of opportunities (1 per row).' },
-  { id: 'won_count',        name: 'Won Count',          type: 'NUMBER', group: 'Opportunity', desc: '1 if status=won, else 0.' },
-  { id: 'lost_count',       name: 'Lost Count',         type: 'NUMBER', group: 'Opportunity', desc: '1 if status=lost, else 0.' },
-];
-
-// ── Contact Dimensions ──────────────────────────────────────────────────
-
-var CONTACT_DIMENSIONS = [
-  { id: 'date_added',       name: 'Date Added',         type: 'YEAR_MONTH_DAY', group: 'Date & Time' },
-
   { id: 'year',             name: 'Year',               type: 'YEAR',           group: 'Date & Time' },
   { id: 'year_quarter',     name: 'Year-Quarter',       type: 'YEAR_QUARTER',   group: 'Date & Time' },
   { id: 'year_month',       name: 'Year-Month',         type: 'YEAR_MONTH',     group: 'Date & Time' },
@@ -61,21 +26,36 @@ var CONTACT_DIMENSIONS = [
   { id: 'week',             name: 'Week (ISO)',         type: 'WEEK',           group: 'Date & Time' },
   { id: 'day',              name: 'Day of Month',       type: 'DAY',            group: 'Date & Time' },
   { id: 'day_of_week',      name: 'Day of Week',        type: 'DAY_OF_WEEK',    group: 'Date & Time' },
-
-  { id: 'contact_id',       name: 'Contact ID',         type: 'TEXT',  group: 'Contact' },
-  { id: 'contact_name',     name: 'Name',               type: 'TEXT',  group: 'Contact' },
-  { id: 'contact_email',    name: 'Email',              type: 'TEXT',  group: 'Contact' },
-  { id: 'contact_phone',    name: 'Phone',              type: 'TEXT',  group: 'Contact' },
-  { id: 'tags',             name: 'Tags',               type: 'TEXT',  group: 'Contact', desc: 'Comma-separated tags.' },
-  { id: 'source',           name: 'Source',             type: 'TEXT',  group: 'Contact' },
   { id: 'date_updated',     name: 'Date Updated',       type: 'YEAR_MONTH_DAY', group: 'Date & Time' },
+
+  { id: 'record_type',      name: 'Record Type',        type: 'TEXT',  group: 'Record',       desc: '"opportunity" or "contact".' },
+  { id: 'record_id',        name: 'Record ID',          type: 'TEXT',  group: 'Record' },
+  { id: 'record_name',      name: 'Record Name',        type: 'TEXT',  group: 'Record',       desc: 'Opportunity name or contact full name.' },
+
+  // Opportunity-specific
+  { id: 'pipeline_name',    name: 'Pipeline',           type: 'TEXT',  group: 'Opportunity',  desc: 'GHL pipeline name (opportunities only).' },
+  { id: 'stage_name',       name: 'Stage',              type: 'TEXT',  group: 'Opportunity',  desc: 'Current pipeline stage name.' },
+  { id: 'status',           name: 'Status',             type: 'TEXT',  group: 'Opportunity',  desc: 'open, won, lost, or abandoned.' },
+  { id: 'source',           name: 'Source',             type: 'TEXT',  group: 'Record',       desc: 'Lead/opportunity source.' },
+  { id: 'assigned_to',      name: 'Assigned To',        type: 'TEXT',  group: 'Opportunity',  desc: 'User assigned to the opportunity.' },
+
+  // Contact fields
+  { id: 'contact_name',     name: 'Contact Name',       type: 'TEXT',  group: 'Contact' },
+  { id: 'contact_email',    name: 'Contact Email',      type: 'TEXT',  group: 'Contact' },
+  { id: 'contact_phone',    name: 'Contact Phone',      type: 'TEXT',  group: 'Contact' },
+  { id: 'tags',             name: 'Tags',               type: 'TEXT',  group: 'Contact',      desc: 'Comma-separated tags.' },
+
   { id: 'location_id',      name: 'Location ID',        type: 'TEXT',  group: 'Location' },
 ];
 
-// ── Contact Metrics ─────────────────────────────────────────────────────
+// ── Unified Metrics ────────────────────────────────────────────────────
 
-var CONTACT_METRICS = [
-  { id: 'contact_count',    name: 'Contact Count',      type: 'NUMBER', group: 'Contact', desc: 'Count of contacts (1 per row).' },
+var METRICS = [
+  { id: 'monetary_value',   name: 'Monetary Value',     type: 'NUMBER', semantic: 'CURRENCY_AUD', group: 'Opportunity', desc: 'Deal value in currency.' },
+  { id: 'opp_count',        name: 'Opportunity Count',  type: 'NUMBER', group: 'Opportunity', desc: '1 per opportunity row, 0 for contacts.' },
+  { id: 'won_count',        name: 'Won Count',          type: 'NUMBER', group: 'Opportunity', desc: '1 if status=won, else 0.' },
+  { id: 'lost_count',       name: 'Lost Count',         type: 'NUMBER', group: 'Opportunity', desc: '1 if status=lost, else 0.' },
+  { id: 'contact_count',    name: 'Contact Count',      type: 'NUMBER', group: 'Contact',     desc: '1 per contact row, 0 for opportunities.' },
 ];
 
 // ── Date rollup lookup ──────────────────────────────────────────────────
@@ -113,39 +93,51 @@ var GHL_TYPE_MAP = {
 
 var _customFieldCache = {};
 
-function fetchCustomFieldDefs(locationId, dataType) {
-  var cacheKey = locationId + ':' + dataType;
-  if (_customFieldCache[cacheKey]) return _customFieldCache[cacheKey];
+function fetchCustomFieldDefs(locationId) {
+  if (_customFieldCache[locationId]) return _customFieldCache[locationId];
 
-  var model = dataType === 'contacts' ? 'contact' : 'opportunity';
-  try {
-    var resp = callApi(
-      '/api/connectors/ghl/custom-fields?location_id=' + encodeURIComponent(locationId)
-      + '&model=' + model,
-      'GET',
-      null,
-    );
-    var defs = (resp && resp.data && resp.data.custom_fields) || [];
-    _customFieldCache[cacheKey] = defs;
-    return defs;
-  } catch (e) {
-    // Non-fatal — schema will just omit custom fields
-    return [];
-  }
+  var allDefs = [];
+
+  // Fetch both opportunity and contact custom fields
+  ['opportunity', 'contact'].forEach(function (model) {
+    try {
+      var resp = callApi(
+        '/api/connectors/ghl/custom-fields?location_id=' + encodeURIComponent(locationId)
+        + '&model=' + model,
+        'GET',
+        null,
+      );
+      var defs = (resp && resp.data && resp.data.custom_fields) || [];
+      defs.forEach(function (cf) { cf._model = model; });
+      allDefs = allDefs.concat(defs);
+    } catch (e) {
+      // Non-fatal
+    }
+  });
+
+  // Deduplicate by ID (same custom field can appear in both models)
+  var seen = {};
+  var deduped = [];
+  allDefs.forEach(function (cf) {
+    if (!seen[cf.id]) {
+      seen[cf.id] = true;
+      deduped.push(cf);
+    }
+  });
+
+  _customFieldCache[locationId] = deduped;
+  return deduped;
 }
 
 // ── Field builder ───────────────────────────────────────────────────────
 
-function getFields(dataType, locationId) {
+function getFields(locationId) {
   var cc = CC();
   var fields = cc.getFields();
   var types = cc.FieldType;
   var agg = cc.AggregationType;
 
-  var dims = dataType === 'contacts' ? CONTACT_DIMENSIONS : OPP_DIMENSIONS;
-  var metrics = dataType === 'contacts' ? CONTACT_METRICS : OPP_METRICS;
-
-  dims.forEach(function (d) {
+  DIMENSIONS.forEach(function (d) {
     var f = fields.newDimension()
       .setId(d.id)
       .setName(d.name)
@@ -154,7 +146,7 @@ function getFields(dataType, locationId) {
     if (d.desc) f.setDescription(d.desc);
   });
 
-  metrics.forEach(function (m) {
+  METRICS.forEach(function (m) {
     var f = fields.newMetric()
       .setId(m.id)
       .setName(m.name)
@@ -166,7 +158,7 @@ function getFields(dataType, locationId) {
 
   // Dynamic custom fields from GHL
   if (locationId) {
-    var customDefs = fetchCustomFieldDefs(locationId, dataType);
+    var customDefs = fetchCustomFieldDefs(locationId);
     customDefs.forEach(function (cf) {
       var lookerType = GHL_TYPE_MAP[cf.dataType] || 'TEXT';
       var isNumeric = lookerType === 'NUMBER';
@@ -195,7 +187,6 @@ function getFields(dataType, locationId) {
 }
 
 function getSchema(request) {
-  var dataType = (request.configParams && request.configParams.data_type) || 'opportunities';
   var locationId = request.configParams && request.configParams.location_id;
-  return { schema: getFields(dataType, locationId).build() };
+  return { schema: getFields(locationId).build() };
 }

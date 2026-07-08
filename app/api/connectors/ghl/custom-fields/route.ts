@@ -46,25 +46,37 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: `Token decrypt failed: ${msg}` }, { status: 500 });
     }
 
-    const result = await listCustomFields(token, locationId, model);
+    // If a specific model is requested, fetch just that; otherwise fetch both
+    const models = model ? [model] : ['opportunity', 'contact'];
+    const allFields: { id: string; name: string; dataType: string }[] = [];
+    const seenIds = new Set<string>();
 
-    if (!result.ok) {
-      if (result.status === 401) {
-        await supabase
-          .from('ghl_agency_connections')
-          .update({ token_valid: false, updated_at: new Date().toISOString() })
-          .eq('id', connection.id);
-        return NextResponse.json(
-          { error: 'GHL token is invalid', reauth_required: true },
-          { status: 401 },
-        );
+    for (const m of models) {
+      const result = await listCustomFields(token, locationId, m);
+      if (!result.ok) {
+        if (result.status === 401) {
+          await supabase
+            .from('ghl_agency_connections')
+            .update({ token_valid: false, updated_at: new Date().toISOString() })
+            .eq('id', connection.id);
+          return NextResponse.json(
+            { error: 'GHL token is invalid', reauth_required: true },
+            { status: 401 },
+          );
+        }
+        continue;
       }
-      return NextResponse.json({ error: result.error || 'GHL API error' }, { status: 502 });
+      for (const cf of result.data || []) {
+        if (!seenIds.has(cf.id)) {
+          seenIds.add(cf.id);
+          allFields.push(cf);
+        }
+      }
     }
 
     return NextResponse.json({
       success: true,
-      data: { custom_fields: result.data || [] },
+      data: { custom_fields: allFields },
     });
   } catch (err) {
     console.error('[api/connectors/ghl/custom-fields] GET:', err);

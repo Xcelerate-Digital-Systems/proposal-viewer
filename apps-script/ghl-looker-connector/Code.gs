@@ -12,23 +12,8 @@ function getConfig(request) {
   var config = cc.getConfig();
 
   config.newInfo().setId('intro').setText(
-    'Choose a GoHighLevel location and data type. Connect your GHL agency '
+    'Choose a GoHighLevel location (sub-account). Connect your GHL agency '
     + 'token at app.agencyviz.io → Integrations → Looker Studio first.'
-  );
-
-  // Data type selector
-  var typeSelector = config
-    .newSelectSingle()
-    .setId('data_type')
-    .setName('Data type')
-    .setHelpText('Choose which GHL data to pull into this data source.')
-    .setIsDynamic(true);
-
-  typeSelector.addOption(
-    config.newOptionBuilder().setLabel('Opportunities (Pipeline)').setValue('opportunities'),
-  );
-  typeSelector.addOption(
-    config.newOptionBuilder().setLabel('Contacts (Leads)').setValue('contacts'),
   );
 
   // Location selector — populated from the AgencyViz API
@@ -36,8 +21,7 @@ function getConfig(request) {
     .newSelectSingle()
     .setId('location_id')
     .setName('Location (Sub-Account)')
-    .setHelpText('Choose which GHL location to pull data from.')
-    .setIsDynamic(true);
+    .setHelpText('Choose which GHL location to pull data from.');
 
   try {
     var resp = callApi('/api/connectors/ghl/locations', 'GET', null);
@@ -65,7 +49,6 @@ function getConfig(request) {
 
 function getData(request) {
   var locationId = request.configParams && request.configParams.location_id;
-  var dataType = (request.configParams && request.configParams.data_type) || 'opportunities';
 
   if (!locationId) {
     throwUserError('Please pick a GHL location in the connector configuration.');
@@ -75,12 +58,11 @@ function getData(request) {
   }
 
   var requestedFieldIds = (request.fields || []).map(function (f) { return f.name; });
-  var allFields = getFields(dataType, locationId);
+  var allFields = getFields(locationId);
   var scopedFields = allFields.forIds(requestedFieldIds);
 
   var body = {
     location_id: locationId,
-    data_type: dataType,
     date_from: request.dateRange.startDate,
     date_to: request.dateRange.endDate,
   };
@@ -96,7 +78,7 @@ function getData(request) {
   var rows = rawRows.map(function (row) {
     return {
       values: requestedFieldIds.map(function (id) {
-        return formatValue(resolveFieldValue(row, id, dataType), id);
+        return formatValue(resolveFieldValue(row, id), id);
       }),
     };
   });
@@ -106,61 +88,40 @@ function getData(request) {
 
 // ── Field Resolution ────────────────────────────────────────────────────
 
-function resolveFieldValue(row, fieldId, dataType) {
+function resolveFieldValue(row, fieldId) {
   // Date rollups
   if (DATE_ROLLUP_FIELD_IDS[fieldId]) {
     var dateStr = row.dateAdded || row.date_added;
     return computeDateRollup(dateStr, fieldId);
   }
 
-  if (dataType === 'opportunities') return resolveOppField(row, fieldId);
-  return resolveContactField(row, fieldId);
-}
-
-function resolveOppField(row, fieldId) {
   // Custom fields — flattened server-side to cf_<id> keys
   if (fieldId.indexOf('cf_') === 0) {
     var val = row[fieldId];
     return val !== undefined && val !== null ? val : '';
   }
+
   switch (fieldId) {
     case 'date_added':     return row.dateAdded;
     case 'date_updated':   return row.dateUpdated;
-    case 'opp_id':         return row.id;
-    case 'opp_name':       return row.name;
+    case 'record_type':    return row.record_type || '';
+    case 'record_id':      return row.id;
+    case 'record_name':    return row.name || ((row.firstName || '') + ' ' + (row.lastName || '')).trim() || '';
     case 'pipeline_name':  return row.pipelineName || '';
     case 'stage_name':     return row.stageName || '';
-    case 'status':         return row.status;
+    case 'status':         return row.status || '';
     case 'monetary_value': return row.monetaryValue || 0;
     case 'source':         return row.source || '';
     case 'assigned_to':    return row.assignedTo || '';
-    case 'contact_name':   return row.contactName || '';
-    case 'contact_email':  return row.contactEmail || '';
-    case 'location_id':    return row.locationId || '';
-    case 'opp_count':      return 1;
-    case 'won_count':      return row.status === 'won' ? 1 : 0;
-    case 'lost_count':     return row.status === 'lost' ? 1 : 0;
-    default:               return '';
-  }
-}
-
-function resolveContactField(row, fieldId) {
-  // Custom fields — flattened server-side to cf_<id> keys
-  if (fieldId.indexOf('cf_') === 0) {
-    var val = row[fieldId];
-    return val !== undefined && val !== null ? val : '';
-  }
-  switch (fieldId) {
-    case 'date_added':     return row.dateAdded;
-    case 'date_updated':   return row.dateUpdated;
-    case 'contact_id':     return row.id;
-    case 'contact_name':   return ((row.firstName || '') + ' ' + (row.lastName || '')).trim() || row.name || '';
-    case 'contact_email':  return row.email || '';
+    case 'contact_name':   return row.contactName || ((row.firstName || '') + ' ' + (row.lastName || '')).trim() || '';
+    case 'contact_email':  return row.contactEmail || row.email || '';
     case 'contact_phone':  return row.phone || '';
     case 'tags':           return Array.isArray(row.tags) ? row.tags.join(', ') : '';
-    case 'source':         return row.source || '';
     case 'location_id':    return row.locationId || '';
-    case 'contact_count':  return 1;
+    case 'opp_count':      return row.record_type === 'opportunity' ? 1 : 0;
+    case 'won_count':      return row.status === 'won' ? 1 : 0;
+    case 'lost_count':     return row.status === 'lost' ? 1 : 0;
+    case 'contact_count':  return row.record_type === 'contact' ? 1 : 0;
     default:               return '';
   }
 }
@@ -228,7 +189,8 @@ function formatValue(value, fieldId) {
 }
 
 var NUMERIC_FIELD_IDS = {
-  monetary_value: true, opp_count: true, won_count: true, lost_count: true, contact_count: true,
+  monetary_value: true, opp_count: true, won_count: true, lost_count: true,
+  contact_count: true,
 };
 
 function isNumericField(fieldId) {
