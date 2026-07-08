@@ -6,16 +6,7 @@
 // Returns a unified dataset: opportunities + contacts combined, each tagged
 // with record_type so Looker Studio users can filter/group by type.
 //
-// Request body:
-//   {
-//     location_id:  "abc123",
-//     date_from:    "2026-01-01",
-//     date_to:      "2026-07-08",
-//     pipeline_id?: "pipe_123"    // optional, filters opportunities
-//   }
-//
-// Response:
-//   { success: true, data: { rows, row_count, elapsed_ms } }
+// Looks up the per-location token from ghl_looker_connections.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
@@ -62,20 +53,21 @@ export async function POST(req: NextRequest) {
 
   const supabase = createServiceClient();
   const { data: connection } = await supabase
-    .from('ghl_agency_connections')
+    .from('ghl_looker_connections')
     .select('id, api_token_encrypted, token_valid')
     .eq('company_id', auth.companyId)
+    .eq('location_id', location_id)
     .single();
 
   if (!connection) {
     return NextResponse.json(
-      { error: 'No GHL agency connection found for this company' },
+      { error: 'No GHL connection found for this location. Connect it in AgencyViz first.' },
       { status: 404 },
     );
   }
   if (!connection.token_valid) {
     return NextResponse.json(
-      { error: 'GHL agency token is invalid. Reconnect at Integrations → Looker Studio.', ghl_token_invalid: true },
+      { error: 'GHL token for this location is invalid. Reconnect at Integrations → Looker Studio.', ghl_token_invalid: true },
       { status: 502 },
     );
   }
@@ -147,7 +139,7 @@ export async function POST(req: NextRequest) {
 
     // Fire-and-forget last_used_at
     supabase
-      .from('ghl_agency_connections')
+      .from('ghl_looker_connections')
       .update({ last_used_at: new Date().toISOString() })
       .eq('id', connection.id)
       .then(() => {});
@@ -164,7 +156,7 @@ export async function POST(req: NextRequest) {
     const msg = e instanceof Error ? e.message : 'unknown';
     if (msg.includes('401') || msg.includes('Unauthorized')) {
       await supabase
-        .from('ghl_agency_connections')
+        .from('ghl_looker_connections')
         .update({ token_valid: false, updated_at: new Date().toISOString() })
         .eq('id', connection.id);
       return NextResponse.json(

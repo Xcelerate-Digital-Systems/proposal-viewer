@@ -2,6 +2,7 @@
 //
 // Returns custom field definitions for a GHL location. Used by the Apps
 // Script connector to build a dynamic schema that includes custom fields.
+// Looks up the per-location token from ghl_looker_connections.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
@@ -29,13 +30,14 @@ export async function GET(req: NextRequest) {
 
     const supabase = createServiceClient();
     const { data: connection } = await supabase
-      .from('ghl_agency_connections')
+      .from('ghl_looker_connections')
       .select('id, api_token_encrypted, token_valid')
       .eq('company_id', auth.companyId)
+      .eq('location_id', locationId)
       .single();
 
     if (!connection || !connection.token_valid) {
-      return NextResponse.json({ error: 'No active GHL agency connection' }, { status: 404 });
+      return NextResponse.json({ error: 'No active GHL connection for this location' }, { status: 404 });
     }
 
     let token: string;
@@ -46,7 +48,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: `Token decrypt failed: ${msg}` }, { status: 500 });
     }
 
-    // If a specific model is requested, fetch just that; otherwise fetch both
+    // Fetch both models when no specific model is requested (unified schema)
     const models = model ? [model] : ['opportunity', 'contact'];
     const allFields: { id: string; name: string; dataType: string }[] = [];
     const seenIds = new Set<string>();
@@ -56,7 +58,7 @@ export async function GET(req: NextRequest) {
       if (!result.ok) {
         if (result.status === 401) {
           await supabase
-            .from('ghl_agency_connections')
+            .from('ghl_looker_connections')
             .update({ token_valid: false, updated_at: new Date().toISOString() })
             .eq('id', connection.id);
           return NextResponse.json(

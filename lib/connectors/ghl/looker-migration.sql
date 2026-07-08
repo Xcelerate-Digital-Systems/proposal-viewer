@@ -1,23 +1,27 @@
--- GoHighLevel Agency-level connection for Looker Studio connector.
+-- GoHighLevel per-location connections for Looker Studio connector.
 --
--- Separate from ghl_connections (sub-account CRM sync). This stores an
--- agency-level Private Integration Token that can list all locations and
--- query any sub-account's data for Looker Studio reporting.
+-- Each row represents one GHL sub-account (location) with its own
+-- Private Integration Token. Multiple locations per company.
 
-CREATE TABLE IF NOT EXISTS ghl_agency_connections (
+-- Drop the old agency-level table (no longer used)
+DROP TABLE IF EXISTS ghl_agency_connections;
+
+CREATE TABLE IF NOT EXISTS ghl_looker_connections (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id          UUID NOT NULL UNIQUE REFERENCES companies(id) ON DELETE CASCADE,
-  api_token_encrypted TEXT NOT NULL,        -- AES-256-GCM; same key as ghl_connections
-  agency_name         TEXT,                 -- cached from /locations/search or user input
+  company_id          UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  location_id         TEXT NOT NULL,            -- GHL location/sub-account ID
+  location_name       TEXT NOT NULL,            -- user-entered display name
+  api_token_encrypted TEXT NOT NULL,            -- AES-256-GCM encrypted PIT
   token_valid         BOOLEAN NOT NULL DEFAULT true,
   last_used_at        TIMESTAMPTZ,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (company_id, location_id)
 );
 
-ALTER TABLE ghl_agency_connections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ghl_looker_connections ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "service_role_only" ON ghl_agency_connections
+CREATE POLICY "service_role_only" ON ghl_looker_connections
   FOR ALL
   USING (false)
   WITH CHECK (false);

@@ -113,34 +113,38 @@ function CopyDeploymentButton({ text }: { text: string }) {
   );
 }
 
-// ── GHL Agency Token Connection ───────────────────────────────────────
+// ── GHL Per-Location Connections ──────────────────────────────────────
 
-function GhlAgencyConnect({
-  connected,
-  tokenValid,
-  locationCount,
+interface GhlLocation {
+  location_id: string;
+  location_name: string;
+  token_valid: boolean;
+  last_used_at: string | null;
+}
+
+function GhlLocationManager({
+  locations,
   onStatusChange,
 }: {
-  connected: boolean;
-  tokenValid: boolean;
-  locationCount: number;
+  locations: GhlLocation[];
   onStatusChange: () => void;
 }) {
+  const [locationName, setLocationName] = useState('');
   const [token, setToken] = useState('');
   const [showToken, setShowToken] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [disconnecting, setDisconnecting] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   const handleConnect = async () => {
-    if (!token.trim()) return;
+    if (!token.trim() || !locationName.trim()) return;
     setSaving(true);
     setError('');
     try {
       const res = await authFetch('/api/connectors/ghl/agency-connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: token.trim() }),
+        body: JSON.stringify({ token: token.trim(), location_name: locationName.trim() }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -148,6 +152,7 @@ function GhlAgencyConnect({
         return;
       }
       setToken('');
+      setLocationName('');
       onStatusChange();
     } catch {
       setError('Network error — try again.');
@@ -156,90 +161,96 @@ function GhlAgencyConnect({
     }
   };
 
-  const handleDisconnect = async () => {
-    setDisconnecting(true);
+  const handleRemove = async (locationId: string) => {
+    setRemovingId(locationId);
     try {
-      await authFetch('/api/connectors/ghl/agency-connect', { method: 'DELETE' });
+      await authFetch(`/api/connectors/ghl/agency-connect?location_id=${encodeURIComponent(locationId)}`, {
+        method: 'DELETE',
+      });
       onStatusChange();
     } catch {
-      setError('Failed to disconnect.');
+      setError('Failed to remove.');
     } finally {
-      setDisconnecting(false);
+      setRemovingId(null);
     }
   };
 
-  if (connected && tokenValid) {
-    return (
-      <div className="ml-7 space-y-2">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 size={14} className="text-teal" />
-          <span className="text-xs font-medium text-teal">
-            Connected — {locationCount} location{locationCount !== 1 ? 's' : ''} available
-          </span>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleDisconnect}
-          disabled={disconnecting}
-          leftIcon={disconnecting ? Loader2 : Trash2}
-        >
-          {disconnecting ? 'Disconnecting…' : 'Disconnect'}
-        </Button>
-      </div>
-    );
-  }
-
-  if (connected && !tokenValid) {
-    return (
-      <div className="ml-7 space-y-2">
-        <div className="flex items-center gap-2">
-          <AlertTriangle size={14} className="text-amber-600" />
-          <span className="text-xs font-medium text-amber-700">
-            Token invalid — reconnect with a new agency token
-          </span>
-        </div>
-        <Button variant="ghost" size="sm" onClick={handleDisconnect} leftIcon={Trash2}>
-          Remove & reconnect
-        </Button>
-      </div>
-    );
-  }
-
   return (
-    <div className="ml-7 space-y-2">
-      <p className="text-xs text-faint">
-        Paste your GoHighLevel <strong>Agency-level</strong> Private Integration Token.
-        Create one in GHL → Settings → Integrations → Private Integrations with <em>Locations (Read)</em>, <em>Opportunities (Read)</em>, and <em>Contacts (Read)</em> scopes.
-      </p>
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <input
-            type={showToken ? 'text' : 'password'}
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="pit_xxxxxxxx..."
-            className="w-full px-3 py-1.5 text-xs bg-surface border border-edge rounded-lg pr-8 focus:outline-none focus:ring-1 focus:ring-teal"
-          />
-          <button
-            type="button"
-            onClick={() => setShowToken(!showToken)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-faint hover:text-muted"
-          >
-            {showToken ? <EyeOff size={14} /> : <Eye size={14} />}
-          </button>
+    <div className="ml-7 space-y-3">
+      {/* Connected locations */}
+      {locations.length > 0 && (
+        <div className="space-y-1.5">
+          {locations.map((loc) => (
+            <div key={loc.location_id} className="flex items-center justify-between gap-2 px-3 py-2 bg-surface border border-edge rounded-lg">
+              <div className="flex items-center gap-2 min-w-0">
+                {loc.token_valid ? (
+                  <CheckCircle2 size={14} className="text-teal shrink-0" />
+                ) : (
+                  <AlertTriangle size={14} className="text-amber-600 shrink-0" />
+                )}
+                <span className="text-xs font-medium text-ink truncate">{loc.location_name}</span>
+                {!loc.token_valid && (
+                  <span className="text-2xs text-amber-600">(token invalid)</span>
+                )}
+              </div>
+              <button
+                onClick={() => handleRemove(loc.location_id)}
+                disabled={removingId === loc.location_id}
+                className="text-faint hover:text-red-500 transition-colors shrink-0"
+              >
+                {removingId === loc.location_id ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Trash2 size={14} />
+                )}
+              </button>
+            </div>
+          ))}
         </div>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={handleConnect}
-          disabled={saving || !token.trim()}
-          leftIcon={saving ? Loader2 : undefined}
-        >
-          {saving ? 'Connecting…' : 'Connect'}
-        </Button>
+      )}
+
+      {/* Add new location */}
+      <div className="space-y-2">
+        <p className="text-xs text-faint">
+          Add a GHL sub-account. Create a Private Integration Token in the sub-account&apos;s
+          Settings → Integrations with <em>Contacts (Read)</em> and <em>Opportunities (Read)</em> scopes.
+        </p>
+        <input
+          type="text"
+          value={locationName}
+          onChange={(e) => setLocationName(e.target.value)}
+          placeholder="Location name (e.g. Client ABC)"
+          className="w-full max-w-sm px-3 py-1.5 text-xs bg-surface border border-edge rounded-lg focus:outline-none focus:ring-1 focus:ring-teal"
+        />
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 max-w-sm">
+            <input
+              type={showToken ? 'text' : 'password'}
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="pit_xxxxxxxx..."
+              className="w-full px-3 py-1.5 text-xs bg-surface border border-edge rounded-lg pr-8 focus:outline-none focus:ring-1 focus:ring-teal"
+            />
+            <button
+              type="button"
+              onClick={() => setShowToken(!showToken)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-faint hover:text-muted"
+            >
+              {showToken ? <EyeOff size={14} /> : <Eye size={14} />}
+            </button>
+          </div>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleConnect}
+            disabled={saving || !token.trim() || !locationName.trim()}
+            leftIcon={saving ? Loader2 : undefined}
+          >
+            {saving ? 'Connecting…' : 'Add location'}
+          </Button>
+        </div>
+        {error && <p className="text-xs text-red-500">{error}</p>}
       </div>
-      {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   );
 }
@@ -434,9 +445,7 @@ function ApiHealthBanner({ health }: { health: HealthData | null }) {
 export default function LookerStudioPage() {
   const [metaConnected, setMetaConnected] = useState(false);
   const [apiHealth, setApiHealth] = useState<HealthData | null>(null);
-  const [ghlConnected, setGhlConnected] = useState(false);
-  const [ghlTokenValid, setGhlTokenValid] = useState(true);
-  const [ghlLocationCount, setGhlLocationCount] = useState(0);
+  const [ghlLocations, setGhlLocations] = useState<GhlLocation[]>([]);
   const [ghlVersion, setGhlVersion] = useState(0);
 
   useEffect(() => {
@@ -475,9 +484,7 @@ export default function LookerStudioPage() {
         if (!res.ok) return;
         const json = await res.json();
         if (json.data) {
-          setGhlConnected(json.data.connected);
-          setGhlTokenValid(json.data.token_valid ?? true);
-          setGhlLocationCount(json.data.location_count ?? 0);
+          setGhlLocations(json.data.locations || []);
         }
       } catch {
         // Silent
@@ -519,12 +526,10 @@ export default function LookerStudioPage() {
                   deploymentId={GHL_DEPLOYMENT_ID}
                   description="Pull leads, opportunities, pipeline stages, and contact activity into Looker Studio reports."
                   status="available"
-                  connected={ghlConnected && ghlTokenValid}
+                  connected={ghlLocations.some((l) => l.token_valid)}
                 >
-                  <GhlAgencyConnect
-                    connected={ghlConnected}
-                    tokenValid={ghlTokenValid}
-                    locationCount={ghlLocationCount}
+                  <GhlLocationManager
+                    locations={ghlLocations}
                     onStatusChange={() => setGhlVersion((v) => v + 1)}
                   />
                 </ConnectorSetupCard>

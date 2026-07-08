@@ -1,18 +1,22 @@
 // app/api/connectors/ghl/agency-connect/route.ts
 //
-// Store or update an agency-level GHL Private Integration Token for the
-// Looker Studio connector. Validates the token by calling /locations/search.
+// Manage per-location GHL Private Integration Tokens for Looker Studio.
+// Each location gets its own sub-account PIT.
+//
+// POST   — connect a location (validate token, store encrypted)
+// DELETE — disconnect a location (?location_id=xxx)
+// GET    — list connected locations for this company
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
 import { createServiceClient } from '@/lib/supabase-server';
 import { encryptGhlToken, decryptGhlToken } from '@/lib/connectors/ghl/token-crypto';
-import { listLocations } from '@/lib/connectors/ghl/looker-client';
+import { testGhlConnection } from '@/lib/connectors/ghl/client';
 import { authRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
-// POST — connect or update the agency token
+// POST — connect a new location
 export async function POST(req: NextRequest) {
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -25,44 +29,67 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Body must be JSON' }, { status: 400 });
   }
 
-  const { token: rawToken } = body as { token?: string };
+  const { token: rawToken, location_name } = body as { token?: string; location_name?: string };
   if (typeof rawToken !== 'string' || !rawToken.trim()) {
     return NextResponse.json({ error: 'token is required' }, { status: 400 });
   }
+  if (typeof location_name !== 'string' || !location_name.trim()) {
+    return NextResponse.json({ error: 'location_name is required' }, { status: 400 });
+  }
 
-  // Validate by listing locations — agency tokens should be able to do this
-  const validation = await listLocations(rawToken.trim());
-  if (!validation.ok) {
-    if (validation.status === 401) {
-      return NextResponse.json({ error: 'Invalid token — GHL rejected it.' }, { status: 400 });
-    }
-    if (validation.status === 403) {
+  // Validate the sub-account token by searching for its location
+  const { ghlFetch } = await import('@/lib/connectors/ghl/client');
+  const locResult = await ghlFetch<{ locations: Array<{ id: string; name: string }> }>(
+    rawToken.trim(),
+    '/locations/search',
+    { method: 'GET' },
+  );
+
+  let locationId: string;
+  if (locResult.ok && locResult.data?.locations?.length) {
+    locationId = locResult.data.locations[0].id;
+  } else if (locResult.status === 401) {
+    return NextResponse.json({ error: 'Invalid token — GHL rejected it.' }, { status: 400 });
+  } else if (locResult.status === 403) {
+    return NextResponse.json(
+      { error: 'Token missing Locations (Read) scope.' },
+      { status: 400 },
+    );
+  } else {
+    // Some sub-account tokens may not support /locations/search.
+    // Fall back to a contacts call to validate the token works at all.
+    const fallback = await ghlFetch<unknown>(rawToken.trim(), '/contacts/', {
+      method: 'GET',
+      params: { limit: '1' },
+    });
+    if (!fallback.ok) {
       return NextResponse.json(
-        { error: 'Token does not have permission to list locations. Make sure you created an Agency-level Private Integration Token with Locations (Read) scope.' },
+        { error: locResult.error || fallback.error || 'Could not validate token with GHL' },
         { status: 400 },
       );
     }
-    return NextResponse.json(
-      { error: validation.error || 'Could not validate token with GHL' },
-      { status: 502 },
-    );
+    // Use a hash of the token as a stable ID since we can't detect the location
+    const { createHash } = await import('crypto');
+    locationId = 'loc_' + createHash('sha256').update(rawToken.trim()).digest('hex').slice(0, 16);
   }
 
   const encrypted = encryptGhlToken(rawToken.trim());
-  const locationCount = validation.data?.length || 0;
-
   const supabase = createServiceClient();
+
+  // Upsert — if this location is already connected, update its token
   const { data: existing } = await supabase
-    .from('ghl_agency_connections')
+    .from('ghl_looker_connections')
     .select('id')
     .eq('company_id', auth.companyId)
+    .eq('location_id', locationId)
     .single();
 
   if (existing) {
     const { error } = await supabase
-      .from('ghl_agency_connections')
+      .from('ghl_looker_connections')
       .update({
         api_token_encrypted: encrypted,
+        location_name: location_name.trim(),
         token_valid: true,
         updated_at: new Date().toISOString(),
       })
@@ -74,9 +101,11 @@ export async function POST(req: NextRequest) {
     }
   } else {
     const { error } = await supabase
-      .from('ghl_agency_connections')
+      .from('ghl_looker_connections')
       .insert({
         company_id: auth.companyId,
+        location_id: locationId,
+        location_name: location_name.trim(),
         api_token_encrypted: encrypted,
         token_valid: true,
       });
@@ -89,20 +118,26 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     success: true,
-    data: { location_count: locationCount },
+    data: { location_id: locationId, location_name: location_name.trim() },
   });
 }
 
-// DELETE — disconnect the agency token
+// DELETE — disconnect a location
 export async function DELETE(req: NextRequest) {
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const locationId = req.nextUrl.searchParams.get('location_id');
+  if (!locationId) {
+    return NextResponse.json({ error: 'location_id is required' }, { status: 400 });
+  }
+
   const supabase = createServiceClient();
   const { error } = await supabase
-    .from('ghl_agency_connections')
+    .from('ghl_looker_connections')
     .delete()
-    .eq('company_id', auth.companyId);
+    .eq('company_id', auth.companyId)
+    .eq('location_id', locationId);
 
   if (error) {
     console.error('[ghl/agency-connect] delete:', error.message);
@@ -112,60 +147,28 @@ export async function DELETE(req: NextRequest) {
   return NextResponse.json({ success: true });
 }
 
-// GET — check connection status
+// GET — list connected locations
 export async function GET(req: NextRequest) {
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const supabase = createServiceClient();
-  const { data: connection } = await supabase
-    .from('ghl_agency_connections')
-    .select('id, token_valid, last_used_at, created_at, updated_at')
+  const { data: connections } = await supabase
+    .from('ghl_looker_connections')
+    .select('id, location_id, location_name, token_valid, last_used_at, created_at')
     .eq('company_id', auth.companyId)
-    .single();
-
-  if (!connection) {
-    return NextResponse.json({ success: true, data: { connected: false } });
-  }
-
-  // Optionally verify the token is still valid by listing locations.
-  // Only mark invalid on a definitive 401 — not on rate limits, timeouts, etc.
-  let locationCount = 0;
-  if (connection.token_valid) {
-    try {
-      const token = decryptGhlToken(
-        (await supabase
-          .from('ghl_agency_connections')
-          .select('api_token_encrypted')
-          .eq('id', connection.id)
-          .single()
-        ).data!.api_token_encrypted,
-      );
-      const result = await listLocations(token);
-      if (result.ok && result.data) {
-        locationCount = result.data.length;
-      } else if (result.status === 401) {
-        console.error('[ghl/agency-connect] GET: token rejected by GHL (401)');
-        await supabase
-          .from('ghl_agency_connections')
-          .update({ token_valid: false, updated_at: new Date().toISOString() })
-          .eq('id', connection.id);
-        connection.token_valid = false;
-      }
-      // Any other error (rate limit, timeout, 5xx) — don't mark invalid
-    } catch {
-      // Decrypt or network error — don't mark invalid
-    }
-  }
+    .order('created_at', { ascending: true });
 
   return NextResponse.json({
     success: true,
     data: {
-      connected: true,
-      token_valid: connection.token_valid,
-      location_count: locationCount,
-      last_used_at: connection.last_used_at,
-      created_at: connection.created_at,
+      connected: (connections?.length ?? 0) > 0,
+      locations: (connections || []).map((c) => ({
+        location_id: c.location_id,
+        location_name: c.location_name,
+        token_valid: c.token_valid,
+        last_used_at: c.last_used_at,
+      })),
     },
   });
 }
