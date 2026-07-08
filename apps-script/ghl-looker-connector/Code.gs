@@ -21,7 +21,8 @@ function getConfig(request) {
     .newSelectSingle()
     .setId('location_id')
     .setName('Location (Sub-Account)')
-    .setHelpText('Choose which GHL location to pull data from.');
+    .setHelpText('Choose which GHL location to pull data from.')
+    .setIsDynamic(true);
 
   try {
     var resp = callApi('/api/connectors/ghl/locations', 'GET', null);
