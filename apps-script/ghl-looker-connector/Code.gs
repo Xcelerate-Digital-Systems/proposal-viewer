@@ -3,8 +3,8 @@
 // Entry point for the AgencyViz GoHighLevel community connector. Looker
 // Studio lifecycle:
 //   1. getAuthType()  — OAuth.gs
-//   2. getConfig()    — location + data type picker
-//   3. getSchema()    — Schema.gs (driven by data_type)
+//   2. getConfig()    — location picker
+//   3. getSchema()    — Schema.gs (unified opportunities + contacts)
 //   4. getData()      — this file; fetches from GHL via AgencyViz API
 
 function getConfig(request) {
@@ -12,8 +12,8 @@ function getConfig(request) {
   var config = cc.getConfig();
 
   config.newInfo().setId('intro').setText(
-    'Choose a GoHighLevel location (sub-account). Connect your GHL agency '
-    + 'token at app.agencyviz.io → Integrations → Looker Studio first.'
+    'Choose a GoHighLevel location (sub-account). Add your GHL sub-account '
+    + 'tokens at app.agencyviz.io → Integrations → Looker Studio first.'
   );
 
   // Location selector — populated from the AgencyViz API
@@ -36,7 +36,7 @@ function getConfig(request) {
     });
     if (locations.length === 0) {
       config.newInfo().setId('no_locations').setText(
-        'No locations found. Make sure your GHL agency token is connected '
+        'No locations found. Add a GHL sub-account token '
         + 'at app.agencyviz.io → Integrations → Looker Studio.',
       );
     }

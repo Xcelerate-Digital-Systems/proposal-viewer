@@ -50,21 +50,19 @@ export async function POST(req: NextRequest) {
     locationId = locResult.data.locations[0].id;
   } else if (locResult.status === 401) {
     return NextResponse.json({ error: 'Invalid token — GHL rejected it.' }, { status: 400 });
-  } else if (locResult.status === 403) {
-    return NextResponse.json(
-      { error: 'Token missing Locations (Read) scope.' },
-      { status: 400 },
-    );
   } else {
-    // Some sub-account tokens may not support /locations/search.
-    // Fall back to a contacts call to validate the token works at all.
+    // Sub-account PITs typically can't call /locations/search (403).
+    // Fall back to a contacts call to validate the token works.
     const fallback = await ghlFetch<unknown>(rawToken.trim(), '/contacts/', {
       method: 'GET',
       params: { limit: '1' },
     });
+    if (fallback.status === 401) {
+      return NextResponse.json({ error: 'Invalid token — GHL rejected it.' }, { status: 400 });
+    }
     if (!fallback.ok) {
       return NextResponse.json(
-        { error: locResult.error || fallback.error || 'Could not validate token with GHL' },
+        { error: fallback.error || 'Could not validate token with GHL' },
         { status: 400 },
       );
     }
