@@ -52,11 +52,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid token — GHL rejected it.' }, { status: 400 });
   } else {
     // Sub-account PITs typically can't call /locations/search (403).
-    // Fall back to a contacts call to validate the token works.
-    const fallback = await ghlFetch<unknown>(rawToken.trim(), '/contacts/', {
-      method: 'GET',
-      params: { limit: '1' },
-    });
+    // Fall back to a contacts call to validate the token and extract the real locationId.
+    const fallback = await ghlFetch<{ contacts: Array<{ locationId?: string }> }>(
+      rawToken.trim(), '/contacts/', { method: 'GET', params: { limit: '1' } },
+    );
     if (fallback.status === 401) {
       return NextResponse.json({ error: 'Invalid token — GHL rejected it.' }, { status: 400 });
     }
@@ -66,9 +65,25 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    // Use a hash of the token as a stable ID since we can't detect the location
-    const { createHash } = await import('crypto');
-    locationId = 'loc_' + createHash('sha256').update(rawToken.trim()).digest('hex').slice(0, 16);
+    // Extract the real locationId from the contact record
+    const contacts = fallback.data?.contacts || [];
+    const extractedLocId = contacts[0]?.locationId;
+    if (extractedLocId) {
+      locationId = extractedLocId;
+    } else {
+      // No contacts yet — try /opportunities/search to get the locationId
+      const oppFallback = await ghlFetch<{ opportunities: Array<{ locationId?: string }> }>(
+        rawToken.trim(), '/opportunities/search', { method: 'GET', params: { limit: '1' } },
+      );
+      const opps = oppFallback.data?.opportunities || [];
+      if (opps[0]?.locationId) {
+        locationId = opps[0].locationId;
+      } else {
+        // No data at all — use a hash as last resort
+        const { createHash } = await import('crypto');
+        locationId = 'loc_' + createHash('sha256').update(rawToken.trim()).digest('hex').slice(0, 16);
+      }
+    }
   }
 
   const encrypted = encryptGhlToken(rawToken.trim());
