@@ -500,9 +500,9 @@ const mcpHandler = createMcpHandler(
     serverInfo: { name: 'agencyviz', version: '1.0.0' },
   },
   {
-    basePath: '/api/mcp',
     streamableHttpEndpoint: '/api/mcp',
     sseEndpoint: '/api/mcp/sse',
+    sseMessageEndpoint: '/api/mcp/message',
     maxDuration: 60,
     verboseLogs: process.env.NODE_ENV !== 'production',
   },
