@@ -8,7 +8,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   MessageSquareText, ExternalLink, Globe, Mail, Smartphone,
-  Image as ImageIcon, Video, FileText, Megaphone, Search, RectangleHorizontal, ClipboardList,
+  Image as ImageIcon, Video, FileText, Megaphone, Search, RectangleHorizontal, ClipboardList, Figma,
 } from 'lucide-react';
 import type {
   FeedbackItem, FeedbackItemType, FeedbackStatus, FeedbackComment,
@@ -37,6 +37,7 @@ const TYPE_META: Record<FeedbackItemType, { label: string; Icon: typeof Globe; i
   google_search_ad: { label: 'Google Search Ad', Icon: Search,              iconBg: 'bg-indigo-50',  iconColor: 'text-indigo-600' },
   google_banner_ad: { label: 'Google Banner Ad', Icon: RectangleHorizontal, iconBg: 'bg-indigo-50',  iconColor: 'text-indigo-600' },
   meta_lead_form: { label: 'Lead Form', Icon: ClipboardList, iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
+  figma: { label: 'Figma', Icon: Figma, iconBg: 'bg-purple-50', iconColor: 'text-purple-600' },
 };
 
 /** Statuses the client can both see and drop into on the public board.

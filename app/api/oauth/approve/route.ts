@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
     const redirect_uri = typeof body.redirect_uri === 'string' ? body.redirect_uri : '';
     const state = typeof body.state === 'string' ? body.state : '';
     const scope = typeof body.scope === 'string' ? body.scope : null;
+    const code_challenge = typeof body.code_challenge === 'string' ? body.code_challenge : null;
+    const code_challenge_method = typeof body.code_challenge_method === 'string' ? body.code_challenge_method : null;
 
     if (!client_id || !redirect_uri) {
       return NextResponse.json({ error: 'client_id and redirect_uri are required' }, { status: 400 });
@@ -95,6 +97,8 @@ export async function POST(req: NextRequest) {
       api_key_id: key.id,
       plaintext_token: encryptOAuthToken(plaintext),
       scope,
+      code_challenge,
+      code_challenge_method: code_challenge ? (code_challenge_method || 'S256') : null,
       expires_at,
     });
 

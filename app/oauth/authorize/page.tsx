@@ -31,6 +31,8 @@ function AuthorizeContent() {
   const state = params.get('state') || '';
   const scope = params.get('scope') || '';
   const responseType = params.get('response_type') || 'code';
+  const codeChallenge = params.get('code_challenge') || '';
+  const codeChallengeMethod = params.get('code_challenge_method') || '';
 
   const [client, setClient] = useState<ClientInfo | null>(null);
   const [validating, setValidating] = useState(true);
@@ -108,7 +110,14 @@ function AuthorizeContent() {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ client_id: clientId, redirect_uri: redirectUri, state, scope }),
+        body: JSON.stringify({
+          client_id: clientId,
+          redirect_uri: redirectUri,
+          state,
+          scope,
+          code_challenge: codeChallenge || undefined,
+          code_challenge_method: codeChallengeMethod || undefined,
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Authorization failed');

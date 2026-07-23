@@ -72,7 +72,7 @@ async function handleAuthorizationCode(
 
   const { data: row } = await supabase
     .from('oauth_auth_codes')
-    .select('code_hash, client_id, redirect_uri, plaintext_token, expires_at, consumed_at')
+    .select('code_hash, client_id, redirect_uri, plaintext_token, expires_at, consumed_at, code_challenge, code_challenge_method')
     .eq('code_hash', code_hash)
     .single();
 
@@ -96,6 +96,27 @@ async function handleAuthorizationCode(
     debugLog('[oauth/token] REJECTED: redirect_uri mismatch');
     return oauthError('invalid_grant', 'redirect_uri does not match the authorization request');
   }
+
+  // PKCE verification (OAuth 2.1)
+  if (row.code_challenge) {
+    const code_verifier = form.code_verifier;
+    if (!code_verifier) {
+      debugLog('[oauth/token] REJECTED: PKCE code_verifier missing');
+      return oauthError('invalid_grant', 'code_verifier is required');
+    }
+    const method = row.code_challenge_method || 'S256';
+    let computed: string;
+    if (method === 'S256') {
+      computed = createHash('sha256').update(code_verifier).digest('base64url');
+    } else {
+      computed = code_verifier;
+    }
+    if (computed !== row.code_challenge) {
+      debugLog('[oauth/token] REJECTED: PKCE code_verifier mismatch');
+      return oauthError('invalid_grant', 'code_verifier does not match code_challenge');
+    }
+  }
+
   if (!row.plaintext_token) {
     return oauthError('invalid_grant', 'Code unusable');
   }
@@ -250,4 +271,15 @@ export async function POST(req: NextRequest) {
   }
 
   return oauthError('unsupported_grant_type', 'Only authorization_code and refresh_token are supported');
+}
+
+export function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
 }

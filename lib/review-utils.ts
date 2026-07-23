@@ -32,4 +32,5 @@ export const TYPE_LABELS: Record<string, string> = {
   webpage: 'Page',
   email: 'Email',
   video: 'Video',
+  figma: 'Figma',
 };

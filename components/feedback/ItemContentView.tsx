@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Image as ImageIcon, FileText, Video, Film } from 'lucide-react';
+import { Image as ImageIcon, FileText, Video, Film, Figma } from 'lucide-react';
 import AdMockupPreview, { type AdPlatform } from '@/components/admin/feedback/AdMockupPreview';
 import EmailMockupPreview, { type EmailClient } from '@/components/admin/feedback/EmailMockupPreview';
 import SmsMockupPreview, { type SmsClient } from '@/components/admin/feedback/SmsMockupPreview';
@@ -429,6 +429,52 @@ export default function ItemContentView({
           pinComments={pinComments}
           pendingPin={null}
           onPinClick={onPinClick}
+        />
+      </div>
+    );
+  }
+
+  // Figma items — render stored PNG with Figma badge
+  if (item.type === 'figma' && imageUrl) {
+    return (
+      <div
+        ref={containerRef}
+        className="relative max-w-3xl mx-auto"
+        style={{ cursor: cursorStyle }}
+        onClick={onImageClick}
+      >
+        <div className="bg-surface rounded-2xl shadow-card-soft overflow-hidden">
+          <div className="flex items-center gap-2.5 px-4 py-3 border-b border-edge">
+            <div className="w-6 h-6 rounded-md bg-[#a259ff]/10 flex items-center justify-center">
+              <Figma size={12} className="text-[#a259ff]" />
+            </div>
+            <span className="text-caption font-medium text-ink truncate">
+              {item.figma_frame_name || item.title || 'Figma Design'}
+            </span>
+            <span className="text-detail text-faint ml-auto shrink-0">Figma</span>
+          </div>
+          <div className="flex items-center justify-center bg-white p-2">
+            <img
+              src={imageUrl}
+              alt={item.title}
+              crossOrigin="anonymous"
+              data-screenshot-source
+              className="max-w-full max-h-[calc(100dvh-200px)] object-contain select-none"
+              draggable={false}
+            />
+          </div>
+        </div>
+        <PinOverlay
+          pinComments={visiblePins}
+          pendingPin={pendingPin}
+          onPinClick={onPinClick}
+        />
+        <HighlightOverlay
+          containerRef={containerRef as React.RefObject<HTMLElement | null>}
+          highlightComments={visibleHighlights}
+          highlightedCommentId={highlightedCommentId}
+          onHighlightClick={onHighlightClick}
+          pendingHighlight={pendingHighlight}
         />
       </div>
     );

@@ -1,16 +1,19 @@
 'use client';
 
-import { useEffect, useCallback, use } from 'react';
+import { useEffect, useCallback, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
+import { RefreshCw, Loader2 } from 'lucide-react';
 import type { FeedbackItem, FeedbackStatus, FeedbackItemVersion } from '@/lib/supabase';
 import type { CommentTask } from '@/lib/types/feedback';
 import TaskModal from '@/components/admin/feedback/feedback-list/TaskModal';
 import TaskDetailModal from '@/components/admin/feedback/feedback-list/TaskDetailModal';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/components/ui/Toast';
+import { Button } from '@/components/ui/Button';
 import FeedbackDetailView from '@/components/feedback/FeedbackDetailView';
 import AddVersionModal from '@/components/admin/feedback/AddVersionModal';
 import type { VersionView } from '@/lib/feedback/versions';
+import { authFetch } from '@/lib/auth-fetch';
 import { useItemViewerData } from './useItemViewerData';
 import { useItemViewerActions } from './useItemViewerActions';
 
@@ -112,6 +115,46 @@ function ItemViewerContent({
     }
   }, [projectId, router]);
 
+  // ── Figma sync ──
+  const [syncing, setSyncing] = useState(false);
+
+  const handleFigmaSync = useCallback(async (item: FeedbackItem) => {
+    setSyncing(true);
+    try {
+      const res = await authFetch('/api/connectors/figma/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewItemId: item.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast.error(json.error || 'Sync failed');
+        setSyncing(false);
+        return;
+      }
+      toast.success(`Synced — v${json.data.versionNumber} created`);
+      window.location.reload();
+    } catch {
+      toast.error('Failed to sync from Figma');
+    }
+    setSyncing(false);
+  }, [toast]);
+
+  const renderHeaderActions = useCallback((currentItem: FeedbackItem | null) => {
+    if (!currentItem || currentItem.type !== 'figma') return null;
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => handleFigmaSync(currentItem)}
+        disabled={syncing}
+      >
+        {syncing ? <Loader2 size={13} className="animate-spin mr-1.5" /> : <RefreshCw size={13} className="mr-1.5" />}
+        Sync from Figma
+      </Button>
+    );
+  }, [syncing, handleFigmaSync]);
+
   // ── Loading ──
   // Wait for branding before painting anything so we don't flash the default
   // teal accent before the agency's brand color settles in.
@@ -170,6 +213,7 @@ function ItemViewerContent({
           label: data.project.title || 'Back',
           onClick: () => router.push(`/campaigns/${projectId}/assets${data.typeFilter ? `?type=${data.typeFilter}` : ''}`),
         }}
+        renderHeaderActions={renderHeaderActions}
         onUpdateItemStatus={actions.updateItemStatus}
         browseMode={data.reviewMode === 'browse'}
         reviewMode={data.reviewMode}

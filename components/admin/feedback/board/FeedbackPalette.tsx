@@ -7,7 +7,7 @@ import {
   StickyNote, PanelLeftOpen,
   MousePointer2, Square, Circle, MoveRight, Minus, Type,
   Workflow, Pencil, Layers, Plus, CheckCircle2, X,
-  Globe, Mail, Smartphone, Image as ImageIcon, Video, Megaphone, FileText, Eye, ClipboardList, Search, RectangleHorizontal,
+  Globe, Mail, Smartphone, Image as ImageIcon, Video, Megaphone, FileText, Eye, ClipboardList, Search, RectangleHorizontal, Figma,
   type LucideIcon,
 } from 'lucide-react';
 import type { BoardTool } from './BoardTopToolbar';
@@ -45,6 +45,7 @@ const ITEM_TYPE_ICONS: Record<FeedbackItemType, LucideIcon> = {
   google_banner_ad: RectangleHorizontal,
   pdf: FileText,
   meta_lead_form: ClipboardList,
+  figma: Figma,
 };
 
 const ITEM_TYPE_LABELS: Record<FeedbackItemType, string> = {
@@ -58,6 +59,7 @@ const ITEM_TYPE_LABELS: Record<FeedbackItemType, string> = {
   google_banner_ad: 'Google Banner Ad',
   pdf: 'PDF',
   meta_lead_form: 'Lead Form',
+  figma: 'Figma Design',
 };
 
 interface ShapeItem {

@@ -24,7 +24,7 @@ export interface AddVersionModalProps {
 
 /* ─── Discriminated asset kind ───────────────────────────────────── */
 
-export type AssetKind = 'file' | 'text' | 'ad' | 'google_search_ad' | 'google_banner_ad' | 'meta_lead_form';
+export type AssetKind = 'file' | 'text' | 'ad' | 'google_search_ad' | 'google_banner_ad' | 'meta_lead_form' | 'figma';
 
 export function assetKindForType(type: FeedbackItem['type']): AssetKind {
   if (type === 'email' || type === 'sms') return 'text';
@@ -32,6 +32,7 @@ export function assetKindForType(type: FeedbackItem['type']): AssetKind {
   if (type === 'google_search_ad') return 'google_search_ad';
   if (type === 'google_banner_ad') return 'google_banner_ad';
   if (type === 'meta_lead_form') return 'meta_lead_form';
+  if (type === 'figma') return 'figma';
   return 'file';
 }
 

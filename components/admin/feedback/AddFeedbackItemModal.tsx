@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Image, Globe, Mail, Megaphone, Smartphone, Video, FileText, Search, ClipboardList, RectangleHorizontal, ChevronRight, ArrowLeft, type LucideIcon } from 'lucide-react';
+import { Image, Globe, Mail, Megaphone, Smartphone, Video, FileText, Search, ClipboardList, RectangleHorizontal, Figma, ChevronRight, ArrowLeft, type LucideIcon } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { type FeedbackItemType } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
@@ -17,6 +17,7 @@ import PdfItemForm from './feedback-item-forms/PdfItemForm';
 import GoogleSearchAdItemForm from './feedback-item-forms/GoogleSearchAdItemForm';
 import GoogleBannerAdItemForm from './feedback-item-forms/GoogleBannerAdItemForm';
 import MetaLeadFormItemForm from './feedback-item-forms/MetaLeadFormItemForm';
+import FigmaItemForm from './feedback-item-forms/FigmaItemForm';
 
 /* ─── Types ────────────────────────────────────────────────────── */
 
@@ -36,7 +37,7 @@ type AssetTypeOption = {
   description: string;
 };
 
-type CategoryKey = 'meta' | 'google' | 'communication' | 'webpage' | 'media';
+type CategoryKey = 'meta' | 'google' | 'communication' | 'webpage' | 'media' | 'figma';
 
 type Category = {
   key: CategoryKey;
@@ -93,6 +94,15 @@ const CATEGORIES: Category[] = [
     ],
   },
   {
+    key: 'figma',
+    label: 'Figma Design',
+    description: 'Import frames from a Figma file',
+    icon: Figma,
+    items: [
+      { value: 'figma', label: 'Figma Design', icon: Figma, description: 'Import and annotate Figma design frames' },
+    ],
+  },
+  {
     key: 'media',
     label: 'Media',
     description: 'Images, videos, and documents',
@@ -116,6 +126,7 @@ const TITLES: Partial<Record<FeedbackItemType, string>> = {
   sms: 'New SMS',
   pdf: 'Upload PDF',
   webpage: 'New Web Page',
+  figma: 'Import Figma Design',
 };
 
 /* ─── Component ────────────────────────────────────────────────── */
@@ -299,6 +310,15 @@ export default function AddFeedbackItemModal({
             onBack={handleBack}
             onCancel={onClose}
             uploading={uploading}
+          />
+        )}
+        {step === 'details' && itemType === 'figma' && (
+          <FigmaItemForm
+            reviewProjectId={reviewProjectId}
+            companyId={companyId}
+            onBack={handleBack}
+            onCancel={onClose}
+            onSuccess={onSuccess}
           />
         )}
     </Modal>

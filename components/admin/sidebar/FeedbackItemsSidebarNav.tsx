@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft, Plus, X, ChevronDown, ChevronRight, CheckCircle2,
-  Globe, Mail, Smartphone, Image as ImageIcon, Video, Megaphone, FileText, Eye, ClipboardList, Search, RectangleHorizontal,
+  Globe, Mail, Smartphone, Image as ImageIcon, Video, Megaphone, FileText, Eye, ClipboardList, Search, RectangleHorizontal, Figma,
 } from 'lucide-react';
 import { useFeedbackBoardContext } from '@/components/admin/feedback/board/FeedbackBoardContext';
 import { getFeedbackStatusDef } from '@/lib/feedback/status';
@@ -21,6 +21,7 @@ const TYPE_ICONS: Record<FeedbackItemType, React.ReactNode> = {
   google_banner_ad: <RectangleHorizontal size={13} />,
   pdf: <FileText size={13} />,
   meta_lead_form: <ClipboardList size={13} />,
+  figma: <Figma size={13} />,
 };
 
 const TYPE_LABELS: Record<FeedbackItemType, string> = {
@@ -34,6 +35,7 @@ const TYPE_LABELS: Record<FeedbackItemType, string> = {
   google_banner_ad: 'Google Banner Ad',
   pdf: 'PDF',
   meta_lead_form: 'Lead Form',
+  figma: 'Figma Design',
 };
 
 export default function FeedbackItemsSidebarNav({ onNavigate }: { onNavigate?: () => void }) {

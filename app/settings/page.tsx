@@ -16,6 +16,7 @@ import ApiKeyManager from '@/components/admin/settings/ApiKeyManager';
 import ConnectedAppsManager from '@/components/admin/settings/ConnectedAppsManager';
 import GhlConnectorCard from '@/components/admin/connectors/GhlConnectorCard';
 import MetaConnectorCard from '@/components/admin/connectors/MetaConnectorCard';
+import FigmaConnectorCard from '@/components/admin/connectors/FigmaConnectorCard';
 import MembersTab from '@/components/admin/settings/MembersTab';
 import BillingTab from '@/components/admin/settings/BillingTab';
 import RolesTab from '@/components/admin/settings/RolesTab';
@@ -197,6 +198,7 @@ function SettingsContent({ auth }: {
                 description="Connect third-party platforms to sync data and automate workflows."
               />
               <div className="space-y-6">
+                <FigmaConnectorCard />
                 <GhlConnectorCard />
                 <MetaConnectorCard />
               </div>

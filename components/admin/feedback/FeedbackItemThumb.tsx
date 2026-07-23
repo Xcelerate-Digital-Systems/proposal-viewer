@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, Globe, Mail, Smartphone } from 'lucide-react';
+import { Eye, Globe, Mail, Smartphone, Figma } from 'lucide-react';
 import type { FeedbackItem } from '@/lib/supabase';
 
 interface Props {
@@ -101,6 +101,13 @@ export default function FeedbackItemThumb({ item }: Props) {
         </div>
       ) : thumbnailUrl ? (
         <img src={thumbnailUrl} alt={item.title} loading="lazy" className="w-full h-full object-cover" />
+      ) : item.type === 'figma' ? (
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-2xl bg-[#a259ff]/10 flex items-center justify-center mx-auto">
+            <Figma size={22} className="text-[#a259ff]" />
+          </div>
+          <p className="text-xs text-faint mt-2.5">Figma Design</p>
+        </div>
       ) : (
         <div className="text-center">
           <div className="w-12 h-12 rounded-2xl bg-surface flex items-center justify-center mx-auto">
@@ -112,7 +119,7 @@ export default function FeedbackItemThumb({ item }: Props) {
 
       {/* Type badge overlay */}
       <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-2xs font-medium text-dim capitalize shadow-sm">
-        {item.type === 'ad' ? 'Meta Ad' : item.type === 'webpage' ? 'Web Page' : item.type}
+        {item.type === 'ad' ? 'Meta Ad' : item.type === 'webpage' ? 'Web Page' : item.type === 'figma' ? 'Figma' : item.type}
       </span>
 
       {/* Version badge */}

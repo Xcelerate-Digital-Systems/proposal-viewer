@@ -59,7 +59,8 @@ export type FeedbackItemType =
   | 'google_search_ad'
   | 'google_banner_ad'
   | 'pdf'
-  | 'meta_lead_form';
+  | 'meta_lead_form'
+  | 'figma';
 
 export type MetaLeadFormQuestionType =
   // Custom
@@ -396,6 +397,12 @@ export type FeedbackItem = {
   google_ad_data: GoogleAdData | null;
   // Meta Lead Form (jsonb blob — see MetaLeadFormData)
   meta_lead_form_data: MetaLeadFormData | null;
+  // Figma fields
+  figma_file_key: string | null;
+  figma_node_id: string | null;
+  figma_file_name: string | null;
+  figma_frame_name: string | null;
+  figma_version_id: string | null;
   // Meta
   status: FeedbackStatus;
   version: number;
@@ -437,6 +444,11 @@ export type FeedbackItemVersion = {
   pdf_url: string | null;
   google_ad_data: GoogleAdData | null;
   meta_lead_form_data: MetaLeadFormData | null;
+  figma_file_key: string | null;
+  figma_node_id: string | null;
+  figma_file_name: string | null;
+  figma_frame_name: string | null;
+  figma_version_id: string | null;
   /** review_items.status at the moment this version row was inserted.
    *  Populated by the `trg_set_review_version_prior_status` BEFORE INSERT
    *  trigger. Used by VersionPicker to render a per-row "this is the stage
