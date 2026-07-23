@@ -1,8 +1,8 @@
 // components/admin/settings/McpSetupSection.tsx
 'use client';
 
-import { useState } from 'react';
-import { Copy, Check, ExternalLink, ChevronDown, ChevronRight, ShieldCheck } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { Copy, Check, ExternalLink, ChevronDown, ChevronRight, ShieldCheck, Terminal } from 'lucide-react';
 
 const CAPABILITIES = [
   { name: 'Proposals', desc: 'List, create, and manage proposals' },
@@ -16,9 +16,35 @@ const CAPABILITIES = [
   { name: 'Swipe Vault', desc: 'Browse swipe file collections' },
 ];
 
-export default function McpSetupSection() {
+type SetupTool = {
+  name: string;
+  icon: string;
+  method: 'json' | 'cli';
+  instructions: string;
+  value: string;
+};
+
+function CopyButton({ text, size = 'sm' }: { text: string; size?: 'sm' | 'md' }) {
   const [copied, setCopied] = useState(false);
+  const handleCopy = useCallback(async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [text]);
+  return (
+    <button
+      onClick={handleCopy}
+      className={`flex items-center gap-1.5 text-muted hover:text-ink transition-colors shrink-0 ${size === 'md' ? 'text-xs px-2 py-1 rounded border border-edge hover:bg-surface' : 'text-xs'}`}
+    >
+      {copied ? <Check size={13} className="text-positive" /> : <Copy size={13} />}
+      {copied ? 'Copied' : 'Copy'}
+    </button>
+  );
+}
+
+export default function McpSetupSection() {
   const [showCapabilities, setShowCapabilities] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
 
   const appUrl = typeof window !== 'undefined'
     ? window.location.origin
@@ -34,11 +60,40 @@ export default function McpSetupSection() {
   }
 }`;
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(configJson);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const claudeCodeCmd = `claude mcp add --transport http agencyviz ${serverUrl}`;
+
+  const tools: SetupTool[] = [
+    {
+      name: 'Claude Desktop',
+      icon: '\u{1F5A5}',
+      method: 'json',
+      instructions: 'Settings → Developer → Edit Config — paste the JSON below:',
+      value: configJson,
+    },
+    {
+      name: 'Claude Code',
+      icon: '⌨',
+      method: 'cli',
+      instructions: 'Run this command in your terminal:',
+      value: claudeCodeCmd,
+    },
+    {
+      name: 'Cursor',
+      icon: '▸',
+      method: 'json',
+      instructions: 'Settings → MCP Servers → Add new — paste the JSON below:',
+      value: configJson,
+    },
+    {
+      name: 'Windsurf',
+      icon: '\u{1F30A}',
+      method: 'json',
+      instructions: 'Settings → MCP → Add Server — paste the JSON below:',
+      value: configJson,
+    },
+  ];
+
+  const activeTool = tools[activeTab];
 
   return (
     <div className="space-y-4">
@@ -57,76 +112,77 @@ export default function McpSetupSection() {
             <ExternalLink size={12} />
           </a>.
           Once connected, your AI tools can read and manage your proposals, quotes,
-          campaigns, and more — directly from the chat.
+          campaigns, and more &mdash; directly from the chat.
         </p>
       </div>
 
-      {/* Steps */}
-      <div className="space-y-3">
-        <div className="flex items-start gap-3">
-          <span className="mt-0.5 w-5 h-5 rounded-full bg-teal-tint text-teal text-xs font-semibold flex items-center justify-center shrink-0">1</span>
-          <p className="text-sm text-ink">
-            Add this config to your AI tool&apos;s MCP settings
-          </p>
+      {/* Setup card with tabs */}
+      <div className="rounded-lg border border-edge overflow-hidden">
+        {/* Tool tabs */}
+        <div className="flex border-b border-edge bg-paper">
+          {tools.map((tool, i) => (
+            <button
+              key={tool.name}
+              onClick={() => setActiveTab(i)}
+              className={`flex-1 px-3 py-2.5 text-xs font-medium transition-colors relative ${
+                activeTab === i
+                  ? 'text-ink bg-surface'
+                  : 'text-muted hover:text-ink hover:bg-surface/50'
+              }`}
+            >
+              <span className="flex items-center justify-center gap-1.5">
+                <span>{tool.icon}</span>
+                <span>{tool.name}</span>
+              </span>
+              {activeTab === i && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal" />
+              )}
+            </button>
+          ))}
         </div>
-      </div>
 
-      {/* Config block */}
-      <div className="relative rounded-lg border border-edge overflow-hidden">
-        <div className="flex items-center justify-between px-3 py-2 bg-paper border-b border-edge">
-          <span className="text-xs font-medium text-muted">MCP Configuration</span>
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 text-xs text-muted hover:text-ink transition-colors"
-          >
-            {copied ? <Check size={13} className="text-positive" /> : <Copy size={13} />}
-            {copied ? 'Copied' : 'Copy'}
-          </button>
+        {/* Active tool content */}
+        <div className="p-4 space-y-3">
+          {/* Step 1 */}
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 w-5 h-5 rounded-full bg-teal-tint text-teal text-xs font-semibold flex items-center justify-center shrink-0">1</span>
+            <p className="text-sm text-ink">{activeTool.instructions}</p>
+          </div>
+
+          {/* Code/config block */}
+          <div className="relative rounded-lg border border-edge overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 bg-paper border-b border-edge">
+              <span className="text-xs font-medium text-muted flex items-center gap-1.5">
+                {activeTool.method === 'cli' ? <Terminal size={12} /> : null}
+                {activeTool.method === 'cli' ? 'Terminal' : 'JSON Config'}
+              </span>
+              <CopyButton text={activeTool.value} />
+            </div>
+            <pre className="px-4 py-3 text-xs leading-relaxed overflow-x-auto bg-surface text-ink font-mono">
+              {activeTool.value}
+            </pre>
+          </div>
+
+          {/* Step 2 */}
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 w-5 h-5 rounded-full bg-teal-tint text-teal text-xs font-semibold flex items-center justify-center shrink-0">2</span>
+            <p className="text-sm text-ink">
+              {activeTool.method === 'cli'
+                ? 'A browser window will open — approve access to your workspace'
+                : 'Restart your AI tool — it will open a browser window to authorise access to your workspace'}
+            </p>
+          </div>
         </div>
-        <pre className="px-4 py-3 text-xs leading-relaxed overflow-x-auto bg-surface text-ink font-mono">
-          {configJson}
-        </pre>
-      </div>
-
-      {/* Step 2 */}
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 w-5 h-5 rounded-full bg-teal-tint text-teal text-xs font-semibold flex items-center justify-center shrink-0">2</span>
-        <p className="text-sm text-ink">
-          Restart your AI tool — it will open a browser window to authorise access to your workspace
-        </p>
       </div>
 
       {/* OAuth note */}
       <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-teal-tint/50 border border-teal/20">
         <ShieldCheck size={15} className="text-teal mt-0.5 shrink-0" />
         <p className="text-xs text-muted leading-relaxed">
-          Authentication is handled automatically via OAuth 2.0 with PKCE — no API keys to manage.
+          Authentication is handled automatically via OAuth 2.0 with PKCE &mdash; no API keys to manage.
           Your AI tool registers itself, opens a browser for you to approve access, and refreshes
           tokens automatically.
         </p>
-      </div>
-
-      {/* Where to add it */}
-      <div className="rounded-lg border border-edge bg-paper p-4">
-        <p className="text-xs font-medium text-ink mb-2">Where to paste this config:</p>
-        <ul className="text-xs text-muted space-y-1.5">
-          <li className="flex items-center gap-2">
-            <span className="w-1 h-1 rounded-full bg-muted shrink-0" />
-            <span><span className="text-ink font-medium">Claude Desktop</span> — Settings → Developer → Edit Config</span>
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="w-1 h-1 rounded-full bg-muted shrink-0" />
-            <span><span className="text-ink font-medium">Claude Code</span> — run <code className="px-1 py-0.5 bg-surface rounded font-mono">claude mcp add agencyviz --url {serverUrl}</code></span>
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="w-1 h-1 rounded-full bg-muted shrink-0" />
-            <span><span className="text-ink font-medium">Cursor</span> — Settings → MCP Servers → Add new</span>
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="w-1 h-1 rounded-full bg-muted shrink-0" />
-            <span><span className="text-ink font-medium">Windsurf</span> — Settings → MCP → Add Server</span>
-          </li>
-        </ul>
       </div>
 
       {/* Capabilities */}
