@@ -28,6 +28,7 @@ function SitemapPageNodeComponent({ data, selected }: NodeProps) {
   const status = getFeedbackStatusDef(item.status);
   const isWebpage = item.type === 'webpage';
   const isFigma = item.type === 'figma';
+  const hasBoth = isWebpage && !!item.figma_file_key;
   const thumbnailSrc = item.image_url || item.ad_creative_url;
 
   return (
@@ -77,10 +78,21 @@ function SitemapPageNodeComponent({ data, selected }: NodeProps) {
 
           {/* Type badge + title */}
           <div className="flex items-center gap-1.5">
-            <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface text-2xs font-medium text-ink/70 border border-edge">
-              {isWebpage ? <Globe size={10} /> : isFigma ? <Figma size={10} /> : <ImageIcon size={10} />}
-              {isWebpage ? 'Page' : isFigma ? 'Figma' : 'Image'}
-            </span>
+            {hasBoth ? (
+              <>
+                <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface text-2xs font-medium text-ink/70 border border-edge">
+                  <Globe size={10} />
+                </span>
+                <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 text-2xs font-medium text-purple-600 border border-purple-200">
+                  <Figma size={10} />
+                </span>
+              </>
+            ) : (
+              <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface text-2xs font-medium text-ink/70 border border-edge">
+                {isWebpage ? <Globe size={10} /> : isFigma ? <Figma size={10} /> : <ImageIcon size={10} />}
+                {isWebpage ? 'Page' : isFigma ? 'Figma' : 'Image'}
+              </span>
+            )}
             <h4 className="text-sm text-ink truncate leading-tight flex-1 min-w-0">
               {item.title}
             </h4>
