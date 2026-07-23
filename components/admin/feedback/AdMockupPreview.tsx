@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   ThumbsUp, MessageCircle, Share2, MoreHorizontal, Heart, Bookmark, Send, Globe,
-  ChevronRight, MessageSquare, Plus, Copy, Check,
+  ChevronRight, MessageSquare, Plus, Copy, Check, LayoutGrid, AlertTriangle,
 } from 'lucide-react';
 import type { MetaAdVariant } from '@/lib/types/feedback';
+import type { VariantDecision, VariantDecisionSummary } from '@/hooks/useVariantDecisions';
 
 export type AdPlatform = 'facebook_feed' | 'instagram_feed' | 'instagram_story';
 
@@ -44,6 +45,16 @@ interface AdMockupPreviewProps {
   /** Unresolved comment count keyed by variant id, used to badge rows that
    *  already have feedback. */
   commentCountsByVariantId?: Record<string, number>;
+  /** Whether comparison mode is active. */
+  compareMode?: boolean;
+  /** Toggle comparison mode on/off. Only shown when >= 2 variants. */
+  onCompareModeChange?: (active: boolean) => void;
+  /** Current reviewer's decision per variant (keyed by variant id). */
+  myVariantDecisions?: Record<string, VariantDecision | null>;
+  /** Decision summaries per variant (keyed by variant id). */
+  variantDecisionSummaries?: Record<string, VariantDecisionSummary>;
+  /** Callback when reviewer clicks a variant decision icon. */
+  onVariantDecision?: (variantId: string, decision: VariantDecision) => void;
 }
 
 export default function AdMockupPreview({
@@ -63,6 +74,11 @@ export default function AdMockupPreview({
   activeVariantId,
   onVariantChange,
   commentCountsByVariantId,
+  compareMode,
+  onCompareModeChange,
+  myVariantDecisions,
+  variantDecisionSummaries,
+  onVariantDecision,
 }: AdMockupPreviewProps) {
   const [activePlatform, setActivePlatform] = useState<AdPlatform>(platform);
   useEffect(() => { setActivePlatform(platform); }, [platform]);
@@ -102,20 +118,41 @@ export default function AdMockupPreview({
     <div className="flex flex-col items-center gap-3 w-full max-w-[500px] mx-auto">
       {showSidebar && (
         <div className="flex flex-col items-center gap-2 w-full mb-4">
-          <p
-            className="text-xs font-medium tracking-wide"
-            style={{ color: dark ? 'rgba(255,255,255,0.55)' : '#6B6B6B' }}
-          >
-            Switch between your different copy variations here
-          </p>
-          <VariantPillRow
-            variants={variantList}
-            activeId={active.id}
-            onSelect={onVariantChange}
-            commentCounts={commentCountsByVariantId}
-            brand={brand}
-            dark={dark}
-          />
+          <div className="flex items-center gap-2">
+            <p
+              className="text-xs font-medium tracking-wide"
+              style={{ color: dark ? 'rgba(255,255,255,0.55)' : '#6B6B6B' }}
+            >
+              {compareMode ? 'Comparing all variants' : 'Switch between your different copy variations here'}
+            </p>
+            {onCompareModeChange && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onCompareModeChange(!compareMode); }}
+                className="inline-flex items-center gap-1 text-2xs font-medium rounded-full px-2.5 py-1 transition-colors"
+                style={{
+                  backgroundColor: compareMode ? brand : (dark ? 'rgba(255,255,255,0.06)' : '#F3F4F6'),
+                  color: compareMode ? '#FFFFFF' : (dark ? 'rgba(255,255,255,0.7)' : '#374151'),
+                }}
+              >
+                <LayoutGrid size={11} />
+                {compareMode ? 'Single' : 'Compare'}
+              </button>
+            )}
+          </div>
+          {!compareMode && (
+            <VariantPillRow
+              variants={variantList}
+              activeId={active.id}
+              onSelect={onVariantChange}
+              commentCounts={commentCountsByVariantId}
+              brand={brand}
+              dark={dark}
+              myDecisions={myVariantDecisions}
+              decisionSummaries={variantDecisionSummaries}
+              onDecision={onVariantDecision}
+            />
+          )}
         </div>
       )}
 
@@ -185,6 +222,7 @@ export default function AdMockupPreview({
  *  there are too many variants to fit. */
 function VariantPillRow({
   variants, activeId, onSelect, commentCounts, brand, dark,
+  myDecisions, decisionSummaries, onDecision,
 }: {
   variants: MetaAdVariant[];
   activeId: string;
@@ -192,6 +230,9 @@ function VariantPillRow({
   commentCounts?: Record<string, number>;
   brand: string;
   dark?: boolean;
+  myDecisions?: Record<string, VariantDecision | null>;
+  decisionSummaries?: Record<string, VariantDecisionSummary>;
+  onDecision?: (variantId: string, decision: VariantDecision) => void;
 }) {
   return (
     <div className="w-full flex flex-wrap items-center justify-center gap-1.5">
@@ -241,6 +282,57 @@ function VariantPillRow({
                 {commentCount}
               </span>
             )}
+            {/* Per-variant decision indicators */}
+            {(() => {
+              const myDec = myDecisions?.[v.id];
+              const summary = decisionSummaries?.[v.id];
+              const showApproved = myDec === 'approved';
+              const showChanges = myDec === 'changes_requested';
+              return (
+                <>
+                  {onDecision && (
+                    <span className="inline-flex items-center gap-0.5 shrink-0 ml-0.5">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onDecision(v.id, 'approved'); }}
+                        className="inline-flex items-center justify-center w-4 h-4 rounded-full transition-colors"
+                        style={{
+                          backgroundColor: showApproved ? '#10b981' : (active ? 'rgba(255,255,255,0.15)' : (dark ? 'rgba(255,255,255,0.08)' : '#E5E7EB')),
+                          color: showApproved ? '#FFFFFF' : (active ? 'rgba(255,255,255,0.6)' : (dark ? 'rgba(255,255,255,0.4)' : '#9CA3AF')),
+                        }}
+                        title={showApproved ? 'Clear approval' : 'Approve variant'}
+                      >
+                        <Check size={9} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onDecision(v.id, 'changes_requested'); }}
+                        className="inline-flex items-center justify-center w-4 h-4 rounded-full transition-colors"
+                        style={{
+                          backgroundColor: showChanges ? '#f59e0b' : (active ? 'rgba(255,255,255,0.15)' : (dark ? 'rgba(255,255,255,0.08)' : '#E5E7EB')),
+                          color: showChanges ? '#FFFFFF' : (active ? 'rgba(255,255,255,0.6)' : (dark ? 'rgba(255,255,255,0.4)' : '#9CA3AF')),
+                        }}
+                        title={showChanges ? 'Clear changes requested' : 'Request changes'}
+                      >
+                        <AlertTriangle size={9} />
+                      </button>
+                    </span>
+                  )}
+                  {!onDecision && summary && summary.total > 0 && (
+                    <span
+                      className="inline-flex items-center gap-0.5 px-1 h-4 rounded-full text-2xs font-semibold shrink-0"
+                      style={{
+                        backgroundColor: summary.approved === summary.total ? '#D1FAE5' : (summary.changes_requested > 0 ? '#FEF3C7' : '#D1FAE5'),
+                        color: summary.approved === summary.total ? '#065F46' : (summary.changes_requested > 0 ? '#92400E' : '#065F46'),
+                      }}
+                    >
+                      {summary.approved === summary.total ? <Check size={8} /> : <AlertTriangle size={8} />}
+                      {summary.approved}/{summary.total}
+                    </span>
+                  )}
+                </>
+              );
+            })()}
           </button>
         );
       })}

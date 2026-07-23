@@ -119,6 +119,41 @@ async function captureFromImg(
 }
 
 /**
+ * Wait for all <img> elements in the container to finish loading.
+ * Resolves immediately if all are already complete, otherwise waits
+ * for `load`/`error` events with a hard timeout fallback.
+ */
+function waitForImages(container: HTMLElement, timeoutMs = 2000): Promise<void> {
+  const imgs = Array.from(container.querySelectorAll('img'));
+  const pending = imgs.filter((img) => !img.complete);
+  if (pending.length === 0) return Promise.resolve();
+
+  return new Promise<void>((resolve) => {
+    let settled = false;
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+
+    const timer = setTimeout(settle, timeoutMs);
+
+    let remaining = pending.length;
+    const onDone = () => {
+      remaining--;
+      if (remaining <= 0) {
+        clearTimeout(timer);
+        settle();
+      }
+    };
+    for (const img of pending) {
+      img.addEventListener('load', onDone, { once: true });
+      img.addEventListener('error', onDone, { once: true });
+    }
+  });
+}
+
+/**
  * Captures a screenshot of the content area — prefers direct <img> draw
  * (fast, reliable), falls back to html-to-image for HTML mockups.
  */
@@ -136,7 +171,7 @@ export function useScreenshotCapture({
       capturingRef.current = true;
       setCapturing(true);
       try {
-        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        await waitForImages(containerEl);
 
         // Fast path: draw <img> directly (image assets)
         const directCanvas = await captureFromImg(containerEl, opts);
@@ -172,7 +207,9 @@ export function useScreenshotCapture({
             }
           }
 
-          await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+          // Wait for scroll to settle and images to load after repositioning
+          await waitForImages(containerEl);
+          await new Promise((r) => requestAnimationFrame(r));
 
           const canvas = await toCanvas(containerEl, {
             pixelRatio: 1,

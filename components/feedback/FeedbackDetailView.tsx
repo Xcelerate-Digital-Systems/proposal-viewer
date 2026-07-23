@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Monitor, Pause, MapPin } from 'lucide-react';
 import CompleteFeedbackModal from './CompleteFeedbackModal';
@@ -18,15 +18,19 @@ import ItemContentView from '@/components/feedback/ItemContentView';
 import PinCommentPopover from '@/components/feedback/PinCommentPopover';
 import PendingPinPopover from '@/components/feedback/PendingPinPopover';
 import WebpageClientPlaceholder from '@/components/feedback/WebpageClientPlaceholder';
+import VersionCompareView from '@/components/feedback/VersionCompareView';
 import { FeedbackToolbar, FeedbackModeBar, DrawingOverlay } from '@/components/feedback/tools';
 import { useTextHighlight } from '@/hooks/useTextHighlight';
 import { useTeamMemberLookup } from '@/hooks/useTeamMemberLookup';
 import { useToast } from '@/components/ui/Toast';
 
 import type { ReviewDetailViewProps } from './feedback-detail-types';
+import { FeedbackDetailProvider, buildFeedbackDetailContext } from './FeedbackDetailContext';
 import { useFeedbackDetailSelection } from './useFeedbackDetailSelection';
 import { useFeedbackDetailComments } from './useFeedbackDetailComments';
 import { useFeedbackDetailNavigation } from './useFeedbackDetailNavigation';
+import { getMetaAdVariants, metaAdVariantView } from '@/lib/types/feedback';
+import { useVariantDecisions } from '@/hooks/useVariantDecisions';
 
 /* ─── Component ──────────────────────────────────────────────────── */
 
@@ -89,6 +93,8 @@ export default function FeedbackDetailView({
       : null;
 
   const [showFinishModal, setShowFinishModal] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
+  const [variantCompareMode, setVariantCompareMode] = useState(false);
 
   // ── Branding colors (client mode) ──
   const brandingColors = useBrandingColors(branding ?? {} as CompanyBranding);
@@ -124,6 +130,30 @@ export default function FeedbackDetailView({
     activeView, setActiveView,
     currentMockupView, currentIdx, availableTypes,
   } = selection;
+
+  // ── Variant decisions (Meta ads with copy variants) ──
+  const adVariants = useMemo(() => {
+    if (!selectedItem || selectedItem.type !== 'ad') return [];
+    const v = getMetaAdVariants(selectedItem);
+    return v.length >= 2 ? v : [];
+  }, [selectedItem]);
+
+  const variantDecisionsHook = useVariantDecisions({
+    itemId: selectedItemId,
+    variantIds: adVariants.map((v) => v.id),
+    shareToken: shareToken || undefined,
+    guestEmail: reviewerEmail || undefined,
+    guestName: guestName || undefined,
+  });
+
+  const handleVariantDecision = useMemo(() => {
+    if (!selectedItem) return undefined;
+    const { setDecision } = variantDecisionsHook;
+    const status = selectedItem.status;
+    return (variantId: string, decision: 'approved' | 'changes_requested') => {
+      setDecision(variantId, decision, status);
+    };
+  }, [selectedItem, variantDecisionsHook.setDecision]);
 
   // ── Screenshot capture ──
   const { capture: captureScreenshot } = useScreenshotCapture({
@@ -200,6 +230,50 @@ export default function FeedbackDetailView({
 
   const isWebpageItem = selectedItem?.type === 'webpage';
 
+  // ── Identity helpers (reduces repeated ternaries) ──
+  const identityProps = {
+    authorName: isAdmin ? authorName : undefined,
+    guestName: isClient ? guestName : undefined,
+    onNameChange: isClient ? onGuestNameChange : undefined,
+  };
+  const currentUserEmail = isClient ? reviewerEmail : undefined;
+  const currentUserName = isClient ? guestName : authorName;
+  const accentResolved = branding?.accent_color || accent;
+
+  // ── Context value ──
+  const ctxValue = useMemo(
+    () =>
+      buildFeedbackDetailContext({
+        mode,
+        project,
+        selectedItem,
+        branding,
+        brandingColors,
+        authorName,
+        guestName,
+        onGuestNameChange,
+        reviewerEmail,
+        shareToken,
+        companyId,
+        browseMode,
+        commentsLocked,
+        participantsUrl,
+        memberLookup,
+        versions,
+        activeVersionId,
+        onVersionChange,
+        onAddVersion,
+        onEditVersion,
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      mode, project, selectedItem, branding, brandingColors,
+      authorName, guestName, reviewerEmail, shareToken, companyId,
+      browseMode, commentsLocked, participantsUrl, memberLookup,
+      versions, activeVersionId,
+    ],
+  );
+
   // ── Mobile gate ──
   const MobileGate = (
     <div className="flex lg:hidden min-h-screen items-center justify-center bg-surface p-6">
@@ -226,7 +300,7 @@ export default function FeedbackDetailView({
     : (comments as Pick<FeedbackComment, 'id' | 'review_item_id' | 'parent_comment_id' | 'resolved'>[]);
 
   return (
-    <>
+    <FeedbackDetailProvider value={ctxValue}>
       {isClient && branding && (
         <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
       )}
@@ -258,6 +332,7 @@ export default function FeedbackDetailView({
           onVersionChange={onVersionChange}
           onAddVersion={onAddVersion}
           onEditVersion={onEditVersion}
+          onCompareVersions={versions && versions.length >= 2 ? () => setShowCompare(true) : undefined}
           onUpdateItemStatus={onUpdateItemStatus}
           renderHeaderActions={renderHeaderActions}
           reviewMode={reviewMode}
@@ -282,7 +357,7 @@ export default function FeedbackDetailView({
         <FeedbackModeBar
           mode={feedbackMode}
           onCancel={() => changeFeedbackMode('idle')}
-          accentColor={branding?.accent_color || accent}
+          accentColor={accentResolved}
         />
 
         {/* ── Body: comments (left) + content (right) ── */}
@@ -296,16 +371,14 @@ export default function FeedbackDetailView({
               highlightCommentId={highlightedCommentId}
               onSubmitComment={handleSubmitComment}
               onClose={() => setShowComments(false)}
-              authorName={isAdmin ? authorName : undefined}
-              guestName={isClient ? guestName : undefined}
-              onNameChange={isClient ? onGuestNameChange : undefined}
+              {...identityProps}
               onResolve={onResolveComment}
               onUnresolve={onUnresolveComment}
               onEdit={onEditComment}
               onDelete={onDeleteComment}
               isAdmin={isAdmin}
-              currentUserEmail={isClient ? reviewerEmail : undefined}
-              currentUserName={isClient ? guestName : authorName}
+              currentUserEmail={currentUserEmail}
+              currentUserName={currentUserName}
               participantsUrl={participantsUrl}
               shareToken={shareToken}
               onOpenTasks={isAdmin ? onOpenTasks : undefined}
@@ -359,11 +432,16 @@ export default function FeedbackDetailView({
                     ? { start: pendingHighlight.startOffset, end: pendingHighlight.endOffset }
                     : null
                 }
-                accentColor={branding?.accent_color || accent}
+                accentColor={accentResolved}
                 brandName={project.client_company || project.client_name || undefined}
                 activeView={activeView}
                 onViewChange={setActiveView}
                 commentCountsByView={commentCountsByView}
+                compareMode={variantCompareMode}
+                onCompareModeChange={setVariantCompareMode}
+                myVariantDecisions={adVariants.length >= 2 ? variantDecisionsHook.myDecisions : undefined}
+                variantDecisionSummaries={adVariants.length >= 2 ? variantDecisionsHook.summaries : undefined}
+                onVariantDecision={adVariants.length >= 2 ? handleVariantDecision : undefined}
               />
             </div>
 
@@ -406,12 +484,10 @@ export default function FeedbackDetailView({
                 onUnresolve={onUnresolveComment}
                 onDelete={onDeleteComment}
                 isAdmin={isAdmin}
-                currentUserEmail={isClient ? reviewerEmail : undefined}
-                currentUserName={isClient ? guestName : authorName}
+                currentUserEmail={currentUserEmail}
+                currentUserName={currentUserName}
                 participantsUrl={participantsUrl}
-                authorName={isAdmin ? authorName : undefined}
-                guestName={isClient ? guestName : undefined}
-                onNameChange={isClient ? onGuestNameChange : undefined}
+                {...identityProps}
                 memberLookup={memberLookup}
                 shareToken={shareToken}
               />,
@@ -431,9 +507,7 @@ export default function FeedbackDetailView({
                 onCancel={handleCancelPin}
                 companyId={companyId}
                 shareToken={shareToken}
-                authorName={isAdmin ? authorName : undefined}
-                guestName={isClient ? guestName : undefined}
-                onNameChange={isClient ? onGuestNameChange : undefined}
+                {...identityProps}
                 onOpenDrawing={(mode) => { handleCancelPin(); changeFeedbackMode(mode); }}
                 participantsUrl={participantsUrl}
               />,
@@ -455,9 +529,7 @@ export default function FeedbackDetailView({
                 onCancel={() => { setPendingHighlight(null); clearTextSelection(); }}
                 companyId={companyId}
                 shareToken={shareToken}
-                authorName={isAdmin ? authorName : undefined}
-                guestName={isClient ? guestName : undefined}
-                onNameChange={isClient ? onGuestNameChange : undefined}
+                {...identityProps}
                 participantsUrl={participantsUrl}
               />,
               imageContainerRef.current,
@@ -470,7 +542,7 @@ export default function FeedbackDetailView({
               mode={feedbackMode}
               onModeChange={changeFeedbackMode}
               className="absolute top-6 right-8"
-              accentColor={branding?.accent_color || accent}
+              accentColor={accentResolved}
             />
           </div>
 
@@ -479,13 +551,24 @@ export default function FeedbackDetailView({
 
       </div>
 
+      {/* Version comparison overlay */}
+      {showCompare && selectedItem && versions && versions.length >= 2 && (
+        <VersionCompareView
+          item={selectedItem}
+          versions={versions}
+          onClose={() => setShowCompare(false)}
+          accentColor={accentResolved}
+          brandName={project.client_company || project.client_name || undefined}
+        />
+      )}
+
       {/* Finish-reviewing modal */}
       {showFinishModal && isClient && shareToken && onReviewSubmitted && (
         <CompleteFeedbackModal
           shareToken={shareToken}
           reviewerName={reviewerName ?? ''}
           reviewerEmail={reviewerEmail ?? ''}
-          accentColor={branding?.accent_color || '#017C87'}
+          accentColor={accentResolved || '#017C87'}
           items={items}
           activeItemId={selectedItemId}
           mode={singleItemOnly ? 'item' : 'project'}
@@ -496,6 +579,6 @@ export default function FeedbackDetailView({
           }}
         />
       )}
-    </>
+    </FeedbackDetailProvider>
   );
 }

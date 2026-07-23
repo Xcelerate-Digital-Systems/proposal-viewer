@@ -50,6 +50,7 @@ interface FeedbackHeaderBarProps {
   onVersionChange?: (id: string | null) => void;
   onAddVersion?: () => void;
   onEditVersion?: (versionId: string | null) => void;
+  onCompareVersions?: () => void;
 
   // Per-item status (client-facing picker shown when handler provided)
   onUpdateItemStatus?: (itemId: string, status: FeedbackStatus) => Promise<void> | void;
@@ -101,6 +102,7 @@ export default function FeedbackHeaderBar({
   onVersionChange,
   onAddVersion,
   onEditVersion,
+  onCompareVersions,
   onUpdateItemStatus,
   renderHeaderActions,
   reviewMode,
@@ -307,6 +309,7 @@ export default function FeedbackHeaderBar({
               onChange={onVersionChange}
               onAddVersion={onAddVersion}
               onEditVersion={onEditVersion}
+              onCompare={onCompareVersions}
               itemStatus={selectedItem?.status}
               compact
             />

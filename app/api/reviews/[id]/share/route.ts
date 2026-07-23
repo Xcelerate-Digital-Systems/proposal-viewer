@@ -4,12 +4,15 @@ import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { DEFAULT_SHARED_VIEWS, type FeedbackSharedViews } from '@/lib/types/feedback';
 import { authRateLimit } from '@/lib/rate-limit';
+import { hashSharePassword } from '@/lib/feedback/share-password';
 
 /**
  * PATCH /api/reviews/[id]/share
  *
- * Update which tabs the project's public share link exposes.
- * Body: { shared_views: { board: boolean; kanban: boolean; items: boolean } }
+ * Update sharing settings:
+ * - shared_views: { board: boolean; kanban: boolean; items: boolean }
+ * - share_password: string | null — set or clear the share link password
+ * - share_expires_at: string | null — ISO timestamp or null to remove expiry
  */
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -40,21 +43,69 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
 
     const body = await req.json().catch(() => null);
     if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-    const incoming = (body?.shared_views ?? {}) as Partial<FeedbackSharedViews>;
-    const next: FeedbackSharedViews = {
-      board: typeof incoming.board === 'boolean' ? incoming.board : DEFAULT_SHARED_VIEWS.board,
-      kanban: typeof incoming.kanban === 'boolean' ? incoming.kanban : DEFAULT_SHARED_VIEWS.kanban,
-      items: typeof incoming.items === 'boolean' ? incoming.items : DEFAULT_SHARED_VIEWS.items,
+
+    const updatePayload: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
     };
+
+    // ── Shared views ──
+    if (body.shared_views) {
+      const incoming = (body.shared_views ?? {}) as Partial<FeedbackSharedViews>;
+      const next: FeedbackSharedViews = {
+        board: typeof incoming.board === 'boolean' ? incoming.board : DEFAULT_SHARED_VIEWS.board,
+        kanban: typeof incoming.kanban === 'boolean' ? incoming.kanban : DEFAULT_SHARED_VIEWS.kanban,
+        items: typeof incoming.items === 'boolean' ? incoming.items : DEFAULT_SHARED_VIEWS.items,
+      };
+      updatePayload.shared_views = next;
+    }
+
+    // ── Password ──
+    if ('share_password' in body) {
+      if (body.share_password === null || body.share_password === '') {
+        // Clear password
+        updatePayload.share_password_hash = null;
+      } else if (typeof body.share_password === 'string' && body.share_password.trim()) {
+        // Set new password (min 4 chars)
+        const pw = body.share_password.trim();
+        if (pw.length < 4) {
+          return NextResponse.json({ error: 'Password must be at least 4 characters' }, { status: 400 });
+        }
+        updatePayload.share_password_hash = hashSharePassword(pw);
+      }
+    }
+
+    // ── Expiry ──
+    if ('share_expires_at' in body) {
+      if (body.share_expires_at === null || body.share_expires_at === '') {
+        updatePayload.share_expires_at = null;
+      } else if (typeof body.share_expires_at === 'string') {
+        const parsed = new Date(body.share_expires_at);
+        if (isNaN(parsed.getTime())) {
+          return NextResponse.json({ error: 'Invalid expiry date' }, { status: 400 });
+        }
+        updatePayload.share_expires_at = parsed.toISOString();
+      }
+    }
 
     const { error: updateErr } = await supabase
       .from('review_projects')
-      .update({ shared_views: next, updated_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq('id', project.id);
 
     if (updateErr) return NextResponse.json({ error: 'Failed to update sharing settings' }, { status: 500 });
 
-    return NextResponse.json({ shared_views: next });
+    // Fetch updated project to return current state
+    const { data: updated } = await supabase
+      .from('review_projects')
+      .select('shared_views, share_password_hash, share_expires_at')
+      .eq('id', project.id)
+      .single();
+
+    return NextResponse.json({
+      shared_views: updated?.shared_views ?? updatePayload.shared_views,
+      has_password: !!updated?.share_password_hash,
+      share_expires_at: updated?.share_expires_at ?? null,
+    });
   } catch (err) {
     console.error('Share PATCH error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

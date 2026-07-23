@@ -41,7 +41,13 @@ export type FeedbackProject = {
   reviewer_note: string | null;
   reviewer_note_show: boolean;
   reviewer_note_updated_at: string | null;
+  share_password_hash: string | null;
+  share_expires_at: string | null;
   due_date: string | null;
+  /** Per-stage due dates: { "internal_review": "2026-07-25", ... }. */
+  stage_due_dates: Record<string, string>;
+  /** Last time the automated stage-deadline reminder cron fired for this project. */
+  last_stage_reminder_at: string | null;
   pause_new_comments: boolean;
   widget_enabled: boolean;
   created_by: string | null;
@@ -635,6 +641,27 @@ export type FeedbackBoardShape = {
   stroke_width: number;
   dashed: boolean;
   font_size: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
+// ─── Workflow templates ──────────────────────────────────────────────────────
+
+export type WorkflowTemplateStage = {
+  stage: string;
+  assignee_ids: string[];
+  guest_emails: string[];
+};
+
+export type ReviewWorkflowTemplate = {
+  id: string;
+  company_id: string;
+  name: string;
+  description: string | null;
+  stages: WorkflowTemplateStage[];
+  default_stage_due_offsets: Record<string, number>;
+  is_default: boolean;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
 };

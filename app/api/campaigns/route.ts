@@ -62,6 +62,88 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Apply workflow template if provided
+    const templateId = typeof body.template_id === 'string' ? body.template_id : null;
+    if (templateId) {
+      const { data: tpl } = await supabase
+        .from('review_workflow_templates')
+        .select('stages, default_stage_due_offsets')
+        .eq('id', templateId)
+        .eq('company_id', companyId)
+        .single();
+
+      if (tpl) {
+        const stages = Array.isArray(tpl.stages) ? tpl.stages : [];
+
+        // Collect unique team member IDs and guest emails from template stages
+        const memberIds = new Set<string>();
+        const guestEmails = new Set<string>();
+        const memberStageMap = new Map<string, string[]>();
+        const guestStageMap = new Map<string, string[]>();
+
+        for (const s of stages) {
+          const stage = s as { stage: string; assignee_ids?: string[]; guest_emails?: string[] };
+          for (const id of stage.assignee_ids ?? []) {
+            memberIds.add(id);
+            if (!memberStageMap.has(id)) memberStageMap.set(id, []);
+            memberStageMap.get(id)!.push(stage.stage);
+          }
+          for (const email of stage.guest_emails ?? []) {
+            const normalized = email.trim().toLowerCase();
+            guestEmails.add(normalized);
+            if (!guestStageMap.has(normalized)) guestStageMap.set(normalized, []);
+            guestStageMap.get(normalized)!.push(stage.stage);
+          }
+        }
+
+        // Insert team member assignees with their stages
+        if (memberIds.size > 0) {
+          const rows = Array.from(memberIds).map((id) => ({
+            review_project_id: created.id,
+            team_member_id: id,
+            stages: memberStageMap.get(id) ?? [],
+          }));
+          await supabase
+            .from('review_project_assignees')
+            .upsert(rows, { onConflict: 'review_project_id,team_member_id' });
+        }
+
+        // Insert guest recipients with their stages
+        if (guestEmails.size > 0) {
+          const guestRows = Array.from(guestEmails).map((email) => ({
+            review_project_id: created.id,
+            email,
+            name: '',
+            stages: guestStageMap.get(email) ?? [],
+          }));
+          await supabase
+            .from('review_project_guest_recipients')
+            .upsert(guestRows, { onConflict: 'review_project_id,email' });
+        }
+
+        // Calculate and set stage due dates from offsets
+        const offsets = tpl.default_stage_due_offsets as Record<string, number> | null;
+        if (offsets && Object.keys(offsets).length > 0) {
+          const stageDueDates: Record<string, string> = {};
+          const now = new Date();
+          for (const [stage, days] of Object.entries(offsets)) {
+            if (typeof days === 'number' && days > 0) {
+              const d = new Date(now);
+              d.setDate(d.getDate() + days);
+              stageDueDates[stage] = d.toISOString().split('T')[0];
+            }
+          }
+          if (Object.keys(stageDueDates).length > 0) {
+            await supabase
+              .from('review_projects')
+              .update({ stage_due_dates: stageDueDates })
+              .eq('id', created.id);
+          }
+        }
+      }
+    }
+
+    // Auto-assign the creating user (if not already added by template)
     if (auth.member.user_id) {
       const { data: tm } = await supabase
         .from('team_members')

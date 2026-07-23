@@ -120,6 +120,7 @@ export default function AddVersionModal({
   const handleSubmit = async () => {
     setUploading(true);
     const assets: Partial<FeedbackItemVersion> = {};
+    let variantLinkFailed = false;
 
     try {
       if (kind === 'file') {
@@ -151,17 +152,21 @@ export default function AddVersionModal({
         }
 
         // Patch any existing variations whose copy was edited
+        const patchPromises: Promise<void>[] = [];
         for (const v of variations.filter((v) => v.isExisting && v.selected)) {
           const orig = originalExistingRef.current.get(v.id);
           if (!orig) continue;
           if (orig.label !== v.label || orig.headline !== v.headline || orig.primary_text !== v.primary_text) {
-            authFetch(`/api/campaigns/${item.review_project_id}/ad-variations?company_id=${item.company_id}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ variation_id: v.id, label: v.label.trim() || null, headline: v.headline.trim(), primary_text: v.primary_text.trim() }),
-            }).catch(() => {});
+            patchPromises.push(
+              authFetch(`/api/campaigns/${item.review_project_id}/ad-variations?company_id=${item.company_id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ variation_id: v.id, label: v.label.trim() || null, headline: v.headline.trim(), primary_text: v.primary_text.trim() }),
+              }).then(() => {}).catch(() => {}),
+            );
           }
         }
+        await Promise.all(patchPromises);
 
         // Build variant array from selected variations
         const selected = variations.filter((v) => v.selected);
@@ -180,38 +185,41 @@ export default function AddVersionModal({
         assets.ad_platform = item.ad_platform;
         assets.meta_ad_variants = cleanVariants.length > 0 ? cleanVariants : null;
 
-        // After version save, update the junction links + create new variations
-        // via the API. This is fire-and-forget since the version is already saved.
-        setTimeout(async () => {
-          try {
-            const { authFetch } = await import('@/lib/auth-fetch');
-            const existingIds = selected.filter((v) => v.isExisting).map((v) => v.id);
-            const newVars = selected
-              .filter((v) => !v.isExisting)
-              .map((v) => ({ label: v.label.trim() || null, headline: v.headline.trim(), primary_text: v.primary_text.trim() }))
-              .filter((v) => v.headline || v.primary_text);
+        // Create new variations + link all to the item. Awaited so failures
+        // surface to the user rather than being silently swallowed.
 
-            let allIds = [...existingIds];
-            if (newVars.length > 0) {
-              const res = await authFetch(`/api/campaigns/${item.review_project_id}/ad-variations`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ variations: newVars }),
-              });
-              if (res.ok) {
-                const { variations: created } = await res.json();
-                allIds = [...allIds, ...created.map((v: { id: string }) => v.id)];
-              }
+        try {
+          const existingIds = selected.filter((v) => v.isExisting).map((v) => v.id);
+          const newVars = selected
+            .filter((v) => !v.isExisting)
+            .map((v) => ({ label: v.label.trim() || null, headline: v.headline.trim(), primary_text: v.primary_text.trim() }))
+            .filter((v) => v.headline || v.primary_text);
+
+          let allIds = [...existingIds];
+          if (newVars.length > 0) {
+            const res = await authFetch(`/api/campaigns/${item.review_project_id}/ad-variations`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ variations: newVars }),
+            });
+            if (res.ok) {
+              const { variations: created } = await res.json();
+              allIds = [...allIds, ...created.map((v: { id: string }) => v.id)];
+            } else {
+              variantLinkFailed = true;
             }
-            if (allIds.length > 0) {
-              await authFetch(`/api/campaigns/${item.review_project_id}/ad-variations/link`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ review_item_id: item.id, variation_ids: allIds }),
-              });
-            }
-          } catch { /* non-fatal */ }
-        }, 0);
+          }
+          if (allIds.length > 0) {
+            const linkRes = await authFetch(`/api/campaigns/${item.review_project_id}/ad-variations/link`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ review_item_id: item.id, variation_ids: allIds }),
+            });
+            if (!linkRes.ok) variantLinkFailed = true;
+          }
+        } catch {
+          variantLinkFailed = true;
+        }
       }
 
       if (kind === 'meta_lead_form') {
@@ -248,10 +256,16 @@ export default function AddVersionModal({
 
       if (isEditing && onUpdate && editingVersion) {
         const ok = await onUpdate(editingVersion.id, { notes: notes.trim() || null, assets });
-        if (ok) onClose();
+        if (ok) {
+          if (variantLinkFailed) toast.error('Version saved but variant linking failed — please try editing the version to re-link variants.');
+          onClose();
+        }
       } else {
         const result = await onSubmit({ notes: notes.trim() || null, assets, resetToStage: resetTo === 'keep' ? null : resetTo });
-        if (result) onClose();
+        if (result) {
+          if (variantLinkFailed) toast.error('Version saved but variant linking failed — please try editing the version to re-link variants.');
+          onClose();
+        }
       }
     } finally {
       setUploading(false);

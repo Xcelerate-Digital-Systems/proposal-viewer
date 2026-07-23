@@ -40,6 +40,79 @@ function findNodeAtOffset(
 }
 
 /**
+ * Wraps a Range in one or more <mark> elements. Uses surroundContents for
+ * single-element ranges; falls back to per-text-node wrapping when the range
+ * spans element boundaries (which causes surroundContents to throw).
+ *
+ * Returns the created mark elements (one for same-element, multiple for
+ * cross-boundary). All marks share the same className, style, and dataset so
+ * they behave as a single logical highlight.
+ */
+function wrapRangeWithMarks(
+  range: Range,
+  createMark: () => HTMLElement
+): HTMLElement[] {
+  // Fast path: try surroundContents first (works when range doesn't cross boundaries)
+  try {
+    const mark = createMark();
+    range.surroundContents(mark);
+    return [mark];
+  } catch {
+    // Range spans element boundaries — wrap each text node segment individually
+  }
+
+  const marks: HTMLElement[] = [];
+  // Collect text nodes intersected by the range using a TreeWalker scoped to
+  // the range's common ancestor.
+  const ancestor = range.commonAncestorContainer;
+  const root = ancestor.nodeType === Node.ELEMENT_NODE
+    ? (ancestor as HTMLElement)
+    : ancestor.parentElement!;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+
+  // Gather all text nodes within the range first to avoid mutating the DOM
+  // while iterating.
+  const textNodes: { node: Text; startIdx: number; endIdx: number }[] = [];
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    const textNode = node as Text;
+    const len = textNode.length;
+    if (len === 0) continue;
+
+    // Check if this text node is (partially) inside the range
+    if (range.comparePoint(textNode, 0) > 0) continue; // node is after range end
+    if (range.comparePoint(textNode, len) < 0) continue; // node is before range start
+
+    // Determine the sub-range within this text node
+    let startIdx = 0;
+    let endIdx = len;
+
+    if (textNode === range.startContainer) {
+      startIdx = range.startOffset;
+    }
+    if (textNode === range.endContainer) {
+      endIdx = range.endOffset;
+    }
+    if (startIdx >= endIdx) continue;
+
+    textNodes.push({ node: textNode, startIdx, endIdx });
+  }
+
+  // Wrap each text segment in its own <mark>
+  for (const { node: textNode, startIdx, endIdx } of textNodes) {
+    const segmentRange = document.createRange();
+    segmentRange.setStart(textNode, startIdx);
+    segmentRange.setEnd(textNode, endIdx);
+
+    const mark = createMark();
+    segmentRange.surroundContents(mark);
+    marks.push(mark);
+  }
+
+  return marks;
+}
+
+/**
  * Renders <mark> highlights over previously commented text ranges with a
  * numbered badge inside each mark (markup.io-style). Clicking either the
  * text or the badge invokes onHighlightClick.
@@ -96,26 +169,22 @@ export default function HighlightOverlay({
         const startPos = findNodeAtOffset(container, start);
         const endPos = findNodeAtOffset(container, end);
         if (!startPos || !endPos) continue;
-        try {
-          const range = document.createRange();
-          range.setStart(startPos.node, startPos.offset);
-          range.setEnd(endPos.node, endPos.offset);
+        const range = document.createRange();
+        range.setStart(startPos.node, startPos.offset);
+        range.setEnd(endPos.node, endPos.offset);
 
+        const pendingMarks = wrapRangeWithMarks(range, () => {
           const mark = document.createElement('mark');
           mark.className = 'review-highlight-pending';
-          // Match the saved-highlight yellow so the visual treatment stays
-          // consistent between in-progress and committed highlights.
           Object.assign(mark.style, {
             backgroundColor: 'rgba(254, 240, 138, 0.7)',
             color: 'inherit',
             padding: '1px 2px',
             borderRadius: '2px',
           } as Partial<CSSStyleDeclaration>);
-          range.surroundContents(mark);
-          marksRef.current.push(mark);
-        } catch {
-          // surroundContents fails if the range spans element boundaries; skip.
-        }
+          return mark;
+        });
+        marksRef.current.push(...pendingMarks);
         continue;
       }
 
@@ -126,13 +195,13 @@ export default function HighlightOverlay({
 
       if (!startPos || !endPos) continue;
 
-      try {
-        const range = document.createRange();
-        range.setStart(startPos.node, startPos.offset);
-        range.setEnd(endPos.node, endPos.offset);
+      const range = document.createRange();
+      range.setStart(startPos.node, startPos.offset);
+      range.setEnd(endPos.node, endPos.offset);
 
+      const isActive = comment.id === highlightedCommentId;
+      const commentMarks = wrapRangeWithMarks(range, () => {
         const mark = document.createElement('mark');
-        const isActive = comment.id === highlightedCommentId;
         mark.className = `review-highlight cursor-pointer transition-all duration-200 ${
           isActive
             ? 'bg-yellow-300/60 ring-2 ring-yellow-400 ring-offset-1 animate-pulse'
@@ -147,46 +216,44 @@ export default function HighlightOverlay({
           e.stopPropagation();
           onHighlightClick?.(comment.id);
         });
+        return mark;
+      });
 
-        range.surroundContents(mark);
-
-        // Append a numbered badge as the last child of the mark so it sits
-        // at the end of the highlight inline with the wrapped text.
-        if (comment.thread_number != null) {
-          const badge = document.createElement('span');
-          badge.className = 'review-highlight-badge';
-          badge.textContent = String(comment.thread_number);
-          badge.setAttribute('contenteditable', 'false');
-          Object.assign(badge.style, {
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minWidth: '16px',
-            height: '16px',
-            padding: '0 4px',
-            marginLeft: '3px',
-            borderRadius: '9999px',
-            background: '#017C87',
-            color: '#ffffff',
-            fontSize: '10px',
-            fontWeight: '700',
-            lineHeight: '1',
-            verticalAlign: 'middle',
-            cursor: 'pointer',
-            userSelect: 'none',
-            fontStyle: 'normal',
-          } as Partial<CSSStyleDeclaration>);
-          badge.addEventListener('click', (e) => {
-            e.stopPropagation();
-            onHighlightClick?.(comment.id);
-          });
-          mark.appendChild(badge);
-        }
-
-        marksRef.current.push(mark);
-      } catch {
-        // surroundContents fails if the range spans element boundaries; skip.
+      // Append the numbered badge only to the LAST mark element so it sits
+      // at the end of the highlight inline with the wrapped text.
+      if (comment.thread_number != null && commentMarks.length > 0) {
+        const lastMark = commentMarks[commentMarks.length - 1];
+        const badge = document.createElement('span');
+        badge.className = 'review-highlight-badge';
+        badge.textContent = String(comment.thread_number);
+        badge.setAttribute('contenteditable', 'false');
+        Object.assign(badge.style, {
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minWidth: '16px',
+          height: '16px',
+          padding: '0 4px',
+          marginLeft: '3px',
+          borderRadius: '9999px',
+          background: '#017C87',
+          color: '#ffffff',
+          fontSize: '10px',
+          fontWeight: '700',
+          lineHeight: '1',
+          verticalAlign: 'middle',
+          cursor: 'pointer',
+          userSelect: 'none',
+          fontStyle: 'normal',
+        } as Partial<CSSStyleDeclaration>);
+        badge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onHighlightClick?.(comment.id);
+        });
+        lastMark.appendChild(badge);
       }
+
+      marksRef.current.push(...commentMarks);
     }
   }, [containerRef, highlightComments, highlightedCommentId, onHighlightClick, pendingHighlight]);
 

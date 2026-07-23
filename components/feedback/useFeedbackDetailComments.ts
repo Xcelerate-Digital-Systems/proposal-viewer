@@ -135,9 +135,9 @@ export function useFeedbackDetailComments({
       if (commentsLocked) return;
 
       baseHandleImageClick(e);
-      if (pinActive) {
-        setShowComments(true);
-      }
+      // Don't force-open the comments panel on pin placement — the pending
+      // pin popover is sufficient for composing the comment. Only keep it
+      // open if the reviewer already had the panel open.
       if (!pinHintDismissed) {
         setPinHintDismissed(true);
         try {

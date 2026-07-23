@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
@@ -8,6 +8,8 @@ import { Modal } from '@/components/ui/Modal';
 import { useEntitlements } from '@/hooks/useEntitlements';
 import { authFetch } from '@/lib/auth-fetch';
 import ContactAutocomplete from '@/components/ui/ContactAutocomplete';
+import type { ReviewWorkflowTemplate } from '@/lib/types/feedback';
+import { FileText, Users, Check } from 'lucide-react';
 
 interface CreateReviewProjectModalProps {
   companyId: string;
@@ -32,6 +34,25 @@ export default function CreateFeedbackProjectModal({
   const [clientCompany, setClientCompany] = useState('');
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
+  const [templates, setTemplates] = useState<ReviewWorkflowTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await authFetch(`/api/workflow-templates?company_id=${companyId}`);
+        const json = await res.json().catch(() => null);
+        if (json?.templates) {
+          setTemplates(json.templates);
+          // Auto-select the default template
+          const defaultTpl = json.templates.find((t: ReviewWorkflowTemplate) => t.is_default);
+          if (defaultTpl) setSelectedTemplateId(defaultTpl.id);
+        }
+      } catch { /* ignore */ }
+      setLoadingTemplates(false);
+    })();
+  }, [companyId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +73,7 @@ export default function CreateFeedbackProjectModal({
         client_company: clientCompany.trim() || null,
         client_name: clientName.trim() || null,
         client_email: clientEmail.trim() || null,
+        template_id: selectedTemplateId || undefined,
       }),
     });
 
@@ -150,6 +172,81 @@ export default function CreateFeedbackProjectModal({
               />
             </div>
           </div>
+
+          {/* Workflow Template Picker */}
+          {!loadingTemplates && templates.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-prose mb-1.5">
+                Workflow Template
+              </label>
+              <div className="space-y-1.5">
+                {/* Blank option */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedTemplateId(null)}
+                  className={`w-full text-left px-3.5 py-2.5 rounded-xl border transition-colors flex items-center gap-3 ${
+                    !selectedTemplateId
+                      ? 'border-teal bg-teal/5'
+                      : 'border-edge hover:border-edge-strong'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center shrink-0">
+                    <FileText size={14} className="text-faint" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-caption font-medium text-ink">Blank campaign</p>
+                    <p className="text-xs text-faint">Configure stages and assignees later</p>
+                  </div>
+                  {!selectedTemplateId && (
+                    <Check size={16} className="text-teal shrink-0" />
+                  )}
+                </button>
+
+                {templates.map((tpl) => {
+                  const stageCount = Array.isArray(tpl.stages) ? tpl.stages.length : 0;
+                  const memberCount = new Set(
+                    (tpl.stages ?? []).flatMap((s) => s.assignee_ids ?? [])
+                  ).size;
+                  const guestCount = new Set(
+                    (tpl.stages ?? []).flatMap((s) => s.guest_emails ?? [])
+                  ).size;
+                  const selected = selectedTemplateId === tpl.id;
+                  return (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      onClick={() => setSelectedTemplateId(tpl.id)}
+                      className={`w-full text-left px-3.5 py-2.5 rounded-xl border transition-colors flex items-center gap-3 ${
+                        selected
+                          ? 'border-teal bg-teal/5'
+                          : 'border-edge hover:border-edge-strong'
+                      }`}
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-teal/10 flex items-center justify-center shrink-0">
+                        <Users size={14} className="text-teal" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-caption font-medium text-ink truncate">{tpl.name}</p>
+                          {tpl.is_default && (
+                            <span className="shrink-0 px-1.5 py-0.5 text-2xs font-medium bg-teal/10 text-teal rounded-full">
+                              Default
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-faint truncate">
+                          {tpl.description || `${stageCount} stage${stageCount !== 1 ? 's' : ''}${memberCount ? `, ${memberCount} member${memberCount !== 1 ? 's' : ''}` : ''}${guestCount ? `, ${guestCount} guest${guestCount !== 1 ? 's' : ''}` : ''}`}
+                        </p>
+                      </div>
+                      {selected && (
+                        <Check size={16} className="text-teal shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {saving && (
             <div className="space-y-1.5">

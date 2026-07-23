@@ -181,6 +181,7 @@ function KanbanContent({
             onItemsChange={setItems}
             projectId={projectId}
             companyId={companyId}
+            stageDueDates={project?.stage_due_dates}
           />
         )}
       </div>

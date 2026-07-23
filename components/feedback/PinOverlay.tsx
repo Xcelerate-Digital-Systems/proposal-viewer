@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { Eye, EyeOff, Check } from 'lucide-react';
 import type { FeedbackComment } from '@/lib/supabase';
 
 interface PinOverlayProps {
@@ -10,17 +12,47 @@ interface PinOverlayProps {
 
 const PIN_SIZE = 28;
 const GREEN = '#16A34A';
-const GREEN_RESOLVED = '#10B981';
+const RESOLVED_GRAY = '#94A3B8';
 
 export default function PinOverlay({
   pinComments,
   pendingPin,
   onPinClick,
 }: PinOverlayProps) {
+  const [showResolved, setShowResolved] = useState(false);
+
+  const hasResolved = pinComments.some((c) => c.resolved);
+
   return (
     <>
+      {/* Show resolved toggle — only render when there are resolved pins */}
+      {hasResolved && (
+        <button
+          data-pin-marker
+          data-no-pin
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowResolved((v) => !v);
+          }}
+          className="absolute z-20 top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors bg-black/60 hover:bg-black/75 text-white/90 backdrop-blur-sm"
+          title={showResolved ? 'Hide resolved pins' : 'Show resolved pins'}
+        >
+          {showResolved ? (
+            <Eye className="w-3.5 h-3.5" />
+          ) : (
+            <EyeOff className="w-3.5 h-3.5" />
+          )}
+          Resolved
+        </button>
+      )}
+
       {pinComments.map((c) => {
-        const bg = c.resolved ? GREEN_RESOLVED : GREEN;
+        // Hide resolved pins unless toggle is on
+        if (c.resolved && !showResolved) return null;
+
+        const isResolved = c.resolved;
+
         return (
           <button
             key={c.id}
@@ -33,16 +65,20 @@ export default function PinOverlay({
               height: PIN_SIZE,
               marginLeft: -PIN_SIZE / 2,
               marginTop: -PIN_SIZE / 2,
-              backgroundColor: bg,
-              opacity: c.resolved ? 0.6 : 1,
+              backgroundColor: isResolved ? RESOLVED_GRAY : GREEN,
+              opacity: isResolved ? 0.7 : 1,
             }}
             onClick={(e) => {
               e.stopPropagation();
               onPinClick?.(c.id);
             }}
-            title={`#${c.thread_number}: ${c.content.slice(0, 50)}`}
+            title={`#${c.thread_number}: ${c.content.slice(0, 50)}${isResolved ? ' (resolved)' : ''}`}
           >
-            {c.thread_number || '•'}
+            {isResolved ? (
+              <Check className="w-3.5 h-3.5" strokeWidth={3} />
+            ) : (
+              c.thread_number || '•'
+            )}
           </button>
         );
       })}

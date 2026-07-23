@@ -3,9 +3,8 @@
 import { useMemo, useState, useCallback, useEffect } from 'react';
 import {
   DndContext, DragEndEvent, DragOverlay, DragStartEvent,
-  PointerSensor, useSensor, useSensors,
+  PointerSensor, useSensor, useSensors, useDroppable,
 } from '@dnd-kit/core';
-import { useDroppable } from '@dnd-kit/core';
 import {
   supabase, type FeedbackItem, type FeedbackStatus,
 } from '@/lib/supabase';
@@ -20,6 +19,16 @@ import KanbanColumnAssignees, {
   type StageMember, type StageGuest, type CompanyMember, type ProjectGuest,
 } from './KanbanColumnAssignees';
 import { Tooltip } from '@/components/ui/Tooltip';
+import {
+  getStageDueDateUrgency,
+  formatStageDueDate,
+} from '@/lib/feedback/stage-due-dates';
+import { Lock } from 'lucide-react';
+
+/** Stages where the auto-advance approval gate can fire. */
+const GATED_STAGES: string[] = ['internal_review', 'client_review'];
+
+type ApprovalGateInfo = { approved: number; total: number };
 
 interface KanbanBoardProps {
   items: FeedbackItem[];
@@ -30,6 +39,8 @@ interface KanbanBoardProps {
    *  unauth/preview contexts can render the board read-only. */
   projectId?: string;
   companyId?: string;
+  /** Per-stage due dates from the project. */
+  stageDueDates?: Record<string, string>;
 }
 
 /**
@@ -51,7 +62,7 @@ const STAGE_DESCRIPTIONS: Record<FeedbackStatus, string> = {
 };
 
 export default function KanbanBoard({
-  items, commentCounts, onOpen, onItemsChange, projectId, companyId,
+  items, commentCounts, onOpen, onItemsChange, projectId, companyId, stageDueDates,
 }: KanbanBoardProps) {
   const toast = useToast();
   const confirm = useConfirm();
@@ -241,6 +252,28 @@ export default function KanbanBoard({
 
   const activeItem = activeId ? items.find((i) => i.id === activeId) ?? null : null;
 
+  // Pre-compute which columns are blocked for the currently-dragged item so
+  // the drop is prevented client-side instead of snapping back from the API.
+  const { blockedColumns, activeItemGateInfo } = useMemo(() => {
+    if (!activeItem) return { blockedColumns: new Set<FeedbackStatus>(), activeItemGateInfo: null };
+    const blocked = new Set<FeedbackStatus>();
+    let gateInfo: ApprovalGateInfo | null = null;
+
+    if (GATED_STAGES.includes(activeItem.status)) {
+      const stage = activeItem.status as FeedbackStatus;
+      const sa = assigneesByStage[stage];
+      const totalAssignees = sa.members.length + sa.guests.length;
+      if (totalAssignees > 0) {
+        const approvedCount = decisionTallies[activeItem.id]?.approved ?? 0;
+        gateInfo = { approved: approvedCount, total: totalAssignees };
+        if (approvedCount < totalAssignees) {
+          blocked.add('approved');
+        }
+      }
+    }
+    return { blockedColumns: blocked, activeItemGateInfo: gateInfo };
+  }, [activeItem, assigneesByStage, decisionTallies]);
+
   const moveItemToStatus = useCallback(
     async (itemId: string, targetStatus: FeedbackStatus) => {
       const current = items.find((i) => i.id === itemId);
@@ -316,6 +349,7 @@ export default function KanbanBoard({
 
   const handleDragEnd = useCallback(
     async (ev: DragEndEvent) => {
+      const draggedId = activeId;
       setActiveId(null);
       const itemId = String(ev.active.id);
       const overId = ev.over?.id ? String(ev.over.id) : null;
@@ -326,9 +360,21 @@ export default function KanbanBoard({
         : null;
       if (!targetStatus) return;
 
+      // Client-side approval gate: prevent the drop entirely instead of
+      // letting it snap back from the API response.
+      if (blockedColumns.has(targetStatus)) {
+        if (activeItemGateInfo) {
+          const remaining = activeItemGateInfo.total - activeItemGateInfo.approved;
+          toast.info(
+            `Waiting for ${remaining} more approval${remaining === 1 ? '' : 's'} before this can be approved`,
+          );
+        }
+        return;
+      }
+
       await moveItemToStatus(itemId, targetStatus);
     },
-    [moveItemToStatus],
+    [moveItemToStatus, blockedColumns, activeItemGateInfo, activeId, toast],
   );
 
   return (
@@ -349,6 +395,9 @@ export default function KanbanBoard({
             companyMembers={companyMembers}
             projectGuests={projectGuests}
             onAssigneesChanged={refetchAssignees}
+            isBlocked={blockedColumns.has(status)}
+            gateInfo={status === 'approved' && activeItemGateInfo ? activeItemGateInfo : null}
+            stageDueDate={stageDueDates?.[status] ?? null}
           />
         ))}
       </div>
@@ -375,6 +424,7 @@ export default function KanbanBoard({
 function KanbanColumn({
   status, items, commentCounts, decisionTallies, onOpen, onMoveToStatus,
   projectId, stageMembers, stageGuests, companyMembers, projectGuests, onAssigneesChanged,
+  isBlocked, gateInfo, stageDueDate,
 }: {
   status: FeedbackStatus;
   items: FeedbackItem[];
@@ -388,8 +438,17 @@ function KanbanColumn({
   companyMembers: CompanyMember[];
   projectGuests: ProjectGuest[];
   onAssigneesChanged: () => void;
+  /** True when the currently-dragged item cannot be dropped here. */
+  isBlocked?: boolean;
+  /** Approval gate progress shown on the column header during drag. */
+  gateInfo?: ApprovalGateInfo | null;
+  /** Optional due date for this stage (YYYY-MM-DD). */
+  stageDueDate?: string | null;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `column-${status}` });
+  const { setNodeRef, isOver } = useDroppable({
+    id: `column-${status}`,
+    disabled: !!isBlocked,
+  });
   const def = getFeedbackStatusDef(status);
 
   return (
@@ -401,6 +460,33 @@ function KanbanColumn({
           <h3 className="text-caption font-semibold text-ink cursor-default">{def.label}</h3>
         </Tooltip>
         <span className="text-detail font-medium text-faint">{items.length}</span>
+        {/* Stage due date pill */}
+        {stageDueDate && (() => {
+          const urgency = getStageDueDateUrgency(stageDueDate);
+          const label = formatStageDueDate(stageDueDate);
+          return (
+            <Tooltip content={`Due: ${new Date(stageDueDate + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}`}>
+              <span className={`inline-flex items-center gap-0.5 text-2xs font-medium rounded-full px-1.5 py-0.5 ${
+                urgency === 'overdue'
+                  ? 'bg-red-50 text-red-600 border border-red-200'
+                  : urgency === 'soon'
+                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                    : 'bg-gray-50 text-dim border border-edge'
+              }`}>
+                {label}
+              </span>
+            </Tooltip>
+          );
+        })()}
+        {/* Approval gate badge — visible only during drag when the column is blocked */}
+        {isBlocked && gateInfo && (
+          <Tooltip content={`${gateInfo.total - gateInfo.approved} more approval${gateInfo.total - gateInfo.approved === 1 ? '' : 's'} needed`}>
+            <span className="inline-flex items-center gap-1 text-2xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+              <Lock size={10} />
+              {gateInfo.approved}/{gateInfo.total}
+            </span>
+          </Tooltip>
+        )}
         {projectId && (
           <div className="ml-auto">
             <KanbanColumnAssignees
@@ -420,7 +506,9 @@ function KanbanColumn({
       <div
         ref={setNodeRef}
         className={`flex-1 rounded-2xl p-3 space-y-2.5 overflow-y-auto transition-colors ${
-          isOver ? 'bg-teal/10 ring-2 ring-teal/30' : 'bg-surface'
+          isBlocked
+            ? 'bg-gray-100 opacity-50 ring-2 ring-gray-200 cursor-not-allowed'
+            : isOver ? 'bg-teal/10 ring-2 ring-teal/30' : 'bg-surface'
         }`}
       >
         {items.length === 0 ? (

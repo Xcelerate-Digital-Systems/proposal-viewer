@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, MessageSquareText, LayoutGrid, List, Search, KanbanSquare, ExternalLink, Calendar, MoreHorizontal, Pencil, Trash2, Copy, Check, ChevronDown } from 'lucide-react';
+import { Plus, MessageSquareText, LayoutGrid, List, Search, KanbanSquare, ExternalLink, Calendar, MoreHorizontal, Pencil, Trash2, Copy, Check, ChevronDown, Workflow } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ui/ErrorState';
@@ -23,6 +23,7 @@ import FeedbackProjectCard from '@/components/admin/feedback/FeedbackProjectCard
 import FeedbackProjectRow from '@/components/admin/feedback/FeedbackProjectRow';
 import KanbanBoard, { type KanbanColumn } from '@/components/kanban/KanbanBoard';
 import { REVIEW_STATUS_ORDER, REVIEW_STATUS_CONFIG } from '@/lib/feedback/status';
+import WorkflowTemplatesManager from '@/components/admin/feedback/WorkflowTemplatesManager';
 
 export default function ReviewsPage() {
   return (
@@ -64,6 +65,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
 
   // Filter & sort state from URL params
@@ -326,6 +328,16 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
               <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-faint pointer-events-none" />
             </div>
 
+            {/* Templates */}
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={Workflow}
+              onClick={() => setShowTemplates(true)}
+            >
+              Templates
+            </Button>
+
             {/* New project */}
             <div data-tour="campaigns-new">
               <Button
@@ -351,6 +363,12 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
             onSuccess={fetchProjects}
           />
         )}
+
+        <WorkflowTemplatesManager
+          companyId={companyId}
+          open={showTemplates}
+          onClose={() => setShowTemplates(false)}
+        />
 
         {loading ? (
           <EntityListSkeleton viewMode={viewMode === 'board' ? 'grid' : viewMode} />

@@ -23,6 +23,8 @@ import FeedbackDetailView from '@/components/feedback/FeedbackDetailView';
 import GuestOnboardingModal from '@/components/feedback/GuestOnboardingModal';
 import ReviewerNoteOverlay from '@/components/feedback/ReviewerNoteOverlay';
 import ReviewTopBar, { type ReviewMode } from '@/components/feedback/ReviewTopBar';
+import ShareLinkPasswordGate from '@/components/feedback/ShareLinkPasswordGate';
+import ShareLinkExpired from '@/components/feedback/ShareLinkExpired';
 
 
 export default function ReviewViewerPage(props: { params: Promise<{ token: string }> }) {
@@ -34,13 +36,31 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [passwordRequired, setPasswordRequired] = useState(false);
+  const [expired, setExpired] = useState(false);
   const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [boardEdges, setBoardEdges] = useState<FeedbackBoardEdge[]>([]);
   const [boardNotes, setBoardNotes] = useState<FeedbackBoardNote[]>([]);
   const [boardShapes, setBoardShapes] = useState<FeedbackBoardShape[]>([]);
   const [itemVersions, setItemVersions] = useState<FeedbackItemVersion[]>([]);
-  /** Per-item override of which version the client is looking at. Missing = use item.active_version_id. */
-  const [clientVersionOverrides, setClientVersionOverrides] = useState<Record<string, string | null>>({});
+  /** Per-item override of which version the client is looking at. Missing = use item.active_version_id.
+   *  Backed by sessionStorage so the selection survives page navigations within the same tab. */
+  const [clientVersionOverrides, setClientVersionOverrides] = useState<Record<string, string | null>>(() => {
+    if (typeof window === 'undefined') return {};
+    // Hydrate from sessionStorage on mount
+    const restored: Record<string, string | null> = {};
+    try {
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key?.startsWith('agencyviz-version-')) {
+          const itemId = key.slice('agencyviz-version-'.length);
+          const val = sessionStorage.getItem(key);
+          restored[itemId] = val === 'null' ? null : val;
+        }
+      }
+    } catch { /* sessionStorage unavailable */ }
+    return restored;
+  });
   const [reactions, setReactions] = useState<FeedbackCommentReaction[]>([]);
   const [currentTab, setCurrentTab] = useState<PublicTab>('items');
   const [viewMode, setViewMode] = useState<'project' | 'item'>('project');
@@ -71,14 +91,32 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
   const { bgSecondary, sidebarText, palette } = useBrandingColors(branding);
 
   // Show onboarding modal once storage has been read and no name is stored.
-  const showOnboarding = identityHydrated && !guestName && !loading && !notFound;
+  const showOnboarding = identityHydrated && !guestName && !loading && !notFound && !passwordRequired && !expired;
 
   // ── Fetch review data ──
   useEffect(() => {
     async function load() {
       try {
         const res = await fetch(`/api/review/${params.token}`);
-        if (!res.ok) { setNotFound(true); setLoading(false); setBrandingLoaded(true); return; }
+        if (!res.ok) {
+          if (res.status === 401) {
+            // Password required — try to load branding before showing the gate
+            setPasswordRequired(true);
+            setLoading(false);
+            setBrandingLoaded(true);
+            return;
+          }
+          if (res.status === 410) {
+            setExpired(true);
+            setLoading(false);
+            setBrandingLoaded(true);
+            return;
+          }
+          setNotFound(true);
+          setLoading(false);
+          setBrandingLoaded(true);
+          return;
+        }
 
         const data = await res.json();
         setProject(data.project);
@@ -175,6 +213,9 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
   const handleClientVersionChange = useCallback((versionId: string | null) => {
     if (!selectedItemId) return;
     setClientVersionOverrides((prev) => ({ ...prev, [selectedItemId]: versionId }));
+    try {
+      sessionStorage.setItem(`agencyviz-version-${selectedItemId}`, String(versionId));
+    } catch { /* sessionStorage unavailable */ }
   }, [selectedItemId]);
 
   const handleItemChange = useCallback((id: string) => {
@@ -333,9 +374,76 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
     [project?.shared_views]
   );
 
+  // ── Reload after password verification ──
+  const handlePasswordVerified = useCallback(() => {
+    setPasswordRequired(false);
+    setLoading(true);
+    // Re-fetch the data now that the cookie is set
+    (async () => {
+      try {
+        const res = await fetch(`/api/review/${params.token}`);
+        if (!res.ok) {
+          if (res.status === 410) { setExpired(true); setLoading(false); return; }
+          setNotFound(true); setLoading(false); return;
+        }
+        const data = await res.json();
+        setProject(data.project);
+        setItems(data.items);
+        setComments(data.comments);
+        if (data.boardEdges) setBoardEdges(data.boardEdges);
+        if (data.boardNotes) setBoardNotes(data.boardNotes);
+        if (data.boardShapes) setBoardShapes(data.boardShapes);
+        if (data.itemVersions) setItemVersions(data.itemVersions);
+
+        const sv: FeedbackSharedViews =
+          (data.project.shared_views as FeedbackSharedViews | null) ?? DEFAULT_SHARED_VIEWS;
+        if (data.project.share_mode === 'board' && sv.board) setCurrentTab('board');
+        else if (sv.board) setCurrentTab('board');
+        else if (sv.kanban) setCurrentTab('kanban');
+        else setCurrentTab('items');
+
+        if (data.items.length > 0) {
+          setInitialItemId(data.items[0].id);
+          setSelectedItemId(data.items[0].id);
+        }
+
+        const brandRes = await fetch(`/api/company/branding?company_id=${data.project.company_id}`);
+        if (brandRes.ok) setBranding(await brandRes.json());
+        setLoading(false);
+      } catch {
+        setNotFound(true);
+        setLoading(false);
+      }
+    })();
+  }, [params.token]);
+
   // ── Early returns ──
   if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: 'transparent' }} />;
   if (loading) return <ViewerLoader branding={branding} loading={true} label="Loading review…" />;
+
+  if (expired) {
+    return (
+      <ShareLinkExpired
+        accentColor={branding.accent_color}
+        logoUrl={branding.logo_url}
+        companyName={branding.name}
+        fontHeading={branding.font_heading}
+      />
+    );
+  }
+
+  if (passwordRequired) {
+    return (
+      <ShareLinkPasswordGate
+        token={params.token}
+        accentColor={branding.accent_color}
+        logoUrl={branding.logo_url}
+        companyName={branding.name}
+        fontHeading={branding.font_heading}
+        onVerified={handlePasswordVerified}
+      />
+    );
+  }
 
   if (notFound) {
     return (

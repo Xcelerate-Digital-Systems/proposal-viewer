@@ -9,8 +9,7 @@ import GoogleSearchAdMockupPreview from '@/components/admin/feedback/GoogleSearc
 import GoogleBannerAdMockupPreview from '@/components/admin/feedback/GoogleBannerAdMockupPreview';
 import { emptyGoogleAdData } from '@/lib/types/feedback';
 import MetaLeadFormMockupPreview, { type MetaLeadFormPage } from '@/components/admin/feedback/MetaLeadFormMockupPreview';
-import PinOverlay from './PinOverlay';
-import { HighlightOverlay } from '@/components/feedback/tools';
+import ContentWithOverlays from './ContentWithOverlays';
 import type { FeedbackItem, FeedbackComment } from '@/lib/supabase';
 import {
   type FeedbackItemView,
@@ -20,6 +19,8 @@ import {
   metaAdVariantView,
   parseMetaAdVariantView,
 } from '@/lib/types/feedback';
+import VariantCompareView from '@/components/feedback/VariantCompareView';
+import type { VariantDecision, VariantDecisionSummary } from '@/hooks/useVariantDecisions';
 
 /* ================================================================== */
 /*  Types                                                              */
@@ -67,6 +68,16 @@ interface ItemContentViewProps {
   /** Comment counts keyed by view string — used by Google Search ad sidebar
    *  to badge which assets already have feedback. */
   commentCountsByView?: Record<string, number>;
+  /** Whether variant comparison mode is active (Meta ads with 2+ variants). */
+  compareMode?: boolean;
+  /** Toggle comparison mode on/off. */
+  onCompareModeChange?: (active: boolean) => void;
+  /** Current reviewer's decision per variant. */
+  myVariantDecisions?: Record<string, VariantDecision | null>;
+  /** Decision summaries per variant. */
+  variantDecisionSummaries?: Record<string, VariantDecisionSummary>;
+  /** Callback when reviewer clicks a variant decision icon. */
+  onVariantDecision?: (variantId: string, decision: VariantDecision) => void;
 }
 
 /* ================================================================== */
@@ -93,6 +104,11 @@ export default function ItemContentView({
   activeView,
   onViewChange,
   commentCountsByView,
+  compareMode,
+  onCompareModeChange,
+  myVariantDecisions,
+  variantDecisionSummaries,
+  onVariantDecision,
 }: ItemContentViewProps) {
   const displayBrandName = brandName?.trim() || 'Your Brand';
 
@@ -122,6 +138,15 @@ export default function ItemContentView({
     return highlightComments.filter((c) => getCommentView(c.annotation_data) === currentView);
   }, [highlightComments, currentView]);
 
+  /** Shared highlight props passed to ContentWithOverlays */
+  const highlightProps = {
+    withHighlights: true as const,
+    highlightComments: visibleHighlights,
+    highlightedCommentId,
+    onHighlightClick,
+    pendingHighlight,
+  };
+
   if (!item) {
     return (
       <div className="max-w-3xl mx-auto bg-surface rounded-2xl shadow-card-soft flex flex-col items-center justify-center py-20">
@@ -141,11 +166,15 @@ export default function ItemContentView({
   if (isEmail) {
     const client = (currentView as EmailClient | null) || 'inbox_preview';
     return (
-      <div
-        ref={containerRef}
-        className="relative w-full max-w-2xl mx-auto"
-        style={{ cursor: cursorStyle }}
+      <ContentWithOverlays
+        containerRef={containerRef}
+        cursorStyle={cursorStyle}
         onClick={onImageClick}
+        className="w-full max-w-2xl mx-auto"
+        pinComments={visiblePins}
+        pendingPin={pendingPin}
+        onPinClick={onPinClick}
+        {...highlightProps}
       >
         <EmailMockupPreview
           subject={item.email_subject || ''}
@@ -157,19 +186,7 @@ export default function ItemContentView({
           accentColor={accentColor}
           onClientChange={(c) => onViewChange?.(c)}
         />
-        <PinOverlay
-          pinComments={visiblePins}
-          pendingPin={pendingPin}
-          onPinClick={onPinClick}
-        />
-        <HighlightOverlay
-          containerRef={containerRef as React.RefObject<HTMLElement | null>}
-          highlightComments={visibleHighlights}
-          highlightedCommentId={highlightedCommentId}
-          onHighlightClick={onHighlightClick}
-          pendingHighlight={pendingHighlight}
-        />
-      </div>
+      </ContentWithOverlays>
     );
   }
 
@@ -177,11 +194,15 @@ export default function ItemContentView({
   if (item.type === 'sms') {
     const client = (currentView as SmsClient | null) || 'imessage';
     return (
-      <div
-        ref={containerRef}
-        className="relative w-full max-w-md mx-auto"
-        style={{ cursor: cursorStyle }}
+      <ContentWithOverlays
+        containerRef={containerRef}
+        cursorStyle={cursorStyle}
         onClick={onImageClick}
+        className="w-full max-w-md mx-auto"
+        pinComments={visiblePins}
+        pendingPin={pendingPin}
+        onPinClick={onPinClick}
+        {...highlightProps}
       >
         <SmsMockupPreview
           body={item.sms_body || ''}
@@ -191,19 +212,7 @@ export default function ItemContentView({
           accentColor={accentColor}
           onClientChange={(c) => onViewChange?.(c)}
         />
-        <PinOverlay
-          pinComments={visiblePins}
-          pendingPin={pendingPin}
-          onPinClick={onPinClick}
-        />
-        <HighlightOverlay
-          containerRef={containerRef as React.RefObject<HTMLElement | null>}
-          highlightComments={visibleHighlights}
-          highlightedCommentId={highlightedCommentId}
-          onHighlightClick={onHighlightClick}
-          pendingHighlight={pendingHighlight}
-        />
-      </div>
+      </ContentWithOverlays>
     );
   }
 
@@ -216,11 +225,14 @@ export default function ItemContentView({
     const vimeoId = videoSrc.match(/vimeo\.com\/(\d+)/)?.[1];
 
     return (
-      <div
-        ref={containerRef}
-        className="relative w-full max-w-3xl mx-auto"
-        style={{ cursor: cursorStyle }}
+      <ContentWithOverlays
+        containerRef={containerRef}
+        cursorStyle={cursorStyle}
         onClick={onImageClick}
+        className="w-full max-w-3xl mx-auto"
+        pinComments={pinComments}
+        pendingPin={pendingPin}
+        onPinClick={onPinClick}
       >
         {videoSrc ? (
           <div className="bg-surface rounded-2xl shadow-card-soft overflow-hidden">
@@ -266,12 +278,7 @@ export default function ItemContentView({
             <p className="text-detail text-muted mt-1">Upload a video or paste a YouTube/Vimeo link to start reviewing.</p>
           </div>
         )}
-        <PinOverlay
-          pinComments={pinComments}
-          pendingPin={pendingPin}
-          onPinClick={onPinClick}
-        />
-      </div>
+      </ContentWithOverlays>
     );
   }
 
@@ -280,11 +287,14 @@ export default function ItemContentView({
     const pdfSrc = item.pdf_url || item.image_url || '';
 
     return (
-      <div
-        ref={containerRef}
-        className="relative w-full max-w-3xl mx-auto"
-        style={{ cursor: cursorStyle }}
+      <ContentWithOverlays
+        containerRef={containerRef}
+        cursorStyle={cursorStyle}
         onClick={onImageClick}
+        className="w-full max-w-3xl mx-auto"
+        pinComments={pinComments}
+        pendingPin={pendingPin}
+        onPinClick={onPinClick}
       >
         {pdfSrc ? (
           <div className="bg-surface rounded-2xl shadow-card-soft overflow-hidden">
@@ -309,12 +319,7 @@ export default function ItemContentView({
             <p className="text-detail text-muted mt-1">Upload a PDF to start reviewing.</p>
           </div>
         )}
-        <PinOverlay
-          pinComments={pinComments}
-          pendingPin={pendingPin}
-          onPinClick={onPinClick}
-        />
-      </div>
+      </ContentWithOverlays>
     );
   }
 
@@ -332,11 +337,14 @@ export default function ItemContentView({
     }
     const page = (currentView as MetaLeadFormPage | null) || 'intro';
     return (
-      <div
-        ref={containerRef}
-        className="relative w-full max-w-md mx-auto"
-        style={{ cursor: cursorStyle }}
+      <ContentWithOverlays
+        containerRef={containerRef}
+        cursorStyle={cursorStyle}
         onClick={onImageClick}
+        className="w-full max-w-md mx-auto"
+        pinComments={visiblePins}
+        pendingPin={pendingPin}
+        onPinClick={onPinClick}
       >
         <MetaLeadFormMockupPreview
           data={data}
@@ -344,12 +352,7 @@ export default function ItemContentView({
           onPageChange={(p) => onViewChange?.(p)}
           accentColor={accentColor}
         />
-        <PinOverlay
-          pinComments={visiblePins}
-          pendingPin={pendingPin}
-          onPinClick={onPinClick}
-        />
-      </div>
+      </ContentWithOverlays>
     );
   }
 
@@ -360,42 +363,40 @@ export default function ItemContentView({
   if (item.type === 'google_search_ad' || item.type === 'google_banner_ad') {
     const data = item.google_ad_data || emptyGoogleAdData();
     const isSearch = item.type === 'google_search_ad';
-    return (
-      <div
-        ref={containerRef}
-        className={`relative w-full mx-auto flex justify-center ${isSearch ? 'max-w-7xl' : 'max-w-2xl'}`}
-        style={{ cursor: isSearch ? 'default' : cursorStyle }}
-        onClick={isSearch ? undefined : onImageClick}
-      >
-        {isSearch ? (
+
+    if (isSearch) {
+      return (
+        <div
+          ref={containerRef}
+          className="relative w-full mx-auto flex justify-center max-w-7xl"
+        >
           <GoogleSearchAdMockupPreview
             data={data}
             activeView={currentView}
             onViewChange={onViewChange}
             commentCountsByView={commentCountsByView}
           />
-        ) : (
-          <>
-            <GoogleBannerAdMockupPreview
-              headline={data.headlines?.[0] || item.ad_headline || ''}
-              displayUrl={data.display_url || ''}
-              creativeUrl={data.banner_image_url || item.ad_creative_url || ''}
-            />
-            <PinOverlay
-              pinComments={visiblePins}
-              pendingPin={pendingPin}
-              onPinClick={onPinClick}
-            />
-            <HighlightOverlay
-              containerRef={containerRef as React.RefObject<HTMLElement | null>}
-              highlightComments={visibleHighlights}
-              highlightedCommentId={highlightedCommentId}
-              onHighlightClick={onHighlightClick}
-              pendingHighlight={pendingHighlight}
-            />
-          </>
-        )}
-      </div>
+        </div>
+      );
+    }
+
+    return (
+      <ContentWithOverlays
+        containerRef={containerRef}
+        cursorStyle={cursorStyle}
+        onClick={onImageClick}
+        className="w-full mx-auto flex justify-center max-w-2xl"
+        pinComments={visiblePins}
+        pendingPin={pendingPin}
+        onPinClick={onPinClick}
+        {...highlightProps}
+      >
+        <GoogleBannerAdMockupPreview
+          headline={data.headlines?.[0] || item.ad_headline || ''}
+          displayUrl={data.display_url || ''}
+          creativeUrl={data.banner_image_url || item.ad_creative_url || ''}
+        />
+      </ContentWithOverlays>
     );
   }
 
@@ -414,9 +415,12 @@ export default function ItemContentView({
       );
     }
     return (
-      <div
-        ref={containerRef}
-        className="relative w-full h-full bg-white rounded-2xl border border-edge-strong overflow-hidden"
+      <ContentWithOverlays
+        containerRef={containerRef}
+        className="w-full h-full bg-white rounded-2xl border border-edge-strong overflow-hidden"
+        pinComments={pinComments}
+        pendingPin={null}
+        onPinClick={onPinClick}
       >
         <iframe
           src={item.url}
@@ -425,23 +429,22 @@ export default function ItemContentView({
           sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
           loading="lazy"
         />
-        <PinOverlay
-          pinComments={pinComments}
-          pendingPin={null}
-          onPinClick={onPinClick}
-        />
-      </div>
+      </ContentWithOverlays>
     );
   }
 
   // Figma items — render stored PNG with Figma badge
   if (item.type === 'figma' && imageUrl) {
     return (
-      <div
-        ref={containerRef}
-        className="relative max-w-3xl mx-auto"
-        style={{ cursor: cursorStyle }}
+      <ContentWithOverlays
+        containerRef={containerRef}
+        cursorStyle={cursorStyle}
         onClick={onImageClick}
+        className="max-w-3xl mx-auto"
+        pinComments={visiblePins}
+        pendingPin={pendingPin}
+        onPinClick={onPinClick}
+        {...highlightProps}
       >
         <div className="bg-surface rounded-2xl shadow-card-soft overflow-hidden">
           <div className="flex items-center gap-2.5 px-4 py-3 border-b border-edge">
@@ -464,30 +467,22 @@ export default function ItemContentView({
             />
           </div>
         </div>
-        <PinOverlay
-          pinComments={visiblePins}
-          pendingPin={pendingPin}
-          onPinClick={onPinClick}
-        />
-        <HighlightOverlay
-          containerRef={containerRef as React.RefObject<HTMLElement | null>}
-          highlightComments={visibleHighlights}
-          highlightedCommentId={highlightedCommentId}
-          onHighlightClick={onHighlightClick}
-          pendingHighlight={pendingHighlight}
-        />
-      </div>
+      </ContentWithOverlays>
     );
   }
 
   // Ad or Image with pin overlay
   if (isAd || imageUrl) {
     return (
-      <div
-        ref={containerRef}
-        className="relative max-w-3xl mx-auto"
-        style={{ cursor: cursorStyle }}
+      <ContentWithOverlays
+        containerRef={containerRef}
+        cursorStyle={cursorStyle}
         onClick={onImageClick}
+        className="max-w-3xl mx-auto"
+        pinComments={visiblePins}
+        pendingPin={pendingPin}
+        onPinClick={onPinClick}
+        {...highlightProps}
       >
         {/* Ad mockup */}
         {isAd && (() => {
@@ -517,6 +512,49 @@ export default function ItemContentView({
               }, {})
             : undefined;
 
+          // Comparison mode — show all variants in a grid.
+          if (compareMode && hasStoredVariants && variants.length >= 2) {
+            return (
+              <div>
+                <AdMockupPreview
+                  creativeUrl={item.ad_creative_url!}
+                  ctaText={item.ad_cta || 'Learn More'}
+                  platform={platformForRender}
+                  pageName={displayBrandName}
+                  showPlatformToggle
+                  accentColor={accentColor}
+                  onPlatformChange={() => {}}
+                  variants={variants}
+                  activeVariantId={activeVariantId}
+                  onVariantChange={() => {}}
+                  commentCountsByVariantId={commentCountsByVariantId}
+                  compareMode={compareMode}
+                  onCompareModeChange={onCompareModeChange}
+                  myVariantDecisions={myVariantDecisions}
+                  variantDecisionSummaries={variantDecisionSummaries}
+                  onVariantDecision={onVariantDecision}
+                />
+                <div className="mt-4">
+                  <VariantCompareView
+                    variants={variants}
+                    creativeUrl={item.ad_creative_url!}
+                    ctaText={item.ad_cta || 'Learn More'}
+                    platform={platformForRender}
+                    pageName={displayBrandName}
+                    displayUrl={undefined}
+                    accentColor={accentColor}
+                    commentCountsByVariantId={commentCountsByVariantId}
+                    decisionSummaries={variantDecisionSummaries}
+                    onSelectVariant={(id) => {
+                      onCompareModeChange?.(false);
+                      onViewChange?.(metaAdVariantView(id));
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div>
               <AdMockupPreview
@@ -537,6 +575,11 @@ export default function ItemContentView({
                 commentCountsByVariantId={commentCountsByVariantId}
                 headline={hasStoredVariants ? undefined : (item.ad_headline || '')}
                 primaryText={hasStoredVariants ? undefined : (item.ad_copy || '')}
+                compareMode={compareMode}
+                onCompareModeChange={hasStoredVariants && variants.length >= 2 ? onCompareModeChange : undefined}
+                myVariantDecisions={myVariantDecisions}
+                variantDecisionSummaries={variantDecisionSummaries}
+                onVariantDecision={onVariantDecision}
               />
             </div>
           );
@@ -563,20 +606,7 @@ export default function ItemContentView({
             </div>
           </div>
         )}
-        {/* Pin overlay */}
-        <PinOverlay
-          pinComments={visiblePins}
-          pendingPin={pendingPin}
-          onPinClick={onPinClick}
-        />
-        <HighlightOverlay
-          containerRef={containerRef as React.RefObject<HTMLElement | null>}
-          highlightComments={visibleHighlights}
-          highlightedCommentId={highlightedCommentId}
-          onHighlightClick={onHighlightClick}
-          pendingHighlight={pendingHighlight}
-        />
-      </div>
+      </ContentWithOverlays>
     );
   }
 
@@ -589,4 +619,3 @@ export default function ItemContentView({
     </div>
   );
 }
-

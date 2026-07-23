@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Plus, History, ChevronDown, Check, Pencil } from 'lucide-react';
+import { Plus, History, ChevronDown, Check, Pencil, Columns2, AlertTriangle, X } from 'lucide-react';
 import type { VersionView } from '@/lib/feedback/versions';
 interface VersionPickerProps {
   versions: VersionView[];
@@ -11,6 +11,8 @@ interface VersionPickerProps {
   onAddVersion?: () => void;
   /** Optional admin affordance: opens the editor for the given version. */
   onEditVersion?: (versionId: string | null) => void;
+  /** Opens the side-by-side version comparison view. Only shown when 2+ versions exist. */
+  onCompare?: () => void;
   /** @deprecated Status is now shown via ClientStatusControl instead. */
   itemStatus?: unknown;
   compact?: boolean;
@@ -22,7 +24,7 @@ interface VersionPickerProps {
  * button only renders when callers (admin) opt in via onAddVersion.
  */
 export default function VersionPicker({
-  versions, activeVersionId, onChange, onAddVersion, onEditVersion, itemStatus, compact = false,
+  versions, activeVersionId, onChange, onAddVersion, onEditVersion, onCompare, itemStatus, compact = false,
 }: VersionPickerProps) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -36,15 +38,29 @@ export default function VersionPicker({
     return () => window.removeEventListener('mousedown', handler);
   }, [open]);
 
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  // Reset the dismissed state when the selected version changes so the
+  // banner reappears if the user picks a different old version.
+  const prevVersionRef = useRef(activeVersionId);
+  useEffect(() => {
+    if (prevVersionRef.current !== activeVersionId) {
+      setBannerDismissed(false);
+      prevVersionRef.current = activeVersionId;
+    }
+  }, [activeVersionId]);
+
   if (!versions.length) return null;
 
   const active = versions.find((v) => (v.id ?? null) === activeVersionId) || versions[0];
   const ordered = [...versions].sort((a, b) => b.versionNumber - a.versionNumber);
+  const latestVersion = ordered[0];
+  const isViewingOlderVersion = versions.length > 1 && (active.id ?? null) !== (latestVersion.id ?? null);
 
   const padding = compact ? 'px-2 py-1 text-detail' : 'px-2.5 py-1 text-xs';
 
   return (
-    <div ref={wrapperRef} className="relative flex items-center gap-1">
+    <div ref={wrapperRef} className="relative flex flex-col gap-1.5">
+      <div className="flex items-center gap-1">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -119,6 +135,44 @@ export default function VersionPicker({
           <Plus size={compact ? 11 : 12} />
           Version
         </button>
+      )}
+
+      {onCompare && versions.length >= 2 && (
+        <button
+          type="button"
+          onClick={onCompare}
+          className={`inline-flex items-center justify-center rounded-full ${compact ? 'w-6 h-6' : 'w-7 h-7'} text-dim hover:bg-surface hover:text-prose transition-colors`}
+          title="Compare versions"
+        >
+          <Columns2 size={compact ? 12 : 13} />
+        </button>
+      )}
+    </div>
+
+      {/* Old-version warning banner */}
+      {isViewingOlderVersion && !bannerDismissed && (
+        <div className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-1.5 text-xs text-amber-800">
+          <AlertTriangle size={13} className="text-amber-500 shrink-0" />
+          <span className="flex-1">You&apos;re viewing an older version</span>
+          <button
+            type="button"
+            onClick={() => {
+              onChange(latestVersion.id);
+              setBannerDismissed(true);
+            }}
+            className="font-semibold text-amber-700 hover:text-amber-900 transition-colors whitespace-nowrap"
+          >
+            View latest
+          </button>
+          <button
+            type="button"
+            onClick={() => setBannerDismissed(true)}
+            className="text-amber-400 hover:text-amber-600 transition-colors shrink-0 -mr-1"
+            aria-label="Dismiss"
+          >
+            <X size={12} />
+          </button>
+        </div>
       )}
     </div>
   );

@@ -4,10 +4,11 @@ import { rateLimit, rateLimitHeaders, ipFromRequest } from '@/lib/rate-limit';
 import {
   GUEST_VISIBLE_STAGES, isGuestVisibleStage, isInternalStage,
 } from '@/lib/feedback/visibility';
+import { verifyShareAuthCookie } from '@/lib/feedback/share-password';
 
 // Explicit column allowlists — never SELECT * on public endpoints.
-const PROJECT_COLUMNS = 'id, company_id, title, client_name, client_company, status, share_mode, shared_views, pause_new_comments, reviewer_note, reviewer_note_show, reviewer_note_updated_at, created_at, updated_at';
-const ITEM_COLUMNS = 'id, review_project_id, title, type, status, sort_order, url, html_content, share_token, ad_platform, ad_headline, ad_copy, ad_cta, image_url, ad_creative_url, sms_body, active_version_id, meta_ad_variants, email_subject, email_preheader, email_body, google_ad_data, board_x, board_y, board_color, created_at, updated_at';
+const PROJECT_COLUMNS = 'id, company_id, title, client_name, client_company, status, share_mode, shared_views, pause_new_comments, reviewer_note, reviewer_note_show, reviewer_note_updated_at, share_password_hash, share_expires_at, created_at, updated_at';
+const ITEM_COLUMNS = 'id, review_project_id, title, type, status, sort_order, url, html_content, share_token, ad_platform, ad_headline, ad_copy, ad_cta, image_url, ad_creative_url, sms_body, active_version_id, meta_ad_variants, email_subject, email_preheader, email_body, google_ad_data, board_x, board_y, board_color, share_password_hash, share_expires_at, created_at, updated_at';
 const COMMENT_COLUMNS = 'id, review_item_id, parent_comment_id, thread_number, author_name, author_email, author_type, content, comment_type, pin_x, pin_y, attachments, annotation_data, screenshot_url, highlight_start, highlight_end, highlight_text, highlight_element_path, resolved, resolved_by, resolved_at, priority, video_url, version_id, ad_copy_variation_id, stage_at_creation, created_at, updated_at';
 const VERSION_COLUMNS = 'id, review_item_id, version_number, notes, url, html_content, ad_headline, ad_copy, ad_cta, image_url, sms_body, screenshot_url, ad_creative_url, email_subject, email_preheader, email_body, created_at';
 
@@ -38,6 +39,22 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
       .single();
 
     if (item) {
+      // ── Expiry check (item-level, then project-level fallback) ──
+      const itemExpiry = item.share_expires_at;
+      if (itemExpiry && new Date(itemExpiry) < new Date()) {
+        return NextResponse.json({ error: 'expired', expired: true }, { status: 410 });
+      }
+
+      // ── Password check (item-level) ──
+      const itemPwHash = item.share_password_hash;
+      if (itemPwHash) {
+        const cookie = req.cookies.get(`av_share_auth_${params.token}`)?.value;
+        const verified = cookie ? verifyShareAuthCookie(cookie) : null;
+        if (!verified || verified.token !== params.token) {
+          return NextResponse.json({ error: 'password_required', passwordRequired: true }, { status: 401 });
+        }
+      }
+
       const { data: project } = await supabase
         .from('review_projects')
         .select(PROJECT_COLUMNS)
@@ -46,6 +63,15 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
 
       if (!project || project.status === 'archived') {
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      }
+
+      // If item has no password, check project-level password
+      if (!itemPwHash && project.share_password_hash) {
+        const cookie = req.cookies.get(`av_share_auth_${params.token}`)?.value;
+        const verified = cookie ? verifyShareAuthCookie(cookie) : null;
+        if (!verified || verified.token !== params.token) {
+          return NextResponse.json({ error: 'password_required', passwordRequired: true }, { status: 401 });
+        }
       }
 
       // Guests must never see an item that's currently in an internal stage,
@@ -75,11 +101,15 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
         isGuestVisibleStage((c as { stage_at_creation: string | null }).stage_at_creation),
       );
 
+      // Strip security fields from the response — never leak hashes to the client
+      const { share_password_hash: _ph, ...safeProject } = project as Record<string, unknown>;
+      const { share_password_hash: _ih, ...safeItem } = item as Record<string, unknown>;
+
       return NextResponse.json({
         mode: 'item',
-        project,
-        item,
-        items: [item],
+        project: safeProject,
+        item: safeItem,
+        items: [safeItem],
         comments: visibleComments,
         itemVersions: versionsRes.data || [],
       });
@@ -98,6 +128,20 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
 
     if (project.status === 'archived') {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
+    // ── Expiry check (project-level) ──
+    if (project.share_expires_at && new Date(project.share_expires_at) < new Date()) {
+      return NextResponse.json({ error: 'expired', expired: true }, { status: 410 });
+    }
+
+    // ── Password check (project-level) ──
+    if (project.share_password_hash) {
+      const cookie = req.cookies.get(`av_share_auth_${params.token}`)?.value;
+      const verified = cookie ? verifyShareAuthCookie(cookie) : null;
+      if (!verified || verified.token !== params.token) {
+        return NextResponse.json({ error: 'password_required', passwordRequired: true }, { status: 401 });
+      }
     }
 
     // Load items, restricted to stages that guests are allowed to see.
@@ -215,9 +259,12 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
       boardShapes = shapesRes.error ? [] : (shapesRes.data || []);
     }
 
+    // Strip security fields from the response
+    const { share_password_hash: _pph, ...safeProj } = project as Record<string, unknown>;
+
     return NextResponse.json({
       mode: 'project',
-      project,
+      project: safeProj,
       items: items || [],
       comments,
       itemVersions,

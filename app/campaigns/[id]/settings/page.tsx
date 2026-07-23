@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { CalendarDays, Check, Send } from 'lucide-react';
+import { CalendarDays, Check, Send, Clock, BookmarkPlus } from 'lucide-react';
+import SaveAsWorkflowTemplateModal from '@/components/admin/feedback/SaveAsWorkflowTemplateModal';
 import AdminLayout from '@/components/admin/AdminLayout';
 import FeedbackProjectHeader from '@/components/admin/feedback/FeedbackProjectHeader';
 import ProjectAssigneesPanel from '@/components/admin/feedback/ProjectAssigneesPanel';
@@ -11,6 +12,12 @@ import { authFetch } from '@/lib/auth-fetch';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import DatePicker from '@/components/ui/DatePicker';
+import { REVIEW_STATUS_CONFIG } from '@/lib/feedback/status';
+import {
+  STAGES_WITH_DUE_DATES,
+  getStageDueDateUrgency,
+  formatStageDueDate,
+} from '@/lib/feedback/stage-due-dates';
 
 export default function FeedbackProjectSettingsPage(
   props: {
@@ -48,8 +55,12 @@ function SettingsContent({
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+
   const [dueDate, setDueDate] = useState('');
   const [savingDue, setSavingDue] = useState(false);
+  const [stageDueDates, setStageDueDates] = useState<Record<string, string>>({});
+  const [savingStage, setSavingStage] = useState<string | null>(null);
   const [reminding, setReminding] = useState(false);
   const [reminderMode, setReminderMode] = useState<'all' | 'select'>('all');
   const [selectedGuests, setSelectedGuests] = useState<Set<string>>(new Set());
@@ -77,6 +88,7 @@ function SettingsContent({
     }
     setProject(p);
     setDueDate(p.due_date ?? '');
+    setStageDueDates(p.stage_due_dates ?? {});
     setHasWebpages((items?.length ?? 0) > 0);
     setLoading(false);
   }, [projectId, companyId, router]);
@@ -122,6 +134,28 @@ function SettingsContent({
       setDueDate(project?.due_date ?? '');
     } else {
       setProject((prev) => (prev ? { ...prev, due_date: value || null } : prev));
+    }
+  };
+
+  const saveStageDueDate = async (stage: string, value: string) => {
+    const next = { ...stageDueDates };
+    if (value) {
+      next[stage] = value;
+    } else {
+      delete next[stage];
+    }
+    setStageDueDates(next);
+    setSavingStage(stage);
+    const { error } = await supabase
+      .from('review_projects')
+      .update({ stage_due_dates: next, updated_at: new Date().toISOString() })
+      .eq('id', projectId);
+    setSavingStage(null);
+    if (error) {
+      toast.error('Failed to save stage due date');
+      setStageDueDates(project?.stage_due_dates ?? {});
+    } else {
+      setProject((prev) => (prev ? { ...prev, stage_due_dates: next } : prev));
     }
   };
 
@@ -298,6 +332,93 @@ function SettingsContent({
               )}
             </div>
 
+            {/* ── Stage Due Dates ─────────────────────────────── */}
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Clock size={15} className="text-faint" />
+                <h3 className="text-sm font-semibold text-ink">Stage Deadlines</h3>
+              </div>
+              <p className="text-caption text-dim mb-3">
+                Set per-stage deadlines. Assignees receive automated reminders when a stage is due within 24 hours.
+              </p>
+
+              <div className="space-y-2">
+                {STAGES_WITH_DUE_DATES.map((stage) => {
+                  const def = REVIEW_STATUS_CONFIG[stage];
+                  const dateVal = stageDueDates[stage] ?? '';
+                  const urgency = dateVal ? getStageDueDateUrgency(dateVal) : null;
+                  const relative = dateVal ? formatStageDueDate(dateVal) : null;
+                  const isSaving = savingStage === stage;
+
+                  return (
+                    <div
+                      key={stage}
+                      className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-colors ${
+                        urgency === 'overdue'
+                          ? 'border-red-200 bg-red-50/50'
+                          : urgency === 'soon'
+                            ? 'border-amber-200 bg-amber-50/50'
+                            : 'border-edge bg-white'
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${def.dot}`} />
+                      <span className="text-caption font-medium text-ink w-32 shrink-0">{def.label}</span>
+
+                      {dateVal ? (
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className={`text-caption ${
+                            urgency === 'overdue' ? 'text-red-600 font-semibold' :
+                            urgency === 'soon' ? 'text-amber-700 font-medium' :
+                            'text-dim'
+                          }`}>
+                            {new Date(dateVal + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
+                          </span>
+                          {relative && (
+                            <span className={`text-detail ${
+                              urgency === 'overdue' ? 'text-red-500' :
+                              urgency === 'soon' ? 'text-amber-600' :
+                              'text-faint'
+                            }`}>
+                              {urgency === 'overdue' ? `(${relative})` : `(${relative})`}
+                            </span>
+                          )}
+                          {isSaving && (
+                            <div className="w-3.5 h-3.5 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
+                          )}
+                          <div className="ml-auto flex items-center gap-1 shrink-0">
+                            <DatePicker value={dateVal} onChange={(v) => saveStageDueDate(stage, v)}>
+                              <span className="text-xs text-faint hover:text-prose transition-colors cursor-pointer">
+                                Change
+                              </span>
+                            </DatePicker>
+                            <span className="text-edge-strong">·</span>
+                            <button
+                              type="button"
+                              onClick={() => saveStageDueDate(stage, '')}
+                              className="text-xs text-faint hover:text-red-500 transition-colors"
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 flex-1">
+                          <DatePicker value="" onChange={(v) => saveStageDueDate(stage, v)}>
+                            <span className="text-xs text-dim hover:text-teal cursor-pointer transition-colors">
+                              Set deadline
+                            </span>
+                          </DatePicker>
+                          {isSaving && (
+                            <div className="w-3.5 h-3.5 border-2 border-edge-strong border-t-teal rounded-full animate-spin" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* ── Email Reminders ─────────────────────────────── */}
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -393,6 +514,33 @@ function SettingsContent({
               companyId={companyId}
               currentUserId={userId}
             />
+
+            {/* ── Save as Workflow Template ──────────────────── */}
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <BookmarkPlus size={15} className="text-faint" />
+                <h3 className="text-sm font-semibold text-ink">Workflow Template</h3>
+              </div>
+              <p className="text-caption text-dim mb-3">
+                Save this campaign's assignee and stage configuration as a reusable template for new campaigns.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowSaveTemplate(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-caption font-medium border border-edge-strong rounded-lg hover:border-edge-hover hover:bg-surface/50 transition-colors"
+              >
+                <BookmarkPlus size={14} />
+                Save as Template
+              </button>
+            </div>
+
+            {showSaveTemplate && (
+              <SaveAsWorkflowTemplateModal
+                companyId={companyId}
+                projectId={projectId}
+                onClose={() => setShowSaveTemplate(false)}
+              />
+            )}
           </div>
         )}
       </div>

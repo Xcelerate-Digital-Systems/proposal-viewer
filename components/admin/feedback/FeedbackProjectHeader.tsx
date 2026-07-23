@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, FileText, Pause, Play, CalendarDays, PackageCheck, Link2, Unlink } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, Pause, Play, CalendarDays, PackageCheck, Link2, Unlink, AlertTriangle } from 'lucide-react';
 import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
 import ReviewerNoteModal from '@/components/admin/feedback/ReviewerNoteModal';
 import ShareMenu from '@/components/feedback/ShareMenu';
@@ -11,6 +11,7 @@ import { buildReviewProjectUrl } from '@/lib/proposal-url';
 import { supabase, type FeedbackProject } from '@/lib/supabase';
 import { DEFAULT_SHARED_VIEWS, type FeedbackStatus } from '@/lib/types/feedback';
 import { REVIEW_STATUS_OPTIONS } from '@/lib/feedback/status';
+import { hasOverdueStage } from '@/lib/feedback/stage-due-dates';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
 import { authFetch } from '@/lib/auth-fetch';
@@ -172,6 +173,12 @@ export default function FeedbackProjectHeader({
                   </span>
                 );
               })()}
+              {project.stage_due_dates && hasOverdueStage(project.stage_due_dates) && (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-2xs font-medium bg-red-50 text-red-600">
+                  <AlertTriangle size={10} />
+                  Stage overdue
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -213,6 +220,15 @@ export default function FeedbackProjectHeader({
             buildUrl={buildUrl}
             onViewsChange={(next) =>
               setProject((prev) => (prev ? { ...prev, shared_views: next } : prev))
+            }
+            hasPassword={!!project.share_password_hash}
+            expiresAt={project.share_expires_at}
+            onSecurityChange={({ hasPassword, expiresAt: ea }) =>
+              setProject((prev) => (prev ? {
+                ...prev,
+                share_password_hash: hasPassword ? (prev.share_password_hash || 'set') : null,
+                share_expires_at: ea,
+              } : prev))
             }
           />
 
