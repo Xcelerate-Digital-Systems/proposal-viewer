@@ -31,7 +31,7 @@ interface Props {
   setProject: (updater: (prev: FeedbackProject | null) => FeedbackProject | null) => void;
   customDomain: string | null;
   hasWebpages: boolean;
-  activeTab: 'board' | 'kanban' | 'assets' | 'comments' | 'setup' | 'settings';
+  activeTab: 'board' | 'kanban' | 'assets' | 'comments' | 'setup' | 'settings' | 'sitemap' | 'review';
   onAddItem?: () => void;
 }
 
@@ -296,7 +296,7 @@ export default function FeedbackProjectHeader({
         </div>
       </div>
 
-      <ProjectTabs projectId={projectId} activeTab={activeTab} hasWebpages={hasWebpages} />
+      <ProjectTabs projectId={projectId} activeTab={activeTab} hasWebpages={hasWebpages} projectType={project.project_type} />
 
       {showNoteModal && (
         <ReviewerNoteModal

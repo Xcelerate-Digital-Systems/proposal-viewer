@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation';
 import {
   Copy, Check, Trash2, ExternalLink, MessageSquareText,
   MoreHorizontal, Pencil,
-  Eye, FolderOpen, CalendarDays,
+  Eye, FolderOpen, CalendarDays, Layers, FileCheck, Globe,
 } from 'lucide-react';
+import type { ProjectType } from '@/lib/types/feedback';
 import { Modal } from '@/components/ui/Modal';
 import { supabase, type FeedbackProject, type FeedbackStatus } from '@/lib/supabase';
 import { buildReviewUrl } from '@/lib/proposal-url';
@@ -182,6 +183,8 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
     setShowMenu(false);
   };
 
+  const projectType: ProjectType = (project as FeedbackProject & { project_type?: ProjectType }).project_type ?? 'campaign';
+
   // Build progress segments
   const progressSegments = [
     ...REVIEW_STATUS_ORDER
@@ -194,7 +197,12 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
       <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all flex flex-col">
         {/* ─── Visual header — click to open ──────────────────── */}
         <button
-          onClick={() => router.push(`/campaigns/${project.id}`)}
+          onClick={() => {
+            const dest = projectType === 'asset' ? `/campaigns/${project.id}/review`
+              : projectType === 'website' ? `/campaigns/${project.id}/sitemap`
+              : `/campaigns/${project.id}`;
+            router.push(dest);
+          }}
           className="w-full aspect-[4/3] rounded-t-2xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity relative bg-surface flex flex-col items-center justify-center p-3"
         >
           {itemStats.total > 0 ? (
@@ -264,6 +272,18 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
           <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-2xs font-medium text-faint shadow-sm">
             {formatDate(project.created_at)}
           </span>
+
+          {/* Type badge */}
+          {projectType !== 'campaign' && (
+            <span className={`absolute top-2.5 left-2.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold shadow-sm backdrop-blur-sm ${
+              projectType === 'asset'
+                ? 'bg-amber-50/90 text-amber-700'
+                : 'bg-purple-50/90 text-purple-700'
+            }`}>
+              {projectType === 'asset' ? <FileCheck size={10} /> : <Globe size={10} />}
+              {projectType === 'asset' ? 'Asset' : 'Website'}
+            </span>
+          )}
         </button>
 
         {/* ─── Card body ──────────────────────────────────────── */}
@@ -271,7 +291,12 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
           {/* Title */}
           <h3
             className="text-base font-semibold text-ink truncate cursor-pointer hover:text-teal transition-colors mb-1"
-            onClick={() => router.push(`/campaigns/${project.id}`)}
+            onClick={() => {
+              const dest = projectType === 'asset' ? `/campaigns/${project.id}/review`
+                : projectType === 'website' ? `/campaigns/${project.id}/sitemap`
+                : `/campaigns/${project.id}`;
+              router.push(dest);
+            }}
           >
             {project.title}
           </h3>
@@ -317,7 +342,12 @@ export default function FeedbackProjectCard({ project, onRefresh, customDomain }
           <div className="flex items-center justify-between border-t border-edge pt-2.5 -mx-3 px-3">
             <div className="flex items-center gap-0.5">
               <button
-                onClick={() => router.push(`/campaigns/${project.id}`)}
+                onClick={() => {
+                  const dest = projectType === 'asset' ? `/campaigns/${project.id}/review`
+                    : projectType === 'website' ? `/campaigns/${project.id}/sitemap`
+                    : `/campaigns/${project.id}`;
+                  router.push(dest);
+                }}
                 className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-teal hover:bg-teal-tint transition-colors"
               >
                 <Eye size={12} />

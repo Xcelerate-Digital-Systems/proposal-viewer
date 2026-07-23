@@ -7,8 +7,8 @@ import { supabase, type FeedbackProject } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import FormActions from './FormActions';
 
-interface WebpageItemFormProps {
-  reviewProjectId: string;
+export interface WebpageItemFormProps {
+  reviewProjectId?: string;
   onSubmit: (payload: Record<string, unknown>) => Promise<void>;
   onBack: () => void;
   onCancel: () => void;
@@ -24,13 +24,16 @@ export default function WebpageItemForm({
 }: WebpageItemFormProps) {
   const toast = useToast();
   const router = useRouter();
-  const [ready, setReady] = useState(false);
+  const standalone = !reviewProjectId;
+  const [ready, setReady] = useState(standalone);
   const [project, setProject] = useState<FeedbackProject | null>(null);
 
   const [title, setTitle] = useState('');
   const [pagePath, setPagePath] = useState('/');
+  const [directUrl, setDirectUrl] = useState('');
 
   useEffect(() => {
+    if (standalone) return;
     (async () => {
       const { data, error } = await supabase
         .from('review_projects')
@@ -43,7 +46,6 @@ export default function WebpageItemForm({
         return;
       }
 
-      // If domain not set or script not installed, send to Setup first
       if (!data.root_domain || !data.script_installed_at) {
         onCancel();
         router.push(`/campaigns/${reviewProjectId}/setup`);
@@ -60,7 +62,9 @@ export default function WebpageItemForm({
     ? `${project.root_domain}${pagePath.startsWith('/') ? pagePath : `/${pagePath}`}`
     : pagePath;
 
-  const canSubmitPage = !!title.trim() && !!project?.root_domain;
+  const canSubmitPage = standalone
+    ? !!title.trim() && !!directUrl.trim()
+    : !!title.trim() && !!project?.root_domain;
 
   const handleSubmitPage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +72,7 @@ export default function WebpageItemForm({
     await onSubmit({
       title: title.trim(),
       type: 'webpage',
-      url: pageUrl,
+      url: standalone ? directUrl.trim() : pageUrl,
     });
   };
 
@@ -82,12 +86,14 @@ export default function WebpageItemForm({
 
   return (
     <form onSubmit={handleSubmitPage} className="p-6 space-y-5 overflow-y-auto">
-      <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 flex items-center gap-2">
-        <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
-        <p className="text-xs text-emerald-800 truncate">
-          Connected to <span className="font-mono font-semibold">{project?.root_domain}</span>
-        </p>
-      </div>
+      {!standalone && project?.root_domain && (
+        <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 flex items-center gap-2">
+          <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+          <p className="text-xs text-emerald-800 truncate">
+            Connected to <span className="font-mono font-semibold">{project.root_domain}</span>
+          </p>
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-prose mb-1.5">
@@ -98,42 +104,57 @@ export default function WebpageItemForm({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g. Initial Offer Page"
-          className="w-full px-3.5 py-2.5 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20  transition-colors"
+          className="w-full px-3.5 py-2.5 bg-surface rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
           autoFocus
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-prose mb-1.5">
-          Page Path
-        </label>
-        <div className="flex items-stretch rounded-lg border border-edge-strong focus-within:ring-2 focus-within:ring-teal/20 focus-within:border-teal overflow-hidden">
-          <span className="px-2.5 py-2.5 text-sm font-mono text-faint bg-surface border-r border-edge-strong shrink-0">
-            /
-          </span>
+      {standalone ? (
+        <div>
+          <label className="block text-sm font-medium text-prose mb-1.5">
+            Page URL <span className="text-red-400">*</span>
+          </label>
           <input
-            type="text"
-            value={pagePath.replace(/^\//, '')}
-            onChange={(e) => {
-              const v = e.target.value.replace(/^\/+/, '');
-              setPagePath(v ? `/${v}` : '/');
-            }}
-            placeholder="offer"
-            className="flex-1 px-3 py-2.5 text-sm text-ink font-mono placeholder:text-faint focus:outline-none min-w-0"
+            type="url"
+            value={directUrl}
+            onChange={(e) => setDirectUrl(e.target.value)}
+            placeholder="https://example.com/page"
+            className="w-full px-3.5 py-2.5 bg-surface rounded-2xl text-sm text-ink font-mono placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 transition-colors"
           />
         </div>
-        <p className="text-xs text-faint mt-1.5 break-all">
-          Full URL: <code className="font-mono text-dim">{project?.root_domain}{pagePath || '/'}</code>
-          <span className="text-faint"> · Leave blank for the homepage.</span>
-        </p>
-      </div>
+      ) : (
+        <div>
+          <label className="block text-sm font-medium text-prose mb-1.5">
+            Page Path
+          </label>
+          <div className="flex items-stretch rounded-lg border border-edge-strong focus-within:ring-2 focus-within:ring-teal/20 focus-within:border-teal overflow-hidden">
+            <span className="px-2.5 py-2.5 text-sm font-mono text-faint bg-surface border-r border-edge-strong shrink-0">
+              /
+            </span>
+            <input
+              type="text"
+              value={pagePath.replace(/^\//, '')}
+              onChange={(e) => {
+                const v = e.target.value.replace(/^\/+/, '');
+                setPagePath(v ? `/${v}` : '/');
+              }}
+              placeholder="offer"
+              className="flex-1 px-3 py-2.5 text-sm text-ink font-mono placeholder:text-faint focus:outline-none min-w-0"
+            />
+          </div>
+          <p className="text-xs text-faint mt-1.5 break-all">
+            Full URL: <code className="font-mono text-dim">{project?.root_domain}{pagePath || '/'}</code>
+            <span className="text-faint"> · Leave blank for the homepage.</span>
+          </p>
+        </div>
+      )}
 
       <FormActions
         onBack={onBack}
         onCancel={onCancel}
         disabled={!canSubmitPage || uploading}
         uploading={uploading}
-        submitLabel="Add Page"
+        submitLabel={standalone ? 'Create' : 'Add Page'}
       />
     </form>
   );

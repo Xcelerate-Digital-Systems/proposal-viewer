@@ -5,8 +5,9 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import {
   Copy, Check, Trash2, ExternalLink, MessageSquareText, CalendarDays,
-  MoreHorizontal, Pencil,
+  MoreHorizontal, Pencil, FileCheck, Globe,
 } from 'lucide-react';
+import type { ProjectType } from '@/lib/types/feedback';
 import { Modal } from '@/components/ui/Modal';
 import { supabase, type FeedbackProject, type FeedbackStatus } from '@/lib/supabase';
 import { buildReviewUrl } from '@/lib/proposal-url';
@@ -39,6 +40,11 @@ const projectStatusOptions: StatusOption<ProjectStatus>[] = REVIEW_STATUS_OPTION
 
 export default function FeedbackProjectRow({ project, onRefresh, customDomain }: ReviewProjectRowProps) {
   const router = useRouter();
+  const projectType: ProjectType = (project as FeedbackProject & { project_type?: ProjectType }).project_type ?? 'campaign';
+
+  const projectHref = projectType === 'asset' ? `/campaigns/${project.id}/review`
+    : projectType === 'website' ? `/campaigns/${project.id}/sitemap`
+    : `/campaigns/${project.id}`;
   const confirm = useConfirm();
   const toast = useToast();
   const [copied, setCopied] = useState(false);
@@ -157,7 +163,7 @@ export default function FeedbackProjectRow({ project, onRefresh, customDomain }:
   return (
     <>
       <div
-        onClick={() => router.push(`/campaigns/${project.id}`)}
+        onClick={() => router.push(projectHref)}
         className="flex items-center gap-4 px-4 py-3 bg-white rounded-2xl shadow-[0_1px_2px_rgba(20,20,40,0.04)] hover:shadow-[0_2px_8px_rgba(20,20,40,0.06)] cursor-pointer transition-shadow group"
       >
         {/* Status dropdown */}
@@ -168,6 +174,18 @@ export default function FeedbackProjectRow({ project, onRefresh, customDomain }:
             onChange={handleStatusChange}
           />
         </div>
+
+        {/* Type badge */}
+        {projectType !== 'campaign' && (
+          <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold ${
+            projectType === 'asset'
+              ? 'bg-amber-50 text-amber-700'
+              : 'bg-purple-50 text-purple-700'
+          }`}>
+            {projectType === 'asset' ? <FileCheck size={10} /> : <Globe size={10} />}
+            {projectType === 'asset' ? 'Asset' : 'Website'}
+          </span>
+        )}
 
         {/* Title + client */}
         <div className="flex-1 min-w-0">

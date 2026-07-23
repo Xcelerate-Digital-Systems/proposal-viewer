@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, MessageSquareText, LayoutGrid, List, Search, KanbanSquare, ExternalLink, Calendar, MoreHorizontal, Pencil, Trash2, Copy, Check, ChevronDown, Workflow } from 'lucide-react';
+import { Plus, MessageSquareText, LayoutGrid, List, Search, KanbanSquare, ExternalLink, Calendar, MoreHorizontal, Pencil, Trash2, Copy, Check, ChevronDown, Workflow, Layers, FileCheck, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ui/ErrorState';
@@ -11,7 +11,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import NoResults from '@/components/ui/NoResults';
 import EntityListSkeleton from '@/components/ui/EntityListSkeleton';
 import { supabase, type FeedbackProject } from '@/lib/supabase';
-import type { FeedbackStatus } from '@/lib/types/feedback';
+import type { FeedbackStatus, ProjectType } from '@/lib/types/feedback';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { createPortal } from 'react-dom';
 import { Modal } from '@/components/ui/Modal';
@@ -19,6 +19,7 @@ import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import { buildReviewUrl } from '@/lib/proposal-url';
 import CreateFeedbackProjectModal from '@/components/admin/feedback/CreateFeedbackProjectModal';
+import CreateStandaloneAssetModal from '@/components/admin/feedback/CreateStandaloneAssetModal';
 import FeedbackProjectCard from '@/components/admin/feedback/FeedbackProjectCard';
 import FeedbackProjectRow from '@/components/admin/feedback/FeedbackProjectRow';
 import KanbanBoard, { type KanbanColumn } from '@/components/kanban/KanbanBoard';
@@ -65,14 +66,31 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [showAssetModal, setShowAssetModal] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
+
+  const [showCreateMenu, setShowCreateMenu] = useState(false);
+  const createMenuRef = useRef<HTMLDivElement>(null);
 
   // Filter & sort state from URL params
   const searchQuery = searchParams.get('q') || '';
   const statusFilter = (searchParams.get('status') || '') as FeedbackStatus | '';
+  const typeFilter = (searchParams.get('type') || '') as ProjectType | '';
   const clientFilter = searchParams.get('client') || '';
   const sortBy = (searchParams.get('sort') || 'updated') as SortOption;
+
+  // Close create menu on outside click
+  useEffect(() => {
+    if (!showCreateMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (createMenuRef.current && !createMenuRef.current.contains(e.target as Node)) {
+        setShowCreateMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showCreateMenu]);
 
   const updateParam = useCallback((key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -181,6 +199,11 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
       result = result.filter((p) => p.status === statusFilter);
     }
 
+    // Type filter
+    if (typeFilter) {
+      result = result.filter((p) => (p.project_type ?? 'campaign') === typeFilter);
+    }
+
     // Client filter
     if (clientFilter) {
       result = result.filter((p) =>
@@ -215,14 +238,14 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
     }
 
     return sorted;
-  }, [projects, searchQuery, statusFilter, clientFilter, sortBy]);
+  }, [projects, searchQuery, statusFilter, typeFilter, clientFilter, sortBy]);
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <PageHeader
         title="Campaigns"
-        description={`${projects.length} campaign${projects.length !== 1 ? 's' : ''}`}
+        description={`${projects.length} project${projects.length !== 1 ? 's' : ''}`}
         actions={<>
           {/* View toggle */}
             <div className="flex items-center bg-surface rounded-full p-1 gap-0.5" role="group" aria-label="View mode">
@@ -293,6 +316,22 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
               <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-faint pointer-events-none" />
             </div>
 
+            {/* Type filter */}
+            <div className="relative hidden md:block">
+              <select
+                value={typeFilter}
+                onChange={(e) => updateParam('type', e.target.value)}
+                className="appearance-none bg-surface text-caption text-ink rounded-full pl-3 pr-7 py-2 outline-none focus:ring-2 focus:ring-teal/20 transition-all cursor-pointer"
+                aria-label="Filter by type"
+              >
+                <option value="">All types</option>
+                <option value="campaign">Campaigns</option>
+                <option value="asset">Assets</option>
+                <option value="website">Websites</option>
+              </select>
+              <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-faint pointer-events-none" />
+            </div>
+
             {/* Client filter */}
             {clientOptions.length > 0 && (
               <div className="relative hidden md:block">
@@ -339,14 +378,55 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
             </Button>
 
             {/* New project */}
-            <div data-tour="campaigns-new">
+            <div data-tour="campaigns-new" className="relative" ref={createMenuRef}>
               <Button
                 size="sm"
                 leftIcon={Plus}
-                onClick={() => setShowCreate(true)}
+                onClick={() => setShowCreateMenu(!showCreateMenu)}
               >
-                New Campaign
+                Create New
+                <ChevronDown size={13} className="ml-1 -mr-1" />
               </Button>
+              {showCreateMenu && (
+                <div className="absolute right-0 top-full mt-1.5 z-50 w-56 rounded-xl border border-edge bg-white shadow-lg py-1.5">
+                  <button
+                    onClick={() => { setShowCreateMenu(false); setShowCreate(true); }}
+                    className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-left text-sm text-ink hover:bg-surface transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-teal/10 flex items-center justify-center shrink-0">
+                      <Layers size={15} className="text-teal" />
+                    </div>
+                    <div>
+                      <div className="font-medium">Campaign</div>
+                      <div className="text-xs text-faint">Multi-asset project with stages</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => { setShowCreateMenu(false); setShowAssetModal(true); }}
+                    className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-left text-sm text-ink hover:bg-surface transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+                      <FileCheck size={15} className="text-amber-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium">Asset</div>
+                      <div className="text-xs text-faint">Quick single-item review</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => { setShowCreateMenu(false); /* TODO: Phase 3 — website project modal */ }}
+                    className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-left text-sm text-ink hover:bg-surface transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
+                      <Globe size={15} className="text-purple-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium">Website</div>
+                      <div className="text-xs text-faint">Website review with sitemap</div>
+                    </div>
+                  </button>
+                </div>
+              )}
             </div>
         </>}
       />
@@ -364,6 +444,15 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
           />
         )}
 
+        {showAssetModal && (
+          <CreateStandaloneAssetModal
+            companyId={companyId}
+            userId={userId}
+            onClose={() => setShowAssetModal(false)}
+            onSuccess={fetchProjects}
+          />
+        )}
+
         <WorkflowTemplatesManager
           companyId={companyId}
           open={showTemplates}
@@ -377,8 +466,8 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
             description={fetchError}
             onRetry={() => { setLoading(true); fetchProjects(); }}
           />
-        ) : filtered.length === 0 && (searchQuery || statusFilter || clientFilter) ? (
-          <NoResults message={searchQuery ? `No campaigns matching “${searchQuery}”` : 'No campaigns match the selected filters'} />
+        ) : filtered.length === 0 && (searchQuery || statusFilter || typeFilter || clientFilter) ? (
+          <NoResults message={searchQuery ? `No projects matching “${searchQuery}”` : 'No projects match the selected filters'} />
         ) : projects.length === 0 ? (
           <EmptyState
             icon={MessageSquareText}
@@ -441,6 +530,10 @@ function FeedbackBoardCard({ project, onRefresh, customDomain }: { project: Feed
   const confirm = useConfirm();
   const toast = useToast();
   const updated = project.updated_at || project.created_at;
+  const projectType = (project.project_type ?? 'campaign') as 'campaign' | 'asset' | 'website';
+  const projectHref = projectType === 'asset' ? `/campaigns/${project.id}/review`
+    : projectType === 'website' ? `/campaigns/${project.id}/sitemap`
+    : `/campaigns/${project.id}/comments`;
   const [showMenu, setShowMenu] = useState(false);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
   const [menuPos, setMenuPos] = useState<{ bottom: number; right: number } | null>(null);
@@ -514,15 +607,19 @@ function FeedbackBoardCard({ project, onRefresh, customDomain }: { project: Feed
     <>
       <div className="group relative bg-white rounded-2xl shadow-card-soft hover:shadow-card-hover p-3.5 transition-all">
         <div className="flex items-start gap-2.5">
-          <div className="shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center bg-teal/10">
-            <MessageSquareText size={15} className="text-teal" />
+          <div className={`shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center ${
+            projectType === 'asset' ? 'bg-amber-500/10' : projectType === 'website' ? 'bg-purple-500/10' : 'bg-teal/10'
+          }`}>
+            {projectType === 'asset' ? <FileCheck size={15} className="text-amber-600" />
+              : projectType === 'website' ? <Globe size={15} className="text-purple-600" />
+              : <MessageSquareText size={15} className="text-teal" />}
           </div>
           <div className="min-w-0 flex-1">
             <h4 className="text-caption font-medium text-ink truncate leading-tight">
               {project.title}
             </h4>
             <p className="text-detail text-faint mt-0.5 truncate">
-              {project.client_company || project.client_name || 'Campaign'}
+              {project.client_company || project.client_name || (projectType === 'asset' ? 'Asset' : projectType === 'website' ? 'Website' : 'Campaign')}
             </p>
           </div>
           <button
@@ -548,7 +645,7 @@ function FeedbackBoardCard({ project, onRefresh, customDomain }: { project: Feed
             <span>{relativeShort(updated)}</span>
           </div>
           <Link
-            href={`/campaigns/${project.id}/comments`}
+            href={projectHref}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             className="relative z-10 inline-flex items-center gap-1 text-detail font-medium text-teal hover:text-teal-hover"

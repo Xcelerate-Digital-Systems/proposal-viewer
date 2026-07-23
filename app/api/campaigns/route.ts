@@ -24,6 +24,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
+    const VALID_PROJECT_TYPES = ['campaign', 'asset', 'website'] as const;
+    const projectType = VALID_PROJECT_TYPES.includes(body.project_type) ? body.project_type : 'campaign';
+
     const companyId = auth.companyId;
 
     const limitCheck = await checkResourceLimit(companyId, 'reviews');
@@ -37,11 +40,13 @@ export async function POST(req: NextRequest) {
       .from('review_projects')
       .insert({
         company_id: companyId,
+        project_type: projectType,
         title,
         description: typeof body.description === 'string' ? body.description.trim() || null : null,
         client_company: typeof body.client_company === 'string' ? body.client_company.trim() || null : null,
         client_name: typeof body.client_name === 'string' ? body.client_name.trim() || null : null,
         client_email: typeof body.client_email === 'string' ? body.client_email.trim() || null : null,
+        root_domain: typeof body.root_domain === 'string' ? body.root_domain.trim() || null : null,
         created_by: auth.member.user_id ?? null,
       })
       .select('id')

@@ -7,6 +7,8 @@
 // These TS types map 1:1 to those rows — only the application-layer naming was
 // flipped to "Feedback" to free up "Review" for a separate upcoming feature.
 
+export type ProjectType = 'campaign' | 'asset' | 'website';
+
 export type FeedbackShareMode = 'list' | 'board';
 
 /** Which tabs the public project share link exposes. */
@@ -25,6 +27,7 @@ export const DEFAULT_SHARED_VIEWS: FeedbackSharedViews = {
 export type FeedbackProject = {
   id: string;
   company_id: string;
+  project_type: ProjectType;
   title: string;
   description: string | null;
   client_name: string | null;
@@ -423,6 +426,10 @@ export type FeedbackItem = {
   /** When set, the viewer renders the assets from this row in `review_item_versions`.
    *  Null means render the v1 fields already on the item itself. */
   active_version_id: string | null;
+  /** FK → review_items.id. Forms sitemap tree for website projects. */
+  parent_item_id: string | null;
+  /** URL path segment in the sitemap (e.g. /about, /services/seo). */
+  page_path: string | null;
 };
 
 /** A stored version of a feedback item's assets. v1 lives on `review_items`; v2+ live here. */
