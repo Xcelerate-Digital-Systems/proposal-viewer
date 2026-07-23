@@ -20,6 +20,7 @@ import { useToast } from '@/components/ui/Toast';
 import { buildReviewUrl } from '@/lib/proposal-url';
 import CreateFeedbackProjectModal from '@/components/admin/feedback/CreateFeedbackProjectModal';
 import CreateStandaloneAssetModal from '@/components/admin/feedback/CreateStandaloneAssetModal';
+import CreateWebsiteProjectModal from '@/components/admin/feedback/CreateWebsiteProjectModal';
 import FeedbackProjectCard from '@/components/admin/feedback/FeedbackProjectCard';
 import FeedbackProjectRow from '@/components/admin/feedback/FeedbackProjectRow';
 import KanbanBoard, { type KanbanColumn } from '@/components/kanban/KanbanBoard';
@@ -67,6 +68,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showAssetModal, setShowAssetModal] = useState(false);
+  const [showWebsiteModal, setShowWebsiteModal] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [customDomain, setCustomDomain] = useState<string | null>(null);
 
@@ -414,7 +416,7 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
                     </div>
                   </button>
                   <button
-                    onClick={() => { setShowCreateMenu(false); /* TODO: Phase 3 — website project modal */ }}
+                    onClick={() => { setShowCreateMenu(false); setShowWebsiteModal(true); }}
                     className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-left text-sm text-ink hover:bg-surface transition-colors"
                   >
                     <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
@@ -449,6 +451,15 @@ function ReviewsContent({ companyId, userId }: { companyId: string; userId: stri
             companyId={companyId}
             userId={userId}
             onClose={() => setShowAssetModal(false)}
+            onSuccess={fetchProjects}
+          />
+        )}
+
+        {showWebsiteModal && (
+          <CreateWebsiteProjectModal
+            companyId={companyId}
+            userId={userId}
+            onClose={() => setShowWebsiteModal(false)}
             onSuccess={fetchProjects}
           />
         )}
