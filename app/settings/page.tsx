@@ -5,7 +5,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
   Settings, Building2, Users, Code2, CreditCard, KeyRound, Plug,
-  Webhook, Key, AppWindow, Mail,
+  Webhook, Key, AppWindow, Mail, Cable,
 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import BusinessDetailsCard from '@/components/admin/company/BusinessDetailsCard';
@@ -14,6 +14,7 @@ import WebhookManager from '@/components/admin/settings/WebhookManager';
 import { WEBHOOK_EVENTS, REVIEW_WEBHOOK_EVENTS } from '@/components/admin/settings/settings-config';
 import ApiKeyManager from '@/components/admin/settings/ApiKeyManager';
 import ConnectedAppsManager from '@/components/admin/settings/ConnectedAppsManager';
+import McpSetupSection from '@/components/admin/settings/McpSetupSection';
 import GhlConnectorCard from '@/components/admin/connectors/GhlConnectorCard';
 import MetaConnectorCard from '@/components/admin/connectors/MetaConnectorCard';
 import FigmaConnectorCard from '@/components/admin/connectors/FigmaConnectorCard';
@@ -261,6 +262,15 @@ function SettingsContent({ auth }: {
                   description="Apps authorized to access your workspace via OAuth — browser extensions, Looker Studio, and other tools."
                 >
                   <ConnectedAppsManager />
+                </DeveloperSection>
+
+                {/* MCP Setup */}
+                <DeveloperSection
+                  icon={Cable}
+                  title="MCP Server"
+                  description="Connect AI assistants to your workspace using the Model Context Protocol."
+                >
+                  <McpSetupSection />
                 </DeveloperSection>
               </div>
             </section>
