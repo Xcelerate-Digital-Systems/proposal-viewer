@@ -112,8 +112,20 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
       const labelFontSize = Number(style.labelFontSize) || 16;
       const labelColor = (style.labelColor as string) || '#2B2B2B';
 
-      const source = e.source_shape_id ? `shape-${e.source_shape_id}` : `step-${e.source_step_id}`;
-      const target = e.target_shape_id ? `shape-${e.target_shape_id}` : `step-${e.target_step_id}`;
+      // Note IDs are stored in the shape FK columns. Resolve back to the
+      // correct RF node prefix by checking whether the ID belongs to a note.
+      const resolveSource = () => {
+        if (!e.source_shape_id) return `step-${e.source_step_id}`;
+        if (boardNotes.some((n) => n.id === e.source_shape_id)) return `note-${e.source_shape_id}`;
+        return `shape-${e.source_shape_id}`;
+      };
+      const resolveTarget = () => {
+        if (!e.target_shape_id) return `step-${e.target_step_id}`;
+        if (boardNotes.some((n) => n.id === e.target_shape_id)) return `note-${e.target_shape_id}`;
+        return `shape-${e.target_shape_id}`;
+      };
+      const source = resolveSource();
+      const target = resolveTarget();
 
       const userLabel = e.label || '';
       const edgeFlow = flowByEdge?.get(e.id);
@@ -142,7 +154,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
       } as Edge;
     });
     setEdges(flow);
-  }, [boardEdges, setEdges, flowByEdge]);
+  }, [boardEdges, boardNotes, setEdges, flowByEdge]);
 
   /* ── Drag save ─────────────────────────────────────────────── */
 
@@ -180,7 +192,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
       for (const id of Array.from(dragEndIds)) {
         const node = updated.find((n) => n.id === id);
         if (!node) continue;
-        const snapped = computeSnapPosition(node, updated, ALIGNMENT_TOLERANCE, visualCentre);
+        const snapped = computeSnapPosition(node, updated, ALIGNMENT_TOLERANCE, visualCentre, 4);
         const finalPos = snapped || node.position;
         if (snapped) {
           updated = updated.map((n) => n.id === id ? { ...n, position: snapped } : n);
@@ -206,22 +218,25 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
   const onConnect = useCallback(async (connection: Connection) => {
     if (!connection.source || !connection.target) return;
 
-    // RF node ids: steps use `step-{uuid}`, shapes `shape-{uuid}`. Sticky-note
-    // edges are visual-only and not persisted.
-    if (connection.source.startsWith('note-') || connection.target.startsWith('note-')) return;
-
-    const srcIsShape = connection.source.startsWith('shape-');
-    const tgtIsShape = connection.target.startsWith('shape-');
-    const srcId = connection.source.replace(/^(step|shape)-/, '');
-    const tgtId = connection.target.replace(/^(step|shape)-/, '');
+    // RF node ids: steps use `step-{uuid}`, shapes `shape-{uuid}`, notes `note-{uuid}`.
+    // Split into step vs shape columns so FK cascades behave correctly.
+    // Note edges are persisted via the shape FK columns (source_shape_id / target_shape_id).
+    const resolveId = (rfId: string) => {
+      if (rfId.startsWith('step-'))  return { stepId: rfId.slice(5), shapeId: null, noteId: null };
+      if (rfId.startsWith('shape-')) return { stepId: null, shapeId: rfId.slice(6), noteId: null };
+      if (rfId.startsWith('note-'))  return { stepId: null, shapeId: null, noteId: rfId.slice(5) };
+      return { stepId: rfId, shapeId: null, noteId: null };
+    };
+    const src = resolveId(connection.source);
+    const tgt = resolveId(connection.target);
 
     await createEdge({
       funnel_id: ctx.funnelId,
       company_id: ctx.companyId,
-      source_step_id: srcIsShape ? null : srcId,
-      source_shape_id: srcIsShape ? srcId : null,
-      target_step_id: tgtIsShape ? null : tgtId,
-      target_shape_id: tgtIsShape ? tgtId : null,
+      source_step_id: src.stepId,
+      source_shape_id: src.shapeId || src.noteId,
+      target_step_id: tgt.stepId,
+      target_shape_id: tgt.shapeId || tgt.noteId,
       source_handle: connection.sourceHandle || 'right',
       target_handle: connection.targetHandle || 'left',
       edge_type: 'labeled',
@@ -244,6 +259,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
       dashed?: boolean; animated?: boolean;
       arrowDir?: 'none' | 'source' | 'target' | 'both';
       labelFontSize?: number; labelColor?: string;
+      edgeType?: 'bezier' | 'straight' | 'step';
     }) => {
       let nextEdge: Edge | undefined;
       setEdges((eds) => {
@@ -261,6 +277,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
         const nextArrowDir = patch.arrowDir ?? ((currentData.arrowDir as 'none' | 'source' | 'target' | 'both') ?? 'target');
         const nextLabelFontSize = patch.labelFontSize ?? (currentData.labelFontSize as number) ?? 16;
         const nextLabelColor = patch.labelColor ?? (currentData.labelColor as string) ?? '#2B2B2B';
+        const nextEdgeType = patch.edgeType ?? (currentData.edgeType as string) ?? 'bezier';
         const updated: Edge = {
           ...edge,
           animated: nextAnimated,
@@ -272,6 +289,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
             color: nextColor, strokeWidth: nextStrokeWidth, dashed: nextDashed,
             animated: nextAnimated, arrowDir: nextArrowDir,
             labelFontSize: nextLabelFontSize, labelColor: nextLabelColor,
+            edgeType: nextEdgeType,
           },
         };
         nextEdge = updated;
@@ -289,6 +307,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
           arrowDir: (nextEdge.data as Record<string, unknown>)?.arrowDir,
           labelFontSize: (nextEdge.data as Record<string, unknown>)?.labelFontSize,
           labelColor: (nextEdge.data as Record<string, unknown>)?.labelColor,
+          edgeType: (nextEdge.data as Record<string, unknown>)?.edgeType,
         } as Record<string, unknown>,
       });
     },

@@ -7,6 +7,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import { FunnelBoard } from '@/components/admin/funnels/board';
 import { useFunnelBoardContext } from '@/components/admin/funnels/board/FunnelBoardContext';
 import FunnelSettingsMenu from '@/components/admin/funnels/board/FunnelSettingsMenu';
+import EmbedMenu from '@/components/admin/funnels/board/EmbedMenu';
 import ScenarioSwitcher from '@/components/admin/funnels/board/ScenarioSwitcher';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -170,6 +171,7 @@ function BoardContent({ funnelId }: { funnelId: string }) {
             >
               <Copy size={13} />
             </button>
+            <EmbedMenu shareToken={funnel.share_token} />
             <a
               href={`/funnel/${funnel.share_token}`}
               target="_blank"

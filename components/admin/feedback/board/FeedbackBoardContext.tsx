@@ -161,6 +161,7 @@ export function FeedbackBoardProvider({
     updateItemBoardColor,
   } = useBoardItemMutations({
     projectId,
+    items,
     toast,
     refreshItems,
     loadBoardEdges,
@@ -168,6 +169,7 @@ export function FeedbackBoardProvider({
     markDone,
     placedItemsLength: placedItems.length,
     setItems,
+    recordHistory,
   });
 
   // Note mutations
@@ -185,9 +187,11 @@ export function FeedbackBoardProvider({
   const { createEdge, updateEdge, deleteEdge } = useBoardEdgeMutations({
     projectId,
     companyId,
+    boardEdges,
     setBoardEdges,
     toast,
     loadBoardEdges,
+    recordHistory,
   });
 
   // Shape mutations

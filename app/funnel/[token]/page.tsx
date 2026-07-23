@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, useMemo, use } from 'react';
+import { useState, useEffect, useMemo, use, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   ReactFlow, ReactFlowProvider, Controls, MiniMap,
   ConnectionMode, type NodeTypes, type EdgeTypes, type Node, type Edge,
   MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Monitor, RefreshCw, Workflow } from 'lucide-react';
+import { AlertTriangle, Monitor, RefreshCw, ServerCrash, WifiOff, Workflow } from 'lucide-react';
 import type {
   Funnel, FunnelStep, FunnelBoardEdge, FunnelBoardNote, FunnelBoardShape,
   FeedbackBoardShape, FeedbackBoardNote,
@@ -32,6 +33,16 @@ const edgeTypes: EdgeTypes = { labeled: LabeledEdge };
 
 export default function PublicFunnelPage(props: { params: Promise<{ token: string }> }) {
   const params = use(props.params);
+  return (
+    <Suspense fallback={<div className="fixed inset-0" style={{ backgroundColor: 'transparent' }} />}>
+      <PublicFunnelInner token={params.token} />
+    </Suspense>
+  );
+}
+
+function PublicFunnelInner({ token }: { token: string }) {
+  const searchParams = useSearchParams();
+  const isEmbed = searchParams.get('embed') === 'true';
   const [funnel, setFunnel] = useState<Funnel | null>(null);
   const [steps, setSteps] = useState<FunnelStep[]>([]);
   const [boardEdges, setBoardEdges] = useState<FunnelBoardEdge[]>([]);
@@ -40,16 +51,23 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [networkError, setNetworkError] = useState(false);
+  /** null = no error, 'not-found' = 404/invalid token, 'server' = 5xx, 'network' = fetch failed */
+  const [errorKind, setErrorKind] = useState<'not-found' | 'server' | 'network' | null>(null);
 
   const { bgSecondary, sidebarText, palette } = useBrandingColors(branding);
 
   useEffect(() => {
     async function load() {
+      setErrorKind(null);
+      setLoading(true);
       try {
-        const res = await fetch(`/api/funnel/${params.token}`, { cache: 'no-store' });
-        if (!res.ok) { setNotFound(true); setLoading(false); setBrandingLoaded(true); return; }
+        const res = await fetch(`/api/funnel/${token}`, { cache: 'no-store' });
+        if (!res.ok) {
+          setErrorKind(res.status >= 500 ? 'server' : 'not-found');
+          setLoading(false);
+          setBrandingLoaded(true);
+          return;
+        }
         const data = await res.json();
         setFunnel(data.funnel);
         setSteps(data.steps || []);
@@ -67,13 +85,13 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
         setBrandingLoaded(true);
         setLoading(false);
       } catch {
-        setNetworkError(true);
+        setErrorKind('network');
         setLoading(false);
         setBrandingLoaded(true);
       }
     }
     load();
-  }, [params.token]);
+  }, [token]);
 
   useEffect(() => {
     if (funnel) document.title = funnel.name || 'Funnel';
@@ -141,39 +159,63 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
   if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: 'transparent' }} />;
   if (loading) return <ViewerLoader branding={branding} loading={true} label="Loading funnel…" />;
 
-  if (networkError) {
+  if (errorKind === 'not-found' || (!loading && !funnel) || !funnel) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-surface">
         <div className="text-center max-w-xs">
           <div className="w-14 h-14 rounded-2xl bg-surface flex items-center justify-center mx-auto mb-4">
-            <RefreshCw size={24} className="text-faint" />
+            <AlertTriangle size={24} className="text-faint" />
           </div>
-          <h2 className="text-base font-semibold text-prose">Something went wrong</h2>
+          <h2 className="text-base font-semibold text-prose">This funnel link is no longer valid</h2>
           <p className="text-sm text-dim mt-2 leading-relaxed">
-            We couldn&apos;t load this funnel. Check your connection and try refreshing the page.
+            The link may have expired or been revoked. Please contact the person who shared it to request a new one.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (errorKind === 'server') {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-surface">
+        <div className="text-center max-w-xs">
+          <div className="w-14 h-14 rounded-2xl bg-surface flex items-center justify-center mx-auto mb-4">
+            <ServerCrash size={24} className="text-faint" />
+          </div>
+          <h2 className="text-base font-semibold text-prose">Something went wrong on our end</h2>
+          <p className="text-sm text-dim mt-2 leading-relaxed">
+            We ran into an unexpected error loading this funnel. Please try again in a moment.
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 text-sm font-medium text-teal hover:text-teal-hover transition-colors"
+            className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-teal hover:text-teal-hover transition-colors"
           >
-            Refresh
+            <RefreshCw size={14} />
+            Try again
           </button>
         </div>
       </div>
     );
   }
 
-  if (notFound || !funnel) {
+  if (errorKind === 'network') {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-surface">
         <div className="text-center max-w-xs">
           <div className="w-14 h-14 rounded-2xl bg-surface flex items-center justify-center mx-auto mb-4">
-            <Workflow size={24} className="text-faint" />
+            <WifiOff size={24} className="text-faint" />
           </div>
-          <h2 className="text-base font-semibold text-prose">Funnel not found</h2>
+          <h2 className="text-base font-semibold text-prose">Unable to connect</h2>
           <p className="text-sm text-dim mt-2 leading-relaxed">
-            This link may have expired or been revoked. Contact your agency to request a new link.
+            We couldn&apos;t reach the server. Check your internet connection and try again.
           </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-teal hover:text-teal-hover transition-colors"
+          >
+            <RefreshCw size={14} />
+            Try again
+          </button>
         </div>
       </div>
     );
@@ -183,62 +225,66 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
     <>
       <GoogleFontLoader fonts={[branding.font_heading, branding.font_body, branding.font_sidebar]} />
 
-      {/* Mobile — desktop required */}
-      <div className="flex lg:hidden min-h-screen items-center justify-center bg-surface p-6">
-        <div className="text-center max-w-sm">
-          <div className="w-14 h-14 rounded-2xl bg-surface flex items-center justify-center mx-auto mb-4">
-            <Monitor size={24} className="text-faint" />
+      {/* Mobile — desktop required (hidden in embed mode) */}
+      {!isEmbed && (
+        <div className="flex lg:hidden min-h-screen items-center justify-center bg-surface p-6">
+          <div className="text-center max-w-sm">
+            <div className="w-14 h-14 rounded-2xl bg-surface flex items-center justify-center mx-auto mb-4">
+              <Monitor size={24} className="text-faint" />
+            </div>
+            <h2 className="text-base font-semibold text-prose">Desktop Required</h2>
+            <p className="text-sm text-dim mt-2 leading-relaxed">
+              Please open this funnel on a desktop browser to view the full canvas.
+            </p>
           </div>
-          <h2 className="text-base font-semibold text-prose">Desktop Required</h2>
-          <p className="text-sm text-dim mt-2 leading-relaxed">
-            Please open this funnel on a desktop browser to view the full canvas.
-          </p>
         </div>
-      </div>
+      )}
 
-      {/* Desktop — read-only canvas */}
-      <div className="hidden lg:flex h-dvh flex-col bg-surface overflow-hidden">
-        <div
-          className="flex items-center justify-between px-5 py-3 shrink-0"
-          style={{ backgroundColor: bgSecondary, borderBottom: `1px solid ${palette.borderSubtle}` }}
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            {branding.logo_url ? (
-              <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
-            ) : branding.name ? (
-              <span
-                className="text-sm font-semibold"
-                style={{ color: sidebarText, fontFamily: fontFamily(branding.font_heading) }}
-              >
-                {branding.name}
-              </span>
-            ) : (
-              <div className="w-8 h-8 rounded-lg bg-teal/10 flex items-center justify-center">
-                <Workflow size={16} className="text-teal" />
-              </div>
-            )}
-            <div className="min-w-0">
-              <h1
-                className="text-sm font-semibold truncate"
-                style={{ color: sidebarText, fontFamily: fontFamily(branding.font_heading) }}
-              >
-                {funnel.name}
-              </h1>
-              {funnel.description && (
-                <p
-                  className="text-detail mt-0.5 line-clamp-1"
-                  style={{
-                    color: palette.mutedText,
-                    fontFamily: fontFamily(branding.font_sidebar),
-                    fontWeight: branding.font_sidebar_weight || undefined,
-                  }}
+      {/* Desktop — read-only canvas (full-screen in embed mode) */}
+      <div className={`${isEmbed ? 'flex' : 'hidden lg:flex'} h-dvh flex-col bg-surface overflow-hidden`}>
+        {!isEmbed && (
+          <div
+            className="flex items-center justify-between px-5 py-3 shrink-0"
+            style={{ backgroundColor: bgSecondary, borderBottom: `1px solid ${palette.borderSubtle}` }}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              {branding.logo_url ? (
+                <img src={branding.logo_url} alt={branding.name} className="h-6 w-auto max-w-[120px] object-contain" />
+              ) : branding.name ? (
+                <span
+                  className="text-sm font-semibold"
+                  style={{ color: sidebarText, fontFamily: fontFamily(branding.font_heading) }}
                 >
-                  {funnel.description}
-                </p>
+                  {branding.name}
+                </span>
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-teal/10 flex items-center justify-center">
+                  <Workflow size={16} className="text-teal" />
+                </div>
               )}
+              <div className="min-w-0">
+                <h1
+                  className="text-sm font-semibold truncate"
+                  style={{ color: sidebarText, fontFamily: fontFamily(branding.font_heading) }}
+                >
+                  {funnel.name}
+                </h1>
+                {funnel.description && (
+                  <p
+                    className="text-detail mt-0.5 line-clamp-1"
+                    style={{
+                      color: palette.mutedText,
+                      fontFamily: fontFamily(branding.font_sidebar),
+                      fontWeight: branding.font_sidebar_weight || undefined,
+                    }}
+                  >
+                    {funnel.description}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="flex-1 min-h-0 bg-notebook relative" role="region" aria-label={`${funnel.name} funnel canvas`}>
           <ReactFlowProvider>
@@ -259,6 +305,7 @@ export default function PublicFunnelPage(props: { params: Promise<{ token: strin
               panOnDrag
               zoomOnScroll
               zoomOnPinch
+              onlyRenderVisibleElements
               proOptions={{ hideAttribution: true }}
             >
               <Controls

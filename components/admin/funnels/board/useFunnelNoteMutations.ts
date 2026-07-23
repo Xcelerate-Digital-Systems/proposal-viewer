@@ -38,15 +38,49 @@ export function useFunnelNoteMutations(deps: Deps) {
     markDone(!error);
     if (error || !data) { toast.error('Failed to add note'); return null; }
     setBoardNotes((prev) => [...prev, data]);
+    const created = data;
+    recordHistory({
+      label: 'Add note',
+      undo: async () => {
+        setBoardNotes((prev) => prev.filter((n) => n.id !== created.id));
+        await supabase.from('funnel_board_notes').delete().eq('id', created.id);
+      },
+      redo: async () => {
+        setBoardNotes((prev) => prev.some((n) => n.id === created.id) ? prev : [...prev, created]);
+        await supabase.from('funnel_board_notes').insert(created);
+      },
+    });
     return data;
-  }, [funnelId, companyId, boardNotes.length, toast, markSaving, markDone, setBoardNotes]);
+  }, [funnelId, companyId, boardNotes.length, toast, markSaving, markDone, setBoardNotes, recordHistory]);
 
   const updateNote = useCallback(async (id: string, changes: Partial<FunnelBoardNote>) => {
+    const before = boardNotes.find((n) => n.id === id);
+    const beforePatch: Partial<FunnelBoardNote> | null = before
+      ? Object.keys(changes).reduce<Partial<FunnelBoardNote>>((acc, key) => {
+          (acc as Record<string, unknown>)[key] = (before as Record<string, unknown>)[key];
+          return acc;
+        }, {})
+      : null;
+
     setBoardNotes((prev) => prev.map((n) => (n.id === id ? { ...n, ...changes } : n)));
     markSaving();
     await supabase.from('funnel_board_notes').update({ ...changes, updated_at: new Date().toISOString() }).eq('id', id);
     markDone(true);
-  }, [markSaving, markDone, setBoardNotes]);
+
+    if (beforePatch) {
+      recordHistory({
+        label: 'Edit note',
+        undo: async () => {
+          setBoardNotes((prev) => prev.map((n) => (n.id === id ? { ...n, ...beforePatch } : n)));
+          await supabase.from('funnel_board_notes').update({ ...beforePatch, updated_at: new Date().toISOString() }).eq('id', id);
+        },
+        redo: async () => {
+          setBoardNotes((prev) => prev.map((n) => (n.id === id ? { ...n, ...changes } : n)));
+          await supabase.from('funnel_board_notes').update({ ...changes, updated_at: new Date().toISOString() }).eq('id', id);
+        },
+      });
+    }
+  }, [boardNotes, markSaving, markDone, setBoardNotes, recordHistory]);
 
   const deleteNote = useCallback(async (id: string) => {
     const before = boardNotes.find((n) => n.id === id);

@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useReactFlow, type Node } from '@xyflow/react';
-import type { ContextTarget } from './CanvasContextMenu';
+import type { ContextTarget } from '@/components/admin/shared/CanvasContextMenu';
 import {
   FEEDBACK_PALETTE_DRAG_MIME,
   type PaletteDragPayload,

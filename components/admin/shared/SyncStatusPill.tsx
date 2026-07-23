@@ -2,7 +2,7 @@
 
 import { Cloud, CloudOff } from 'lucide-react';
 
-export default function FeedbackSyncStatusPill({ status }: { status: 'idle' | 'saving' | 'error' }) {
+export default function SyncStatusPill({ status }: { status: 'idle' | 'saving' | 'error' }) {
   if (status === 'idle') return null;
   return (
     <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-medium border shadow-sm ${

@@ -63,6 +63,14 @@ export function useBoardShapeMutations({
 
   const updateShape = useCallback(
     async (id: string, patch: Partial<FeedbackBoardShape>) => {
+      const before = shapes.find((s) => s.id === id);
+      const beforePatch: Partial<FeedbackBoardShape> | null = before
+        ? Object.keys(patch).reduce<Partial<FeedbackBoardShape>>((acc, key) => {
+            (acc as Record<string, unknown>)[key] = (before as Record<string, unknown>)[key];
+            return acc;
+          }, {})
+        : null;
+
       setShapes((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
       const { error } = await supabase
         .from('review_board_shapes')
@@ -71,9 +79,24 @@ export function useBoardShapeMutations({
       if (error) {
         toast.error('Failed to update shape');
         loadShapes();
+        return;
+      }
+
+      if (beforePatch) {
+        recordHistory({
+          label: 'Edit shape',
+          undo: async () => {
+            setShapes((prev) => prev.map((s) => (s.id === id ? { ...s, ...beforePatch } : s)));
+            await supabase.from('review_board_shapes').update({ ...beforePatch, updated_at: new Date().toISOString() }).eq('id', id);
+          },
+          redo: async () => {
+            setShapes((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+            await supabase.from('review_board_shapes').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
+          },
+        });
       }
     },
-    [toast, loadShapes, setShapes]
+    [shapes, toast, loadShapes, setShapes, recordHistory]
   );
 
   const deleteShape = useCallback(

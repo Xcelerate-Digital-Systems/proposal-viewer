@@ -4,11 +4,14 @@ import { memo, useMemo } from 'react';
 import {
   EdgeLabelRenderer,
   getBezierPath,
+  getStraightPath,
+  getSmoothStepPath,
   Position,
   type EdgeProps,
 } from '@xyflow/react';
 
 export type LabeledEdgeArrowDir = 'none' | 'source' | 'target' | 'both';
+export type LabeledEdgePathType = 'bezier' | 'straight' | 'step';
 
 export interface LabeledEdgeData extends Record<string, unknown> {
   label?: string;
@@ -22,6 +25,8 @@ export interface LabeledEdgeData extends Record<string, unknown> {
   labelFontSize?: number;
   /** Label text color (hex). Defaults to ink. */
   labelColor?: string;
+  /** Edge path type. Defaults to 'bezier'. */
+  edgeType?: LabeledEdgePathType;
 }
 
 const ARROW_LEN = 12;
@@ -74,15 +79,49 @@ function LabeledEdgeComponent({
   const dashed = edgeData.dashed || false;
   const animated = edgeData.animated || false;
   const arrowDir: LabeledEdgeArrowDir = edgeData.arrowDir ?? 'target';
+  const edgeType: LabeledEdgePathType = edgeData.edgeType ?? 'bezier';
 
-  const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-  });
+  // Snap threshold: if source and target are within 20px on one axis, treat as
+  // perfectly aligned for bezier paths (renders a straight line automatically).
+  const SNAP_THRESHOLD = 20;
+  const dy = Math.abs(targetY - sourceY);
+  const dx = Math.abs(targetX - sourceX);
+  const nearlyHorizontal = dy < SNAP_THRESHOLD && dx > SNAP_THRESHOLD;
+  const nearlyVertical = dx < SNAP_THRESHOLD && dy > SNAP_THRESHOLD;
+
+  // Compute snapped coordinates for near-straight connections
+  const snappedSourceY = nearlyHorizontal ? (sourceY + targetY) / 2 : sourceY;
+  const snappedTargetY = nearlyHorizontal ? (sourceY + targetY) / 2 : targetY;
+  const snappedSourceX = nearlyVertical ? (sourceX + targetX) / 2 : sourceX;
+  const snappedTargetX = nearlyVertical ? (sourceX + targetX) / 2 : targetX;
+
+  const useStraight = edgeType === 'straight' || ((edgeType === 'bezier') && (nearlyHorizontal || nearlyVertical));
+
+  const [edgePath, labelX, labelY] = useStraight
+    ? getStraightPath({
+        sourceX: snappedSourceX,
+        sourceY: snappedSourceY,
+        targetX: snappedTargetX,
+        targetY: snappedTargetY,
+      })
+    : edgeType === 'step'
+      ? getSmoothStepPath({
+          sourceX,
+          sourceY,
+          sourcePosition,
+          targetX,
+          targetY,
+          targetPosition,
+          borderRadius: 8,
+        })
+      : getBezierPath({
+          sourceX,
+          sourceY,
+          sourcePosition,
+          targetX,
+          targetY,
+          targetPosition,
+        });
 
   // Bias label toward the source so it doesn't sit under the arrowhead.
   // For short edges (<120px), use 0.5 (centre) to avoid overlap.
@@ -94,14 +133,20 @@ function LabeledEdgeComponent({
   const arrowHeads = useMemo(() => {
     if (arrowDir === 'none') return '';
     const parts: string[] = [];
+    // For straight/snapped edges, compute arrow angle from actual line direction
+    // instead of handle position (which may not reflect the snapped path).
+    const useLineAngle = useStraight;
+    const lineAngle = Math.atan2(snappedTargetY - snappedSourceY, snappedTargetX - snappedSourceX);
     if (arrowDir === 'target' || arrowDir === 'both') {
-      parts.push(arrowHeadPath(targetX, targetY, arrowAngleFor(targetPosition)));
+      const angle = useLineAngle ? lineAngle + Math.PI : arrowAngleFor(targetPosition);
+      parts.push(arrowHeadPath(useLineAngle ? snappedTargetX : targetX, useLineAngle ? snappedTargetY : targetY, angle));
     }
     if (arrowDir === 'source' || arrowDir === 'both') {
-      parts.push(arrowHeadPath(sourceX, sourceY, arrowAngleFor(sourcePosition)));
+      const angle = useLineAngle ? lineAngle : arrowAngleFor(sourcePosition);
+      parts.push(arrowHeadPath(useLineAngle ? snappedSourceX : sourceX, useLineAngle ? snappedSourceY : sourceY, angle));
     }
     return parts.join(' ');
-  }, [arrowDir, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition]);
+  }, [arrowDir, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, useStraight, snappedSourceX, snappedSourceY, snappedTargetX, snappedTargetY]);
 
   // Click events bubble to React Flow's onEdgeClick handler.
 

@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Trash2, ArrowRight, ArrowLeft, ArrowLeftRight, Minus, ChevronDown, X } from 'lucide-react';
+import { Trash2, ArrowRight, ArrowLeft, ArrowLeftRight, Minus, ChevronDown, X, Spline, MoveRight, GitFork } from 'lucide-react';
 import type { Edge } from '@xyflow/react';
 
 export type ArrowDirection = 'none' | 'source' | 'target' | 'both';
+export type EdgePathType = 'bezier' | 'straight' | 'step';
 
 export const EDGE_COLORS = [
   { value: '#2B2B2B', label: 'Ink' },
@@ -33,6 +34,7 @@ interface EdgeStyle {
   arrowDir: ArrowDirection;
   labelFontSize: number;
   labelColor: string;
+  edgeType: EdgePathType;
 }
 
 export type EdgeStylePatch = {
@@ -44,6 +46,7 @@ export type EdgeStylePatch = {
   arrowDir?: ArrowDirection;
   labelFontSize?: number;
   labelColor?: string;
+  edgeType?: EdgePathType;
 };
 
 export interface EdgeStyleEditorProps {
@@ -67,6 +70,7 @@ function readStyle(edge: Edge): EdgeStyle {
     arrowDir,
     labelFontSize: (data.labelFontSize as number) ?? (style.labelFontSize as number) ?? 16,
     labelColor: (data.labelColor as string) ?? (style.labelColor as string) ?? '#2B2B2B',
+    edgeType: (data.edgeType as EdgePathType) ?? 'bezier',
   };
 }
 
@@ -183,6 +187,31 @@ export default function EdgeStyleEditor({ edge, onUpdate, onDelete, onClose }: E
           </Pop>
         )}
       </div>
+
+      <Divider />
+
+      {/* Edge path type */}
+      <ToolbarBtn
+        active={current.edgeType === 'bezier'}
+        onClick={() => onUpdate(edge.id, { edgeType: 'bezier' })}
+        title="Curved"
+      >
+        <Spline size={14} strokeWidth={2.2} />
+      </ToolbarBtn>
+      <ToolbarBtn
+        active={current.edgeType === 'straight'}
+        onClick={() => onUpdate(edge.id, { edgeType: 'straight' })}
+        title="Straight"
+      >
+        <MoveRight size={14} strokeWidth={2.2} />
+      </ToolbarBtn>
+      <ToolbarBtn
+        active={current.edgeType === 'step'}
+        onClick={() => onUpdate(edge.id, { edgeType: 'step' })}
+        title="Step"
+      >
+        <GitFork size={14} strokeWidth={2.2} className="rotate-90" />
+      </ToolbarBtn>
 
       <Divider />
 

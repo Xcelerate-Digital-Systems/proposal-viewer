@@ -3,13 +3,14 @@
 import { useRef, useCallback, useMemo } from 'react';
 import {
   ReactFlow, ReactFlowProvider, Controls, MiniMap, Background, BackgroundVariant, useReactFlow,
-  ConnectionMode, type NodeTypes, type EdgeTypes, type Edge, type Connection, type Node, Panel,
+  ConnectionMode, ConnectionLineType, type NodeTypes, type EdgeTypes, type Edge, type Connection, type Node, Panel,
   SelectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { AnimatePresence } from 'framer-motion';
 import { Loader2, Undo2, Redo2, Wand2 } from 'lucide-react';
 import UndoHistoryPanel from '@/components/admin/shared/UndoHistoryPanel';
+import { wouldCreateCycle } from '@/components/admin/shared/board-utils';
 import { computeForecast } from '@/lib/funnel/forecast';
 import { ForecastCtx } from './ForecastContext';
 import BoardSummary from './BoardSummary';
@@ -21,11 +22,11 @@ import NodePalette from './NodePalette';
 import StepSideDrawer from './StepSideDrawer';
 import ShapeSideDrawer from './ShapeSideDrawer';
 import NoteSideDrawer from './NoteSideDrawer';
-import ExportMenu from './ExportMenu';
-import CanvasContextMenu from './CanvasContextMenu';
-import AlignmentGuides from './AlignmentGuides';
+import ExportMenu from '@/components/admin/shared/ExportMenu';
+import CanvasContextMenu from '@/components/admin/shared/CanvasContextMenu';
+import AlignmentGuides from '@/components/admin/shared/AlignmentGuides';
 import CombinedEdgePanel from './CombinedEdgePanel';
-import SyncStatusPill from './SyncStatusPill';
+import SyncStatusPill from '@/components/admin/shared/SyncStatusPill';
 import { defaultEdgeOptions } from './funnel-board-config';
 import { useFunnelBoard } from './useFunnelBoard';
 import { useFunnelBoardContextOrThrow } from './FunnelBoardContext';
@@ -59,7 +60,9 @@ function FunnelBoardInner() {
     const tgt = connection.target;
     if (!src || !tgt) return false;
     if (src === tgt) return false;
-    return !board.edges.some((e) => e.source === src && e.target === tgt);
+    if (board.edges.some((e) => e.source === src && e.target === tgt)) return false;
+    if (wouldCreateCycle(board.edges, src, tgt)) return false;
+    return true;
   }, [board.edges]);
 
   const viewportCentre = useCallback(() => {
@@ -151,6 +154,7 @@ function FunnelBoardInner() {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           connectionMode={ConnectionMode.Loose}
+          connectionLineType={ConnectionLineType.Straight}
           connectOnClick
           isValidConnection={isValidConnection}
           defaultEdgeOptions={defaultEdgeOptions}
@@ -161,6 +165,7 @@ function FunnelBoardInner() {
           snapToGrid
           snapGrid={[4, 4]}
           style={{ background: 'transparent' }}
+          onlyRenderVisibleElements
           deleteKeyCode={['Backspace', 'Delete']}
           onBeforeDelete={interactions.onBeforeDelete}
           panOnDrag={[0, 1]}
@@ -236,7 +241,7 @@ function FunnelBoardInner() {
                   <Wand2 size={14} />
                 </button>
               </div>
-              <ExportMenu containerRef={containerRef} funnelName={ctx.funnel?.name || 'funnel'} />
+              <ExportMenu containerRef={containerRef} boardName={ctx.funnel?.name || 'funnel'} />
               <SyncStatusPill status={ctx.syncStatus} />
             </div>
           </Panel>
@@ -314,7 +319,7 @@ function FunnelBoardInner() {
             target={interactions.contextMenu}
             onClose={() => interactions.setContextMenu(null)}
             selectionCount={selectionCount}
-            onPasteAt={interactions.contextMenu.kind === 'pane' ? clipboard.pasteAtViewport : undefined}
+            onPaste={interactions.contextMenu.kind === 'pane' ? clipboard.pasteAtViewport : undefined}
             canPaste={clipboard.clipboardRef.current.length > 0}
             onAddStep={interactions.contextMenu.kind === 'pane' ? () => {
               if (interactions.contextMenu!.kind === 'pane') interactions.addStepAt('generic', interactions.contextMenu!.flowX, interactions.contextMenu!.flowY);

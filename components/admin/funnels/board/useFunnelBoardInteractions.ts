@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { useReactFlow, type Node } from '@xyflow/react';
-import type { ContextTarget } from './CanvasContextMenu';
+import type { ContextTarget } from '@/components/admin/shared/CanvasContextMenu';
 import { PALETTE_DRAG_MIME } from './NodePalette';
 import { useFunnelBoardContextOrThrow } from './FunnelBoardContext';
 import { useConfirm } from '@/components/ui/ConfirmDialog';

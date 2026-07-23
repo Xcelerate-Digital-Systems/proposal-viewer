@@ -48,18 +48,52 @@ export function useBoardNoteMutations({
       return null;
     }
     setBoardNotes((prev) => [...prev, data]);
+    const created = data;
+    recordHistory({
+      label: 'Add note',
+      undo: async () => {
+        setBoardNotes((prev) => prev.filter((n) => n.id !== created.id));
+        await supabase.from('review_board_notes').delete().eq('id', created.id);
+      },
+      redo: async () => {
+        setBoardNotes((prev) => prev.some((n) => n.id === created.id) ? prev : [...prev, created]);
+        await supabase.from('review_board_notes').insert(created);
+      },
+    });
     return data;
-  }, [projectId, companyId, boardNotes.length, toast, setBoardNotes]);
+  }, [projectId, companyId, boardNotes.length, toast, setBoardNotes, recordHistory]);
 
   const updateNote = useCallback(
     async (noteId: string, changes: Partial<FeedbackBoardNote>) => {
+      const before = boardNotes.find((n) => n.id === noteId);
+      const beforePatch: Partial<FeedbackBoardNote> | null = before
+        ? Object.keys(changes).reduce<Partial<FeedbackBoardNote>>((acc, key) => {
+            (acc as Record<string, unknown>)[key] = (before as Record<string, unknown>)[key];
+            return acc;
+          }, {})
+        : null;
+
       setBoardNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, ...changes } : n)));
       await supabase
         .from('review_board_notes')
         .update({ ...changes, updated_at: new Date().toISOString() })
         .eq('id', noteId);
+
+      if (beforePatch) {
+        recordHistory({
+          label: 'Edit note',
+          undo: async () => {
+            setBoardNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, ...beforePatch } : n)));
+            await supabase.from('review_board_notes').update({ ...beforePatch, updated_at: new Date().toISOString() }).eq('id', noteId);
+          },
+          redo: async () => {
+            setBoardNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, ...changes } : n)));
+            await supabase.from('review_board_notes').update({ ...changes, updated_at: new Date().toISOString() }).eq('id', noteId);
+          },
+        });
+      }
     },
-    [setBoardNotes]
+    [boardNotes, setBoardNotes, recordHistory]
   );
 
   const deleteNote = useCallback(async (noteId: string) => {

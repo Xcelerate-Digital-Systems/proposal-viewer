@@ -289,7 +289,7 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
   const handleUpdateEdgeStyle = useCallback(
     async (
       edgeId: string,
-      patch: { label?: string | null; color?: string; strokeWidth?: number; dashed?: boolean; animated?: boolean; arrowDir?: 'none' | 'source' | 'target' | 'both'; labelFontSize?: number; labelColor?: string }
+      patch: { label?: string | null; color?: string; strokeWidth?: number; dashed?: boolean; animated?: boolean; arrowDir?: 'none' | 'source' | 'target' | 'both'; labelFontSize?: number; labelColor?: string; edgeType?: 'bezier' | 'straight' | 'step' }
     ) => {
       let nextEdge: Edge | undefined;
       setEdges((eds) => {
@@ -308,6 +308,7 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
         const nextArrowDir = patch.arrowDir ?? (currentArrowDir as 'none' | 'source' | 'target' | 'both');
         const nextLabelFontSize = patch.labelFontSize ?? (currentData.labelFontSize as number) ?? 16;
         const nextLabelColor = patch.labelColor ?? (currentData.labelColor as string) ?? '#2B2B2B';
+        const nextEdgeType = patch.edgeType ?? (currentData.edgeType as string) ?? 'bezier';
         const updated: Edge = {
           ...edge,
           animated: nextAnimated,
@@ -326,6 +327,7 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
             arrowDir: nextArrowDir,
             labelFontSize: nextLabelFontSize,
             labelColor: nextLabelColor,
+            edgeType: nextEdgeType,
           },
         };
         nextEdge = updated;
@@ -346,6 +348,7 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
           arrowDir: (nextEdge.data as Record<string, unknown>)?.arrowDir,
           labelFontSize: (nextEdge.data as Record<string, unknown>)?.labelFontSize,
           labelColor: (nextEdge.data as Record<string, unknown>)?.labelColor,
+          edgeType: (nextEdge.data as Record<string, unknown>)?.edgeType,
         } as Record<string, unknown>,
       });
     },

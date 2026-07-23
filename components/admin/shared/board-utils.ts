@@ -1,7 +1,7 @@
 import type { Node, Edge } from '@xyflow/react';
 import Dagre from '@dagrejs/dagre';
 
-export const ALIGNMENT_TOLERANCE = 6;
+export const ALIGNMENT_TOLERANCE = 10;
 
 export function genericVisualCentre(n: Node): { cx: number; cy: number } {
   const m = (n as unknown as { measured?: { width?: number; height?: number } }).measured;
@@ -17,6 +17,7 @@ export function computeSnapPosition(
   allNodes: Node[],
   tolerance: number,
   centreFn: CentreFn = genericVisualCentre,
+  gridSize: number = 1,
 ): { x: number; y: number } | null {
   const others = allNodes.filter((n) => n.id !== node.id);
   const drag = centreFn(node);
@@ -40,9 +41,13 @@ export function computeSnapPosition(
   }
 
   if (snapX === null && snapY === null) return null;
+
+  const roundToGrid = (v: number) =>
+    gridSize > 1 ? Math.round(v / gridSize) * gridSize : Math.round(v);
+
   return {
-    x: snapX !== null ? Math.round(snapX) : node.position.x,
-    y: snapY !== null ? Math.round(snapY) : node.position.y,
+    x: snapX !== null ? roundToGrid(snapX) : node.position.x,
+    y: snapY !== null ? roundToGrid(snapY) : node.position.y,
   };
 }
 
@@ -94,6 +99,25 @@ export function distributeNodes(
     }
   }
   return result;
+}
+
+/**
+ * Check whether adding an edge from `source` to `target` would create a cycle.
+ * Uses DFS to find any existing path from target back to source.
+ */
+export function wouldCreateCycle(edges: Edge[], source: string, target: string): boolean {
+  const visited = new Set<string>();
+  const stack = [target];
+  while (stack.length > 0) {
+    const node = stack.pop()!;
+    if (node === source) return true;
+    if (visited.has(node)) continue;
+    visited.add(node);
+    for (const edge of edges) {
+      if (edge.source === node) stack.push(edge.target);
+    }
+  }
+  return false;
 }
 
 export function autoLayout(

@@ -7,6 +7,7 @@ import { useFeedbackBoardContextOrThrow, type NewShape } from './FeedbackBoardCo
 import { alignNodesCentre, distributeNodes, autoLayout } from '@/components/admin/shared/board-utils';
 import { genericVisualCentre as visualCentre } from '@/components/admin/shared/board-utils';
 import { nextGroupColor, type GroupNodeData } from '@/components/admin/shared/GroupNode';
+import { useToast } from '@/components/ui/Toast';
 
 type ClipboardEntry =
   | { kind: 'shape'; data: Omit<NewShape, never> }
@@ -22,6 +23,7 @@ export function useFeedbackBoardClipboard(
   const ctx = useFeedbackBoardContextOrThrow();
   const rf = useReactFlow();
   const confirm = useConfirm();
+  const toast = useToast();
 
   const clipboardRef = useRef<ClipboardEntry[]>([]);
   const [lockedNodes, setLockedNodes] = useState<Set<string>>(new Set());
@@ -135,7 +137,12 @@ export function useFeedbackBoardClipboard(
     const selected = rf.getNodes().filter((n) => n.selected);
     if (selected.length === 0) return;
     const entries: ClipboardEntry[] = [];
+    let skippedItems = false;
     for (const node of selected) {
+      if (!node.id.startsWith('shape-') && !node.id.startsWith('note-')) {
+        skippedItems = true;
+        continue;
+      }
       if (node.id.startsWith('shape-')) {
         const orig = ctx.shapes.find((s) => s.id === node.id.slice(6));
         if (!orig) continue;
@@ -161,7 +168,8 @@ export function useFeedbackBoardClipboard(
       }
     }
     clipboardRef.current = entries;
-  }, [rf, ctx]);
+    if (skippedItems) toast.info("Items can't be copied — use duplicate instead");
+  }, [rf, ctx, toast]);
 
   const pasteAtViewport = useCallback(async () => {
     if (clipboardRef.current.length === 0) return;

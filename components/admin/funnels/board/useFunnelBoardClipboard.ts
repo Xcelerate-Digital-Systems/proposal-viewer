@@ -8,6 +8,7 @@ import type { NewShape } from './FunnelBoardContext';
 import { alignNodesCentre, distributeNodes, autoLayout } from '@/components/admin/shared/board-utils';
 import { visualCentre } from './funnel-board-config';
 import { nextGroupColor, type GroupNodeData } from '@/components/admin/shared/GroupNode';
+import { useToast } from '@/components/ui/Toast';
 
 type ClipboardEntry =
   | { kind: 'step'; stepType: FunnelStepType; label: string; icon: string | null; url: string | null; color: string | null; metrics: unknown }
@@ -23,6 +24,7 @@ export function useFunnelBoardClipboard(
 ) {
   const ctx = useFunnelBoardContextOrThrow();
   const rf = useReactFlow();
+  const toast = useToast();
 
   const clipboardRef = useRef<ClipboardEntry[]>([]);
   const [lockedNodes, setLockedNodes] = useState<Set<string>>(new Set());
@@ -146,15 +148,11 @@ export function useFunnelBoardClipboard(
     const selected = rf.getNodes().filter((n) => n.selected);
     if (selected.length === 0) return;
     const entries: ClipboardEntry[] = [];
+    let skippedSteps = false;
     for (const node of selected) {
       if (node.id.startsWith('step-')) {
-        const orig = ctx.steps.find((s) => s.id === node.id.slice(5));
-        if (!orig) continue;
-        entries.push({
-          kind: 'step', stepType: orig.step_type,
-          label: orig.label, icon: orig.icon, url: orig.url,
-          color: orig.color, metrics: orig.metrics,
-        });
+        skippedSteps = true;
+        continue;
       } else if (node.id.startsWith('shape-')) {
         const orig = ctx.shapes.find((s) => s.id === node.id.slice(6));
         if (!orig) continue;
@@ -180,7 +178,8 @@ export function useFunnelBoardClipboard(
       }
     }
     clipboardRef.current = entries;
-  }, [rf, ctx]);
+    if (skippedSteps) toast.info('Steps can’t be copied — use duplicate instead');
+  }, [rf, ctx, toast]);
 
   const pasteAtViewport = useCallback(async () => {
     if (clipboardRef.current.length === 0) return;
@@ -328,7 +327,10 @@ export function useFunnelBoardClipboard(
       }
 
       if (!mod) return;
-      if (e.key === '1') {
+      if (e.key === 'a' || e.key === 'A') {
+        e.preventDefault();
+        rf.setNodes((nds) => nds.map((n) => ({ ...n, selected: true })));
+      } else if (e.key === '1') {
         e.preventDefault();
         rf.fitView({ duration: 300, padding: 0.2 });
       } else if (e.key === '0') {

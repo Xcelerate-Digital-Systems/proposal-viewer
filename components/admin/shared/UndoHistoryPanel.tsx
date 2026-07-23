@@ -55,6 +55,11 @@ export default function UndoHistoryPanel({ undoLabels, redoLabels, canUndo, canR
                     </button>
                   ))}
                 </div>
+                {undoLabels.length >= 30 && (
+                  <div className="px-3 py-1.5 text-2xs text-faint border-t border-edge/50">
+                    Earlier history trimmed
+                  </div>
+                )}
               </div>
             )}
             {redoLabels.length > 0 && (

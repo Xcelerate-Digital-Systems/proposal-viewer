@@ -10,6 +10,7 @@ import {
   BackgroundVariant,
   useReactFlow,
   ConnectionMode,
+  ConnectionLineType,
   type NodeTypes,
   type EdgeTypes,
   type Edge,
@@ -22,6 +23,7 @@ import '@xyflow/react/dist/style.css';
 import { AnimatePresence } from 'framer-motion';
 import { Loader2, MousePointer, Undo2, Redo2, Wand2 } from 'lucide-react';
 import UndoHistoryPanel from '@/components/admin/shared/UndoHistoryPanel';
+import { wouldCreateCycle } from '@/components/admin/shared/board-utils';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import FeedbackItemNode from './nodes/FeedbackItemNode';
 import StickyNoteNode from './nodes/StickyNoteNode';
@@ -30,18 +32,18 @@ import LabeledEdge from './edges/LabeledEdge';
 import EdgeStyleEditor from './EdgeStyleEditor';
 import { type BoardTool } from './BoardTopToolbar';
 import FeedbackPalette from './FeedbackPalette';
-import CanvasContextMenu from './CanvasContextMenu';
-import AlignmentGuides from './AlignmentGuides';
+import CanvasContextMenu from '@/components/admin/shared/CanvasContextMenu';
+import AlignmentGuides from '@/components/admin/shared/AlignmentGuides';
 import ShapeSideDrawer from './ShapeSideDrawer';
 import NoteSideDrawer from './NoteSideDrawer';
 import ItemSideDrawer from './ItemSideDrawer';
-import ExportMenu from './ExportMenu';
+import ExportMenu from '@/components/admin/shared/ExportMenu';
 import { useFeedbackBoard } from './useFeedbackBoard';
 import { useFeedbackBoardContextOrThrow } from './FeedbackBoardContext';
 import { defaultEdgeOptions } from './feedback-board-config';
 import { useFeedbackBoardInteractions } from './useFeedbackBoardInteractions';
 import { useFeedbackBoardClipboard } from './useFeedbackBoardClipboard';
-import FeedbackSyncStatusPill from './FeedbackSyncStatusPill';
+import SyncStatusPill from '@/components/admin/shared/SyncStatusPill';
 import ShortcutHelpButton from './ShortcutHelpButton';
 import BulkSelectionToolbar from '@/components/admin/shared/BulkSelectionToolbar';
 import GroupNode from '@/components/admin/shared/GroupNode';
@@ -102,7 +104,9 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
     const tgt = connection.target;
     if (!src || !tgt) return false;
     if (src === tgt) return false;
-    return !board.edges.some((e) => e.source === src && e.target === tgt);
+    if (board.edges.some((e) => e.source === src && e.target === tgt)) return false;
+    if (wouldCreateCycle(board.edges, src, tgt)) return false;
+    return true;
   }, [board.edges]);
 
   /* ── Keyboard shortcuts ────────────────────────────────── */
@@ -137,7 +141,10 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
       }
 
       if (mod) {
-        if (e.key === '1') {
+        if (e.key === 'a' || e.key === 'A') {
+          e.preventDefault();
+          rf.setNodes((nds) => nds.map((n) => ({ ...n, selected: true })));
+        } else if (e.key === '1') {
           e.preventDefault();
           rf.fitView({ duration: 300, padding: 0.2 });
         } else if (e.key === '0') {
@@ -241,6 +248,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           connectionMode={ConnectionMode.Loose}
+          connectionLineType={ConnectionLineType.Straight}
           connectOnClick
           isValidConnection={isValidConnection}
           defaultEdgeOptions={defaultEdgeOptions}
@@ -251,6 +259,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
           snapToGrid
           snapGrid={[20, 20]}
           style={{ background: 'transparent' }}
+          onlyRenderVisibleElements
           deleteKeyCode={['Backspace', 'Delete']}
           // Selection model (Figma/Funnelytics-style) only when the Select
           // tool is active. Drawing/text modes get their own pane handling.
@@ -353,7 +362,7 @@ function FeedbackBoardInner({ onNavigateToItem }: Props) {
                 </button>
               </div>
               <ExportMenu containerRef={reactFlowRef} boardName={ctx.project?.title || 'whiteboard'} />
-              <FeedbackSyncStatusPill status={ctx.syncStatus} />
+              <SyncStatusPill status={ctx.syncStatus} />
               <ShortcutHelpButton />
             </div>
           </Panel>

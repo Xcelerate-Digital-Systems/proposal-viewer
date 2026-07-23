@@ -1,28 +1,28 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Download, FileImage, FileText, Loader2 } from 'lucide-react';
+import { Download, FileCode, FileImage, FileText, Loader2 } from 'lucide-react';
 import { useReactFlow } from '@xyflow/react';
-import { toCanvas } from 'html-to-image';
+import { toCanvas, toSvg } from 'html-to-image';
 import { PDFDocument } from 'pdf-lib';
 
 interface Props {
-  /** The canvas container element ref (the wrapper that owns .react-flow__viewport). */
+  /** Canvas container element ref — the wrapper around .react-flow. */
   containerRef: React.RefObject<HTMLDivElement | null>;
-  /** Funnel name — used for the downloaded filename. */
-  funnelName: string;
+  /** Board/funnel name — used for the downloaded filename. */
+  boardName: string;
 }
 
 /**
- * Export the current funnel canvas as PNG or PDF. We snapshot the
- * .react-flow element via html-to-image. Before capture we call fitView
- * so the export frames the whole funnel rather than the user's current
- * pan/zoom.
+ * Export the current whiteboard/funnel canvas as PNG, SVG, or PDF via
+ * html-to-image + pdf-lib. Calls fitView before capture so the export
+ * frames the whole board, not the user's current pan/zoom. Controls /
+ * MiniMap / panels / side drawer are skipped via the filter predicate.
  */
-export default function ExportMenu({ containerRef, funnelName }: Props) {
+export default function ExportMenu({ containerRef, boardName }: Props) {
   const rf = useReactFlow();
   const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState<'png' | 'pdf' | null>(null);
+  const [busy, setBusy] = useState<'png' | 'pdf' | 'svg' | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,22 +35,23 @@ export default function ExportMenu({ containerRef, funnelName }: Props) {
   }, [open]);
 
   const safeFilename = (ext: string) =>
-    `${(funnelName || 'funnel').replace(/[^a-z0-9-]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'funnel'}.${ext}`;
+    `${(boardName || 'whiteboard').replace(/[^a-z0-9-]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'whiteboard'}.${ext}`;
+
+  const filterUiChrome = (el: Element) => {
+    if (!(el instanceof HTMLElement)) return true;
+    if (el.classList.contains('react-flow__controls')) return false;
+    if (el.classList.contains('react-flow__minimap')) return false;
+    if (el.classList.contains('react-flow__panel')) return false;
+    if (el.tagName === 'ASIDE') return false;
+    return true;
+  };
 
   const captureCanvas = async (): Promise<HTMLCanvasElement | null> => {
     const root = containerRef.current;
     if (!root) return null;
-    const viewport = root.querySelector('.react-flow__viewport') as HTMLElement | null;
-    if (!viewport) return null;
-
-    // Frame the whole funnel before capture so the user's pan/zoom doesn't
-    // crop the output. 50ms tick lets RF settle the transform.
     rf.fitView({ padding: 0.15, duration: 0 });
-    await new Promise((r) => setTimeout(r, 80));
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-    // Capture the inner flow container (.react-flow) — it holds the transform
-    // wrapper plus edges. Capturing only .react-flow__viewport crops out the
-    // outer pane background.
     const flow = root.querySelector('.react-flow') as HTMLElement | null;
     if (!flow) return null;
 
@@ -58,14 +59,7 @@ export default function ExportMenu({ containerRef, funnelName }: Props) {
       backgroundColor: '#FFFDF7',
       cacheBust: true,
       pixelRatio: window.devicePixelRatio >= 2 ? 2 : 1.5,
-      filter: (el) => {
-        if (!(el instanceof HTMLElement)) return true;
-        if (el.classList.contains('react-flow__controls')) return false;
-        if (el.classList.contains('react-flow__minimap')) return false;
-        if (el.classList.contains('react-flow__panel')) return false;
-        if (el.tagName === 'ASIDE') return false;
-        return true;
-      },
+      filter: filterUiChrome,
     });
     return canvas;
   };
@@ -104,7 +98,6 @@ export default function ExportMenu({ containerRef, funnelName }: Props) {
 
       const pdf = await PDFDocument.create();
       const img = await pdf.embedPng(pngBytes);
-      // Landscape Letter-ish at 96 DPI; size the page to the image aspect.
       const aspect = img.width / img.height;
       const pageH = 612;
       const pageW = Math.min(1800, Math.round(pageH * aspect));
@@ -119,13 +112,39 @@ export default function ExportMenu({ containerRef, funnelName }: Props) {
     }
   };
 
+  const exportSvg = async () => {
+    if (busy) return;
+    setBusy('svg');
+    try {
+      const root = containerRef.current;
+      if (!root) return;
+      rf.fitView({ padding: 0.15, duration: 0 });
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+      const flow = root.querySelector('.react-flow') as HTMLElement | null;
+      if (!flow) return;
+
+      const svgDataUrl = await toSvg(flow, {
+        backgroundColor: '#FFFDF7',
+        cacheBust: true,
+        filter: filterUiChrome,
+      });
+
+      const svgText = decodeURIComponent(svgDataUrl.split(',')[1]);
+      downloadBlob(new Blob([svgText], { type: 'image/svg+xml' }), safeFilename('svg'));
+    } finally {
+      setBusy(null);
+      setOpen(false);
+    }
+  };
+
   return (
     <div ref={menuRef} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
         disabled={!!busy}
         className="flex items-center gap-1.5 bg-white border border-edge shadow-sm rounded-lg px-3 py-1.5 text-xs text-ink hover:bg-surface transition-colors disabled:opacity-60"
-        title="Export funnel"
+        title="Export"
       >
         {busy ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
         Export
@@ -140,6 +159,15 @@ export default function ExportMenu({ containerRef, funnelName }: Props) {
           >
             <FileImage size={13} className="text-muted" />
             Download PNG
+          </button>
+          <button
+            type="button"
+            onClick={exportSvg}
+            disabled={!!busy}
+            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-ink hover:bg-surface transition-colors disabled:opacity-50"
+          >
+            <FileCode size={13} className="text-muted" />
+            Download SVG
           </button>
           <button
             type="button"
