@@ -25,6 +25,7 @@ import ReviewerNoteOverlay from '@/components/feedback/ReviewerNoteOverlay';
 import ReviewTopBar, { type ReviewMode } from '@/components/feedback/ReviewTopBar';
 import ShareLinkPasswordGate from '@/components/feedback/ShareLinkPasswordGate';
 import ShareLinkExpired from '@/components/feedback/ShareLinkExpired';
+import PublicSitemapView from '@/components/feedback/public/PublicSitemapView';
 
 
 export default function ReviewViewerPage(props: { params: Promise<{ token: string }> }) {
@@ -135,12 +136,18 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
         if (data.boardShapes) setBoardShapes(data.boardShapes);
         if (data.itemVersions) setItemVersions(data.itemVersions);
 
+        // Asset projects skip the grid entirely — auto-drill into the single item.
+        // Website projects default to the sitemap tab.
+        const projectType = data.project.project_type ?? 'campaign';
+
         // Pick the initial tab based on shared_views + url params. Deep
         // links to a specific item always land on the items tab so the
         // detail view renders straight away.
         const sharedViews: FeedbackSharedViews =
           (data.project.shared_views as FeedbackSharedViews | null) ?? DEFAULT_SHARED_VIEWS;
-        if (urlItem) {
+        if (projectType === 'website') {
+          setCurrentTab('sitemap');
+        } else if (urlItem) {
           setCurrentTab('items');
         } else if (data.project.share_mode === 'board' && sharedViews.board) {
           setCurrentTab('board');
@@ -168,9 +175,9 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
         }
         setInitialItemId(startId);
         setSelectedItemId(startId);
-        // Deep links (?item=…) and per-item share tokens drop straight into
-        // the inline detail view so reviewers don't see the grid first.
-        if (urlItem || data.mode === 'item') setInlineItemId(startId);
+        // Deep links (?item=…), per-item share tokens, and asset projects
+        // drop straight into the inline detail view so reviewers don't see the grid first.
+        if (urlItem || data.mode === 'item' || projectType === 'asset') setInlineItemId(startId);
 
         // Load branding
         const brandRes = await fetch(`/api/company/branding?company_id=${data.project.company_id}`);
@@ -395,9 +402,11 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
         if (data.boardShapes) setBoardShapes(data.boardShapes);
         if (data.itemVersions) setItemVersions(data.itemVersions);
 
+        const pt = data.project.project_type ?? 'campaign';
         const sv: FeedbackSharedViews =
           (data.project.shared_views as FeedbackSharedViews | null) ?? DEFAULT_SHARED_VIEWS;
-        if (data.project.share_mode === 'board' && sv.board) setCurrentTab('board');
+        if (pt === 'website') setCurrentTab('sitemap');
+        else if (data.project.share_mode === 'board' && sv.board) setCurrentTab('board');
         else if (sv.board) setCurrentTab('board');
         else if (sv.kanban) setCurrentTab('kanban');
         else setCurrentTab('items');
@@ -405,6 +414,7 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
         if (data.items.length > 0) {
           setInitialItemId(data.items[0].id);
           setSelectedItemId(data.items[0].id);
+          if (pt === 'asset') setInlineItemId(data.items[0].id);
         }
 
         const brandRes = await fetch(`/api/company/branding?company_id=${data.project.company_id}`);
@@ -460,13 +470,15 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
   }
 
   const isSingleItem = viewMode === 'item';
+  const projectType = project?.project_type ?? 'campaign';
   const enabledTabCount =
     (sharedViews.board ? 1 : 0) + (sharedViews.kanban ? 1 : 0) + (sharedViews.items ? 1 : 0);
 
   // ══════════════════════════════════════════════════════════════════
-  //  EMPTY-SHARE STATE — no tabs are exposed
+  //  EMPTY-SHARE STATE — no tabs are exposed (campaigns only;
+  //  asset/website projects don't use the shared_views tab system)
   // ══════════════════════════════════════════════════════════════════
-  if (!isSingleItem && enabledTabCount === 0) {
+  if (!isSingleItem && enabledTabCount === 0 && projectType === 'campaign') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface">
         <div className="text-center">
@@ -487,8 +499,11 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
   const isSafeBackPath = urlBack != null && urlBack.startsWith('/') && !urlBack.startsWith('//');
   const backAction = isSafeBackPath
     ? { label: 'Back', onClick: () => { window.location.href = urlBack; } }
-    : (inlineItemId && !isSingleItem)
-      ? { label: 'Back', onClick: () => setInlineItemId(null) }
+    : (inlineItemId && !isSingleItem && projectType !== 'asset')
+      ? {
+          label: projectType === 'website' ? 'Back to Sitemap' : 'Back',
+          onClick: () => setInlineItemId(null),
+        }
       : undefined;
 
   // ══════════════════════════════════════════════════════════════════
@@ -620,17 +635,30 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
 
       <div
         className={`${
-          currentTab === 'items' ? 'flex' : 'hidden lg:flex'
+          currentTab === 'items' || currentTab === ('sitemap') ? 'flex' : 'hidden lg:flex'
         } h-dvh flex-col bg-surface pt-12 overflow-hidden`}
       >
-        <PublicTabBar
-          current={currentTab}
-          views={sharedViews}
-          onChange={setCurrentTab}
-          bgSecondary={bgSecondary}
-          sidebarText={sidebarText}
-          palette={palette}
-        />
+        {/* Website projects show sitemap — no tab bar needed */}
+        {projectType !== 'website' && (
+          <PublicTabBar
+            current={currentTab}
+            views={sharedViews}
+            onChange={setCurrentTab}
+            bgSecondary={bgSecondary}
+            sidebarText={sidebarText}
+            palette={palette}
+          />
+        )}
+
+        {currentTab === ('sitemap') && (
+          <div className="flex-1 min-h-0">
+            <PublicSitemapView
+              items={items}
+              comments={comments}
+              onSelectItem={handleBoardItemClick}
+            />
+          </div>
+        )}
 
         {currentTab === 'board' && (
           <>

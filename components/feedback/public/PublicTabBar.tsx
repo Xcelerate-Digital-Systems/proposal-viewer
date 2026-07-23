@@ -5,7 +5,7 @@ import type { FeedbackSharedViews } from '@/lib/types/feedback';
 import type { BrandPalette } from '@/lib/branding';
 import { withAlpha } from '@/lib/branding';
 
-export type PublicTab = 'board' | 'kanban' | 'items';
+export type PublicTab = 'board' | 'kanban' | 'items' | 'sitemap';
 
 interface PublicTabBarProps {
   current: PublicTab;
@@ -16,7 +16,9 @@ interface PublicTabBarProps {
   palette?: BrandPalette;
 }
 
-const TABS: { key: PublicTab; label: string; Icon: typeof GitBranch }[] = [
+type ViewTab = 'board' | 'kanban' | 'items';
+
+const TABS: { key: ViewTab; label: string; Icon: typeof GitBranch }[] = [
   { key: 'board', label: 'Whiteboard', Icon: GitBranch },
   { key: 'kanban', label: 'Kanban', Icon: Columns3 },
   { key: 'items', label: 'Items', Icon: LayoutGrid },
