@@ -37,12 +37,25 @@ function buildNodesAndEdges(
   onAddChild: (parentId: string) => void,
   onUpdateStatus?: (itemId: string, status: FeedbackStatus) => void | Promise<void>,
 ): { nodes: Node[]; edges: Edge[] } {
-  const childCountMap = new Map<string, number>();
+  // Find the root node — the homepage (page_path '/') or first item without a parent
+  const rootItem = items.find((i) => i.page_path === '/') ??
+    items.find((i) => !i.parent_item_id);
+  const rootId = rootItem?.id ?? null;
+
+  // Build effective parent map: orphan pages (no parent, not root) become children of root
+  const effectiveParent = new Map<string, string>();
   for (const item of items) {
     if (item.parent_item_id) {
-      childCountMap.set(item.parent_item_id, (childCountMap.get(item.parent_item_id) ?? 0) + 1);
+      effectiveParent.set(item.id, item.parent_item_id);
+    } else if (rootId && item.id !== rootId) {
+      effectiveParent.set(item.id, rootId);
     }
   }
+
+  const childCountMap = new Map<string, number>();
+  effectiveParent.forEach((parentId) => {
+    childCountMap.set(parentId, (childCountMap.get(parentId) ?? 0) + 1);
+  });
 
   const nodes: Node[] = items.map((item) => {
     const cc = commentCounts.get(item.id) ?? { total: 0, unresolved: 0 };
@@ -65,17 +78,18 @@ function buildNodesAndEdges(
     };
   });
 
-  const edges: Edge[] = items
-    .filter((item) => item.parent_item_id)
-    .map((item) => ({
-      id: `e-${item.parent_item_id}-${item.id}`,
-      source: item.parent_item_id!,
-      target: item.id,
+  const edges: Edge[] = [];
+  effectiveParent.forEach((parentId, childId) => {
+    edges.push({
+      id: `e-${parentId}-${childId}`,
+      source: parentId,
+      target: childId,
       sourceHandle: 'bottom',
       targetHandle: 'top',
       style: { stroke: '#94a3b8', strokeWidth: 2 },
       type: 'smoothstep',
-    }));
+    });
+  });
 
   return { nodes, edges };
 }

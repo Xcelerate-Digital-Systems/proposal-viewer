@@ -35,12 +35,24 @@ function buildPublicNodesAndEdges(
     commentCounts.set(c.review_item_id, entry);
   }
 
-  const childCountMap = new Map<string, number>();
+  // Find the root node and assign orphans as children of root
+  const rootItem = items.find((i) => i.page_path === '/') ??
+    items.find((i) => !i.parent_item_id);
+  const rootId = rootItem?.id ?? null;
+
+  const effectiveParent = new Map<string, string>();
   for (const item of items) {
     if (item.parent_item_id) {
-      childCountMap.set(item.parent_item_id, (childCountMap.get(item.parent_item_id) ?? 0) + 1);
+      effectiveParent.set(item.id, item.parent_item_id);
+    } else if (rootId && item.id !== rootId) {
+      effectiveParent.set(item.id, rootId);
     }
   }
+
+  const childCountMap = new Map<string, number>();
+  effectiveParent.forEach((parentId) => {
+    childCountMap.set(parentId, (childCountMap.get(parentId) ?? 0) + 1);
+  });
 
   const nodes: Node[] = items.map((item) => {
     const cc = commentCounts.get(item.id) ?? { total: 0, unresolved: 0 };
@@ -55,23 +67,24 @@ function buildPublicNodesAndEdges(
     return {
       id: item.id,
       type: 'sitemapPage',
-      position: { x: item.board_x ?? 0, y: item.board_y ?? 0 },
+      position: { x: 0, y: 0 },
       data: nodeData,
       draggable: false,
     };
   });
 
-  const edges: Edge[] = items
-    .filter((item) => item.parent_item_id)
-    .map((item) => ({
-      id: `e-${item.parent_item_id}-${item.id}`,
-      source: item.parent_item_id!,
-      target: item.id,
+  const edges: Edge[] = [];
+  effectiveParent.forEach((parentId, childId) => {
+    edges.push({
+      id: `e-${parentId}-${childId}`,
+      source: parentId,
+      target: childId,
       sourceHandle: 'bottom',
       targetHandle: 'top',
       style: { stroke: '#94a3b8', strokeWidth: 2 },
       type: 'smoothstep',
-    }));
+    });
+  });
 
   return { nodes, edges };
 }
