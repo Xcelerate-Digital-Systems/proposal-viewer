@@ -7,7 +7,7 @@ import {
   type Node, type Edge, type NodeTypes, type OnConnect, type Connection,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Plus, Wand2, Search } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { supabase, type FeedbackItem, type FeedbackStatus } from '@/lib/supabase';
 import { autoLayout } from '@/components/admin/shared/board-utils';
 import { useToast } from '@/components/ui/Toast';
@@ -59,7 +59,8 @@ function buildNodesAndEdges(
     return {
       id: item.id,
       type: 'sitemapPage',
-      position: { x: item.board_x ?? 0, y: item.board_y ?? 0 },
+      position: { x: 0, y: 0 },
+      draggable: false,
       data: nodeData,
     };
   });
@@ -88,7 +89,6 @@ function SitemapViewInner({
   const [showAddPage, setShowAddPage] = useState(false);
   const [showScanSite, setShowScanSite] = useState(false);
   const [addPageParentId, setAddPageParentId] = useState<string | null>(null);
-  const [layoutApplied, setLayoutApplied] = useState(false);
 
   // Fetch comment counts
   useEffect(() => {
@@ -133,65 +133,26 @@ function SitemapViewInner({
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  // Sync when items or comments change
+  // Always auto-layout: positions are derived from tree structure, never manual.
+  // Runs on every items/comments change.
   useEffect(() => {
     const { nodes: newNodes, edges: newEdges } = buildNodesAndEdges(
       items, commentCounts, onNavigateToItem, handleAddChild, handleUpdateStatus,
     );
 
-    setNodes((prev) => {
-      return newNodes.map((nn) => {
-        const existing = prev.find((p) => p.id === nn.id);
-        if (existing) {
-          return { ...nn, position: existing.position };
-        }
-        return nn;
-      });
+    // Apply dagre layout immediately
+    const positions = autoLayout(newNodes, newEdges, 'TB');
+    const positioned = newNodes.map((n) => {
+      const p = positions.get(n.id);
+      return p ? { ...n, position: { x: p.x, y: p.y } } : n;
     });
+
+    setNodes(positioned);
     setEdges(newEdges);
-  }, [items, commentCounts, onNavigateToItem, handleAddChild, handleUpdateStatus, setNodes, setEdges]);
+    setTimeout(() => fitView({ padding: 0.2 }), 50);
+  }, [items, commentCounts, onNavigateToItem, handleAddChild, handleUpdateStatus, setNodes, setEdges, fitView]);
 
-  // Auto-layout on first load if no positions saved
-  useEffect(() => {
-    if (layoutApplied || items.length === 0) return;
-
-    const hasPositions = items.some((i) => i.board_x != null && i.board_x !== 0);
-    if (!hasPositions) {
-      requestAnimationFrame(() => {
-        applyAutoLayout();
-        setLayoutApplied(true);
-      });
-    } else {
-      setLayoutApplied(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items.length]);
-
-  const applyAutoLayout = useCallback(() => {
-    setNodes((prev) => {
-      setEdges((prevEdges) => {
-        const positions = autoLayout(prev, prevEdges, 'TB');
-        const updated = prev.map((n) => {
-          const p = positions.get(n.id);
-          return p ? { ...n, position: { x: p.x, y: p.y } } : n;
-        });
-        setNodes(updated);
-        setTimeout(() => fitView({ padding: 0.2 }), 50);
-        return prevEdges;
-      });
-      return prev;
-    });
-  }, [setNodes, setEdges, fitView]);
-
-  // Save positions on drag end
-  const handleNodeDragStop = useCallback(async (_: unknown, node: Node) => {
-    await supabase
-      .from('review_items')
-      .update({ board_x: Math.round(node.position.x), board_y: Math.round(node.position.y) })
-      .eq('id', node.id);
-  }, []);
-
-  // Reparent on edge connect
+  // Reparent on edge connect — layout recalculates automatically via onRefresh
   const onConnect: OnConnect = useCallback(async (connection: Connection) => {
     if (!connection.source || !connection.target) return;
     const { error } = await supabase
@@ -221,14 +182,15 @@ function SitemapViewInner({
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
-          onNodeDragStop={handleNodeDragStop}
           nodeTypes={nodeTypes}
+          nodesDraggable={false}
+          nodesConnectable
           fitView
           fitViewOptions={{ padding: 0.2 }}
           minZoom={0.2}
           maxZoom={2}
-          snapToGrid
-          snapGrid={[20, 20]}
+          panOnDrag
+          zoomOnScroll
           defaultEdgeOptions={{ type: 'smoothstep', style: { stroke: '#94a3b8', strokeWidth: 2 } }}
         >
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e2e8f0" />
@@ -259,13 +221,6 @@ function SitemapViewInner({
                   Scan Site
                 </Button>
               )}
-              <button
-                onClick={applyAutoLayout}
-                className="w-8 h-8 rounded-lg bg-white border border-edge shadow-sm flex items-center justify-center text-faint hover:text-teal hover:border-teal transition-colors"
-                title="Auto-layout"
-              >
-                <Wand2 size={14} />
-              </button>
             </div>
           </Panel>
 
@@ -328,7 +283,6 @@ function SitemapViewInner({
           onClose={() => setShowScanSite(false)}
           onSuccess={() => {
             setShowScanSite(false);
-            setLayoutApplied(false);
             onRefresh();
           }}
         />
