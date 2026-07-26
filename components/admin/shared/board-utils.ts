@@ -124,9 +124,14 @@ export function autoLayout(
   nodes: Node[],
   edges: Edge[],
   direction: 'TB' | 'LR' = 'LR',
+  spacing?: { nodesep?: number; ranksep?: number },
 ): Map<string, { x: number; y: number }> {
   const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: direction, nodesep: 60, ranksep: 120 });
+  g.setGraph({
+    rankdir: direction,
+    nodesep: spacing?.nodesep ?? 60,
+    ranksep: spacing?.ranksep ?? 120,
+  });
 
   for (const node of nodes) {
     const m = (node as unknown as { measured?: { width?: number; height?: number } }).measured;
