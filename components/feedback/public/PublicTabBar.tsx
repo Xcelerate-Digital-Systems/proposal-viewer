@@ -1,6 +1,6 @@
 'use client';
 
-import { GitBranch, Columns3, LayoutGrid } from 'lucide-react';
+import { GitBranch, Columns3, LayoutGrid, Map } from 'lucide-react';
 import type { FeedbackSharedViews } from '@/lib/types/feedback';
 import type { BrandPalette } from '@/lib/branding';
 import { withAlpha } from '@/lib/branding';
@@ -10,25 +10,31 @@ export type PublicTab = 'board' | 'kanban' | 'items' | 'sitemap';
 interface PublicTabBarProps {
   current: PublicTab;
   views: FeedbackSharedViews;
+  projectType?: 'campaign' | 'asset' | 'website';
   onChange: (tab: PublicTab) => void;
   bgSecondary?: string;
   sidebarText?: string;
   palette?: BrandPalette;
 }
 
-type ViewTab = 'board' | 'kanban' | 'items';
-
-const TABS: { key: ViewTab; label: string; Icon: typeof GitBranch }[] = [
+const CAMPAIGN_TABS: { key: PublicTab; label: string; Icon: typeof GitBranch }[] = [
   { key: 'board', label: 'Whiteboard', Icon: GitBranch },
   { key: 'kanban', label: 'Kanban', Icon: Columns3 },
   { key: 'items', label: 'Items', Icon: LayoutGrid },
 ];
 
+const WEBSITE_TABS: { key: PublicTab; label: string; Icon: typeof GitBranch }[] = [
+  { key: 'sitemap', label: 'Sitemap', Icon: Map },
+  { key: 'items', label: 'Pages', Icon: LayoutGrid },
+];
+
 export default function PublicTabBar({
-  current, views, onChange, bgSecondary, sidebarText, palette,
+  current, views, projectType, onChange, bgSecondary, sidebarText, palette,
 }: PublicTabBarProps) {
-  const enabled = TABS.filter((t) => views[t.key]);
-  if (enabled.length < 2) return null;
+  const tabs = projectType === 'website'
+    ? WEBSITE_TABS
+    : CAMPAIGN_TABS.filter((t) => views[t.key as keyof FeedbackSharedViews]);
+  if (tabs.length < 2) return null;
 
   const fg = sidebarText ?? '#1a1a1a';
   const bg = bgSecondary ?? '#ffffff';
@@ -39,7 +45,7 @@ export default function PublicTabBar({
       className="flex items-center gap-1 px-4 py-2 shrink-0 border-b"
       style={{ backgroundColor: bg, borderBottomColor: palette?.borderSubtle ?? `${fg}15` }}
     >
-      {enabled.map(({ key, label, Icon }) => {
+      {tabs.map(({ key, label, Icon }) => {
         const active = current === key;
         return (
           <button

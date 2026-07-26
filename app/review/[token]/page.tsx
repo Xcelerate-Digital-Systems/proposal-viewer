@@ -353,10 +353,12 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
   // ── Item card → inline detail view ──
   // Renders the item detail in place of the current tab content (board /
   // kanban / items grid) instead of jumping to a different tab. Webpage
-  // items still open externally so reviewers can see the live page.
+  // items in campaign projects open externally; website project pages
+  // drill into the detail view so reviewers can leave feedback.
   const handleBoardItemClick = useCallback((itemId: string) => {
     const clickedItem = items.find((i) => i.id === itemId);
-    if (clickedItem?.type === 'webpage' && clickedItem.url) {
+    const pt = project?.project_type ?? 'campaign';
+    if (pt !== 'website' && clickedItem?.type === 'webpage' && clickedItem.url) {
       try {
         const url = new URL(clickedItem.url);
         if (guestName.trim()) {
@@ -373,7 +375,7 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
     setSelectedItemId(itemId);
     if (clickedItem?.type) setAutoTypeFilter(clickedItem.type);
     setInlineItemId(itemId);
-  }, [items]);
+  }, [items, project]);
 
   // Resolve which tabs the project share link exposes.
   const sharedViews: FeedbackSharedViews = useMemo(
@@ -638,11 +640,11 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
           currentTab === 'items' || currentTab === ('sitemap') ? 'flex' : 'hidden lg:flex'
         } h-dvh flex-col bg-surface pt-12 overflow-hidden`}
       >
-        {/* Website projects show sitemap — no tab bar needed */}
-        {projectType !== 'website' && (
+        {projectType !== 'asset' && (
           <PublicTabBar
             current={currentTab}
             views={sharedViews}
+            projectType={projectType}
             onChange={setCurrentTab}
             bgSecondary={bgSecondary}
             sidebarText={sidebarText}
