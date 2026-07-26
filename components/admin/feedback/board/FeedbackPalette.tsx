@@ -7,7 +7,7 @@ import {
   StickyNote, PanelLeftOpen,
   MousePointer2, Square, Circle, MoveRight, Minus, Type,
   Workflow, Pencil, Layers, Plus, CheckCircle2, X,
-  Globe, Mail, Smartphone, Image as ImageIcon, Video, Megaphone, FileText, Eye, ClipboardList, Search, RectangleHorizontal, Figma,
+  Globe, Mail, Smartphone, Image as ImageIcon, Video, Megaphone, FileText, Eye, ClipboardList, Search, RectangleHorizontal, Figma, FolderOpen,
   type LucideIcon,
 } from 'lucide-react';
 import type { BoardTool } from './BoardTopToolbar';
@@ -46,6 +46,7 @@ const ITEM_TYPE_ICONS: Record<FeedbackItemType, LucideIcon> = {
   pdf: FileText,
   meta_lead_form: ClipboardList,
   figma: Figma,
+  section: FolderOpen,
 };
 
 const ITEM_TYPE_LABELS: Record<FeedbackItemType, string> = {
@@ -60,6 +61,7 @@ const ITEM_TYPE_LABELS: Record<FeedbackItemType, string> = {
   pdf: 'PDF',
   meta_lead_form: 'Lead Form',
   figma: 'Figma Design',
+  section: 'Section',
 };
 
 interface ShapeItem {

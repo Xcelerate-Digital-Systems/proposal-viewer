@@ -7,17 +7,19 @@ import {
   type Node, type Edge, type NodeTypes, type OnConnect, type Connection,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, FolderPlus } from 'lucide-react';
 import { supabase, type FeedbackItem, type FeedbackStatus } from '@/lib/supabase';
 import { autoLayout } from '@/components/admin/shared/board-utils';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
-import SitemapPageNode, { type SitemapNodeData } from './SitemapPageNode';
+import SitemapPageNode, { type SitemapNodeData, NODE_W, NODE_H } from './SitemapPageNode';
+import SitemapSectionNode, { type SitemapSectionData, SECTION_W, SECTION_H } from './SitemapSectionNode';
 import AddSitemapPageModal from './AddSitemapPageModal';
 import ScanSiteModal from './ScanSiteModal';
 
 const nodeTypes: NodeTypes = {
   sitemapPage: SitemapPageNode,
+  sitemapSection: SitemapSectionNode,
 };
 
 interface SitemapViewProps {
@@ -35,14 +37,13 @@ function buildNodesAndEdges(
   commentCounts: Map<string, { total: number; unresolved: number }>,
   onNavigate: (id: string) => void,
   onAddChild: (parentId: string) => void,
+  onRenameSection: (itemId: string, title: string) => void,
   onUpdateStatus?: (itemId: string, status: FeedbackStatus) => void | Promise<void>,
 ): { nodes: Node[]; edges: Edge[] } {
-  // Find the root node — the homepage (page_path '/') or first item without a parent
   const rootItem = items.find((i) => i.page_path === '/') ??
     items.find((i) => !i.parent_item_id);
   const rootId = rootItem?.id ?? null;
 
-  // Build effective parent map: orphan pages (no parent, not root) become children of root
   const effectiveParent = new Map<string, string>();
   for (const item of items) {
     if (item.parent_item_id) {
@@ -58,6 +59,26 @@ function buildNodesAndEdges(
   });
 
   const nodes: Node[] = items.map((item) => {
+    const isSection = item.type === 'section';
+
+    if (isSection) {
+      const sectionData: SitemapSectionData = {
+        item,
+        childCount: childCountMap.get(item.id) ?? 0,
+        onAddChild,
+        onRename: onRenameSection,
+      };
+      return {
+        id: item.id,
+        type: 'sitemapSection',
+        position: { x: 0, y: 0 },
+        draggable: false,
+        data: sectionData,
+        width: SECTION_W,
+        height: SECTION_H,
+      };
+    }
+
     const cc = commentCounts.get(item.id) ?? { total: 0, unresolved: 0 };
     const nodeData: SitemapNodeData = {
       item,
@@ -75,6 +96,8 @@ function buildNodesAndEdges(
       position: { x: 0, y: 0 },
       draggable: false,
       data: nodeData,
+      width: NODE_W,
+      height: NODE_H,
     };
   });
 
@@ -139,9 +162,33 @@ function SitemapViewInner({
     onRefresh();
   }, [onRefresh]);
 
+  const handleRenameSection = useCallback(async (itemId: string, title: string) => {
+    await supabase.from('review_items')
+      .update({ title, updated_at: new Date().toISOString() })
+      .eq('id', itemId);
+    onRefresh();
+  }, [onRefresh]);
+
+  const handleAddSection = useCallback(async () => {
+    const { error } = await supabase.from('review_items').insert({
+      review_project_id: projectId,
+      company_id: companyId,
+      created_by: userId,
+      title: 'New Section',
+      type: 'section',
+      status: 'internal_review',
+      sort_order: items.length,
+    });
+    if (error) {
+      toast.error('Failed to add section');
+      return;
+    }
+    onRefresh();
+  }, [projectId, companyId, userId, items.length, toast, onRefresh]);
+
   const { nodes: initialNodes, edges: initialEdges } = useMemo(
-    () => buildNodesAndEdges(items, commentCounts, onNavigateToItem, handleAddChild, handleUpdateStatus),
-    [items, commentCounts, onNavigateToItem, handleAddChild, handleUpdateStatus],
+    () => buildNodesAndEdges(items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleUpdateStatus),
+    [items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleUpdateStatus],
   );
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -151,7 +198,7 @@ function SitemapViewInner({
   // Runs on every items/comments change.
   useEffect(() => {
     const { nodes: newNodes, edges: newEdges } = buildNodesAndEdges(
-      items, commentCounts, onNavigateToItem, handleAddChild, handleUpdateStatus,
+      items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleUpdateStatus,
     );
 
     const positions = autoLayout(newNodes, newEdges, 'TB', {
@@ -165,7 +212,7 @@ function SitemapViewInner({
     setNodes(positioned);
     setEdges(newEdges);
     setTimeout(() => fitView({ padding: 0.2 }), 50);
-  }, [items, commentCounts, onNavigateToItem, handleAddChild, handleUpdateStatus, setNodes, setEdges, fitView]);
+  }, [items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleUpdateStatus, setNodes, setEdges, fitView]);
 
   // Reparent on edge connect — layout recalculates automatically via onRefresh
   const onConnect: OnConnect = useCallback(async (connection: Connection) => {
@@ -225,6 +272,14 @@ function SitemapViewInner({
                 onClick={() => { setAddPageParentId(null); setShowAddPage(true); }}
               >
                 Add Page
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                leftIcon={FolderPlus}
+                onClick={handleAddSection}
+              >
+                Add Section
               </Button>
               {rootDomain && (
                 <Button

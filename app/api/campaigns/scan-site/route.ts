@@ -11,9 +11,17 @@ const MAX_PAGES = 100;
 const FETCH_TIMEOUT = 8000;
 const MAX_DEPTH = 2;
 
-function extractTitle(html: string): string {
+function extractTitle(html: string, path: string): string {
   const match = html.match(/<title[^>]*>([^<]*)<\/title>/i);
-  return match ? match[1].trim().slice(0, 200) : '';
+  if (!match) return '';
+  const raw = match[1].trim();
+  // Split on common separators (` | `, ` - `, ` – `, ` — `) and take
+  // the first segment, which is typically the human-readable page name
+  // before the brand/SEO tail.
+  const parts = raw.split(/\s+[|–—]\s+|\s+-\s+/);
+  const cleaned = (parts[0] || raw).trim();
+  if (!cleaned || cleaned.length > 60) return pathToTitle(path);
+  return cleaned;
 }
 
 function extractInternalLinks(html: string, baseUrl: URL): string[] {
@@ -102,7 +110,7 @@ export async function POST(req: NextRequest) {
 
         const parsed = new URL(url);
         const path = parsed.pathname === '/' ? '/' : parsed.pathname.replace(/\/$/, '');
-        const title = extractTitle(html) || pathToTitle(path);
+        const title = extractTitle(html, path) || pathToTitle(path);
 
         const page: DiscoveredPage = { url, path, title };
 

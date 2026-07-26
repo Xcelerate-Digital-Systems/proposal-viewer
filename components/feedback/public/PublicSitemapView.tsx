@@ -9,10 +9,12 @@ import {
 import '@xyflow/react/dist/style.css';
 import type { FeedbackItem, FeedbackComment } from '@/lib/supabase';
 import { autoLayout } from '@/components/admin/shared/board-utils';
-import SitemapPageNode, { type SitemapNodeData } from '@/components/admin/feedback/sitemap/SitemapPageNode';
+import SitemapPageNode, { type SitemapNodeData, NODE_W, NODE_H } from '@/components/admin/feedback/sitemap/SitemapPageNode';
+import SitemapSectionNode, { type SitemapSectionData, SECTION_W, SECTION_H } from '@/components/admin/feedback/sitemap/SitemapSectionNode';
 
 const nodeTypes: NodeTypes = {
   sitemapPage: SitemapPageNode,
+  sitemapSection: SitemapSectionNode,
 };
 
 interface PublicSitemapViewProps {
@@ -35,7 +37,6 @@ function buildPublicNodesAndEdges(
     commentCounts.set(c.review_item_id, entry);
   }
 
-  // Find the root node and assign orphans as children of root
   const rootItem = items.find((i) => i.page_path === '/') ??
     items.find((i) => !i.parent_item_id);
   const rootId = rootItem?.id ?? null;
@@ -55,6 +56,24 @@ function buildPublicNodesAndEdges(
   });
 
   const nodes: Node[] = items.map((item) => {
+    const isSection = item.type === 'section';
+
+    if (isSection) {
+      const sectionData: SitemapSectionData = {
+        item,
+        childCount: childCountMap.get(item.id) ?? 0,
+      };
+      return {
+        id: item.id,
+        type: 'sitemapSection',
+        position: { x: 0, y: 0 },
+        data: sectionData,
+        draggable: false,
+        width: SECTION_W,
+        height: SECTION_H,
+      };
+    }
+
     const cc = commentCounts.get(item.id) ?? { total: 0, unresolved: 0 };
     const nodeData: SitemapNodeData = {
       item,
@@ -70,6 +89,8 @@ function buildPublicNodesAndEdges(
       position: { x: 0, y: 0 },
       data: nodeData,
       draggable: false,
+      width: NODE_W,
+      height: NODE_H,
     };
   });
 
@@ -101,7 +122,7 @@ function PublicSitemapInner({ items, comments, onSelectItem }: PublicSitemapView
   const [edges, , onEdgesChange] = useEdgesState(initialEdges);
 
   useEffect(() => {
-    const { nodes: n, edges: e } = buildPublicNodesAndEdges(items, comments, onSelectItem);
+    const { nodes: n } = buildPublicNodesAndEdges(items, comments, onSelectItem);
     setNodes(n);
   }, [items, comments, onSelectItem, setNodes]);
 

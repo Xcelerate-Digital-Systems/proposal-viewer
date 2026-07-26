@@ -137,7 +137,9 @@ export function autoLayout(
 
   for (const node of nodes) {
     const m = (node as unknown as { measured?: { width?: number; height?: number } }).measured;
-    g.setNode(node.id, { width: m?.width ?? defaultW, height: m?.height ?? defaultH });
+    const nw = m?.width ?? (node as { width?: number }).width ?? defaultW;
+    const nh = m?.height ?? (node as { height?: number }).height ?? defaultH;
+    g.setNode(node.id, { width: nw, height: nh });
   }
   for (const edge of edges) {
     if (g.hasNode(edge.source) && g.hasNode(edge.target)) {

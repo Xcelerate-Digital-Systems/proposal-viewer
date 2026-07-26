@@ -69,7 +69,8 @@ export type FeedbackItemType =
   | 'google_banner_ad'
   | 'pdf'
   | 'meta_lead_form'
-  | 'figma';
+  | 'figma'
+  | 'section';
 
 export type MetaLeadFormQuestionType =
   // Custom

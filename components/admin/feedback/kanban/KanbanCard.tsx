@@ -6,7 +6,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import {
   MessageSquareText, ExternalLink, Globe, Mail, Smartphone,
-  Image as ImageIcon, Video, FileText, Megaphone, Search, RectangleHorizontal, ClipboardList, Figma,
+  Image as ImageIcon, Video, FileText, Megaphone, Search, RectangleHorizontal, ClipboardList, Figma, FolderOpen,
   Check, RefreshCw, ArrowRight,
 } from 'lucide-react';
 import { type FeedbackItem, type FeedbackItemType, type FeedbackStatus } from '@/lib/supabase';
@@ -39,6 +39,7 @@ const TYPE_META: Record<FeedbackItemType, { label: string; Icon: typeof Globe; i
   google_banner_ad: { label: 'Google Banner Ad', Icon: RectangleHorizontal, iconBg: 'bg-surface',    iconColor: 'text-muted' },
   meta_lead_form: { label: 'Lead Form', Icon: ClipboardList, iconBg: 'bg-surface', iconColor: 'text-muted' },
   figma: { label: 'Figma', Icon: Figma, iconBg: 'bg-surface', iconColor: 'text-[#a259ff]' },
+  section: { label: 'Section', Icon: FolderOpen, iconBg: 'bg-surface', iconColor: 'text-muted' },
 };
 
 export default function KanbanCard({
