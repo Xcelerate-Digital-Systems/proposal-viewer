@@ -7,13 +7,14 @@ import {
   type Node, type Edge, type NodeTypes, type OnConnect, type Connection,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Plus, Wand2 } from 'lucide-react';
+import { Plus, Wand2, Search } from 'lucide-react';
 import { supabase, type FeedbackItem, type FeedbackStatus } from '@/lib/supabase';
 import { autoLayout } from '@/components/admin/shared/board-utils';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
 import SitemapPageNode, { type SitemapNodeData } from './SitemapPageNode';
 import AddSitemapPageModal from './AddSitemapPageModal';
+import ScanSiteModal from './ScanSiteModal';
 
 const nodeTypes: NodeTypes = {
   sitemapPage: SitemapPageNode,
@@ -23,6 +24,7 @@ interface SitemapViewProps {
   projectId: string;
   companyId: string;
   userId: string | null;
+  rootDomain: string | null;
   items: FeedbackItem[];
   onRefresh: () => void;
   onNavigateToItem: (itemId: string) => void;
@@ -78,12 +80,13 @@ function buildNodesAndEdges(
 }
 
 function SitemapViewInner({
-  projectId, companyId, userId, items, onRefresh, onNavigateToItem,
+  projectId, companyId, userId, rootDomain, items, onRefresh, onNavigateToItem,
 }: SitemapViewProps) {
   const toast = useToast();
   const { fitView } = useReactFlow();
   const [commentCounts, setCommentCounts] = useState<Map<string, { total: number; unresolved: number }>>(new Map());
   const [showAddPage, setShowAddPage] = useState(false);
+  const [showScanSite, setShowScanSite] = useState(false);
   const [addPageParentId, setAddPageParentId] = useState<string | null>(null);
   const [layoutApplied, setLayoutApplied] = useState(false);
 
@@ -246,6 +249,16 @@ function SitemapViewInner({
               >
                 Add Page
               </Button>
+              {rootDomain && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  leftIcon={Search}
+                  onClick={() => setShowScanSite(true)}
+                >
+                  Scan Site
+                </Button>
+              )}
               <button
                 onClick={applyAutoLayout}
                 className="w-8 h-8 rounded-lg bg-white border border-edge shadow-sm flex items-center justify-center text-faint hover:text-teal hover:border-teal transition-colors"
@@ -264,14 +277,28 @@ function SitemapViewInner({
                 </div>
                 <h3 className="text-sm font-semibold text-ink mb-1">No pages yet</h3>
                 <p className="text-xs text-faint mb-4 max-w-[240px]">
-                  Add pages to build your sitemap. Each page can be a live webpage or a Figma design.
+                  {rootDomain
+                    ? 'Scan your site to auto-discover pages, or add them manually.'
+                    : 'Add pages to build your sitemap. Each page can be a live webpage or a Figma design.'}
                 </p>
-                <Button
-                  size="sm"
-                  onClick={() => { setAddPageParentId(null); setShowAddPage(true); }}
-                >
-                  Add First Page
-                </Button>
+                <div className="flex items-center justify-center gap-2">
+                  {rootDomain && (
+                    <Button
+                      size="sm"
+                      leftIcon={Search}
+                      onClick={() => setShowScanSite(true)}
+                    >
+                      Scan Site
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant={rootDomain ? 'outline' : 'primary'}
+                    onClick={() => { setAddPageParentId(null); setShowAddPage(true); }}
+                  >
+                    Add Manually
+                  </Button>
+                </div>
               </div>
             </Panel>
           )}
@@ -288,6 +315,22 @@ function SitemapViewInner({
           items={items}
           onClose={() => { setShowAddPage(false); setAddPageParentId(null); }}
           onSuccess={handlePageAdded}
+        />
+      )}
+
+      {showScanSite && rootDomain && (
+        <ScanSiteModal
+          projectId={projectId}
+          companyId={companyId}
+          userId={userId}
+          rootDomain={rootDomain}
+          existingItems={items}
+          onClose={() => setShowScanSite(false)}
+          onSuccess={() => {
+            setShowScanSite(false);
+            setLayoutApplied(false);
+            onRefresh();
+          }}
         />
       )}
     </>

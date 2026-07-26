@@ -100,6 +100,7 @@ function SitemapContent({ projectId, companyId, userId }: {
           projectId={projectId}
           companyId={companyId}
           userId={userId}
+          rootDomain={project.root_domain}
           items={items}
           onRefresh={fetchData}
           onNavigateToItem={handleNavigateToItem}
