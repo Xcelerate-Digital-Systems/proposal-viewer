@@ -7,8 +7,8 @@ import {
 import { verifyShareAuthCookie } from '@/lib/feedback/share-password';
 
 // Explicit column allowlists — never SELECT * on public endpoints.
-const PROJECT_COLUMNS = 'id, company_id, title, client_name, client_company, status, share_mode, shared_views, pause_new_comments, reviewer_note, reviewer_note_show, reviewer_note_updated_at, share_password_hash, share_expires_at, created_at, updated_at';
-const ITEM_COLUMNS = 'id, review_project_id, title, type, status, sort_order, url, html_content, share_token, ad_platform, ad_headline, ad_copy, ad_cta, image_url, ad_creative_url, sms_body, active_version_id, meta_ad_variants, email_subject, email_preheader, email_body, google_ad_data, board_x, board_y, board_color, share_password_hash, share_expires_at, created_at, updated_at';
+const PROJECT_COLUMNS = 'id, company_id, title, client_name, client_company, status, project_type, share_mode, shared_views, pause_new_comments, reviewer_note, reviewer_note_show, reviewer_note_updated_at, share_password_hash, share_expires_at, created_at, updated_at';
+const ITEM_COLUMNS = 'id, review_project_id, title, type, status, sort_order, url, html_content, share_token, ad_platform, ad_headline, ad_copy, ad_cta, image_url, ad_creative_url, sms_body, active_version_id, meta_ad_variants, email_subject, email_preheader, email_body, google_ad_data, board_x, board_y, board_color, page_path, parent_item_id, figma_file_key, figma_frame_name, share_password_hash, share_expires_at, created_at, updated_at';
 const COMMENT_COLUMNS = 'id, review_item_id, parent_comment_id, thread_number, author_name, author_email, author_type, content, comment_type, pin_x, pin_y, attachments, annotation_data, screenshot_url, highlight_start, highlight_end, highlight_text, highlight_element_path, resolved, resolved_by, resolved_at, priority, video_url, version_id, ad_copy_variation_id, stage_at_creation, created_at, updated_at';
 const VERSION_COLUMNS = 'id, review_item_id, version_number, notes, url, html_content, ad_headline, ad_copy, ad_cta, image_url, sms_body, screenshot_url, ad_creative_url, email_subject, email_preheader, email_body, created_at';
 

@@ -121,10 +121,7 @@ function PublicSitemapInner({ items, comments, onSelectItem }: PublicSitemapView
 
   useEffect(() => {
     if (items.length === 0) return;
-    const hasPositions = items.some((i) => i.board_x != null && i.board_x !== 0);
-    if (!hasPositions) {
-      requestAnimationFrame(applyLayout);
-    }
+    requestAnimationFrame(applyLayout);
   }, [items.length, applyLayout]);
 
   return (

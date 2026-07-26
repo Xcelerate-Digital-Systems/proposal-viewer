@@ -51,9 +51,21 @@ function SitemapPageNodeComponent({ data, selected }: NodeProps) {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={thumbnailSrc} alt={item.title} loading="lazy" className="w-full h-full object-cover object-top" />
           ) : isWebpage && item.url ? (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-faint">
-              <Globe size={16} />
-              <span className="text-[9px] font-mono truncate max-w-[140px] px-2">{item.url}</span>
+            <div className="w-full h-full relative">
+              <iframe
+                src={item.url}
+                title={item.title}
+                loading="lazy"
+                sandbox="allow-same-origin"
+                className="absolute top-0 left-0 border-0"
+                style={{
+                  width: '1280px',
+                  height: '800px',
+                  transform: 'scale(0.14)',
+                  transformOrigin: 'top left',
+                  pointerEvents: 'none',
+                }}
+              />
             </div>
           ) : isFigma ? (
             <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-faint">
@@ -68,7 +80,7 @@ function SitemapPageNodeComponent({ data, selected }: NodeProps) {
 
           {/* Page path badge */}
           {item.page_path && (
-            <span className="absolute top-1 left-1 px-1 py-px rounded bg-white/90 text-[9px] font-mono text-ink/70 border border-edge truncate max-w-[120px]">
+            <span className="absolute top-1 left-1 px-1 py-px rounded bg-white/90 text-[9px] font-mono text-ink/70 border border-edge truncate max-w-[120px] z-[1]">
               {item.page_path}
             </span>
           )}
