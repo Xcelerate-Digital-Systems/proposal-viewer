@@ -140,8 +140,9 @@ function SitemapViewInner({
       items, commentCounts, onNavigateToItem, handleAddChild, handleUpdateStatus,
     );
 
-    // Apply dagre layout with tight sitemap spacing
-    const positions = autoLayout(newNodes, newEdges, 'TB', { nodesep: 20, ranksep: 50 });
+    const positions = autoLayout(newNodes, newEdges, 'TB', {
+      nodesep: 40, ranksep: 80, nodeWidth: 180, nodeHeight: 160,
+    });
     const positioned = newNodes.map((n) => {
       const p = positions.get(n.id);
       return p ? { ...n, position: { x: p.x, y: p.y } } : n;

@@ -94,7 +94,9 @@ function PublicSitemapInner({ items, comments, onSelectItem }: PublicSitemapView
 
   const applyLayout = useCallback(() => {
     setNodes((prev) => {
-      const positions = autoLayout(prev, edges, 'TB', { nodesep: 20, ranksep: 50 });
+      const positions = autoLayout(prev, edges, 'TB', {
+        nodesep: 40, ranksep: 80, nodeWidth: 180, nodeHeight: 160,
+      });
       const updated = prev.map((n) => {
         const p = positions.get(n.id);
         return p ? { ...n, position: { x: p.x, y: p.y } } : n;

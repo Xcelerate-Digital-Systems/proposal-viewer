@@ -124,8 +124,10 @@ export function autoLayout(
   nodes: Node[],
   edges: Edge[],
   direction: 'TB' | 'LR' = 'LR',
-  spacing?: { nodesep?: number; ranksep?: number },
+  spacing?: { nodesep?: number; ranksep?: number; nodeWidth?: number; nodeHeight?: number },
 ): Map<string, { x: number; y: number }> {
+  const defaultW = spacing?.nodeWidth ?? 200;
+  const defaultH = spacing?.nodeHeight ?? 120;
   const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
   g.setGraph({
     rankdir: direction,
@@ -135,7 +137,7 @@ export function autoLayout(
 
   for (const node of nodes) {
     const m = (node as unknown as { measured?: { width?: number; height?: number } }).measured;
-    g.setNode(node.id, { width: m?.width ?? 200, height: m?.height ?? 120 });
+    g.setNode(node.id, { width: m?.width ?? defaultW, height: m?.height ?? defaultH });
   }
   for (const edge of edges) {
     if (g.hasNode(edge.source) && g.hasNode(edge.target)) {
@@ -150,8 +152,8 @@ export function autoLayout(
     const laid = g.node(node.id);
     if (!laid) continue;
     result.set(node.id, {
-      x: Math.round(laid.x - (laid.width || 200) / 2),
-      y: Math.round(laid.y - (laid.height || 120) / 2),
+      x: Math.round(laid.x - (laid.width || defaultW) / 2),
+      y: Math.round(laid.y - (laid.height || defaultH) / 2),
     });
   }
   return result;
