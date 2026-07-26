@@ -66,6 +66,7 @@ function SitemapPageNodeComponent({ data, selected }: NodeProps) {
                   pointerEvents: 'none',
                 }}
               />
+              <div className="absolute inset-0 z-[1]" />
             </div>
           ) : isFigma ? (
             <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-faint">
