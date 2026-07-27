@@ -25,7 +25,7 @@ export default function GhlConnectorCard() {
   const ghl = useGhlConnection({ toast, confirm });
 
   return (
-    <section className="bg-white rounded-2xl shadow-card overflow-hidden">
+    <section className="bg-surface rounded-2xl border border-edge overflow-hidden">
       {/* Header */}
       <header className="flex items-start justify-between gap-4 px-6 py-5 border-b border-edge">
         <div className="flex items-start gap-3 min-w-0">
@@ -112,7 +112,7 @@ export default function GhlConnectorCard() {
                         ghl.setProposalMappings({});
                         ghl.setQuoteMappings({});
                       }}
-                      className="w-full px-3 py-2 text-sm border border-edge rounded-lg bg-surface text-ink focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+                      className="w-full px-3 py-2 text-sm border border-edge rounded-lg bg-surface text-ink focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
                     >
                       <option value="">Select a pipeline…</option>
                       {ghl.pipelines.map(p => (

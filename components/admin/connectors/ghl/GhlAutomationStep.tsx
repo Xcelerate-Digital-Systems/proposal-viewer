@@ -84,7 +84,7 @@ export function GhlAutomationStep({
               value={workflowId}
               onChange={e => setWorkflowId(e.target.value)}
               placeholder="GHL Workflow ID"
-              className="w-full px-3 py-2 text-sm border border-edge rounded-lg bg-surface text-ink placeholder:text-faint/50 focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+              className="w-full px-3 py-2 text-sm border border-edge rounded-lg bg-surface text-ink placeholder:text-faint/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
             />
             <p className="text-detail text-faint mt-1">
               Find in GHL &rarr; Automation &rarr; Workflows &rarr; click workflow &rarr; copy ID from URL

@@ -103,7 +103,7 @@ export function InviteManager({ companyId, currentRole, isSuperAdmin }: InviteMa
   return (
     <div className="space-y-6">
       {/* Send Invite Form */}
-      <div className="bg-white border border-edge rounded-[14px] p-5 ">
+      <div className="bg-white border border-edge rounded-2xl p-5">
         <h3 className="text-sm font-medium text-ink mb-4 flex items-center gap-2">
           <UserPlus size={16} className="text-teal" />
           Invite Team Member
@@ -117,12 +117,12 @@ export function InviteManager({ companyId, currentRole, isSuperAdmin }: InviteMa
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="flex-1 px-3 py-2 rounded-lg bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 /40"
+              className="flex-1 px-3 py-2 rounded-lg bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
             />
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as 'owner' | 'admin' | 'member')}
-              className="px-3 py-2 rounded-lg bg-surface border border-edge text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 /40"
+              className="px-3 py-2 rounded-lg bg-surface border border-edge text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
             >
               {canInviteOwner && <option value="owner">Owner</option>}
               <option value="admin">Admin</option>

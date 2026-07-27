@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Building2, Upload, Trash2, Loader2, Globe, Link2, Check } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import Button from '@/components/ui/Button';
 
 async function getAuthHeaders(): Promise<HeadersInit> {
   const { data } = await supabase.auth.getSession();
@@ -133,7 +134,7 @@ export default function CompanyProfileCard({ companyId, isOwner }: Props) {
   };
 
   return (
-    <div className="bg-white border border-edge rounded-[14px] p-5">
+    <div className="bg-white border border-edge rounded-2xl p-5">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Building2 size={15} className="text-faint" />
@@ -147,7 +148,7 @@ export default function CompanyProfileCard({ companyId, isOwner }: Props) {
       </div>
 
       <div className="flex items-start gap-6 mb-5">
-        <div className="w-20 h-20 bg-surface border border-edge rounded-[14px] flex items-center justify-center overflow-hidden shrink-0">
+        <div className="w-20 h-20 bg-surface border border-edge rounded-2xl flex items-center justify-center overflow-hidden shrink-0">
           {form.logo_url ? (
             <img src={form.logo_url} alt="Logo" className="w-full h-full object-contain p-2" />
           ) : (
@@ -157,18 +158,27 @@ export default function CompanyProfileCard({ companyId, isOwner }: Props) {
         {isOwner && (
           <div className="space-y-2 pt-1">
             <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" onChange={handleLogoUpload} className="hidden" />
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => fileRef.current?.click()}
               disabled={logoUploading}
-              className="flex items-center gap-2 px-3 py-1.5 bg-surface border border-edge text-sm text-muted rounded-lg hover:bg-edge disabled:opacity-50 transition-colors"
+              loading={logoUploading}
+              leftIcon={Upload}
             >
-              {logoUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
               Upload Logo
-            </button>
+            </Button>
             {form.logo_url && (
-              <button onClick={handleLogoRemove} disabled={logoUploading} className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-500 hover:text-red-600 transition-colors">
-                <Trash2 size={14} /> Remove
-              </button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogoRemove}
+                disabled={logoUploading}
+                leftIcon={Trash2}
+                className="text-red-500 hover:text-red-600"
+              >
+                Remove
+              </Button>
             )}
             <p className="text-xs text-faint">PNG, JPEG, SVG, or WebP. Max 2MB.</p>
           </div>
@@ -179,7 +189,7 @@ export default function CompanyProfileCard({ companyId, isOwner }: Props) {
         <div>
           <label className="block text-sm font-medium text-muted mb-1.5">Company Name</label>
           <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} disabled={!isOwner}
-            className="w-full px-3 py-2 rounded-lg bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 disabled:opacity-50 disabled:cursor-not-allowed" />
+            className="w-full px-3 py-2 rounded-lg bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 disabled:opacity-50 disabled:cursor-not-allowed" />
         </div>
 
         <div>
@@ -188,7 +198,7 @@ export default function CompanyProfileCard({ companyId, isOwner }: Props) {
             <label className="text-sm font-medium text-muted">URL Slug</label>
           </div>
           <input type="text" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })} disabled={!isOwner}
-            className="w-full px-3 py-2 rounded-lg bg-surface border border-edge text-sm text-ink font-mono placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 disabled:opacity-50 disabled:cursor-not-allowed" />
+            className="w-full px-3 py-2 rounded-lg bg-surface border border-edge text-sm text-ink font-mono placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 disabled:opacity-50 disabled:cursor-not-allowed" />
           <p className="text-xs text-faint mt-1">Lowercase letters, numbers, and hyphens only. Minimum 2 characters.</p>
         </div>
 
@@ -198,26 +208,24 @@ export default function CompanyProfileCard({ companyId, isOwner }: Props) {
             <label className="text-sm font-medium text-muted">Website</label>
           </div>
           <input type="url" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://yourcompany.com" disabled={!isOwner}
-            className="w-full px-3 py-2 rounded-lg bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 disabled:opacity-50 disabled:cursor-not-allowed" />
+            className="w-full px-3 py-2 rounded-lg bg-surface border border-edge text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 disabled:opacity-50 disabled:cursor-not-allowed" />
         </div>
       </div>
 
       {error && (
-        <div className="mt-4 border border-red-200 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+        <div className="mt-4 border border-red-200 bg-red-50 text-red-700 text-sm rounded-2xl p-3">
           {error}
         </div>
       )}
 
       <div className="flex items-center justify-end gap-3 pt-4">
-        <button
-          type="button"
+        <Button
           onClick={save}
           disabled={!isOwner || saving || !dirty}
-          className="flex items-center gap-1.5 px-4 py-2 bg-teal text-white rounded-lg text-sm font-medium hover:bg-surface-dark-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          loading={saving}
         >
-          {saving && <Loader2 size={14} className="animate-spin" />}
           {saving ? 'Saving…' : 'Save Profile'}
-        </button>
+        </Button>
       </div>
     </div>
   );

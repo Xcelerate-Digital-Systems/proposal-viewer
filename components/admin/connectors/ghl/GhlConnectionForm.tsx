@@ -59,7 +59,7 @@ export function GhlConnectionForm({
             value={token}
             onChange={e => setToken(e.target.value)}
             placeholder="pit-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-            className="w-full px-3 py-2 pr-10 text-sm border border-edge rounded-lg bg-surface text-ink placeholder:text-faint/50 focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+            className="w-full px-3 py-2 pr-10 text-sm border border-edge rounded-lg bg-surface text-ink placeholder:text-faint/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
           />
           <button
             type="button"
@@ -79,7 +79,7 @@ export function GhlConnectionForm({
           value={locationId}
           onChange={e => setLocationId(e.target.value)}
           placeholder="GHL Location / Sub-Account ID"
-          className="w-full px-3 py-2 text-sm border border-edge rounded-lg bg-surface text-ink placeholder:text-faint/50 focus:outline-none focus:ring-2 focus:ring-teal/30 focus:border-teal"
+          className="w-full px-3 py-2 text-sm border border-edge rounded-lg bg-surface text-ink placeholder:text-faint/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
         />
         <p className="text-detail text-faint mt-1">
           Found in GHL &rarr; Settings &rarr; Business Profile &rarr; look for the Location ID (starts with a long string of characters)

@@ -51,7 +51,7 @@ export function GhlStageMappingTable({
                   <select
                     value={m?.ghl_stage_id || ''}
                     onChange={e => onStageSelect(entityType, s.key, e.target.value)}
-                    className="w-full px-2 py-1 text-xs border border-edge rounded bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-teal/30"
+                    className="w-full px-2 py-1 text-xs border border-edge rounded bg-surface text-ink focus:outline-none focus:ring-2 focus:ring-primary/20"
                   >
                     <option value="">Do nothing</option>
                     {pipelineStages.map(ps => (
@@ -63,7 +63,7 @@ export function GhlStageMappingTable({
                   <select
                     value={m?.ghl_opp_status || ''}
                     onChange={e => onStatusChange(s.key, e.target.value)}
-                    className="w-full px-2 py-1 text-xs border border-edge rounded bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-teal/30"
+                    className="w-full px-2 py-1 text-xs border border-edge rounded bg-surface text-ink focus:outline-none focus:ring-2 focus:ring-primary/20"
                   >
                     {OPP_STATUS_OPTIONS.map(o => (
                       <option key={o.value} value={o.value}>{o.label}</option>
@@ -76,7 +76,7 @@ export function GhlStageMappingTable({
                       type="checkbox"
                       checked={m?.trigger_workflow ?? false}
                       onChange={e => onWorkflowToggle(s.key, e.target.checked)}
-                      className="rounded border-edge text-teal focus:ring-teal/30"
+                      className="rounded border-edge text-primary focus:ring-primary/20"
                     />
                   </td>
                 )}
