@@ -88,6 +88,8 @@ function SitemapContent({ projectId, companyId, userId }: {
         customDomain={customDomain}
         hasWebpages={hasWebpages}
         activeTab="sitemap"
+        items={items}
+        onRefresh={fetchData}
       />
 
       <div className="flex-1 overflow-hidden">

@@ -148,6 +148,8 @@ function FeedbackContent({ projectId, companyId, session, teamMember }: {
           hasWebpages={hasWebpages}
           activeTab="comments"
           onAddItem={() => setShowAddItem(true)}
+          items={data.items}
+          onRefresh={data.fetchData}
         />
       )}
 

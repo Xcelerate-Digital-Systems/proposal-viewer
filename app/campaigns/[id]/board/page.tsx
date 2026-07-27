@@ -46,7 +46,7 @@ function BoardContent({ projectId }: { projectId: string }) {
   const ctx = useFeedbackBoardContext();
 
   if (!ctx) return null;
-  const { project, items, loading, customDomain, setProject, openAddItem } = ctx;
+  const { project, items, loading, customDomain, setProject, openAddItem, refreshItems } = ctx;
 
   const handleOpenViewer = (itemId: string) => {
     const item = items.find((i) => i.id === itemId);
@@ -71,6 +71,8 @@ function BoardContent({ projectId }: { projectId: string }) {
           hasWebpages={items.some((i) => i.type === 'webpage')}
           activeTab="board"
           onAddItem={openAddItem}
+          items={items}
+          onRefresh={refreshItems}
         />
       )}
 

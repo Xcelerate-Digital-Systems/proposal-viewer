@@ -139,6 +139,8 @@ function KanbanContent({
           hasWebpages={hasWebpages}
           activeTab="kanban"
           onAddItem={() => setShowAddItem(true)}
+          items={items}
+          onRefresh={fetchItems}
         />
       )}
 

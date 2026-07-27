@@ -2,15 +2,15 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, FileText, Pause, Play, CalendarDays, PackageCheck, Link2, Unlink, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, Pause, Play, CalendarDays, PackageCheck, Link2, Unlink, AlertTriangle, ListChecks } from 'lucide-react';
 import ProjectTabs from '@/components/admin/feedback/ProjectTabs';
 import ReviewerNoteModal from '@/components/admin/feedback/ReviewerNoteModal';
 import ShareMenu from '@/components/feedback/ShareMenu';
 import StatusDropdown, { type StatusOption } from '@/components/ui/StatusDropdown';
 import { buildReviewProjectUrl } from '@/lib/proposal-url';
-import { supabase, type FeedbackProject } from '@/lib/supabase';
+import { supabase, type FeedbackProject, type FeedbackItem } from '@/lib/supabase';
 import { DEFAULT_SHARED_VIEWS, type FeedbackStatus } from '@/lib/types/feedback';
-import { REVIEW_STATUS_OPTIONS } from '@/lib/feedback/status';
+import { REVIEW_STATUS_OPTIONS, REVIEW_STATUS_CONFIG } from '@/lib/feedback/status';
 import { hasOverdueStage } from '@/lib/feedback/stage-due-dates';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
@@ -33,6 +33,8 @@ interface Props {
   hasWebpages: boolean;
   activeTab: 'board' | 'kanban' | 'assets' | 'comments' | 'setup' | 'settings' | 'sitemap' | 'review';
   onAddItem?: () => void;
+  items?: FeedbackItem[];
+  onRefresh?: () => void;
 }
 
 export default function FeedbackProjectHeader({
@@ -43,12 +45,16 @@ export default function FeedbackProjectHeader({
   hasWebpages,
   activeTab,
   onAddItem,
+  items,
+  onRefresh,
 }: Props) {
   const toast = useToast();
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [togglingPause, setTogglingPause] = useState(false);
   const [handoffLoading, setHandoffLoading] = useState(false);
   const [showHandoffMenu, setShowHandoffMenu] = useState(false);
+  const [showMarkAll, setShowMarkAll] = useState(false);
+  const [markingAll, setMarkingAll] = useState(false);
 
   const isHandoffReady = project.status === 'approved' || project.status === 'archived';
   const hasHandoffLink = !!project.handoff_share_token;
@@ -127,6 +133,36 @@ export default function FeedbackProjectHeader({
     }
     setProject((prev) => (prev ? { ...prev, pause_new_comments: next } : prev));
     toast.success(next ? 'New comments paused' : 'Comments reopened');
+  };
+
+  const nonSectionItems = items?.filter((i) => i.type !== 'section') ?? [];
+
+  const handleMarkAll = async (targetStatus: FeedbackStatus) => {
+    if (!items || !onRefresh) return;
+    setMarkingAll(true);
+    setShowMarkAll(false);
+
+    const toUpdate = nonSectionItems.filter((i) => i.status !== targetStatus);
+    if (toUpdate.length === 0) {
+      toast.info('All items are already at that status');
+      setMarkingAll(false);
+      return;
+    }
+
+    const ids = toUpdate.map((i) => i.id);
+    const { error } = await supabase
+      .from('review_items')
+      .update({ status: targetStatus, updated_at: new Date().toISOString() })
+      .in('id', ids);
+
+    setMarkingAll(false);
+    if (error) {
+      toast.error('Failed to update items');
+      return;
+    }
+    const label = projectStatusOptions.find((o) => o.value === targetStatus)?.label ?? targetStatus;
+    toast.success(`Marked ${toUpdate.length} item${toUpdate.length !== 1 ? 's' : ''} as ${label}`);
+    onRefresh();
   };
 
   return (
@@ -282,6 +318,42 @@ export default function FeedbackProjectHeader({
                       <Unlink size={14} />
                       Revoke link
                     </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {items && items.length > 0 && onRefresh && (
+            <div className="relative">
+              <button
+                onClick={() => setShowMarkAll(!showMarkAll)}
+                disabled={markingAll}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-medium bg-surface text-prose hover:bg-surface transition-colors disabled:opacity-50"
+                title="Change status of all items"
+              >
+                <ListChecks size={14} />
+                {markingAll ? 'Updating…' : 'Mark All'}
+              </button>
+
+              {showMarkAll && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowMarkAll(false)} />
+                  <div className="absolute right-0 top-full mt-1.5 z-50 w-56 rounded-xl border border-edge bg-white shadow-lg py-1.5">
+                    <p className="px-3.5 py-1.5 text-xs text-faint font-medium">Move all items to…</p>
+                    {projectStatusOptions.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => handleMarkAll(opt.value)}
+                        className="flex items-center gap-2.5 w-full px-3.5 py-2 text-left text-sm text-prose hover:bg-paper transition-colors"
+                      >
+                        <span className={`w-2 h-2 rounded-full ${REVIEW_STATUS_CONFIG[opt.value].dot}`} />
+                        {opt.label}
+                        <span className="ml-auto text-xs text-faint">
+                          {nonSectionItems.filter((i) => i.status === opt.value).length}
+                        </span>
+                      </button>
+                    ))}
                   </div>
                 </>
               )}

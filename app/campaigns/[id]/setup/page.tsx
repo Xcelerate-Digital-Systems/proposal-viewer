@@ -147,6 +147,8 @@ function SetupContent({ projectId, companyId }: { projectId: string; companyId: 
           customDomain={customDomain}
           hasWebpages
           activeTab="setup"
+          items={items}
+          onRefresh={fetchItems}
         />
       )}
 

@@ -195,6 +195,8 @@ function ItemsContent({
           hasWebpages={items.some((i) => i.type === 'webpage')}
           activeTab="assets"
           onAddItem={() => setShowAddItem(true)}
+          items={items}
+          onRefresh={fetchItems}
         />
       )}
 
