@@ -143,16 +143,19 @@ function reResolveItem(){
   if(newItem===C.item)return;
   if(mode!=="idle"){if(typeof armPinMode==="function")armPinMode();}
   if(panelOpen&&typeof closePanel==="function")closePanel();
+  /* Remove old annotation DOM elements before clearing the array —
+     otherwise they become orphaned and stay visible on the new page. */
+  annotations.forEach(function(a){if(a.el)a.el.remove();});
+  if(typeof unwrapExistingHighlights==="function")unwrapExistingHighlights();
+  comments=[];reactions=[];annotations=[];
   if(newItem){
     C.item=newItem;
-    comments=[];reactions=[];annotations=[];
     loading=true;
     var r=document.getElementById("aviz-root");if(r)r.style.display="";
     if(typeof refresh==="function")refresh();
     loadComments(function(){if(typeof refresh==="function")refresh();});
   } else {
     C.item=null;
-    comments=[];reactions=[];annotations=[];
     var r=document.getElementById("aviz-root");if(r)r.style.display="none";
     if(typeof refresh==="function")refresh();
   }

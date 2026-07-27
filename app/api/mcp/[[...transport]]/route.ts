@@ -232,7 +232,7 @@ const mcpHandler = createMcpHandler(
           author_type: 'team', comment_type: 'general', source: 'mcp',
         });
       }
-      const { error } = await sb.from('review_comments').update({ resolved: true, resolved_by: auth.memberId, resolved_at: new Date().toISOString() }).eq('id', commentId);
+      const { error } = await sb.from('review_comments').update({ resolved: true, resolved_by: auth.memberName, resolved_at: new Date().toISOString() }).eq('id', commentId);
       if (error) return txt(`Failed: ${error.message}`);
       return txt(`Comment ${commentId} resolved.${note?.trim() ? ' Note added as reply.' : ''}`);
     });
