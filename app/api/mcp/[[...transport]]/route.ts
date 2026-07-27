@@ -158,7 +158,7 @@ const mcpHandler = createMcpHandler(
       const auth = getAuth(extra); if (!auth) return unauthorized();
       const sb = createServiceClient();
       let q = sb.from('review_comments')
-        .select('id, content, author_name, pin_x, pin_y, resolved, priority, parent_comment_id, thread_number, attachments, screenshot_url, video_url, comment_type, created_at')
+        .select('id, content, author_name, pin_x, pin_y, viewport_width, pin_element_selector, pin_anchor_text, resolved, priority, parent_comment_id, thread_number, attachments, screenshot_url, video_url, comment_type, created_at')
         .eq('review_item_id', assetId).eq('company_id', auth.companyId).order('created_at', { ascending: true });
       if (unresolvedOnly) q = q.eq('resolved', false);
       const { data: comments, error } = await q;
@@ -178,7 +178,7 @@ const mcpHandler = createMcpHandler(
           if (!replies[c.parent_comment_id]) replies[c.parent_comment_id] = [];
           replies[c.parent_comment_id].push({ id: c.id, content: c.content, author: c.author_name, attachments: fmtAttachments(c), createdAt: c.created_at });
         } else {
-          threads[c.id] = { id: c.id, threadNumber: c.thread_number, content: c.content, author: c.author_name, type: c.comment_type, pinX: c.pin_x, pinY: c.pin_y, resolved: c.resolved, priority: c.priority, attachments: fmtAttachments(c), createdAt: c.created_at, replies: [] };
+          threads[c.id] = { id: c.id, threadNumber: c.thread_number, content: c.content, author: c.author_name, type: c.comment_type, pinX: c.pin_x, pinY: c.pin_y, viewportWidth: c.viewport_width, elementSelector: c.pin_element_selector, anchorText: c.pin_anchor_text, resolved: c.resolved, priority: c.priority, attachments: fmtAttachments(c), createdAt: c.created_at, replies: [] };
         }
       }
       for (const [pid, reps] of Object.entries(replies)) { if (threads[pid]) threads[pid].replies = reps; }
@@ -195,7 +195,7 @@ const mcpHandler = createMcpHandler(
       if (!campaignItems?.length) return txt('No assets in this campaign.');
       const campaignItemIds = campaignItems.map(i => i.id);
       let q = sb.from('review_comments')
-        .select('id, content, author_name, pin_x, pin_y, priority, thread_number, review_item_id, attachments, screenshot_url, video_url, created_at')
+        .select('id, content, author_name, pin_x, pin_y, viewport_width, pin_element_selector, pin_anchor_text, priority, thread_number, review_item_id, attachments, screenshot_url, video_url, created_at')
         .in('review_item_id', campaignItemIds).eq('company_id', auth.companyId).eq('resolved', false).is('parent_comment_id', null).order('created_at', { ascending: true });
       if (since) q = q.gt('created_at', since);
       const { data: comments } = await q;
@@ -211,7 +211,7 @@ const mcpHandler = createMcpHandler(
         if (c.video_url) atts.push({ url: c.video_url, type: 'video' });
         const fileAtts = c.attachments as Array<{ url?: string; name?: string; type?: string }> | null;
         if (Array.isArray(fileAtts)) for (const a of fileAtts) { if (a.url) atts.push({ url: a.url, name: a.name, type: a.type }); }
-        grouped[iid].comments.push({ id: c.id, threadNumber: c.thread_number, content: c.content, author: c.author_name, pinX: c.pin_x, pinY: c.pin_y, priority: c.priority, attachments: atts.length ? atts : undefined, createdAt: c.created_at });
+        grouped[iid].comments.push({ id: c.id, threadNumber: c.thread_number, content: c.content, author: c.author_name, pinX: c.pin_x, pinY: c.pin_y, viewportWidth: c.viewport_width, elementSelector: c.pin_element_selector, anchorText: c.pin_anchor_text, priority: c.priority, attachments: atts.length ? atts : undefined, createdAt: c.created_at });
       }
       return json(Object.entries(grouped).map(([assetId, g]) => ({ assetId, ...g })));
     });

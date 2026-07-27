@@ -176,6 +176,7 @@ function AssetReviewContent({
     highlightData?: { text: string; start: number; end: number; elementPath: string },
     priority?: FeedbackCommentPriority, attachments?: FeedbackCommentAttachment[],
     videoUrl?: string | null,
+    pinContext?: { viewportWidth?: number; elementSelector?: string; anchorText?: string },
   ) => {
     const commentType = pinX != null ? 'pin' : highlightData ? 'text_highlight' : 'general';
 
@@ -204,6 +205,9 @@ function AssetReviewContent({
         author_user_id: session?.user?.id ?? null,
         author_type: 'team',
         version_id: activeVersionId,
+        viewport_width: pinContext?.viewportWidth ?? null,
+        pin_element_selector: pinContext?.elementSelector ?? null,
+        pin_anchor_text: pinContext?.anchorText ?? null,
       })
       .select('*')
       .single();

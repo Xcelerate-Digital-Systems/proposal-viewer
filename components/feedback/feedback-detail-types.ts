@@ -42,7 +42,7 @@ export interface ReviewDetailViewProps {
 
   // ── Callbacks ──
   /** Submit a new comment */
-  onSubmitComment: (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }, priority?: FeedbackCommentPriority, attachments?: import('@/lib/supabase').FeedbackCommentAttachment[], videoUrl?: string | null) => Promise<void>;
+  onSubmitComment: (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }, priority?: FeedbackCommentPriority, attachments?: import('@/lib/supabase').FeedbackCommentAttachment[], videoUrl?: string | null, pinContext?: { viewportWidth?: number; elementSelector?: string; anchorText?: string }) => Promise<void>;
   /** Resolve a comment (admin only) */
   onResolveComment?: (commentId: string) => Promise<void>;
   /** Unresolve a comment (admin only) */

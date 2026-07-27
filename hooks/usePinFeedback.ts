@@ -4,6 +4,26 @@
 import { useState, useCallback, useRef } from 'react';
 import { type FeedbackMode } from '@/components/feedback/tools';
 
+function buildSelector(target: HTMLElement, boundary: HTMLElement): string | undefined {
+  const parts: string[] = [];
+  let el: HTMLElement | null = target;
+  while (el && el !== boundary) {
+    let seg = el.tagName.toLowerCase();
+    if (el.id) { parts.unshift(`#${el.id}`); break; }
+    const dataSection = el.getAttribute('data-section');
+    if (dataSection) { parts.unshift(`[data-section="${dataSection}"]`); break; }
+    const parent = el.parentElement;
+    if (parent) {
+      const siblings = Array.from(parent.children).filter(c => c.tagName === el!.tagName);
+      if (siblings.length > 1) seg += `:nth-of-type(${siblings.indexOf(el) + 1})`;
+    }
+    parts.unshift(seg);
+    el = el.parentElement;
+    if (parts.length >= 6) break;
+  }
+  return parts.length ? parts.join(' > ') : undefined;
+}
+
 /**
  * Manages pin feedback state and drawing tool modes.
  * Pin placement is always active by default — clicking content places a pin
@@ -16,7 +36,7 @@ import { type FeedbackMode } from '@/components/feedback/tools';
  *  the active view is at submit time. */
 export type PinTarget = 'creative' | undefined;
 
-export type PendingPin = { x: number; y: number; target?: PinTarget };
+export type PendingPin = { x: number; y: number; target?: PinTarget; viewportWidth?: number; elementSelector?: string; anchorText?: string };
 
 export function usePinFeedback() {
   const [feedbackMode, setFeedbackMode] = useState<FeedbackMode>('idle');
@@ -49,7 +69,10 @@ export function usePinFeedback() {
     // Meta ad image). Stored on the pending pin so the submit handler can
     // stamp creative pins with a shared view that survives variant switches.
     const isCreative = !!target.closest('[data-creative]');
-    setPendingPin({ x, y, target: isCreative ? 'creative' : undefined });
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : undefined;
+    const elementSelector = buildSelector(target, e.currentTarget);
+    const anchorText = (target.textContent || '').trim().slice(0, 120) || undefined;
+    setPendingPin({ x, y, target: isCreative ? 'creative' : undefined, viewportWidth, elementSelector, anchorText });
   }, [pinActive]);
 
   // Clicking an existing pin — parent uses this to scroll to comment

@@ -92,6 +92,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       version_id,
       priority,
       video_url,
+      viewport_width,
+      pin_element_selector,
+      pin_anchor_text,
     } = body;
 
     const VALID_PRIORITIES = ['high', 'medium', 'low', 'none'] as const;
@@ -233,6 +236,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
         video_url: safeVideoUrl,
         version_id: safeVersionId,
         ad_copy_variation_id: adCopyVariationId,
+        viewport_width: typeof viewport_width === 'number' ? viewport_width : null,
+        pin_element_selector: typeof pin_element_selector === 'string' ? pin_element_selector.slice(0, 500) : null,
+        pin_anchor_text: typeof pin_anchor_text === 'string' ? pin_anchor_text.slice(0, 200) : null,
       })
       .select()
       .single();

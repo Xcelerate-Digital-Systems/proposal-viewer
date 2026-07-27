@@ -501,7 +501,7 @@ export default function FeedbackDetailView({
                 pinY={pendingPin.y}
                 containerRef={imageContainerRef}
                 onSubmit={async (content, attachments, priority, videoUrl) => {
-                  await handleSubmitComment(content, pendingPin.x, pendingPin.y, undefined, priority, attachments, videoUrl);
+                  await handleSubmitComment(content, pendingPin.x, pendingPin.y, undefined, priority, attachments, videoUrl, { viewportWidth: pendingPin.viewportWidth, elementSelector: pendingPin.elementSelector, anchorText: pendingPin.anchorText });
                   handleCancelPin();
                 }}
                 onCancel={handleCancelPin}

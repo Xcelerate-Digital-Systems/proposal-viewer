@@ -493,6 +493,9 @@ export type FeedbackComment = {
   comment_type: FeedbackCommentType;
   pin_x: number | null;
   pin_y: number | null;
+  viewport_width: number | null;
+  pin_element_selector: string | null;
+  pin_anchor_text: string | null;
   highlight_start: number | null;
   highlight_end: number | null;
   highlight_text: string | null;

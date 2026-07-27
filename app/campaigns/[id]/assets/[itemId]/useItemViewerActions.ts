@@ -41,7 +41,7 @@ export function useItemViewerActions({
 }: UseItemViewerActionsArgs) {
 
   // ── Submit comment ──
-  const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }, priority?: FeedbackCommentPriority, attachments?: FeedbackCommentAttachment[], videoUrl?: string | null) => {
+  const submitComment = async (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }, priority?: FeedbackCommentPriority, attachments?: FeedbackCommentAttachment[], videoUrl?: string | null, pinContext?: { viewportWidth?: number; elementSelector?: string; anchorText?: string }) => {
     if (!content.trim()) return;
 
     const currentItem = items.find((i) => i.id === reviewItemId) || null;
@@ -100,6 +100,9 @@ export function useItemViewerActions({
       attachments: attachments || [],
       video_url: videoUrl ?? null,
       ad_copy_variation_id: adCopyVariationId,
+      viewport_width: pinContext?.viewportWidth ?? null,
+      pin_element_selector: pinContext?.elementSelector ?? null,
+      pin_anchor_text: pinContext?.anchorText ?? null,
       // Pin the comment to whichever version the reviewer is currently looking
       // at. For replies, inherit the parent's version so threads stay coherent.
       version_id: parentId

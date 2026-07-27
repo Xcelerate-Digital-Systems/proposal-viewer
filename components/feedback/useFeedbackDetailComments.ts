@@ -33,7 +33,7 @@ interface UseFeedbackDetailCommentsParams {
   textSelection: TextHighlightData | null;
   resetTextSelection: () => void;
   // External callbacks
-  onSubmitComment: (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }, priority?: FeedbackCommentPriority, attachments?: import('@/lib/supabase').FeedbackCommentAttachment[], videoUrl?: string | null) => Promise<void>;
+  onSubmitComment: (reviewItemId: string, content: string, pinX?: number, pinY?: number, parentId?: string, annotationData?: unknown, screenshotUrl?: string, highlightData?: { text: string; start: number; end: number; elementPath: string }, priority?: FeedbackCommentPriority, attachments?: import('@/lib/supabase').FeedbackCommentAttachment[], videoUrl?: string | null, pinContext?: { viewportWidth?: number; elementSelector?: string; anchorText?: string }) => Promise<void>;
   // Browse mode & comment locking
   browseMode: boolean;
   commentsLocked: boolean;
@@ -60,7 +60,7 @@ export interface FeedbackDetailCommentsState {
   highlightedCommentId: string | null;
   setHighlightedCommentId: React.Dispatch<React.SetStateAction<string | null>>;
   handleAnnotationComplete: (pinX: number, pinY: number, annotation: AnnotationData) => void;
-  handleSubmitComment: (content: string, pinX?: number, pinY?: number, parentId?: string, priority?: FeedbackCommentPriority, attachments?: import('@/lib/supabase').FeedbackCommentAttachment[], videoUrl?: string | null) => Promise<void>;
+  handleSubmitComment: (content: string, pinX?: number, pinY?: number, parentId?: string, priority?: FeedbackCommentPriority, attachments?: import('@/lib/supabase').FeedbackCommentAttachment[], videoUrl?: string | null, pinContext?: { viewportWidth?: number; elementSelector?: string; anchorText?: string }) => Promise<void>;
   handleImageClick: (e: React.MouseEvent<HTMLDivElement>) => void;
   handlePinClick: (commentId?: string) => void;
   handlePopoverReply: (content: string, parentId: string, attachments?: import('@/lib/supabase').FeedbackCommentAttachment[]) => Promise<void>;
@@ -166,6 +166,7 @@ export function useFeedbackDetailComments({
       priority?: FeedbackCommentPriority,
       attachments?: import('@/lib/supabase').FeedbackCommentAttachment[],
       videoUrl?: string | null,
+      pinContext?: { viewportWidth?: number; elementSelector?: string; anchorText?: string },
     ) => {
       if (!selectedItemId) return;
       const highlight = pendingHighlight
@@ -199,6 +200,7 @@ export function useFeedbackDetailComments({
         priority,
         attachments,
         videoUrl,
+        pinContext,
       );
       if (!parentId) toast.success(pinX != null ? 'Comment pinned' : 'Comment added');
       setPendingAnnotation(null);
