@@ -44,10 +44,14 @@ const mcpHandler = createMcpHandler(
 ### Campaigns (Feedback/Markup)
 - \`list_campaigns\` → \`get_campaign\` → \`list_assets\` → \`get_asset_detail\`
 - \`get_comments\` / \`get_unresolved\` — read feedback
-- \`resolve_comment\`, \`add_comment\`, \`update_asset_status\` — write ops
+- \`resolve_comment\`, \`add_comment\` — comment write ops
+- \`update_asset_status\` — move a single asset between stages
+- \`bulk_update_asset_status\` — move all (or filtered) assets in a campaign
+- \`update_campaign_status\` — archive or activate a campaign project
 
 ### Pitch (Proposals + Quotes + Documents)
 - \`list_proposals\` → \`get_proposal\` → \`get_proposal_pages\`
+- \`update_proposal_status\` — mark as sent or pull back to draft
 - \`list_documents\` → \`get_document\`
 - Quotes are proposals with entity_type='pricing'
 
@@ -117,12 +121,15 @@ const mcpHandler = createMcpHandler(
       if (status) q = q.eq('status', status);
       const { data: items, error } = await q;
       if (error) return txt(`Error: ${error.message}`);
-      const { data: comments } = await sb.from('review_comments').select('id, review_item_id, parent_comment_id, resolved').eq('review_project_id', campaignId).eq('company_id', auth.companyId);
+      const itemIds = (items || []).map(i => i.id);
       const cc: Record<string, { total: number; unresolved: number }> = {};
-      for (const c of comments || []) {
-        if (c.parent_comment_id || !c.review_item_id) continue;
-        if (!cc[c.review_item_id]) cc[c.review_item_id] = { total: 0, unresolved: 0 };
-        cc[c.review_item_id].total++; if (!c.resolved) cc[c.review_item_id].unresolved++;
+      if (itemIds.length) {
+        const { data: comments } = await sb.from('review_comments').select('id, review_item_id, parent_comment_id, resolved').in('review_item_id', itemIds).eq('company_id', auth.companyId);
+        for (const c of comments || []) {
+          if (c.parent_comment_id || !c.review_item_id) continue;
+          if (!cc[c.review_item_id]) cc[c.review_item_id] = { total: 0, unresolved: 0 };
+          cc[c.review_item_id].total++; if (!c.resolved) cc[c.review_item_id].unresolved++;
+        }
       }
       return json((items || []).map(i => ({ id: i.id, title: i.title, type: i.type, status: i.status, version: i.version, url: i.url, figmaFrame: i.figma_frame_name, comments: cc[i.id] || { total: 0, unresolved: 0 }, updatedAt: i.updated_at })));
     });
@@ -173,14 +180,15 @@ const mcpHandler = createMcpHandler(
     }, async ({ campaignId }, extra) => {
       const auth = getAuth(extra); if (!auth) return unauthorized();
       const sb = createServiceClient();
+      const { data: campaignItems } = await sb.from('review_items').select('id, title, type, status').eq('review_project_id', campaignId).eq('company_id', auth.companyId);
+      if (!campaignItems?.length) return txt('No assets in this campaign.');
+      const campaignItemIds = campaignItems.map(i => i.id);
       const { data: comments } = await sb.from('review_comments')
         .select('id, content, author_name, pin_x, pin_y, priority, thread_number, review_item_id, created_at')
-        .eq('review_project_id', campaignId).eq('company_id', auth.companyId).eq('resolved', false).is('parent_comment_id', null).order('created_at', { ascending: true });
+        .in('review_item_id', campaignItemIds).eq('company_id', auth.companyId).eq('resolved', false).is('parent_comment_id', null).order('created_at', { ascending: true });
       if (!comments?.length) return txt('No unresolved comments in this campaign.');
-      const itemIds = Array.from(new Set(comments.map(c => c.review_item_id).filter(Boolean)));
-      const { data: items } = await sb.from('review_items').select('id, title, type, status').in('id', itemIds);
       const im: Record<string, { title: string; type: string; status: string }> = {};
-      for (const i of items || []) im[i.id] = { title: i.title, type: i.type, status: i.status };
+      for (const i of campaignItems) im[i.id] = { title: i.title, type: i.type, status: i.status };
       const grouped: Record<string, { asset: unknown; comments: unknown[] }> = {};
       for (const c of comments) {
         const iid = c.review_item_id || 'unknown';
@@ -232,6 +240,43 @@ const mcpHandler = createMcpHandler(
       const { error } = await sb.from('review_items').update({ status, prior_status: item.status, updated_at: new Date().toISOString() }).eq('id', assetId);
       if (error) return txt(`Failed: ${error.message}`);
       return txt(`Asset status updated: ${item.status} → ${status}`);
+    });
+
+    server.tool('update_campaign_status', 'Archive or activate a campaign project.', {
+      campaignId: z.string(),
+      status: z.enum(['active', 'archived']),
+    }, async ({ campaignId, status }, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: project } = await sb.from('review_projects').select('id, status').eq('id', campaignId).eq('company_id', auth.companyId).single();
+      if (!project) return txt('Campaign not found');
+      if (project.status === status) return txt(`Campaign is already ${status}.`);
+      const { error } = await sb.from('review_projects').update({ status, updated_at: new Date().toISOString() }).eq('id', campaignId);
+      if (error) return txt(`Failed: ${error.message}`);
+      return txt(`Campaign status updated: ${project.status} → ${status}`);
+    });
+
+    server.tool('bulk_update_asset_status', 'Move all assets in a campaign (or filtered subset) to a new stage.', {
+      campaignId: z.string(),
+      status: z.enum(['draft', 'internal_review', 'client_review', 'approved', 'revision_needed', 'rejected', 'archived']),
+      fromStatus: z.string().optional().describe('Only move assets currently in this stage'),
+    }, async ({ campaignId, status, fromStatus }, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: project } = await sb.from('review_projects').select('id').eq('id', campaignId).eq('company_id', auth.companyId).single();
+      if (!project) return txt('Campaign not found');
+      let q = sb.from('review_items').select('id, status').eq('review_project_id', campaignId).eq('company_id', auth.companyId);
+      if (fromStatus) q = q.eq('status', fromStatus);
+      const { data: items } = await q;
+      if (!items?.length) return txt('No matching assets found.');
+      const toUpdate = items.filter(i => i.status !== status);
+      if (!toUpdate.length) return txt(`All ${items.length} assets are already in "${status}".`);
+      const { error } = await sb.from('review_items')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('review_project_id', campaignId).eq('company_id', auth.companyId)
+        .in('id', toUpdate.map(i => i.id));
+      if (error) return txt(`Failed: ${error.message}`);
+      return txt(`${toUpdate.length} asset(s) moved to "${status}".`);
     });
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -293,6 +338,25 @@ const mcpHandler = createMcpHandler(
         hasContent: !!(p.payload && typeof p.payload === 'object' && Object.keys(p.payload as object).length > 0),
         content: p.type === 'text' && p.payload ? (p.payload as Record<string, unknown>).html || (p.payload as Record<string, unknown>).content : undefined,
       })));
+    });
+
+    server.tool('update_proposal_status', 'Move a proposal or quote through the pipeline. Agency-side: draft↔sent. Use "draft" to pull back a sent proposal for edits.', {
+      proposalId: z.string(),
+      status: z.enum(['draft', 'sent']).describe('"sent" marks it as sent to the client. "draft" pulls it back for editing.'),
+    }, async ({ proposalId, status }, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: p } = await sb.from('proposals').select('id, status, entity_type').eq('id', proposalId).eq('company_id', auth.companyId).single();
+      if (!p) return txt('Proposal not found');
+      const label = p.entity_type === 'pricing' ? 'Quote' : 'Proposal';
+      if (p.status === status) return txt(`${label} is already "${status}".`);
+      if (status === 'sent' && p.status !== 'draft') return txt(`Can only mark as sent from draft. Current status: "${p.status}".`);
+      if (status === 'draft' && !['sent', 'viewed'].includes(p.status)) return txt(`Can only pull back to draft from sent/viewed. Current status: "${p.status}".`);
+      const updates: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
+      if (status === 'sent') updates.sent_at = new Date().toISOString();
+      const { error } = await sb.from('proposals').update(updates).eq('id', proposalId);
+      if (error) return txt(`Failed: ${error.message}`);
+      return txt(`${label} status updated: ${p.status} → ${status}`);
     });
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

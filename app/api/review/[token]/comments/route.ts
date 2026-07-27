@@ -211,6 +211,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       .from('review_comments')
       .insert({
         review_item_id,
+        review_project_id: item.review_project_id,
         company_id: item.company_id,
         parent_comment_id: parent_comment_id || null,
         thread_number,

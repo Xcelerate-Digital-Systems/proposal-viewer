@@ -147,6 +147,7 @@ export default function InboxItem({ item, memberName, isLast, isSelected, trigge
     try {
       const { error: insertErr } = await supabase.from('review_comments').insert({
         review_item_id: item.itemId,
+        review_project_id: item.projectId,
         parent_comment_id: item.commentId,
         author_name: memberName,
         author_type: 'team',
