@@ -292,8 +292,8 @@ async function notifyNewVersion(params: {
 
   if (!project?.share_token) return;
 
-  const appUrl = (typeof window !== 'undefined' ? window.location.origin : '').replace(/\/+$/, '');
-  void fetch(`${appUrl}/api/review-notify`, {
+  const { authFetch } = await import('@/lib/auth-fetch');
+  void authFetch('/api/review-notify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

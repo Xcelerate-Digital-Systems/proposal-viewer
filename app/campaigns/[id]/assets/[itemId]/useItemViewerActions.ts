@@ -124,7 +124,8 @@ export function useItemViewerActions({
 
       // Notify webhook + participants
       if (project?.share_token) {
-        fetch('/api/review-notify', {
+        const { authFetch: af } = await import('@/lib/auth-fetch');
+        af('/api/review-notify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

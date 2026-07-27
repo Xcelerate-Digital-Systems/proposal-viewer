@@ -79,7 +79,8 @@ export function useCommentsPageActions({
       const item = parent.review_item_id
         ? items.find((i) => i.id === parent.review_item_id)
         : null;
-      fetch('/api/review-notify', {
+      const { authFetch: af } = await import('@/lib/auth-fetch');
+      af('/api/review-notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -136,7 +137,8 @@ export function useCommentsPageActions({
     setAllComments((prev) => [data as FeedbackComment, ...prev]);
 
     if (project?.share_token) {
-      fetch('/api/review-notify', {
+      const { authFetch: af2 } = await import('@/lib/auth-fetch');
+      af2('/api/review-notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
