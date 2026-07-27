@@ -9,7 +9,8 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Plus, Search, FolderPlus } from 'lucide-react';
-import { supabase, type FeedbackItem, type FeedbackStatus } from '@/lib/supabase';
+import { supabase, type FeedbackItem, type FeedbackStatus, type FeedbackItemType } from '@/lib/supabase';
+import type { SiblingSide, SiblingType } from './SitemapSiblingMenu';
 import { autoLayout } from '@/components/admin/shared/board-utils';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
@@ -45,6 +46,7 @@ function buildNodesAndEdges(
   onAddChild: (parentId: string) => void,
   onRenameSection: (itemId: string, title: string) => void,
   onAddPageOnEdge: (parentId: string) => void,
+  onAddSibling: (itemId: string, side: SiblingSide, type: SiblingType) => void,
   onUpdateStatus?: (itemId: string, status: FeedbackStatus) => void | Promise<void>,
 ): { nodes: Node[]; edges: Edge[] } {
   const rootItem = items.find((i) => i.page_path === '/') ??
@@ -74,12 +76,13 @@ function buildNodesAndEdges(
         childCount: childCountMap.get(item.id) ?? 0,
         onAddChild,
         onRename: onRenameSection,
+        onAddSibling,
       };
       return {
         id: item.id,
         type: 'sitemapSection',
         position: { x: 0, y: 0 },
-        draggable: true,
+        draggable: false,
         data: sectionData,
         width: SECTION_W,
         height: SECTION_H,
@@ -94,6 +97,7 @@ function buildNodesAndEdges(
       childCount: childCountMap.get(item.id) ?? 0,
       onNavigate,
       onAddChild,
+      onAddSibling,
       onUpdateStatus,
     };
 
@@ -207,9 +211,57 @@ function SitemapViewInner({
     setShowAddPage(true);
   }, []);
 
+  const handleAddSibling = useCallback(async (itemId: string, side: SiblingSide, type: SiblingType) => {
+    const referenceItem = items.find((i) => i.id === itemId);
+    if (!referenceItem) return;
+
+    const parentId = referenceItem.parent_item_id || null;
+    const siblings = items.filter((i) =>
+      (i.parent_item_id || null) === parentId && i.id !== itemId
+    );
+    const refOrder = referenceItem.sort_order;
+
+    let newOrder: number;
+    if (side === 'left') {
+      const leftSiblings = siblings.filter((s) => s.sort_order < refOrder);
+      const nearestLeft = leftSiblings.length > 0
+        ? Math.max(...leftSiblings.map((s) => s.sort_order))
+        : refOrder - 1;
+      newOrder = (nearestLeft + refOrder) / 2;
+    } else {
+      const rightSiblings = siblings.filter((s) => s.sort_order > refOrder);
+      const nearestRight = rightSiblings.length > 0
+        ? Math.min(...rightSiblings.map((s) => s.sort_order))
+        : refOrder + 1;
+      newOrder = (refOrder + nearestRight) / 2;
+    }
+
+    if (type === 'webpage') {
+      setAddPageParentId(parentId);
+      setShowAddPage(true);
+      return;
+    }
+
+    const { error } = await supabase.from('review_items').insert({
+      review_project_id: projectId,
+      company_id: companyId,
+      created_by: userId,
+      title: 'New Section',
+      type: 'section' as FeedbackItemType,
+      status: 'internal_review' as FeedbackStatus,
+      sort_order: newOrder,
+      parent_item_id: parentId,
+    });
+    if (error) {
+      toast.error('Failed to add section');
+      return;
+    }
+    onRefresh();
+  }, [items, projectId, companyId, userId, toast, onRefresh]);
+
   const { nodes: initialNodes, edges: initialEdges } = useMemo(
-    () => buildNodesAndEdges(items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleAddPageOnEdge, handleUpdateStatus),
-    [items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleAddPageOnEdge, handleUpdateStatus],
+    () => buildNodesAndEdges(items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleAddPageOnEdge, handleAddSibling, handleUpdateStatus),
+    [items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleAddPageOnEdge, handleAddSibling, handleUpdateStatus],
   );
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -252,7 +304,7 @@ function SitemapViewInner({
   // Runs on every items/comments change.
   useEffect(() => {
     const { nodes: newNodes, edges: newEdges } = buildNodesAndEdges(
-      items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleAddPageOnEdge, handleUpdateStatus,
+      items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleAddPageOnEdge, handleAddSibling, handleUpdateStatus,
     );
 
     const positions = autoLayout(newNodes, newEdges, 'TB', {

@@ -4,19 +4,21 @@ import { memo, useState, useRef, useEffect } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { FolderOpen, Plus, Pencil, Check } from 'lucide-react';
 import type { FeedbackItem } from '@/lib/supabase';
+import SitemapSiblingMenu, { type SiblingSide, type SiblingType } from './SitemapSiblingMenu';
 
 export interface SitemapSectionData extends Record<string, unknown> {
   item: FeedbackItem;
   childCount: number;
   onAddChild?: (parentId: string) => void;
   onRename?: (itemId: string, title: string) => void;
+  onAddSibling?: (itemId: string, side: SiblingSide, type: SiblingType) => void;
 }
 
 export const SECTION_W = 220;
 export const SECTION_H = 48;
 
 function SitemapSectionNodeComponent({ data, selected }: NodeProps) {
-  const { item, childCount, onAddChild, onRename } = data as SitemapSectionData;
+  const { item, childCount, onAddChild, onRename, onAddSibling } = data as SitemapSectionData;
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(item.title);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -99,6 +101,13 @@ function SitemapSectionNodeComponent({ data, selected }: NodeProps) {
           >
             <Plus size={10} />
           </button>
+        )}
+
+        {onAddSibling && (
+          <>
+            <SitemapSiblingMenu side="left" onAdd={(s, t) => onAddSibling(item.id, s, t)} />
+            <SitemapSiblingMenu side="right" onAdd={(s, t) => onAddSibling(item.id, s, t)} />
+          </>
         )}
       </div>
     </>

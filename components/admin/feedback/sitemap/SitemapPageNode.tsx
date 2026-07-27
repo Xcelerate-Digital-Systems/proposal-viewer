@@ -5,6 +5,7 @@ import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Globe, Figma, Image as ImageIcon, MessageSquareText } from 'lucide-react';
 import type { FeedbackItem, FeedbackStatus } from '@/lib/supabase';
 import { getFeedbackStatusDef } from '@/lib/feedback/status';
+import SitemapSiblingMenu, { type SiblingSide, type SiblingType } from './SitemapSiblingMenu';
 
 export interface SitemapNodeData extends Record<string, unknown> {
   item: FeedbackItem;
@@ -13,6 +14,7 @@ export interface SitemapNodeData extends Record<string, unknown> {
   childCount: number;
   onNavigate?: (itemId: string) => void;
   onAddChild?: (parentId: string) => void;
+  onAddSibling?: (itemId: string, side: SiblingSide, type: SiblingType) => void;
   onUpdateStatus?: (itemId: string, status: FeedbackStatus) => void | Promise<void>;
 }
 
@@ -22,7 +24,7 @@ export const NODE_H = 160;
 function SitemapPageNodeComponent({ data, selected }: NodeProps) {
   const {
     item, commentCount, unresolvedCount, childCount,
-    onNavigate, onAddChild,
+    onNavigate, onAddChild, onAddSibling,
   } = data as SitemapNodeData;
 
   const status = getFeedbackStatusDef(item.status);
@@ -127,6 +129,12 @@ function SitemapPageNodeComponent({ data, selected }: NodeProps) {
           </div>
         </div>
 
+        {onAddSibling && (
+          <>
+            <SitemapSiblingMenu side="left" onAdd={(s, t) => onAddSibling(item.id, s, t)} />
+            <SitemapSiblingMenu side="right" onAdd={(s, t) => onAddSibling(item.id, s, t)} />
+          </>
+        )}
       </div>
     </>
   );
