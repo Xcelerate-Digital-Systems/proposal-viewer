@@ -10,7 +10,15 @@ import {
 import { useFeedbackBoardContextOrThrow, type NewShape } from './FeedbackBoardContext';
 import type { FeedbackShapeType } from '@/lib/types/feedback';
 import { roughRect, roughLine, roughPath } from '@/components/feedback/sketchy/roughPath';
-import { genericVisualCentre as visualCentre, ALIGNMENT_TOLERANCE } from '@/components/admin/shared/board-utils';
+import { ALIGNMENT_TOLERANCE } from '@/components/admin/shared/board-utils';
+import { SHARED_SIDE_Y } from './nodes/diamond-config';
+
+const HANDLE_Y = 100;
+function visualCentre(n: Node): { cx: number; cy: number } {
+  const m = (n as unknown as { measured?: { width?: number } }).measured;
+  const w = m?.width ?? (n as { width?: number }).width ?? 100;
+  return { cx: n.position.x + w / 2, cy: n.position.y + HANDLE_Y };
+}
 import { DRAW_COLOR, DRAW_STROKE_WIDTH, MIN_SHAPE_SIZE, ARROW_HEAD, ARROW_ANGLE } from './feedback-board-config';
 import type { BoardTool } from './BoardTopToolbar';
 
@@ -52,7 +60,7 @@ export function useFeedbackBoardInteractions(
 
   const addShapeAt = useCallback((shapeType: FeedbackShapeType, flowX: number, flowY: number) => {
     const offsetX = shapeType === 'decision' ? 120 : 54;
-    const offsetY = shapeType === 'decision' ? 120 : 70;
+    const offsetY = shapeType === 'decision' ? 120 : SHARED_SIDE_Y;
     void ctx.createShape({
       shape_type: shapeType,
       x: Math.round(flowX - offsetX),

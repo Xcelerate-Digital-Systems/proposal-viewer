@@ -83,7 +83,7 @@ function LabeledEdgeComponent({
 
   // Snap threshold: if source and target are within 20px on one axis, treat as
   // perfectly aligned for bezier paths (renders a straight line automatically).
-  const SNAP_THRESHOLD = 20;
+  const SNAP_THRESHOLD = 30;
   const dy = Math.abs(targetY - sourceY);
   const dx = Math.abs(targetX - sourceX);
   const nearlyHorizontal = dy < SNAP_THRESHOLD && dx > SNAP_THRESHOLD;

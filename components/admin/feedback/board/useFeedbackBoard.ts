@@ -17,7 +17,19 @@ import { type ReviewItemNodeData } from './nodes/FeedbackItemNode';
 import { type StickyNoteNodeData } from './nodes/StickyNoteNode';
 import { type ShapeNodeData } from './nodes/ShapeNode';
 import { useFeedbackBoardContextOrThrow } from './FeedbackBoardContext';
-import { computeSnapPosition, genericVisualCentre, ALIGNMENT_TOLERANCE } from '@/components/admin/shared/board-utils';
+import { computeSnapPosition, ALIGNMENT_TOLERANCE } from '@/components/admin/shared/board-utils';
+
+/**
+ * All node types on the feedback board place their side handles at Y=100
+ * from the node top (SHARED_SIDE_HANDLE_Y). Snapping must align handles,
+ * not visual centers, so horizontal edges draw as straight lines.
+ */
+const HANDLE_Y = 100;
+function handleAlignedCentre(n: Node): { cx: number; cy: number } {
+  const m = (n as unknown as { measured?: { width?: number } }).measured;
+  const w = m?.width ?? (n as { width?: number }).width ?? 100;
+  return { cx: n.position.x + w / 2, cy: n.position.y + HANDLE_Y };
+}
 
 interface UseFeedbackBoardOptions {
   onNavigateToItem: (itemId: string) => void;
@@ -211,7 +223,7 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
         for (const id of Array.from(dragEndIds)) {
           const node = updated.find((n) => n.id === id);
           if (!node) continue;
-          const snapped = computeSnapPosition(node, updated, ALIGNMENT_TOLERANCE, genericVisualCentre);
+          const snapped = computeSnapPosition(node, updated, ALIGNMENT_TOLERANCE, handleAlignedCentre);
           const finalPos = snapped || node.position;
           if (snapped) {
             updated = updated.map((n) => n.id === id ? { ...n, position: snapped } : n);
