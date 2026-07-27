@@ -155,6 +155,24 @@ function ItemViewerContent({
     );
   }, [syncing, handleFigmaSync]);
 
+  // ── Auto-open edit/add-version from card menu ──
+  const [actionHandled, setActionHandled] = useState(false);
+  useEffect(() => {
+    if (actionHandled || data.loading || !data.supportsVersions) return;
+    const action = new URLSearchParams(window.location.search).get('action');
+    if (!action) { setActionHandled(true); return; }
+    if (action === 'edit') {
+      data.setEditingVersionId(data.activeVersionId);
+    } else if (action === 'add-version') {
+      data.setShowAddVersion(true);
+    }
+    setActionHandled(true);
+    // Clean the action param from URL
+    const url = new URL(window.location.href);
+    url.searchParams.delete('action');
+    window.history.replaceState({}, '', url.toString());
+  }, [actionHandled, data.loading, data.supportsVersions, data.activeVersionId]);
+
   // ── Loading ──
   // Wait for branding before painting anything so we don't flash the default
   // teal accent before the agency's brand color settles in.

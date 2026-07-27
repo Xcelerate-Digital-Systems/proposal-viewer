@@ -17,16 +17,23 @@ export const DIAMOND_BOX_SIZE = 42;
 export const DIAMOND_INSET = (DIAMOND_BOX_SIZE - DIAMOND_SIDE) / 2;
 export const DIAMOND_LABEL_GAP = 8;
 export const DIAMOND_LABEL_BELOW = 22;
+
+/** Cards and icon-circles place their side handles at Y=100. Diamonds are
+ *  smaller, so we pad their frame top to push the visual centre to Y=100
+ *  so horizontal edges between any two node types draw as a straight line. */
+export const SHARED_SIDE_Y = 100;
+export const DIAMOND_TOP_PAD = SHARED_SIDE_Y - DIAMOND_BOX_SIZE / 2;
+
 export const DIAMOND_NODE_W = DIAMOND_BOX_SIZE;
-export const DIAMOND_NODE_H = DIAMOND_BOX_SIZE + DIAMOND_LABEL_GAP + DIAMOND_LABEL_BELOW;
+export const DIAMOND_NODE_H = DIAMOND_TOP_PAD + DIAMOND_BOX_SIZE + DIAMOND_LABEL_GAP + DIAMOND_LABEL_BELOW;
 
 /* ─── Handle positioning constants ───────────────────────────────── */
 
 export const HANDLE_CLASS =
   '!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors';
 
-export const DIAMOND_TOP_Y = 0;
-export const DIAMOND_MID_Y = DIAMOND_BOX_SIZE / 2;
+export const DIAMOND_TOP_Y = DIAMOND_TOP_PAD;
+export const DIAMOND_MID_Y = DIAMOND_TOP_PAD + DIAMOND_BOX_SIZE / 2;
 export const DIAMOND_SIDE_OUTSET = 20;
 export const HANDLE_OUTSET = 8;
 

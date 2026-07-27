@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Trash2, MessageSquareText, Pencil, MoreHorizontal, Eye, Check,
-  Share2, Loader2, ExternalLink, Link as LinkIcon,
+  Share2, Loader2, ExternalLink, Link as LinkIcon, Plus,
 } from 'lucide-react';
 import { supabase, type FeedbackItem, type FeedbackStatus } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -20,6 +20,8 @@ interface ReviewItemCardProps {
   onRefresh: () => void;
   onOpenViewer: (itemId: string) => void;
   customDomain?: string | null;
+  onEditVersion?: (itemId: string) => void;
+  onAddVersion?: (itemId: string) => void;
 }
 
 const itemStatusOptions: StatusOption<FeedbackStatus>[] = REVIEW_STATUS_OPTIONS.map((s) => ({
@@ -31,7 +33,7 @@ const itemStatusOptions: StatusOption<FeedbackStatus>[] = REVIEW_STATUS_OPTIONS.
   icon: s.icon,
 }));
 
-export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, customDomain }: ReviewItemCardProps) {
+export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, customDomain, onEditVersion, onAddVersion }: ReviewItemCardProps) {
   const confirm = useConfirm();
   const toast = useToast();
   const [showMenu, setShowMenu] = useState(false);
@@ -383,6 +385,24 @@ export default function FeedbackItemCard({ item, onRefresh, onOpenViewer, custom
                     >
                       <LinkIcon size={14} />
                       Edit URL
+                    </button>
+                  )}
+                  {onEditVersion && (
+                    <button
+                      onClick={() => { setShowMenu(false); onEditVersion(item.id); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-prose hover:bg-surface"
+                    >
+                      <Pencil size={14} />
+                      Edit
+                    </button>
+                  )}
+                  {onAddVersion && (
+                    <button
+                      onClick={() => { setShowMenu(false); onAddVersion(item.id); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-prose hover:bg-surface"
+                    >
+                      <Plus size={14} />
+                      Add Version
                     </button>
                   )}
                   <div className="border-t border-edge my-1" />

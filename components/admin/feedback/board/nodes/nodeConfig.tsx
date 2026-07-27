@@ -403,7 +403,7 @@ export function CardShell({
               {typeIcon}
               {typeLabel}
             </span>
-            <h4 className="text-base text-ink truncate leading-tight flex-1 min-w-0">
+            <h4 className="text-base text-ink leading-tight flex-1 min-w-0 line-clamp-2">
               {item.title}
             </h4>
           </div>
@@ -487,7 +487,7 @@ export function IconShell({
         {/* Title above the circle — anchored at the top of the slot so it
            sits level with the flow-node diamond labels above. */}
         <div className="h-14 flex items-start pt-2 max-w-full px-1">
-          <span className="block text-detail text-ink/80 text-center truncate max-w-[140px] leading-tight">
+          <span className="block text-detail text-ink/80 text-center max-w-[180px] leading-tight line-clamp-2">
             {item.title}
           </span>
         </div>

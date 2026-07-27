@@ -165,21 +165,20 @@ function ItemsContent({
     fetchCustomDomain();
   }, [fetchProject, fetchItems, fetchCustomDomain]);
 
-  const handleOpenViewer = (itemId: string) => {
+  const handleOpenViewer = (itemId: string, extraParams?: string) => {
     const item = items.find((i) => i.id === itemId);
 
-    // Webpage items → feedback happens on the live page via the widget,
-    // not inside the admin viewer, so always open the URL.
-    if (item?.type === 'webpage' && item.url) {
+    if (item?.type === 'webpage' && item.url && !extraParams) {
       window.open(item.url, '_blank');
       return;
     }
 
-    // Always scope the viewer to the clicked item's type so prev/next
-    // navigation cycles through items of the same kind.
     const type = typeFilter || item?.type;
-    const typeParam = type ? `?type=${type}` : '';
-    router.push(`/campaigns/${projectId}/assets/${itemId}${typeParam}`);
+    const params = new URLSearchParams();
+    if (type) params.set('type', type);
+    if (extraParams) params.set('action', extraParams);
+    const qs = params.toString();
+    router.push(`/campaigns/${projectId}/assets/${itemId}${qs ? `?${qs}` : ''}`);
   };
 
   if (!project && !loading) return null;
@@ -255,6 +254,8 @@ function ItemsContent({
                   onRefresh={fetchItems}
                   onOpenViewer={handleOpenViewer}
                   customDomain={customDomain}
+                  onEditVersion={(id) => handleOpenViewer(id, 'edit')}
+                  onAddVersion={(id) => handleOpenViewer(id, 'add-version')}
                 />
               ))}
             </div>

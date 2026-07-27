@@ -1,13 +1,13 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import {
   ArrowLeft, ChevronLeft, ChevronRight,
-  MessageSquare, MousePointer2, ArrowRight, Pencil,
+  MessageSquare, MousePointer2, ArrowRight, MoreVertical,
+  Pencil, Plus, Columns2, Check, History,
 } from 'lucide-react';
 import { fontFamily } from '@/lib/google-fonts';
 import { generateBrandPalette } from '@/lib/branding';
-import VersionPicker from '@/components/feedback/VersionPicker';
 import TypeFilterTabs from '@/components/feedback/TypeFilterTabs';
 import ClientStatusControl from '@/components/feedback/ClientStatusControl';
 import Tooltip from '@/components/ui/Tooltip';
@@ -302,29 +302,17 @@ export default function FeedbackHeaderBar({
       {/* Trailing controls */}
       <div className="flex items-center gap-2 shrink-0">
         {versions && versions.length > 0 && onVersionChange && (
-          <div className="shrink-0 flex items-center gap-0.5 bg-surface rounded-full p-0.5">
-            <VersionPicker
-              versions={versions}
-              activeVersionId={activeVersionId}
-              onChange={onVersionChange}
-              onAddVersion={onAddVersion}
-              onEditVersion={onEditVersion}
-              onCompare={onCompareVersions}
-              itemStatus={selectedItem?.status}
-              compact
-            />
-            {onEditVersion && (
-              <button
-                type="button"
-                onClick={() => onEditVersion(activeVersionId)}
-                className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-detail font-medium text-prose hover:bg-surface hover:text-ink transition-colors"
-                title="Edit this version's content"
-              >
-                <Pencil size={11} />
-                Edit
-              </button>
-            )}
-          </div>
+          <AssetActionsMenu
+            versions={versions}
+            activeVersionId={activeVersionId}
+            onVersionChange={onVersionChange}
+            onAddVersion={onAddVersion}
+            onEditVersion={onEditVersion}
+            onCompareVersions={onCompareVersions}
+            headerBranded={headerBranded}
+            sidebarText={sidebarText}
+            palette={palette}
+          />
         )}
 
         {onUpdateItemStatus && selectedItem && (
@@ -418,6 +406,129 @@ export default function FeedbackHeaderBar({
             </button>
           ))}
       </div>
+    </div>
+  );
+}
+
+/* ─── Three-dot actions menu (replaces inline version picker + edit) ── */
+
+function AssetActionsMenu({
+  versions,
+  activeVersionId,
+  onVersionChange,
+  onAddVersion,
+  onEditVersion,
+  onCompareVersions,
+  headerBranded,
+  sidebarText,
+  palette,
+}: {
+  versions: VersionView[];
+  activeVersionId: string | null;
+  onVersionChange: (id: string | null) => void;
+  onAddVersion?: () => void;
+  onEditVersion?: (versionId: string | null) => void;
+  onCompareVersions?: () => void;
+  headerBranded: boolean;
+  sidebarText: string;
+  palette: ReturnType<typeof generateBrandPalette> | null;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open]);
+
+  const activeVersion = versions.find((v) => (v.id ?? null) === activeVersionId) ?? versions[0];
+  const sorted = [...versions].sort((a, b) => b.versionNumber - a.versionNumber);
+
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={`inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1 ${
+          headerBranded ? '' : 'bg-surface text-prose hover:text-ink hover:bg-edge'
+        }`}
+        style={headerBranded ? { border: `1px solid ${palette?.border ?? `${sidebarText}25`}`, color: sidebarText } : undefined}
+        title="Version & edit options"
+      >
+        <History size={12} />
+        v{activeVersion?.versionNumber ?? 1}
+        <MoreVertical size={12} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 z-50 w-56 bg-white rounded-2xl border border-edge shadow-[0_4px_24px_rgba(20,20,40,0.08)] py-1">
+          {/* Version list */}
+          <div className="px-3 pt-1.5 pb-1">
+            <span className="text-2xs font-semibold text-faint uppercase tracking-wider">Versions</span>
+          </div>
+          {sorted.map((v) => {
+            const isActive = (v.id ?? null) === activeVersionId;
+            return (
+              <button
+                key={v.id ?? 'v1'}
+                type="button"
+                onClick={() => { onVersionChange(v.id ?? null); setOpen(false); }}
+                className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-surface transition-colors ${
+                  isActive ? 'bg-surface font-medium text-ink' : 'text-prose'
+                }`}
+              >
+                {isActive && <Check size={12} className="text-teal shrink-0" />}
+                {!isActive && <span className="w-3 shrink-0" />}
+                <span>v{v.versionNumber}</span>
+                {v.notes && <span className="text-xs text-faint truncate flex-1 min-w-0">{v.notes}</span>}
+              </button>
+            );
+          })}
+
+          {/* Edit current version */}
+          {onEditVersion && (
+            <>
+              <div className="border-t border-edge my-1" />
+              <button
+                type="button"
+                onClick={() => { onEditVersion(activeVersionId); setOpen(false); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-prose hover:bg-surface transition-colors"
+              >
+                <Pencil size={13} />
+                Edit v{activeVersion?.versionNumber ?? 1}
+              </button>
+            </>
+          )}
+
+          {/* Add new version */}
+          {onAddVersion && (
+            <button
+              type="button"
+              onClick={() => { onAddVersion(); setOpen(false); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-prose hover:bg-surface transition-colors"
+            >
+              <Plus size={13} />
+              Add New Version
+            </button>
+          )}
+
+          {/* Compare versions */}
+          {onCompareVersions && versions.length >= 2 && (
+            <button
+              type="button"
+              onClick={() => { onCompareVersions(); setOpen(false); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-prose hover:bg-surface transition-colors"
+            >
+              <Columns2 size={13} />
+              Compare Versions
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

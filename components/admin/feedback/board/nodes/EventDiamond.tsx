@@ -7,6 +7,7 @@ import {
   DIAMOND_CONFIG,
   DIAMOND_NODE_W,
   DIAMOND_NODE_H,
+  DIAMOND_TOP_PAD,
   DIAMOND_LABEL_GAP,
   DIAMOND_LABEL_BELOW,
   diamondColorOverride,
@@ -49,6 +50,7 @@ export function EventDiamond({
     >
       <DiamondHandles readOnly={readOnly} />
 
+      <div style={{ height: DIAMOND_TOP_PAD }} aria-hidden />
       <DiamondVisual color={diamondColorOverride(shape) || config.color} Icon={config.Icon} selected={selected} />
 
       {/* Gap above label — keeps label centred between diamond bottom and

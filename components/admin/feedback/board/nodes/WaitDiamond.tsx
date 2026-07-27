@@ -13,6 +13,7 @@ import {
   Clock,
   DIAMOND_NODE_W,
   DIAMOND_NODE_H,
+  DIAMOND_TOP_PAD,
   DIAMOND_LABEL_GAP,
   DIAMOND_LABEL_BELOW,
   diamondColorOverride,
@@ -69,6 +70,7 @@ export function WaitDiamond({
     >
       <DiamondHandles readOnly={readOnly} />
 
+      <div style={{ height: DIAMOND_TOP_PAD }} aria-hidden />
       <DiamondVisual color={diamondColorOverride(shape) || WAIT_COLOR} Icon={Clock} selected={selected} />
 
       <div style={{ height: DIAMOND_LABEL_GAP }} aria-hidden />

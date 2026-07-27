@@ -128,11 +128,9 @@ export function StepIcon({ slug, size = 32 }: { slug: string; size?: number }) {
 
 const FRAME_W = 200;
 const ICON_SIZE = 88;
-/** Single-line label container height. Labels truncate to one line, so 22px
- *  fits a 11px text glyph plus a couple of px breathing room. The old 56px
- *  value reserved empty whitespace below the text which inflated the gap
- *  between the label and the bottom-edge handle. */
-const LABEL_OFFSET = 22;
+/** Label container height. Two-line clamp so longer names (e.g. "Google
+ *  Search Ads") stay visible. 36px fits two lines of 11px text. */
+const LABEL_OFFSET = 36;
 const METRICS_H = 18;
 const LABEL_GAP = 8;
 
@@ -269,7 +267,7 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
       ) : (
         <span
           onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
-          className="block text-detail text-ink/80 text-center truncate max-w-[160px] leading-tight"
+          className="block text-detail text-ink/80 text-center max-w-[180px] leading-tight line-clamp-2"
           title={step.label || defaults.label}
         >
           {step.label || defaults.label}
