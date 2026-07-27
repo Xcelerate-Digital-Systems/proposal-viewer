@@ -25,13 +25,18 @@ export default function PublicItemsGrid({
 }: PublicItemsGridProps) {
   const [typeFilter, setTypeFilter] = useState<string | null>(initialTypeFilter ?? null);
 
+  const nonSectionItems = useMemo(
+    () => items.filter((i) => i.type !== 'section'),
+    [items]
+  );
+
   const availableTypes = useMemo(() => {
-    return Array.from(new Set(items.map((i) => i.type))).sort();
-  }, [items]);
+    return Array.from(new Set(nonSectionItems.map((i) => i.type))).sort();
+  }, [nonSectionItems]);
 
   const filteredItems = useMemo(
-    () => (typeFilter ? items.filter((i) => i.type === typeFilter) : items),
-    [items, typeFilter]
+    () => (typeFilter ? nonSectionItems.filter((i) => i.type === typeFilter) : nonSectionItems),
+    [nonSectionItems, typeFilter]
   );
 
   const commentCounts = useMemo(() => {

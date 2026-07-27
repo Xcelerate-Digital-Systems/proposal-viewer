@@ -90,7 +90,7 @@ export default function PublicKanbanView({
       return acc;
     }, {} as Record<FeedbackStatus, FeedbackItem[]>);
     for (const item of items) {
-      // Skip items in internal statuses — they don't appear on the client board.
+      if (item.type === 'section') continue;
       if (!CLIENT_ALLOWED_STATUSES.includes(item.status)) continue;
       map[item.status].push(item);
     }
