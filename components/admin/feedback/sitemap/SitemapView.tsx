@@ -112,15 +112,12 @@ function buildNodesAndEdges(
     };
   });
 
-  const itemMap = new Map(items.map((i) => [i.id, i]));
   const edges: Edge[] = [];
   effectiveParent.forEach((parentId, childId) => {
-    const parentItem = itemMap.get(parentId);
     const edgeData: SitemapEdgeData = {
       sourceId: parentId,
       targetId: childId,
       onAddPage: onAddPageOnEdge,
-      label: parentItem?.type === 'section' ? parentItem.title : undefined,
     };
     edges.push({
       id: `e-${parentId}-${childId}`,
@@ -276,16 +273,17 @@ function SitemapViewInner({
     let closestTarget: Node | null = null;
     let closestDist = Infinity;
 
+    const PAD = 40;
     for (const n of nodes) {
       if (n.id === draggedNode.id) continue;
       const nw = (n as { width?: number }).width ?? (n.type === 'sitemapSection' ? SECTION_W : NODE_W);
       const nh = (n as { height?: number }).height ?? (n.type === 'sitemapSection' ? SECTION_H : NODE_H);
 
       const inBounds =
-        dragCx >= n.position.x &&
-        dragCx <= n.position.x + nw &&
-        dragCy >= n.position.y &&
-        dragCy <= n.position.y + nh;
+        dragCx >= n.position.x - PAD &&
+        dragCx <= n.position.x + nw + PAD &&
+        dragCy >= n.position.y - PAD &&
+        dragCy <= n.position.y + nh + PAD;
 
       if (inBounds) {
         const ncx = n.position.x + nw / 2;
@@ -327,7 +325,7 @@ function SitemapViewInner({
     );
 
     const positions = autoLayout(newNodes, newEdges, 'TB', {
-      nodesep: 40, ranksep: 80, nodeWidth: 180, nodeHeight: 160,
+      nodesep: 60, ranksep: 100, nodeWidth: 180, nodeHeight: 160,
     });
     const positioned = newNodes.map((n) => {
       const p = positions.get(n.id);

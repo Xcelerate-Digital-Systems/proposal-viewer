@@ -99,14 +99,11 @@ function buildPublicNodesAndEdges(
     };
   });
 
-  const itemMap = new Map(items.map((i) => [i.id, i]));
   const edges: Edge[] = [];
   effectiveParent.forEach((parentId, childId) => {
-    const parentItem = itemMap.get(parentId);
     const edgeData: SitemapEdgeData = {
       sourceId: parentId,
       targetId: childId,
-      label: parentItem?.type === 'section' ? parentItem.title : undefined,
     };
     edges.push({
       id: `e-${parentId}-${childId}`,
@@ -142,7 +139,7 @@ function PublicSitemapInner({ items, comments, onSelectItem }: PublicSitemapView
   const applyLayout = useCallback(() => {
     setNodes((prev) => {
       const positions = autoLayout(prev, edges, 'TB', {
-        nodesep: 40, ranksep: 80, nodeWidth: 180, nodeHeight: 160,
+        nodesep: 60, ranksep: 100, nodeWidth: 180, nodeHeight: 160,
       });
       const updated = prev.map((n) => {
         const p = positions.get(n.id);
