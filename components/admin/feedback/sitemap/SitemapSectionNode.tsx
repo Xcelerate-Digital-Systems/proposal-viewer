@@ -41,14 +41,10 @@ function SitemapSectionNodeComponent({ data, selected }: NodeProps) {
 
   return (
     <>
-      {!isPublic && (
-        <>
-          <Handle id="top" type="target" position={Position.Top}
-            className="!w-2 !h-2 !bg-slate-400 !border-2 !border-white !-top-1" />
-          <Handle id="bottom" type="source" position={Position.Bottom}
-            className="!w-2 !h-2 !bg-slate-400 !border-2 !border-white !-bottom-1" />
-        </>
-      )}
+      <Handle id="top" type="target" position={Position.Top}
+        className={isPublic ? '!w-0 !h-0 !bg-transparent !border-0 !min-w-0 !min-h-0' : '!w-2 !h-2 !bg-slate-400 !border-2 !border-white !-top-1'} />
+      <Handle id="bottom" type="source" position={Position.Bottom}
+        className={isPublic ? '!w-0 !h-0 !bg-transparent !border-0 !min-w-0 !min-h-0' : '!w-2 !h-2 !bg-slate-400 !border-2 !border-white !-bottom-1'} />
 
       <div
         className={`relative flex items-center gap-2.5 px-4 py-2.5 rounded-full border shadow-sm transition-shadow cursor-default group ${

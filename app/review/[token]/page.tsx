@@ -357,8 +357,7 @@ export default function ReviewViewerPage(props: { params: Promise<{ token: strin
   // drill into the detail view so reviewers can leave feedback.
   const handleBoardItemClick = useCallback((itemId: string) => {
     const clickedItem = items.find((i) => i.id === itemId);
-    const pt = project?.project_type ?? 'campaign';
-    if (pt !== 'website' && clickedItem?.type === 'webpage' && clickedItem.url) {
+    if (clickedItem?.type === 'webpage' && clickedItem.url) {
       try {
         const url = new URL(clickedItem.url);
         if (guestName.trim()) {
