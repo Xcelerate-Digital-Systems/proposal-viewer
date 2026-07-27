@@ -125,12 +125,46 @@ function resolveAnchor(anchor){
   return{x:r.left+sx+r.width*(anchor.ox/100),y:r.top+sy+r.height*(anchor.oy/100)};
 }
 
+/* ── SPA navigation: re-resolve item when URL changes ──── */
+var __aviz_lastHref=window.location.href;
+function reResolveItem(){
+  var href=window.location.href;
+  if(href===__aviz_lastHref)return;
+  __aviz_lastHref=href;
+  if(__aviz_pinnedItem)return;
+  if(!__aviz_items||!__aviz_items.length)return;
+  var cur=__aviz_norm(href);
+  var newItem=null;
+  for(var i=0;i<__aviz_items.length;i++){
+    var it=__aviz_items[i];
+    if(!it||!it.url)continue;
+    if(__aviz_norm(it.url)===cur){newItem=it.id;break;}
+  }
+  if(newItem===C.item)return;
+  if(mode!=="idle"){if(typeof armPinMode==="function")armPinMode();}
+  if(panelOpen&&typeof closePanel==="function")closePanel();
+  if(newItem){
+    C.item=newItem;
+    comments=[];reactions=[];annotations=[];
+    loading=true;
+    var r=document.getElementById("aviz-root");if(r)r.style.display="";
+    if(typeof refresh==="function")refresh();
+    loadComments(function(){if(typeof refresh==="function")refresh();});
+  } else {
+    C.item=null;
+    comments=[];reactions=[];annotations=[];
+    var r=document.getElementById("aviz-root");if(r)r.style.display="none";
+    if(typeof refresh==="function")refresh();
+  }
+}
+
 /* ── API helpers ────────────────────────────────────────── */
 function api(path,opts){
   return fetch(C.api+path,Object.assign({},opts||{},{headers:Object.assign({"Content-Type":"application/json"},(opts&&opts.headers)||{})}))
     .then(function(r){return r.json();});
 }
 function loadComments(cb){
+  if(!C.item){comments=[];loading=false;if(cb)cb();return;}
   api("?item="+C.item).then(function(d){comments=d.comments||[];loading=false;loadReactions(cb);}).catch(function(){loading=false;if(cb)cb();});
 }
 /* Fetch the project's mentionable participants (team members + invited
@@ -169,6 +203,7 @@ function toggleReaction(commentId,emoji,cb){
     .catch(function(){if(cb)cb();});
 }
 function postComment(body,cb){
+  if(!C.item){if(cb)cb(null);return;}
   body.review_item_id=C.item;
   api("",{method:"POST",body:JSON.stringify(body)}).then(function(d){if(d&&d.id)comments.push(d);if(cb)cb(d);}).catch(function(){if(cb)cb(null);});
 }

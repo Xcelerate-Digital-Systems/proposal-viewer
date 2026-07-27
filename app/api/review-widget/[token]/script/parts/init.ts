@@ -15,6 +15,10 @@ document.addEventListener("keydown",function(e){
   }
 });
 
+/* ── SPA navigation detection ──────────────────────────── */
+window.addEventListener("popstate",function(){reResolveItem();});
+var __aviz_navTimer=setInterval(reResolveItem,1000);
+
 /* ── Polling ────────────────────────────────────────────── */
 function startPolling(){if(pollTimer)return;pollTimer=setInterval(function(){loadComments(refresh);},30000);}
 function stopPolling(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
