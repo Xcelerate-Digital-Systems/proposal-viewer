@@ -268,29 +268,48 @@ function SitemapViewInner({
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   const handleNodeDragStop: OnNodeDrag = useCallback(async (_event, draggedNode) => {
-    const droppedOnSection = nodes.find((n) => {
-      if (n.id === draggedNode.id || n.type !== 'sitemapSection') return false;
-      const nw = (n as { width?: number }).width ?? SECTION_W;
-      const nh = (n as { height?: number }).height ?? SECTION_H;
-      return (
-        draggedNode.position.x >= n.position.x - nw / 2 &&
-        draggedNode.position.x <= n.position.x + nw * 1.5 &&
-        draggedNode.position.y >= n.position.y - nh / 2 &&
-        draggedNode.position.y <= n.position.y + nh * 1.5
-      );
-    });
+    const dw = (draggedNode as { width?: number }).width ?? NODE_W;
+    const dh = (draggedNode as { height?: number }).height ?? NODE_H;
+    const dragCx = draggedNode.position.x + dw / 2;
+    const dragCy = draggedNode.position.y + dh / 2;
 
-    if (droppedOnSection) {
+    let closestTarget: Node | null = null;
+    let closestDist = Infinity;
+
+    for (const n of nodes) {
+      if (n.id === draggedNode.id) continue;
+      const nw = (n as { width?: number }).width ?? (n.type === 'sitemapSection' ? SECTION_W : NODE_W);
+      const nh = (n as { height?: number }).height ?? (n.type === 'sitemapSection' ? SECTION_H : NODE_H);
+
+      const inBounds =
+        dragCx >= n.position.x &&
+        dragCx <= n.position.x + nw &&
+        dragCy >= n.position.y &&
+        dragCy <= n.position.y + nh;
+
+      if (inBounds) {
+        const ncx = n.position.x + nw / 2;
+        const ncy = n.position.y + nh / 2;
+        const dist = Math.hypot(dragCx - ncx, dragCy - ncy);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestTarget = n;
+        }
+      }
+    }
+
+    if (closestTarget) {
       const item = items.find((i) => i.id === draggedNode.id);
-      if (item && item.parent_item_id !== droppedOnSection.id) {
+      if (item && item.parent_item_id !== closestTarget.id) {
         const { error } = await supabase
           .from('review_items')
-          .update({ parent_item_id: droppedOnSection.id, updated_at: new Date().toISOString() })
+          .update({ parent_item_id: closestTarget.id, updated_at: new Date().toISOString() })
           .eq('id', draggedNode.id);
         if (error) {
           toast.error('Failed to move page');
         } else {
-          toast.success(`Moved "${item.title}" into section`);
+          const targetItem = items.find((i) => i.id === closestTarget!.id);
+          toast.success(`Moved "${item.title}" under "${targetItem?.title}"`);
         }
         onRefresh();
         return;
