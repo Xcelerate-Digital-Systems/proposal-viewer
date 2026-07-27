@@ -141,71 +141,100 @@ const mcpHandler = createMcpHandler(
       const sb = createServiceClient();
       const { data: item } = await sb.from('review_items').select('*').eq('id', assetId).eq('company_id', auth.companyId).single();
       if (!item) return txt('Asset not found');
-      const { data: versions } = await sb.from('review_item_versions').select('id, version_number, notes, image_url, url, figma_frame_name, created_at').eq('review_item_id', assetId).order('version_number', { ascending: true });
+      const { data: versionRows } = await sb.from('review_item_versions').select('id, version_number, notes, image_url, url, figma_frame_name, created_at').eq('review_item_id', assetId).order('version_number', { ascending: true });
+      const v1 = { id: item.id, number: 1, notes: null as string | null, imageUrl: item.image_url, url: item.url, createdAt: item.created_at };
+      const laterVersions = (versionRows || []).map(v => ({ id: v.id, number: v.version_number, notes: v.notes, imageUrl: v.image_url, url: v.url, createdAt: v.created_at }));
       return json({
         id: item.id, title: item.title, type: item.type, status: item.status, version: item.version, url: item.url, imageUrl: item.image_url,
         figma: item.figma_file_key ? { fileKey: item.figma_file_key, nodeId: item.figma_node_id, fileName: item.figma_file_name, frameName: item.figma_frame_name } : null,
-        versions: (versions || []).map(v => ({ id: v.id, number: v.version_number, notes: v.notes, imageUrl: v.image_url, url: v.url, createdAt: v.created_at })),
+        versions: [v1, ...laterVersions],
         createdAt: item.created_at, updatedAt: item.updated_at,
       });
     });
 
-    server.tool('get_comments', 'Get all comments on an asset, organized as threads.', {
+    server.tool('get_comments', 'Get all comments on an asset, organized as threads. Includes attachments and screenshot URLs.', {
       assetId: z.string(), unresolvedOnly: z.boolean().optional(),
     }, async ({ assetId, unresolvedOnly }, extra) => {
       const auth = getAuth(extra); if (!auth) return unauthorized();
       const sb = createServiceClient();
       let q = sb.from('review_comments')
-        .select('id, content, author_name, pin_x, pin_y, resolved, priority, parent_comment_id, thread_number, created_at')
+        .select('id, content, author_name, pin_x, pin_y, resolved, priority, parent_comment_id, thread_number, attachments, screenshot_url, video_url, comment_type, created_at')
         .eq('review_item_id', assetId).eq('company_id', auth.companyId).order('created_at', { ascending: true });
       if (unresolvedOnly) q = q.eq('resolved', false);
       const { data: comments, error } = await q;
       if (error) return txt(`Error: ${error.message}`);
+      const fmtAttachments = (c: Record<string, unknown>) => {
+        const out: { url: string; name?: string; type?: string }[] = [];
+        if (c.screenshot_url) out.push({ url: c.screenshot_url as string, type: 'screenshot' });
+        if (c.video_url) out.push({ url: c.video_url as string, type: 'video' });
+        const atts = c.attachments as Array<{ url?: string; name?: string; type?: string }> | null;
+        if (Array.isArray(atts)) for (const a of atts) { if (a.url) out.push({ url: a.url, name: a.name, type: a.type }); }
+        return out.length ? out : undefined;
+      };
       const threads: Record<string, Record<string, unknown>> = {};
       const replies: Record<string, unknown[]> = {};
       for (const c of comments || []) {
         if (c.parent_comment_id) {
           if (!replies[c.parent_comment_id]) replies[c.parent_comment_id] = [];
-          replies[c.parent_comment_id].push({ id: c.id, content: c.content, author: c.author_name, createdAt: c.created_at });
+          replies[c.parent_comment_id].push({ id: c.id, content: c.content, author: c.author_name, attachments: fmtAttachments(c), createdAt: c.created_at });
         } else {
-          threads[c.id] = { id: c.id, threadNumber: c.thread_number, content: c.content, author: c.author_name, pinX: c.pin_x, pinY: c.pin_y, resolved: c.resolved, priority: c.priority, createdAt: c.created_at, replies: [] };
+          threads[c.id] = { id: c.id, threadNumber: c.thread_number, content: c.content, author: c.author_name, type: c.comment_type, pinX: c.pin_x, pinY: c.pin_y, resolved: c.resolved, priority: c.priority, attachments: fmtAttachments(c), createdAt: c.created_at, replies: [] };
         }
       }
       for (const [pid, reps] of Object.entries(replies)) { if (threads[pid]) threads[pid].replies = reps; }
       return json(Object.values(threads));
     });
 
-    server.tool('get_unresolved', 'Get all unresolved comments across a campaign, grouped by asset.', {
+    server.tool('get_unresolved', 'Get all unresolved comments across a campaign, grouped by asset. Includes attachments.', {
       campaignId: z.string(),
-    }, async ({ campaignId }, extra) => {
+      since: z.string().optional().describe('ISO 8601 timestamp — only return comments created after this time'),
+    }, async ({ campaignId, since }, extra) => {
       const auth = getAuth(extra); if (!auth) return unauthorized();
       const sb = createServiceClient();
       const { data: campaignItems } = await sb.from('review_items').select('id, title, type, status').eq('review_project_id', campaignId).eq('company_id', auth.companyId);
       if (!campaignItems?.length) return txt('No assets in this campaign.');
       const campaignItemIds = campaignItems.map(i => i.id);
-      const { data: comments } = await sb.from('review_comments')
-        .select('id, content, author_name, pin_x, pin_y, priority, thread_number, review_item_id, created_at')
+      let q = sb.from('review_comments')
+        .select('id, content, author_name, pin_x, pin_y, priority, thread_number, review_item_id, attachments, screenshot_url, video_url, created_at')
         .in('review_item_id', campaignItemIds).eq('company_id', auth.companyId).eq('resolved', false).is('parent_comment_id', null).order('created_at', { ascending: true });
-      if (!comments?.length) return txt('No unresolved comments in this campaign.');
+      if (since) q = q.gt('created_at', since);
+      const { data: comments } = await q;
+      if (!comments?.length) return txt(since ? 'No new unresolved comments since that time.' : 'No unresolved comments in this campaign.');
       const im: Record<string, { title: string; type: string; status: string }> = {};
       for (const i of campaignItems) im[i.id] = { title: i.title, type: i.type, status: i.status };
       const grouped: Record<string, { asset: unknown; comments: unknown[] }> = {};
       for (const c of comments) {
         const iid = c.review_item_id || 'unknown';
         if (!grouped[iid]) grouped[iid] = { asset: im[iid] || { title: 'Unknown' }, comments: [] };
-        grouped[iid].comments.push({ id: c.id, threadNumber: c.thread_number, content: c.content, author: c.author_name, pinX: c.pin_x, pinY: c.pin_y, priority: c.priority, createdAt: c.created_at });
+        const atts: { url: string; name?: string; type?: string }[] = [];
+        if (c.screenshot_url) atts.push({ url: c.screenshot_url, type: 'screenshot' });
+        if (c.video_url) atts.push({ url: c.video_url, type: 'video' });
+        const fileAtts = c.attachments as Array<{ url?: string; name?: string; type?: string }> | null;
+        if (Array.isArray(fileAtts)) for (const a of fileAtts) { if (a.url) atts.push({ url: a.url, name: a.name, type: a.type }); }
+        grouped[iid].comments.push({ id: c.id, threadNumber: c.thread_number, content: c.content, author: c.author_name, pinX: c.pin_x, pinY: c.pin_y, priority: c.priority, attachments: atts.length ? atts : undefined, createdAt: c.created_at });
       }
       return json(Object.entries(grouped).map(([assetId, g]) => ({ assetId, ...g })));
     });
 
-    server.tool('resolve_comment', 'Mark a comment as resolved.', {
+    server.tool('resolve_comment', 'Mark a comment as resolved, with an optional note.', {
       commentId: z.string(),
-    }, async ({ commentId }, extra) => {
+      note: z.string().optional().describe('Resolution note (e.g. "fixed in deploy abc123"). Added as a reply before resolving.'),
+    }, async ({ commentId, note }, extra) => {
       const auth = getAuth(extra); if (!auth) return unauthorized();
       const sb = createServiceClient();
-      const { error } = await sb.from('review_comments').update({ resolved: true, resolved_by: auth.memberId, resolved_at: new Date().toISOString() }).eq('id', commentId).eq('company_id', auth.companyId);
+      const { data: comment } = await sb.from('review_comments').select('id, review_item_id, review_project_id, company_id').eq('id', commentId).eq('company_id', auth.companyId).single();
+      if (!comment) return txt('Comment not found');
+      if (note?.trim()) {
+        await sb.from('review_comments').insert({
+          review_item_id: comment.review_item_id, review_project_id: comment.review_project_id,
+          company_id: comment.company_id, parent_comment_id: commentId,
+          content: note.trim(), author_name: auth.memberName, author_user_id: auth.userId,
+          author_type: 'team', comment_type: 'general', source: 'mcp',
+        });
+      }
+      const { error } = await sb.from('review_comments').update({ resolved: true, resolved_by: auth.memberId, resolved_at: new Date().toISOString() }).eq('id', commentId);
       if (error) return txt(`Failed: ${error.message}`);
-      return txt(`Comment ${commentId} resolved.`);
+      return txt(`Comment ${commentId} resolved.${note?.trim() ? ' Note added as reply.' : ''}`);
     });
 
     server.tool('add_comment', 'Add a comment to an asset. Can be a thread reply.', {
