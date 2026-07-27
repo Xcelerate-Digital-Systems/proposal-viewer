@@ -82,7 +82,7 @@ function buildNodesAndEdges(
         id: item.id,
         type: 'sitemapSection',
         position: { x: 0, y: 0 },
-        draggable: false,
+        draggable: true,
         data: sectionData,
         width: SECTION_W,
         height: SECTION_H,
