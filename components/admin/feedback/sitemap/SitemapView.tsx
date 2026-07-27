@@ -4,7 +4,8 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   ReactFlow, ReactFlowProvider, Controls, MiniMap, Background, BackgroundVariant,
   Panel, useReactFlow, useNodesState, useEdgesState,
-  type Node, type Edge, type NodeTypes, type OnConnect, type Connection,
+  type Node, type Edge, type EdgeTypes, type NodeTypes, type OnConnect, type Connection,
+  type OnNodeDrag,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Plus, Search, FolderPlus } from 'lucide-react';
@@ -14,12 +15,17 @@ import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
 import SitemapPageNode, { type SitemapNodeData, NODE_W, NODE_H } from './SitemapPageNode';
 import SitemapSectionNode, { type SitemapSectionData, SECTION_W, SECTION_H } from './SitemapSectionNode';
+import SitemapEdge, { type SitemapEdgeData } from './SitemapEdge';
 import AddSitemapPageModal from './AddSitemapPageModal';
 import ScanSiteModal from './ScanSiteModal';
 
 const nodeTypes: NodeTypes = {
   sitemapPage: SitemapPageNode,
   sitemapSection: SitemapSectionNode,
+};
+
+const edgeTypes: EdgeTypes = {
+  sitemapEdge: SitemapEdge,
 };
 
 interface SitemapViewProps {
@@ -38,6 +44,7 @@ function buildNodesAndEdges(
   onNavigate: (id: string) => void,
   onAddChild: (parentId: string) => void,
   onRenameSection: (itemId: string, title: string) => void,
+  onAddPageOnEdge: (parentId: string) => void,
   onUpdateStatus?: (itemId: string, status: FeedbackStatus) => void | Promise<void>,
 ): { nodes: Node[]; edges: Edge[] } {
   const rootItem = items.find((i) => i.page_path === '/') ??
@@ -72,7 +79,7 @@ function buildNodesAndEdges(
         id: item.id,
         type: 'sitemapSection',
         position: { x: 0, y: 0 },
-        draggable: false,
+        draggable: true,
         data: sectionData,
         width: SECTION_W,
         height: SECTION_H,
@@ -94,15 +101,23 @@ function buildNodesAndEdges(
       id: item.id,
       type: 'sitemapPage',
       position: { x: 0, y: 0 },
-      draggable: false,
+      draggable: true,
       data: nodeData,
       width: NODE_W,
       height: NODE_H,
     };
   });
 
+  const itemMap = new Map(items.map((i) => [i.id, i]));
   const edges: Edge[] = [];
   effectiveParent.forEach((parentId, childId) => {
+    const parentItem = itemMap.get(parentId);
+    const edgeData: SitemapEdgeData = {
+      sourceId: parentId,
+      targetId: childId,
+      onAddPage: onAddPageOnEdge,
+      label: parentItem?.type === 'section' ? parentItem.title : undefined,
+    };
     edges.push({
       id: `e-${parentId}-${childId}`,
       source: parentId,
@@ -110,7 +125,8 @@ function buildNodesAndEdges(
       sourceHandle: 'bottom',
       targetHandle: 'top',
       style: { stroke: '#94a3b8', strokeWidth: 2 },
-      type: 'smoothstep',
+      type: 'sitemapEdge',
+      data: edgeData,
     });
   });
 
@@ -186,19 +202,57 @@ function SitemapViewInner({
     onRefresh();
   }, [projectId, companyId, userId, items.length, toast, onRefresh]);
 
+  const handleAddPageOnEdge = useCallback((parentId: string) => {
+    setAddPageParentId(parentId);
+    setShowAddPage(true);
+  }, []);
+
   const { nodes: initialNodes, edges: initialEdges } = useMemo(
-    () => buildNodesAndEdges(items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleUpdateStatus),
-    [items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleUpdateStatus],
+    () => buildNodesAndEdges(items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleAddPageOnEdge, handleUpdateStatus),
+    [items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleAddPageOnEdge, handleUpdateStatus],
   );
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
+  const handleNodeDragStop: OnNodeDrag = useCallback(async (_event, draggedNode) => {
+    const droppedOnSection = nodes.find((n) => {
+      if (n.id === draggedNode.id || n.type !== 'sitemapSection') return false;
+      const nw = (n as { width?: number }).width ?? SECTION_W;
+      const nh = (n as { height?: number }).height ?? SECTION_H;
+      return (
+        draggedNode.position.x >= n.position.x - nw / 2 &&
+        draggedNode.position.x <= n.position.x + nw * 1.5 &&
+        draggedNode.position.y >= n.position.y - nh / 2 &&
+        draggedNode.position.y <= n.position.y + nh * 1.5
+      );
+    });
+
+    if (droppedOnSection) {
+      const item = items.find((i) => i.id === draggedNode.id);
+      if (item && item.parent_item_id !== droppedOnSection.id) {
+        const { error } = await supabase
+          .from('review_items')
+          .update({ parent_item_id: droppedOnSection.id, updated_at: new Date().toISOString() })
+          .eq('id', draggedNode.id);
+        if (error) {
+          toast.error('Failed to move page');
+        } else {
+          toast.success(`Moved "${item.title}" into section`);
+        }
+        onRefresh();
+        return;
+      }
+    }
+
+    onRefresh();
+  }, [nodes, items, toast, onRefresh]);
+
   // Always auto-layout: positions are derived from tree structure, never manual.
   // Runs on every items/comments change.
   useEffect(() => {
     const { nodes: newNodes, edges: newEdges } = buildNodesAndEdges(
-      items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleUpdateStatus,
+      items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleAddPageOnEdge, handleUpdateStatus,
     );
 
     const positions = autoLayout(newNodes, newEdges, 'TB', {
@@ -212,7 +266,7 @@ function SitemapViewInner({
     setNodes(positioned);
     setEdges(newEdges);
     setTimeout(() => fitView({ padding: 0.2 }), 50);
-  }, [items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleUpdateStatus, setNodes, setEdges, fitView]);
+  }, [items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleAddPageOnEdge, handleUpdateStatus, setNodes, setEdges, fitView]);
 
   // Reparent on edge connect — layout recalculates automatically via onRefresh
   const onConnect: OnConnect = useCallback(async (connection: Connection) => {
@@ -229,6 +283,12 @@ function SitemapViewInner({
     onRefresh();
   }, [toast, onRefresh]);
 
+  const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    if (node.type === 'sitemapPage') {
+      onNavigateToItem(node.id);
+    }
+  }, [onNavigateToItem]);
+
   const handlePageAdded = useCallback(() => {
     setShowAddPage(false);
     setAddPageParentId(null);
@@ -244,8 +304,11 @@ function SitemapViewInner({
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onNodeDragStop={handleNodeDragStop}
+          onNodeClick={handleNodeClick}
           nodeTypes={nodeTypes}
-          nodesDraggable={false}
+          edgeTypes={edgeTypes}
+          nodesDraggable
           nodesConnectable
           fitView
           fitViewOptions={{ padding: 0.2 }}
@@ -253,7 +316,7 @@ function SitemapViewInner({
           maxZoom={2}
           panOnDrag
           zoomOnScroll
-          defaultEdgeOptions={{ type: 'smoothstep', style: { stroke: '#94a3b8', strokeWidth: 2 } }}
+          defaultEdgeOptions={{ type: 'sitemapEdge', style: { stroke: '#94a3b8', strokeWidth: 2 } }}
         >
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e2e8f0" />
           <Controls showInteractive={false} />

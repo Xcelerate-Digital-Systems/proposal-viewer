@@ -101,8 +101,70 @@ export default function ScanSiteModal({
       (a, b) => a.path.split('/').length - b.path.split('/').length
     );
 
-    // First pass: insert all pages (flat, no parent)
-    const startOrder = existingItems.length;
+    // Identify path prefixes that have multiple children (e.g. /team has /team/x, /team/y)
+    // These become auto-created section nodes
+    const pathToId = new Map<string, string>();
+    // Seed with existing items
+    for (const item of existingItems) {
+      if (item.page_path) pathToId.set(item.page_path, item.id);
+    }
+    // Check which existing items are sections so we don't duplicate
+    const existingSections = new Set(
+      existingItems.filter((i) => i.type === 'section').map((i) => i.page_path).filter(Boolean)
+    );
+
+    // Count children per first-level path prefix (only for pages 2+ segments deep)
+    const prefixChildren = new Map<string, DiscoveredPage[]>();
+    for (const page of sortedByDepth) {
+      if (page.path === '/') continue;
+      const segments = page.path.split('/').filter(Boolean);
+      if (segments.length < 2) continue;
+      const prefix = '/' + segments[0];
+      // Only auto-section if the prefix itself is NOT a page being imported
+      const arr = prefixChildren.get(prefix) ?? [];
+      arr.push(page);
+      prefixChildren.set(prefix, arr);
+    }
+
+    // Create section nodes for prefixes with 2+ children that don't already exist as items
+    let orderCounter = existingItems.length;
+    const sectionsToCreate: { prefix: string; title: string }[] = [];
+    prefixChildren.forEach((children, prefix) => {
+      if (children.length < 2) return;
+      if (pathToId.has(prefix)) return;
+      if (existingSections.has(prefix)) return;
+      const title = prefix.split('/').filter(Boolean).pop()?.replace(/[-_]/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase()) || prefix;
+      sectionsToCreate.push({ prefix, title });
+    });
+
+    // Insert section nodes first
+    if (sectionsToCreate.length > 0) {
+      const sectionRows = sectionsToCreate.map((s, i) => ({
+        review_project_id: projectId,
+        company_id: companyId,
+        type: 'section' as const,
+        title: s.title,
+        page_path: s.prefix,
+        sort_order: orderCounter + i,
+        status: 'internal_review' as const,
+        created_by: userId,
+      }));
+      orderCounter += sectionRows.length;
+
+      const { data: insertedSections, error: secErr } = await supabase
+        .from('review_items')
+        .insert(sectionRows)
+        .select('id, page_path');
+
+      if (!secErr && insertedSections) {
+        for (const sec of insertedSections) {
+          pathToId.set(sec.page_path, sec.id);
+        }
+      }
+    }
+
+    // Insert all page items
     const rows = sortedByDepth.map((page, i) => ({
       review_project_id: projectId,
       company_id: companyId,
@@ -110,7 +172,7 @@ export default function ScanSiteModal({
       title: page.title,
       url: page.url,
       page_path: page.path,
-      sort_order: startOrder + i,
+      sort_order: orderCounter + i,
       status: 'internal_review' as const,
       created_by: userId,
     }));
@@ -126,34 +188,43 @@ export default function ScanSiteModal({
       return;
     }
 
-    // Second pass: wire up parent relationships based on path nesting
-    const pathToId = new Map<string, string>();
     for (const item of inserted) {
       pathToId.set(item.page_path, item.id);
     }
-    // Include existing items in the lookup so new pages can be children of existing ones
-    for (const item of existingItems) {
-      if (item.page_path) pathToId.set(item.page_path, item.id);
-    }
 
+    // Wire up parent relationships based on path nesting
     const updates: { id: string; parent_item_id: string }[] = [];
     for (const item of inserted) {
       if (item.page_path === '/') continue;
       const segments = item.page_path.split('/').filter(Boolean);
-      // Walk up the path to find the nearest parent
+      // Walk up the path to find the nearest parent (section or page)
+      let found = false;
       for (let i = segments.length - 1; i >= 1; i--) {
         const parentPath = '/' + segments.slice(0, i).join('/');
         const parentId = pathToId.get(parentPath);
         if (parentId) {
           updates.push({ id: item.id, parent_item_id: parentId });
+          found = true;
           break;
         }
       }
-      // If no intermediate parent found, try root
-      if (!updates.some((u) => u.id === item.id)) {
+      if (!found) {
         const rootId = pathToId.get('/');
         if (rootId && item.page_path !== '/') {
           updates.push({ id: item.id, parent_item_id: rootId });
+        }
+      }
+    }
+
+    // Also wire sections under root if they exist
+    if (sectionsToCreate.length > 0) {
+      const rootId = pathToId.get('/');
+      if (rootId) {
+        for (const sec of sectionsToCreate) {
+          const secId = pathToId.get(sec.prefix);
+          if (secId) {
+            updates.push({ id: secId, parent_item_id: rootId });
+          }
         }
       }
     }
@@ -166,7 +237,11 @@ export default function ScanSiteModal({
         .eq('id', update.id);
     }
 
-    toast.success(`Imported ${inserted.length} page${inserted.length !== 1 ? 's' : ''}`);
+    const totalCreated = inserted.length + sectionsToCreate.length;
+    const sectionNote = sectionsToCreate.length > 0
+      ? ` (${sectionsToCreate.length} section${sectionsToCreate.length !== 1 ? 's' : ''} auto-created)`
+      : '';
+    toast.success(`Imported ${totalCreated} item${totalCreated !== 1 ? 's' : ''}${sectionNote}`);
     setImporting(false);
     onSuccess();
   };

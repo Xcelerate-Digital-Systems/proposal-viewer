@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { Globe, Figma, Image as ImageIcon, Plus, MessageSquareText } from 'lucide-react';
+import { Globe, Figma, Image as ImageIcon, MessageSquareText } from 'lucide-react';
 import type { FeedbackItem, FeedbackStatus } from '@/lib/supabase';
 import { getFeedbackStatusDef } from '@/lib/feedback/status';
 
@@ -41,9 +41,8 @@ function SitemapPageNodeComponent({ data, selected }: NodeProps) {
       <div
         className={`relative bg-white rounded-xl border shadow-sm transition-shadow ${
           selected ? 'border-teal ring-2 ring-teal/30' : 'border-edge hover:shadow-md'
-        } cursor-pointer group`}
+        } cursor-grab active:cursor-grabbing group`}
         style={{ width: NODE_W }}
-        onClick={(e) => { e.stopPropagation(); onNavigate?.(item.id); }}
       >
         {/* Thumbnail */}
         <div className="relative h-[70px] overflow-hidden bg-surface rounded-t-xl border-b border-edge">
@@ -128,16 +127,6 @@ function SitemapPageNodeComponent({ data, selected }: NodeProps) {
           </div>
         </div>
 
-        {/* Add child button — hover */}
-        {onAddChild && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onAddChild(item.id); }}
-            className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-teal-hover"
-            title="Add sub-page"
-          >
-            <Plus size={10} />
-          </button>
-        )}
       </div>
     </>
   );

@@ -4,17 +4,22 @@ import { useMemo, useEffect, useCallback } from 'react';
 import {
   ReactFlow, ReactFlowProvider, Controls, MiniMap, Background, BackgroundVariant,
   useReactFlow, useNodesState, useEdgesState,
-  type Node, type Edge, type NodeTypes,
+  type Node, type Edge, type NodeTypes, type EdgeTypes,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { FeedbackItem, FeedbackComment } from '@/lib/supabase';
 import { autoLayout } from '@/components/admin/shared/board-utils';
 import SitemapPageNode, { type SitemapNodeData, NODE_W, NODE_H } from '@/components/admin/feedback/sitemap/SitemapPageNode';
 import SitemapSectionNode, { type SitemapSectionData, SECTION_W, SECTION_H } from '@/components/admin/feedback/sitemap/SitemapSectionNode';
+import SitemapEdge, { type SitemapEdgeData } from '@/components/admin/feedback/sitemap/SitemapEdge';
 
 const nodeTypes: NodeTypes = {
   sitemapPage: SitemapPageNode,
   sitemapSection: SitemapSectionNode,
+};
+
+const edgeTypes: EdgeTypes = {
+  sitemapEdge: SitemapEdge,
 };
 
 interface PublicSitemapViewProps {
@@ -94,8 +99,15 @@ function buildPublicNodesAndEdges(
     };
   });
 
+  const itemMap = new Map(items.map((i) => [i.id, i]));
   const edges: Edge[] = [];
   effectiveParent.forEach((parentId, childId) => {
+    const parentItem = itemMap.get(parentId);
+    const edgeData: SitemapEdgeData = {
+      sourceId: parentId,
+      targetId: childId,
+      label: parentItem?.type === 'section' ? parentItem.title : undefined,
+    };
     edges.push({
       id: `e-${parentId}-${childId}`,
       source: parentId,
@@ -103,7 +115,8 @@ function buildPublicNodesAndEdges(
       sourceHandle: 'bottom',
       targetHandle: 'top',
       style: { stroke: '#94a3b8', strokeWidth: 2 },
-      type: 'smoothstep',
+      type: 'sitemapEdge',
+      data: edgeData,
     });
   });
 
@@ -153,6 +166,7 @@ function PublicSitemapInner({ items, comments, onSelectItem }: PublicSitemapView
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.2}
@@ -162,7 +176,7 @@ function PublicSitemapInner({ items, comments, onSelectItem }: PublicSitemapView
         elementsSelectable={false}
         panOnDrag
         zoomOnScroll
-        defaultEdgeOptions={{ type: 'smoothstep', style: { stroke: '#94a3b8', strokeWidth: 2 } }}
+        defaultEdgeOptions={{ type: 'sitemapEdge', style: { stroke: '#94a3b8', strokeWidth: 2 } }}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e2e8f0" />
         <Controls showInteractive={false} />
