@@ -11,7 +11,7 @@ export function GET() {
     response_types_supported: ['code'],
     grant_types_supported: ['authorization_code', 'refresh_token'],
     code_challenge_methods_supported: ['S256'],
-    token_endpoint_auth_methods_supported: ['client_secret_post'],
+    token_endpoint_auth_methods_supported: ['client_secret_post', 'none'],
     scopes_supported: ['campaigns:read', 'campaigns:write', 'proposals:read', 'documents:read', 'templates:read', 'swipe:read', 'funnels:read', 'workspace:read'],
     service_documentation: `${APP_URL}/docs/api`,
   }, {

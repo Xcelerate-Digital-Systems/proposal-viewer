@@ -23,14 +23,20 @@ export async function POST(req: NextRequest) {
 
   const clientName = typeof body.client_name === 'string' ? body.client_name : 'MCP Client';
   const redirectUris = Array.isArray(body.redirect_uris) ? body.redirect_uris.filter((u): u is string => typeof u === 'string') : [];
+  const requestedAuthMethod = typeof body.token_endpoint_auth_method === 'string' ? body.token_endpoint_auth_method : null;
+  const isPublic = requestedAuthMethod === 'none';
 
   if (redirectUris.length === 0) {
     return NextResponse.json({ error: 'redirect_uris is required' }, { status: 400 });
   }
 
   const clientId = `mcp_${randomBytes(16).toString('hex')}`;
-  const clientSecret = `avcs_${randomBytes(32).toString('base64url')}`;
-  const clientSecretHash = hashSecret(clientSecret);
+  // Public clients get a placeholder hash (never validated). Confidential
+  // clients get a real secret the caller must store.
+  const clientSecret = isPublic ? null : `avcs_${randomBytes(32).toString('base64url')}`;
+  const clientSecretHash = isPublic
+    ? hashSecret(`placeholder_${randomBytes(16).toString('hex')}`)
+    : hashSecret(clientSecret!);
 
   const sb = createServiceClient();
   const { error } = await sb.from('oauth_clients').insert({
@@ -46,15 +52,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Registration failed' }, { status: 500 });
   }
 
-  return NextResponse.json({
+  const response: Record<string, unknown> = {
     client_id: clientId,
-    client_secret: clientSecret,
     client_name: clientName,
     redirect_uris: redirectUris,
     grant_types: ['authorization_code', 'refresh_token'],
     response_types: ['code'],
-    token_endpoint_auth_method: 'client_secret_post',
-  }, {
+    token_endpoint_auth_method: isPublic ? 'none' : 'client_secret_post',
+  };
+  if (clientSecret) response.client_secret = clientSecret;
+
+  return NextResponse.json(response, {
     status: 201,
     headers: {
       'Access-Control-Allow-Origin': '*',

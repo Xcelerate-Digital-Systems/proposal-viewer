@@ -617,6 +617,11 @@ async function verifyToken(_req: Request, bearerToken?: string): Promise<McpAuth
   };
 }
 
-const handler = withMcpAuth(mcpHandler, verifyToken, { required: true });
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.agencyviz.io';
+
+const handler = withMcpAuth(mcpHandler, verifyToken, {
+  required: true,
+  resourceUrl: APP_URL,
+});
 
 export { handler as GET, handler as POST, handler as DELETE };

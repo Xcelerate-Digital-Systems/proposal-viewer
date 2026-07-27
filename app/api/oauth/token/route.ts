@@ -59,6 +59,7 @@ function hashRefreshToken(token: string): string {
 async function handleAuthorizationCode(
   form: Record<string, string>,
   clientId: string,
+  isPublicClient = false,
 ) {
   const code = form.code;
   const redirect_uri = form.redirect_uri;
@@ -115,6 +116,9 @@ async function handleAuthorizationCode(
       debugLog('[oauth/token] REJECTED: PKCE code_verifier mismatch');
       return oauthError('invalid_grant', 'code_verifier does not match code_challenge');
     }
+  } else if (isPublicClient) {
+    debugLog('[oauth/token] REJECTED: public client without PKCE');
+    return oauthError('invalid_grant', 'Public clients must use PKCE');
   }
 
   if (!row.plaintext_token) {
@@ -161,6 +165,7 @@ async function handleAuthorizationCode(
 async function handleRefreshToken(
   form: Record<string, string>,
   clientId: string,
+  clientName = 'OAuth Client',
 ) {
   const refreshToken = form.refresh_token;
   if (!refreshToken) {
@@ -203,7 +208,7 @@ async function handleRefreshToken(
     .insert({
       company_id: key.company_id,
       user_id: key.user_id,
-      label: 'Looker Studio (refreshed)',
+      label: `${clientName} (refreshed)`,
       key_prefix: newKeyPrefix,
       key_hash: newKeyHash,
       source: 'oauth_client',
@@ -232,6 +237,42 @@ async function handleRefreshToken(
   });
 }
 
+// ── Client authentication ─────────────────────────────────────────────────
+// Supports both confidential clients (client_secret_post) and public clients
+// (token_endpoint_auth_method=none, PKCE required). Public clients are used
+// by MCP custom connectors (Claude, etc.) per the MCP OAuth spec.
+
+async function authenticateClient(form: Record<string, string>): Promise<
+  | { ok: true; clientId: string; clientName: string; isPublic: boolean }
+  | { ok: false; response: NextResponse }
+> {
+  const client_id = form.client_id;
+  const client_secret = form.client_secret;
+
+  if (!client_id) {
+    return { ok: false, response: oauthError('invalid_request', 'Missing client_id') };
+  }
+
+  const client = await getOAuthClient(client_id);
+  if (!client) {
+    debugLog('[oauth/token] REJECTED: unknown client_id %s', client_id);
+    return { ok: false, response: oauthError('invalid_client', 'Unknown client_id', 401) };
+  }
+
+  if (client_secret) {
+    if (!constantTimeEquals(hashSecret(client_secret), client.client_secret_hash)) {
+      debugLog('[oauth/token] REJECTED: bad client_secret for %s', client_id);
+      return { ok: false, response: oauthError('invalid_client', 'Invalid client credentials', 401) };
+    }
+    return { ok: true, clientId: client_id, clientName: client.name, isPublic: false };
+  }
+
+  // No client_secret → public client (MCP connectors). PKCE is enforced
+  // during authorization_code exchange to ensure security.
+  debugLog('[oauth/token] public client auth for %s (no secret)', client_id);
+  return { ok: true, clientId: client_id, clientName: client.name, isPublic: true };
+}
+
 // ── Main handler ──────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
@@ -241,33 +282,19 @@ export async function POST(req: NextRequest) {
   const form = await readForm(req);
 
   const grant_type = form.grant_type;
-  const client_id = form.client_id;
-  const client_secret = form.client_secret;
 
   debugLog('[oauth/token] grant_type=%s client_id=%s content-type=%s',
-    grant_type, client_id, req.headers.get('content-type'));
+    grant_type, form.client_id, req.headers.get('content-type'));
 
-  if (!client_id || !client_secret) {
-    return oauthError('invalid_request', 'Missing client credentials');
-  }
-
-  const client = await getOAuthClient(client_id);
-  if (!client) {
-    debugLog('[oauth/token] REJECTED: unknown client_id %s', client_id);
-    return oauthError('invalid_client', 'Unknown client_id', 401);
-  }
-
-  if (!constantTimeEquals(hashSecret(client_secret), client.client_secret_hash)) {
-    debugLog('[oauth/token] REJECTED: bad client_secret for %s', client_id);
-    return oauthError('invalid_client', 'Invalid client credentials', 401);
-  }
+  const auth = await authenticateClient(form);
+  if (!auth.ok) return auth.response;
 
   if (grant_type === 'authorization_code') {
-    return handleAuthorizationCode(form, client_id);
+    return handleAuthorizationCode(form, auth.clientId, auth.isPublic);
   }
 
   if (grant_type === 'refresh_token') {
-    return handleRefreshToken(form, client_id);
+    return handleRefreshToken(form, auth.clientId, auth.clientName);
   }
 
   return oauthError('unsupported_grant_type', 'Only authorization_code and refresh_token are supported');
