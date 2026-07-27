@@ -117,17 +117,17 @@ export default function McpSetupSection() {
       </div>
 
       {/* Setup card with tabs */}
-      <div className="rounded-lg border border-edge overflow-hidden">
+      <div className="rounded-2xl border border-edge overflow-hidden bg-white">
         {/* Tool tabs */}
-        <div className="flex border-b border-edge bg-paper">
+        <div className="flex border-b border-edge">
           {tools.map((tool, i) => (
             <button
               key={tool.name}
               onClick={() => setActiveTab(i)}
               className={`flex-1 px-3 py-2.5 text-xs font-medium transition-colors relative ${
                 activeTab === i
-                  ? 'text-ink bg-surface'
-                  : 'text-muted hover:text-ink hover:bg-surface/50'
+                  ? 'text-ink bg-white'
+                  : 'text-muted hover:text-ink bg-paper hover:bg-white'
               }`}
             >
               <span className="flex items-center justify-center gap-1.5">
@@ -135,7 +135,7 @@ export default function McpSetupSection() {
                 <span>{tool.name}</span>
               </span>
               {activeTab === i && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal" />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
               )}
             </button>
           ))}
@@ -145,7 +145,7 @@ export default function McpSetupSection() {
         <div className="p-4 space-y-3">
           {/* Step 1 */}
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 w-5 h-5 rounded-full bg-teal-tint text-teal text-xs font-semibold flex items-center justify-center shrink-0">1</span>
+            <span className="mt-0.5 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center shrink-0">1</span>
             <p className="text-sm text-ink">{activeTool.instructions}</p>
           </div>
 
@@ -158,14 +158,14 @@ export default function McpSetupSection() {
               </span>
               <CopyButton text={activeTool.value} />
             </div>
-            <pre className="px-4 py-3 text-xs leading-relaxed overflow-x-auto bg-surface text-ink font-mono">
+            <pre className="px-4 py-3 text-xs leading-relaxed overflow-x-auto bg-[#1e1e1e] text-[#d4d4d4] font-mono rounded-b-lg">
               {activeTool.value}
             </pre>
           </div>
 
           {/* Step 2 */}
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 w-5 h-5 rounded-full bg-teal-tint text-teal text-xs font-semibold flex items-center justify-center shrink-0">2</span>
+            <span className="mt-0.5 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center shrink-0">2</span>
             <p className="text-sm text-ink">
               {activeTool.method === 'cli'
                 ? 'A browser window will open — approve access to your workspace'
@@ -176,8 +176,8 @@ export default function McpSetupSection() {
       </div>
 
       {/* OAuth note */}
-      <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-teal-tint/50 border border-teal/20">
-        <ShieldCheck size={15} className="text-teal mt-0.5 shrink-0" />
+      <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-white border border-edge">
+        <ShieldCheck size={15} className="text-primary mt-0.5 shrink-0" />
         <p className="text-xs text-muted leading-relaxed">
           Authentication is handled automatically via OAuth 2.0 with PKCE &mdash; no API keys to manage.
           Your AI tool registers itself, opens a browser for you to approve access, and refreshes
@@ -197,8 +197,8 @@ export default function McpSetupSection() {
       {showCapabilities && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {CAPABILITIES.map(cap => (
-            <div key={cap.name} className="flex items-start gap-2.5 px-3 py-2 rounded-lg bg-paper border border-edge">
-              <span className="w-1.5 h-1.5 rounded-full bg-teal mt-1.5 shrink-0" />
+            <div key={cap.name} className="flex items-start gap-2.5 px-3 py-2 rounded-lg bg-white border border-edge">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
               <div>
                 <p className="text-xs font-medium text-ink">{cap.name}</p>
                 <p className="text-xs text-muted">{cap.desc}</p>

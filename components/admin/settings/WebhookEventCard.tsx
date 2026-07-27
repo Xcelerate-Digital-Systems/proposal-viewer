@@ -10,6 +10,7 @@ import { supabase, type WebhookEndpoint } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import { isValidWebhookUrl } from '@/lib/sanitize';
 import { authedFetch } from '@/lib/api-fetch';
+import Button from '@/components/ui/Button';
 
 interface WebhookEventCardProps {
   eventKey: string;
@@ -160,7 +161,7 @@ export default function WebhookEventCard({
   };
 
   return (
-    <div className={`bg-white border border-edge rounded-[14px] overflow-hidden  transition-opacity ${hasEndpoint && !enabled ? 'opacity-60' : ''}`}>
+    <div className={`bg-white border border-edge rounded-2xl overflow-hidden transition-opacity ${hasEndpoint && !enabled ? 'opacity-60' : ''}`}>
       <div className="px-5 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Icon size={16} className={hasEndpoint && enabled ? 'text-teal' : 'text-faint'} />
@@ -201,18 +202,18 @@ export default function WebhookEventCard({
 
       <div className="px-5 pb-4 space-y-2.5">
         <div>
-          <label className="block text-detail font-medium text-faint uppercase tracking-wider mb-1">Endpoint URL</label>
+          <label className="block text-2xs font-medium text-muted uppercase tracking-wide mb-1">Endpoint URL</label>
           <input
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://your-server.com/webhooks"
-            className="w-full px-3 py-2 rounded-lg border border-edge bg-surface text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 /40 placeholder:text-faint"
+            className="w-full px-3 py-2 rounded-lg border border-edge bg-surface text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 placeholder:text-faint"
           />
         </div>
 
         <div>
-          <label className="block text-detail font-medium text-faint uppercase tracking-wider mb-1">
+          <label className="block text-2xs font-medium text-muted uppercase tracking-wide mb-1">
             Signing Secret <span className="text-faint normal-case">(optional)</span>
           </label>
           <div className="flex gap-1.5">
@@ -222,7 +223,7 @@ export default function WebhookEventCard({
                 value={secret}
                 onChange={(e) => setSecret(e.target.value)}
                 placeholder="Used to verify webhook authenticity"
-                className="w-full px-3 py-2 pr-16 rounded-lg border border-edge bg-surface text-sm text-ink font-mono focus:outline-none focus:ring-2 focus:ring-teal/20 /40 placeholder:text-faint placeholder:font-sans"
+                className="w-full px-3 py-2 pr-16 rounded-lg border border-edge bg-surface text-sm text-ink font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 placeholder:text-faint placeholder:font-sans"
               />
               <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
                 {secret && (
@@ -260,28 +261,30 @@ export default function WebhookEventCard({
 
         {hasEndpoint && enabled && !hasChanges && (
           <div className="flex justify-end pt-1">
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleSendTest}
               disabled={sendingTest}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-edge text-muted hover:text-teal hover:border-teal/40 hover:bg-teal/5 transition-colors disabled:opacity-50"
-              title="Send a sample payload to this endpoint"
+              loading={sendingTest}
+              leftIcon={Send}
             >
-              {sendingTest ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
               Send test
-            </button>
+            </Button>
           </div>
         )}
 
         {hasChanges && hasUrl && (
           <div className="flex justify-end pt-1">
-            <button
+            <Button
+              size="sm"
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium bg-teal text-white hover:bg-teal-hover transition-colors disabled:opacity-50"
+              loading={saving}
+              leftIcon={Check}
             >
-              {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
               {hasEndpoint ? 'Save' : 'Create'}
-            </button>
+            </Button>
           </div>
         )}
       </div>

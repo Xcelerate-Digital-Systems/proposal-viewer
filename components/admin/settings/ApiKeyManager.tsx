@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { Loader2, Plus, Copy, Check, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
+import Button from '@/components/ui/Button';
 
 interface ApiKey {
   id: string;
@@ -92,7 +93,7 @@ export default function ApiKeyManager() {
   return (
     <div>
       {error && (
-        <div className="mb-4 border border-red-200 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+        <div className="mb-4 border border-red-200 bg-red-50 text-red-700 text-sm rounded-2xl p-3">
           {error}
         </div>
       )}
@@ -106,13 +107,13 @@ export default function ApiKeyManager() {
             <code className="flex-1 px-3 py-2 bg-white border border-teal/20 rounded-lg text-xs font-mono text-ink overflow-x-auto whitespace-nowrap">
               {justCreated.plaintext}
             </code>
-            <button
+            <Button
               onClick={copy}
-              className="px-3 py-2 bg-teal text-white rounded-lg text-xs font-medium hover:bg-teal/90 flex items-center gap-1.5"
+              size="sm"
+              leftIcon={copied ? Check : Copy}
             >
-              {copied ? <Check size={14} /> : <Copy size={14} />}
               {copied ? 'Copied' : 'Copy'}
-            </button>
+            </Button>
           </div>
           <button
             onClick={() => setJustCreated(null)}
@@ -130,17 +131,18 @@ export default function ApiKeyManager() {
             value={newLabel}
             onChange={(e) => setNewLabel(e.target.value)}
             placeholder="Key label (e.g. Chrome extension)"
-            className="flex-1 px-3 py-2 border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
+            className="flex-1 px-3 py-2 border border-edge rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 placeholder:text-faint"
             onKeyDown={(e) => e.key === 'Enter' && create()}
           />
-          <button
+          <Button
             onClick={create}
             disabled={creating || !newLabel.trim()}
-            className="px-4 py-2 bg-teal text-white rounded-lg text-sm font-medium hover:bg-teal/90 disabled:opacity-50 flex items-center gap-1.5"
+            loading={creating}
+            leftIcon={Plus}
+            size="sm"
           >
-            {creating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
             Generate
-          </button>
+          </Button>
         </div>
 
         {loading ? (
@@ -154,7 +156,7 @@ export default function ApiKeyManager() {
             {active.map((k) => (
               <div
                 key={k.id}
-                className="flex items-center justify-between gap-3 px-3 py-2.5 bg-white border border-line rounded-lg"
+                className="flex items-center justify-between gap-3 px-3 py-2.5 bg-white border border-edge rounded-lg"
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-ink truncate">{k.label}</p>

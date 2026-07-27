@@ -133,7 +133,7 @@ export default function FigmaConnectorCard() {
                 value={tokenInput}
                 onChange={(e) => setTokenInput(e.target.value)}
                 placeholder="figd_..."
-                className="w-full px-3 py-2 bg-white rounded-xl border border-edge text-caption focus:outline-none focus:ring-2 focus:ring-teal/30"
+                className="w-full px-3 py-2 bg-white rounded-lg border border-edge text-caption focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
                 onKeyDown={(e) => { if (e.key === 'Enter') handleConnect(); }}
                 autoFocus
               />

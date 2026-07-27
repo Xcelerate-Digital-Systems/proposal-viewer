@@ -10,6 +10,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { InviteManager } from '@/components/admin/InviteManager';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
+import Button from '@/components/ui/Button';
 
 type Role = 'owner' | 'admin' | 'member';
 
@@ -270,11 +271,11 @@ export default function MembersTab({
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12 bg-white border border-edge rounded-[14px]">
+          <div className="flex items-center justify-center py-12 bg-white border border-edge rounded-2xl">
             <Loader2 size={20} className="animate-spin text-faint" />
           </div>
         ) : (
-          <div className="bg-white border border-edge rounded-[14px] overflow-visible divide-y divide-edge">
+          <div className="bg-white border border-edge rounded-2xl overflow-visible divide-y divide-edge">
             {members.map(m => {
               const isCurrentUser = m.id === currentMemberId;
               const canEditProfile =
@@ -458,17 +459,19 @@ function MemberRowItem({
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg bg-surface border border-edge text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20"
+                className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg bg-surface border border-edge text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
               />
               {nameChanged && (
-                <button
+                <Button
+                  size="sm"
                   onClick={handleSaveName}
                   disabled={savingName}
-                  className="shrink-0 px-3 py-1.5 bg-teal text-white text-xs rounded-lg hover:bg-teal-hover disabled:opacity-50 flex items-center gap-1"
+                  loading={savingName}
+                  leftIcon={Check}
+                  className="shrink-0"
                 >
-                  {savingName ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
                   Save
-                </button>
+                </Button>
               )}
               {isCurrentUser && (
                 <span className="text-2xs text-faint font-medium shrink-0">(you)</span>

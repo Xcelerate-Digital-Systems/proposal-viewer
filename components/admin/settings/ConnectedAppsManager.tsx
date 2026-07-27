@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { Loader2, Chrome, BarChart3, Plug, Unplug } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
+import Button from '@/components/ui/Button';
 
 type Source = 'oauth_extension' | 'oauth_client';
 
@@ -95,7 +96,7 @@ export default function ConnectedAppsManager() {
         return (
           <div
             key={groupKey}
-            className="flex items-center justify-between gap-3 px-3 py-2.5 bg-white border border-line rounded-lg"
+            className="flex items-center justify-between gap-3 px-3 py-2.5 bg-white border border-edge rounded-lg"
           >
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-8 h-8 bg-teal-tint rounded-lg flex items-center justify-center shrink-0">
@@ -116,19 +117,16 @@ export default function ConnectedAppsManager() {
                 </p>
               </div>
             </div>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => disconnect(app)}
               disabled={isDisconnecting}
-              className="px-2.5 py-1.5 text-xs font-medium text-faint hover:text-red-500 rounded-lg flex items-center gap-1.5 disabled:opacity-50"
-              title="Disconnect"
+              loading={isDisconnecting}
+              leftIcon={Unplug}
             >
-              {isDisconnecting ? (
-                <Loader2 size={13} className="animate-spin" />
-              ) : (
-                <Unplug size={13} />
-              )}
               Disconnect
-            </button>
+            </Button>
           </div>
         );
       })}
