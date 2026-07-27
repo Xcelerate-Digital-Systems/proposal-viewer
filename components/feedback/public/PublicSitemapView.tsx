@@ -8,7 +8,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { FeedbackItem, FeedbackComment } from '@/lib/supabase';
-import { autoLayout } from '@/components/admin/shared/board-utils';
+import { treeLayout } from '@/components/admin/shared/board-utils';
 import SitemapPageNode, { type SitemapNodeData, NODE_W, NODE_H } from '@/components/admin/feedback/sitemap/SitemapPageNode';
 import SitemapSectionNode, { type SitemapSectionData, SECTION_W, SECTION_H } from '@/components/admin/feedback/sitemap/SitemapSectionNode';
 import SitemapEdge, { type SitemapEdgeData } from '@/components/admin/feedback/sitemap/SitemapEdge';
@@ -138,8 +138,8 @@ function PublicSitemapInner({ items, comments, onSelectItem }: PublicSitemapView
 
   const applyLayout = useCallback(() => {
     setNodes((prev) => {
-      const positions = autoLayout(prev, edges, 'TB', {
-        nodesep: 60, ranksep: 100, nodeWidth: 180, nodeHeight: 160,
+      const positions = treeLayout(prev, edges, {
+        horizontalGap: 40, verticalGap: 80, nodeWidth: 180, nodeHeight: 160,
       });
       const updated = prev.map((n) => {
         const p = positions.get(n.id);

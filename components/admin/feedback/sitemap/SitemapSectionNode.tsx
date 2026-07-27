@@ -2,7 +2,7 @@
 
 import { memo, useState, useRef, useEffect } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { FolderOpen, Plus, Pencil, Check } from 'lucide-react';
+import { FolderOpen, Plus, Pencil, Check, Trash2 } from 'lucide-react';
 import type { FeedbackItem } from '@/lib/supabase';
 import SitemapSiblingMenu, { type SiblingSide, type SiblingType } from './SitemapSiblingMenu';
 
@@ -11,6 +11,7 @@ export interface SitemapSectionData extends Record<string, unknown> {
   childCount: number;
   onAddChild?: (parentId: string) => void;
   onRename?: (itemId: string, title: string) => void;
+  onDelete?: (itemId: string) => void;
   onAddSibling?: (itemId: string, side: SiblingSide, type: SiblingType) => void;
 }
 
@@ -18,7 +19,7 @@ export const SECTION_W = 220;
 export const SECTION_H = 48;
 
 function SitemapSectionNodeComponent({ data, selected }: NodeProps) {
-  const { item, childCount, onAddChild, onRename, onAddSibling } = data as SitemapSectionData;
+  const { item, childCount, onAddChild, onRename, onDelete, onAddSibling } = data as SitemapSectionData;
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(item.title);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -81,15 +82,28 @@ function SitemapSectionNodeComponent({ data, selected }: NodeProps) {
           <span className="text-[10px] text-slate-400 shrink-0">{childCount}</span>
         )}
 
-        {/* Rename button — hover */}
-        {onRename && !editing && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setEditing(true); }}
-            className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-white border border-slate-300 text-slate-500 flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:border-teal hover:text-teal"
-            title="Rename section"
-          >
-            <Pencil size={9} />
-          </button>
+        {/* Rename + Delete buttons — hover */}
+        {!editing && (
+          <div className="absolute -top-2 -right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+            {onRename && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setEditing(true); }}
+                className="nodrag nopan w-5 h-5 rounded-full bg-white border border-slate-300 text-slate-500 flex items-center justify-center shadow-sm hover:border-teal hover:text-teal"
+                title="Rename section"
+              >
+                <Pencil size={9} />
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+                className="nodrag nopan w-5 h-5 rounded-full bg-white border border-slate-300 text-slate-500 flex items-center justify-center shadow-sm hover:border-red-400 hover:text-red-500"
+                title="Delete section"
+              >
+                <Trash2 size={9} />
+              </button>
+            )}
+          </div>
         )}
 
         {/* Add child button — hover */}

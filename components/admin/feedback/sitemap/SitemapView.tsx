@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   ReactFlow, ReactFlowProvider, Controls, MiniMap, Background, BackgroundVariant,
   Panel, useReactFlow, useNodesState, useEdgesState,
@@ -11,12 +11,13 @@ import '@xyflow/react/dist/style.css';
 import { Plus, Search, FolderPlus } from 'lucide-react';
 import { supabase, type FeedbackItem, type FeedbackStatus, type FeedbackItemType } from '@/lib/supabase';
 import type { SiblingSide, SiblingType } from './SitemapSiblingMenu';
-import { autoLayout } from '@/components/admin/shared/board-utils';
+import { treeLayout } from '@/components/admin/shared/board-utils';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
 import SitemapPageNode, { type SitemapNodeData, NODE_W, NODE_H } from './SitemapPageNode';
 import SitemapSectionNode, { type SitemapSectionData, SECTION_W, SECTION_H } from './SitemapSectionNode';
 import SitemapEdge, { type SitemapEdgeData } from './SitemapEdge';
+import SitemapDropZones, { type DropZone, type SectionTarget } from './SitemapDropZones';
 import AddSitemapPageModal from './AddSitemapPageModal';
 import ScanSiteModal from './ScanSiteModal';
 
@@ -39,18 +40,22 @@ interface SitemapViewProps {
   onNavigateToItem: (itemId: string) => void;
 }
 
+function getRootItem(items: FeedbackItem[]): FeedbackItem | undefined {
+  return items.find((i) => i.page_path === '/') ?? items.find((i) => !i.parent_item_id);
+}
+
 function buildNodesAndEdges(
   items: FeedbackItem[],
   commentCounts: Map<string, { total: number; unresolved: number }>,
   onNavigate: (id: string) => void,
   onAddChild: (parentId: string) => void,
   onRenameSection: (itemId: string, title: string) => void,
-  onAddPageOnEdge: (parentId: string) => void,
+  onDeleteSection: (itemId: string) => void,
   onAddSibling: (itemId: string, side: SiblingSide, type: SiblingType) => void,
+  onMoveToParent: (itemId: string) => void,
   onUpdateStatus?: (itemId: string, status: FeedbackStatus) => void | Promise<void>,
 ): { nodes: Node[]; edges: Edge[] } {
-  const rootItem = items.find((i) => i.page_path === '/') ??
-    items.find((i) => !i.parent_item_id);
+  const rootItem = getRootItem(items);
   const rootId = rootItem?.id ?? null;
 
   const effectiveParent = new Map<string, string>();
@@ -67,8 +72,12 @@ function buildNodesAndEdges(
     childCountMap.set(parentId, (childCountMap.get(parentId) ?? 0) + 1);
   });
 
+  const itemMap = new Map(items.map((i) => [i.id, i]));
+
   const nodes: Node[] = items.map((item) => {
     const isSection = item.type === 'section';
+    const parentItem = item.parent_item_id ? itemMap.get(item.parent_item_id) : null;
+    const parentIsSection = parentItem?.type === 'section';
 
     if (isSection) {
       const sectionData: SitemapSectionData = {
@@ -76,6 +85,7 @@ function buildNodesAndEdges(
         childCount: childCountMap.get(item.id) ?? 0,
         onAddChild,
         onRename: onRenameSection,
+        onDelete: onDeleteSection,
         onAddSibling,
       };
       return {
@@ -95,9 +105,11 @@ function buildNodesAndEdges(
       commentCount: cc.total,
       unresolvedCount: cc.unresolved,
       childCount: childCountMap.get(item.id) ?? 0,
+      parentIsSection,
       onNavigate,
       onAddChild,
       onAddSibling,
+      onMoveToParent: parentIsSection ? onMoveToParent : undefined,
       onUpdateStatus,
     };
 
@@ -117,7 +129,6 @@ function buildNodesAndEdges(
     const edgeData: SitemapEdgeData = {
       sourceId: parentId,
       targetId: childId,
-      onAddPage: onAddPageOnEdge,
     };
     edges.push({
       id: `e-${parentId}-${childId}`,
@@ -134,6 +145,127 @@ function buildNodesAndEdges(
   return { nodes, edges };
 }
 
+function calculateDropZones(
+  nodes: Node[],
+  items: FeedbackItem[],
+  draggingId: string,
+): { zones: DropZone[]; sectionTargets: SectionTarget[] } {
+  const rootItem = getRootItem(items);
+  const rootId = rootItem?.id ?? null;
+
+  const childrenByParent = new Map<string, FeedbackItem[]>();
+  for (const item of items) {
+    if (item.id === draggingId || item.id === rootId) continue;
+    const parentId = item.parent_item_id || rootId;
+    if (!parentId) continue;
+    const arr = childrenByParent.get(parentId) ?? [];
+    arr.push(item);
+    childrenByParent.set(parentId, arr);
+  }
+
+  const zones: DropZone[] = [];
+
+  childrenByParent.forEach((children, parentId) => {
+    const sorted = [...children].sort((a, b) => a.sort_order - b.sort_order);
+    const positioned = sorted.map((child) => {
+      const node = nodes.find((n) => n.id === child.id);
+      if (!node) return null;
+      const w = (node as { width?: number }).width ?? NODE_W;
+      const h = (node as { height?: number }).height ?? NODE_H;
+      return { item: child, x: node.position.x, w, y: node.position.y, h };
+    }).filter(Boolean) as { item: FeedbackItem; x: number; w: number; y: number; h: number }[];
+
+    if (positioned.length === 0) return;
+
+    const maxH = Math.max(...positioned.map((p) => p.h));
+    const minY = Math.min(...positioned.map((p) => p.y));
+
+    // Before first
+    const first = positioned[0];
+    zones.push({
+      id: `dz-${parentId}-start`,
+      parentId,
+      x: first.x - 24,
+      y: minY,
+      height: maxH,
+      sortOrder: first.item.sort_order - 1,
+    });
+
+    // Between each pair
+    for (let i = 0; i < positioned.length - 1; i++) {
+      const a = positioned[i];
+      const b = positioned[i + 1];
+      const midX = a.x + a.w + (b.x - (a.x + a.w)) / 2;
+      zones.push({
+        id: `dz-${parentId}-${i}`,
+        parentId,
+        x: midX,
+        y: minY,
+        height: maxH,
+        sortOrder: (a.item.sort_order + b.item.sort_order) / 2,
+      });
+    }
+
+    // After last
+    const last = positioned[positioned.length - 1];
+    zones.push({
+      id: `dz-${parentId}-end`,
+      parentId,
+      x: last.x + last.w + 24,
+      y: minY,
+      height: maxH,
+      sortOrder: last.item.sort_order + 1,
+    });
+  });
+
+  const sectionTargets: SectionTarget[] = [];
+  for (const n of nodes) {
+    if (n.id === draggingId || n.type !== 'sitemapSection') continue;
+    sectionTargets.push({
+      id: n.id,
+      x: n.position.x,
+      y: n.position.y,
+      w: (n as { width?: number }).width ?? SECTION_W,
+      h: (n as { height?: number }).height ?? SECTION_H,
+    });
+  }
+
+  return { zones, sectionTargets };
+}
+
+function findNearestZone(
+  zones: DropZone[],
+  cx: number,
+  cy: number,
+): DropZone | null {
+  let nearest: DropZone | null = null;
+  let minDist = 150;
+
+  for (const zone of zones) {
+    const zoneCenter = zone.y + zone.height / 2;
+    const dist = Math.hypot(cx - zone.x, cy - zoneCenter);
+    if (dist < minDist) {
+      minDist = dist;
+      nearest = zone;
+    }
+  }
+
+  return nearest;
+}
+
+function findSectionTarget(
+  targets: SectionTarget[],
+  cx: number,
+  cy: number,
+): string | null {
+  for (const t of targets) {
+    if (cx >= t.x && cx <= t.x + t.w && cy >= t.y && cy <= t.y + t.h) {
+      return t.id;
+    }
+  }
+  return null;
+}
+
 function SitemapViewInner({
   projectId, companyId, userId, rootDomain, items, onRefresh, onNavigateToItem,
 }: SitemapViewProps) {
@@ -144,7 +276,15 @@ function SitemapViewInner({
   const [showScanSite, setShowScanSite] = useState(false);
   const [addPageParentId, setAddPageParentId] = useState<string | null>(null);
 
-  // Fetch comment counts
+  // Drag state
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropZones, setDropZones] = useState<DropZone[]>([]);
+  const [sectionTargets, setSectionTargets] = useState<SectionTarget[]>([]);
+  const [activeZoneId, setActiveZoneId] = useState<string | null>(null);
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+  const activeZoneRef = useRef<DropZone | null>(null);
+  const activeSectionRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (items.length === 0) return;
     (async () => {
@@ -186,7 +326,54 @@ function SitemapViewInner({
     onRefresh();
   }, [onRefresh]);
 
+  const handleDeleteSection = useCallback(async (itemId: string) => {
+    const section = items.find((i) => i.id === itemId);
+    if (!section) return;
+
+    const children = items.filter((i) => i.parent_item_id === itemId);
+    if (children.length > 0) {
+      const parentId = section.parent_item_id || null;
+      for (const child of children) {
+        await supabase.from('review_items')
+          .update({ parent_item_id: parentId, updated_at: new Date().toISOString() })
+          .eq('id', child.id);
+      }
+    }
+
+    const { error } = await supabase.from('review_items')
+      .delete()
+      .eq('id', itemId);
+
+    if (error) {
+      toast.error('Failed to delete section');
+      return;
+    }
+    toast.success(`Deleted section "${section.title}"`);
+    onRefresh();
+  }, [items, toast, onRefresh]);
+
+  const handleMoveToParent = useCallback(async (itemId: string) => {
+    const item = items.find((i) => i.id === itemId);
+    if (!item || !item.parent_item_id) return;
+
+    const parentSection = items.find((i) => i.id === item.parent_item_id);
+    if (!parentSection) return;
+
+    const newParentId = parentSection.parent_item_id || null;
+    const { error } = await supabase.from('review_items')
+      .update({ parent_item_id: newParentId, updated_at: new Date().toISOString() })
+      .eq('id', itemId);
+
+    if (error) {
+      toast.error('Failed to move item');
+      return;
+    }
+    toast.success(`Moved "${item.title}" up one level`);
+    onRefresh();
+  }, [items, toast, onRefresh]);
+
   const handleAddSection = useCallback(async () => {
+    const rootItem = getRootItem(items);
     const { error } = await supabase.from('review_items').insert({
       review_project_id: projectId,
       company_id: companyId,
@@ -195,18 +382,14 @@ function SitemapViewInner({
       type: 'section',
       status: 'internal_review',
       sort_order: items.length,
+      parent_item_id: rootItem?.id || null,
     });
     if (error) {
       toast.error('Failed to add section');
       return;
     }
     onRefresh();
-  }, [projectId, companyId, userId, items.length, toast, onRefresh]);
-
-  const handleAddPageOnEdge = useCallback((parentId: string) => {
-    setAddPageParentId(parentId);
-    setShowAddPage(true);
-  }, []);
+  }, [projectId, companyId, userId, items, toast, onRefresh]);
 
   const handleAddSibling = useCallback(async (itemId: string, side: SiblingSide, type: SiblingType) => {
     const referenceItem = items.find((i) => i.id === itemId);
@@ -257,75 +440,113 @@ function SitemapViewInner({
   }, [items, projectId, companyId, userId, toast, onRefresh]);
 
   const { nodes: initialNodes, edges: initialEdges } = useMemo(
-    () => buildNodesAndEdges(items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleAddPageOnEdge, handleAddSibling, handleUpdateStatus),
-    [items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleAddPageOnEdge, handleAddSibling, handleUpdateStatus],
+    () => buildNodesAndEdges(items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleDeleteSection, handleAddSibling, handleMoveToParent, handleUpdateStatus),
+    [items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleDeleteSection, handleAddSibling, handleMoveToParent, handleUpdateStatus],
   );
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  const handleNodeDragStop: OnNodeDrag = useCallback(async (_event, draggedNode) => {
+  // Drag handlers for guided drop zones
+  const handleNodeDragStart: OnNodeDrag = useCallback((_event, draggedNode) => {
+    const rootItem = getRootItem(items);
+    if (draggedNode.id === rootItem?.id) return;
+
+    setDraggingId(draggedNode.id);
+    const { zones, sectionTargets: secTargets } = calculateDropZones(nodes, items, draggedNode.id);
+    setDropZones(zones);
+    setSectionTargets(secTargets);
+  }, [nodes, items]);
+
+  const handleNodeDrag: OnNodeDrag = useCallback((_event, draggedNode) => {
+    if (!draggingId) return;
+
     const dw = (draggedNode as { width?: number }).width ?? NODE_W;
     const dh = (draggedNode as { height?: number }).height ?? NODE_H;
-    const dragCx = draggedNode.position.x + dw / 2;
-    const dragCy = draggedNode.position.y + dh / 2;
+    const cx = draggedNode.position.x + dw / 2;
+    const cy = draggedNode.position.y + dh / 2;
 
-    let closestTarget: Node | null = null;
-    let closestDist = Infinity;
-
-    const PAD = 40;
-    for (const n of nodes) {
-      if (n.id === draggedNode.id) continue;
-      const nw = (n as { width?: number }).width ?? (n.type === 'sitemapSection' ? SECTION_W : NODE_W);
-      const nh = (n as { height?: number }).height ?? (n.type === 'sitemapSection' ? SECTION_H : NODE_H);
-
-      const inBounds =
-        dragCx >= n.position.x - PAD &&
-        dragCx <= n.position.x + nw + PAD &&
-        dragCy >= n.position.y - PAD &&
-        dragCy <= n.position.y + nh + PAD;
-
-      if (inBounds) {
-        const ncx = n.position.x + nw / 2;
-        const ncy = n.position.y + nh / 2;
-        const dist = Math.hypot(dragCx - ncx, dragCy - ncy);
-        if (dist < closestDist) {
-          closestDist = dist;
-          closestTarget = n;
-        }
-      }
+    // Check section hover first
+    const sectionId = findSectionTarget(sectionTargets, cx, cy);
+    if (sectionId) {
+      setActiveSectionId(sectionId);
+      activeSectionRef.current = sectionId;
+      setActiveZoneId(null);
+      activeZoneRef.current = null;
+      return;
     }
 
-    if (closestTarget) {
-      const item = items.find((i) => i.id === draggedNode.id);
-      if (item && item.parent_item_id !== closestTarget.id) {
-        const { error } = await supabase
-          .from('review_items')
-          .update({ parent_item_id: closestTarget.id, updated_at: new Date().toISOString() })
-          .eq('id', draggedNode.id);
-        if (error) {
-          toast.error('Failed to move page');
-        } else {
-          const targetItem = items.find((i) => i.id === closestTarget!.id);
-          toast.success(`Moved "${item.title}" under "${targetItem?.title}"`);
-        }
-        onRefresh();
-        return;
+    setActiveSectionId(null);
+    activeSectionRef.current = null;
+
+    // Find nearest drop zone
+    const nearest = findNearestZone(dropZones, cx, cy);
+    setActiveZoneId(nearest?.id ?? null);
+    activeZoneRef.current = nearest;
+  }, [draggingId, dropZones, sectionTargets]);
+
+  const handleNodeDragStop: OnNodeDrag = useCallback(async (_event, draggedNode) => {
+    const zone = activeZoneRef.current;
+    const sectionId = activeSectionRef.current;
+
+    // Clear drag state
+    setDraggingId(null);
+    setDropZones([]);
+    setSectionTargets([]);
+    setActiveZoneId(null);
+    setActiveSectionId(null);
+    activeZoneRef.current = null;
+    activeSectionRef.current = null;
+
+    const draggedItem = items.find((i) => i.id === draggedNode.id);
+    if (!draggedItem) { onRefresh(); return; }
+
+    // Dropped on a section → reparent
+    if (sectionId && sectionId !== draggedItem.parent_item_id) {
+      const { error } = await supabase.from('review_items')
+        .update({ parent_item_id: sectionId, updated_at: new Date().toISOString() })
+        .eq('id', draggedNode.id);
+      if (error) {
+        toast.error('Failed to move item');
+      } else {
+        const sec = items.find((i) => i.id === sectionId);
+        toast.success(`Moved "${draggedItem.title}" into "${sec?.title}"`);
       }
+      onRefresh();
+      return;
     }
 
+    // Dropped on a zone → reorder/reparent to that level
+    if (zone) {
+      const updates: Record<string, unknown> = {
+        sort_order: zone.sortOrder,
+        updated_at: new Date().toISOString(),
+      };
+
+      const rootItem = getRootItem(items);
+      const currentEffectiveParent = draggedItem.parent_item_id || rootItem?.id || null;
+      if (zone.parentId !== currentEffectiveParent) {
+        updates.parent_item_id = zone.parentId === rootItem?.id ? rootItem?.id : zone.parentId;
+      }
+
+      await supabase.from('review_items')
+        .update(updates)
+        .eq('id', draggedNode.id);
+      onRefresh();
+      return;
+    }
+
+    // No valid target → snap back
     onRefresh();
-  }, [nodes, items, toast, onRefresh]);
+  }, [items, toast, onRefresh]);
 
-  // Always auto-layout: positions are derived from tree structure, never manual.
-  // Runs on every items/comments change.
   useEffect(() => {
     const { nodes: newNodes, edges: newEdges } = buildNodesAndEdges(
-      items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleAddPageOnEdge, handleAddSibling, handleUpdateStatus,
+      items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleDeleteSection, handleAddSibling, handleMoveToParent, handleUpdateStatus,
     );
 
-    const positions = autoLayout(newNodes, newEdges, 'TB', {
-      nodesep: 60, ranksep: 100, nodeWidth: 180, nodeHeight: 160,
+    const positions = treeLayout(newNodes, newEdges, {
+      horizontalGap: 40, verticalGap: 80, nodeWidth: 180, nodeHeight: 160,
     });
     const positioned = newNodes.map((n) => {
       const p = positions.get(n.id);
@@ -335,9 +556,8 @@ function SitemapViewInner({
     setNodes(positioned);
     setEdges(newEdges);
     setTimeout(() => fitView({ padding: 0.2 }), 50);
-  }, [items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleAddPageOnEdge, handleUpdateStatus, setNodes, setEdges, fitView]);
+  }, [items, commentCounts, onNavigateToItem, handleAddChild, handleRenameSection, handleDeleteSection, handleAddSibling, handleMoveToParent, handleUpdateStatus, setNodes, setEdges, fitView]);
 
-  // Reparent on edge connect — layout recalculates automatically via onRefresh
   const onConnect: OnConnect = useCallback(async (connection: Connection) => {
     if (!connection.source || !connection.target) return;
     const { error } = await supabase
@@ -373,6 +593,8 @@ function SitemapViewInner({
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onNodeDragStart={handleNodeDragStart}
+          onNodeDrag={handleNodeDrag}
           onNodeDragStop={handleNodeDragStop}
           onNodeClick={handleNodeClick}
           nodeTypes={nodeTypes}
@@ -458,6 +680,15 @@ function SitemapViewInner({
                 </div>
               </div>
             </Panel>
+          )}
+
+          {draggingId && (
+            <SitemapDropZones
+              zones={dropZones}
+              activeZoneId={activeZoneId}
+              sectionTargets={sectionTargets}
+              activeSectionId={activeSectionId}
+            />
           )}
         </ReactFlow>
       </div>

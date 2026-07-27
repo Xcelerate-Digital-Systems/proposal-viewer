@@ -1,5 +1,6 @@
 import type { Node, Edge } from '@xyflow/react';
 import Dagre from '@dagrejs/dagre';
+import { hierarchy, tree as d3tree } from 'd3-hierarchy';
 
 export const ALIGNMENT_TOLERANCE = 10;
 
@@ -124,15 +125,23 @@ export function autoLayout(
   nodes: Node[],
   edges: Edge[],
   direction: 'TB' | 'LR' = 'LR',
-  spacing?: { nodesep?: number; ranksep?: number; nodeWidth?: number; nodeHeight?: number },
+  spacing?: {
+    nodesep?: number;
+    ranksep?: number;
+    nodeWidth?: number;
+    nodeHeight?: number;
+    alignTops?: boolean;
+  },
 ): Map<string, { x: number; y: number }> {
   const defaultW = spacing?.nodeWidth ?? 200;
   const defaultH = spacing?.nodeHeight ?? 120;
+  const alignTops = spacing?.alignTops ?? false;
   const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
   g.setGraph({
     rankdir: direction,
     nodesep: spacing?.nodesep ?? 60,
     ranksep: spacing?.ranksep ?? 120,
+    align: undefined,
   });
 
   for (const node of nodes) {
@@ -158,5 +167,148 @@ export function autoLayout(
       y: Math.round(laid.y - (laid.height || defaultH) / 2),
     });
   }
+
+  if (alignTops && direction === 'TB') {
+    const rankKeys: number[] = [];
+    const rankGroups: Record<number, string[]> = {};
+    for (const node of nodes) {
+      const laid = g.node(node.id);
+      if (!laid) continue;
+      const rankY = Math.round(laid.y);
+      let matchedKey = -1;
+      for (let i = 0; i < rankKeys.length; i++) {
+        if (Math.abs(rankKeys[i] - rankY) < 20) {
+          matchedKey = rankKeys[i];
+          break;
+        }
+      }
+      if (matchedKey >= 0) {
+        rankGroups[matchedKey].push(node.id);
+      } else {
+        rankKeys.push(rankY);
+        rankGroups[rankY] = [node.id];
+      }
+    }
+
+    for (const key of rankKeys) {
+      const group = rankGroups[key];
+      let minY = Infinity;
+      for (const id of group) {
+        const pos = result.get(id);
+        if (pos && pos.y < minY) minY = pos.y;
+      }
+      for (const id of group) {
+        const pos = result.get(id);
+        if (pos) result.set(id, { x: pos.x, y: minY });
+      }
+    }
+  }
+
+  return result;
+}
+
+interface TreeNodeInfo {
+  id: string;
+  width: number;
+  height: number;
+  children: TreeNodeInfo[];
+}
+
+export function treeLayout(
+  nodes: Node[],
+  edges: Edge[],
+  spacing?: {
+    horizontalGap?: number;
+    verticalGap?: number;
+    nodeWidth?: number;
+    nodeHeight?: number;
+  },
+): Map<string, { x: number; y: number }> {
+  const defaultW = spacing?.nodeWidth ?? 180;
+  const defaultH = spacing?.nodeHeight ?? 160;
+  const hGap = spacing?.horizontalGap ?? 40;
+  const vGap = spacing?.verticalGap ?? 80;
+
+  if (nodes.length === 0) return new Map();
+
+  const nodeMap = new Map<string, Node>();
+  for (const n of nodes) nodeMap.set(n.id, n);
+
+  const childrenOf = new Map<string, string[]>();
+  const hasParent = new Set<string>();
+  for (const e of edges) {
+    if (!nodeMap.has(e.source) || !nodeMap.has(e.target)) continue;
+    const kids = childrenOf.get(e.source) ?? [];
+    kids.push(e.target);
+    childrenOf.set(e.source, kids);
+    hasParent.add(e.target);
+  }
+
+  let rootId: string | null = null;
+  for (const n of nodes) {
+    if (!hasParent.has(n.id)) {
+      rootId = n.id;
+      break;
+    }
+  }
+  if (!rootId) rootId = nodes[0].id;
+
+  function getNodeW(id: string): number {
+    const n = nodeMap.get(id);
+    if (!n) return defaultW;
+    const m = (n as unknown as { measured?: { width?: number } }).measured;
+    return m?.width ?? (n as { width?: number }).width ?? defaultW;
+  }
+
+  function getNodeH(id: string): number {
+    const n = nodeMap.get(id);
+    if (!n) return defaultH;
+    const m = (n as unknown as { measured?: { height?: number } }).measured;
+    return m?.height ?? (n as { height?: number }).height ?? defaultH;
+  }
+
+  function buildTree(id: string): TreeNodeInfo {
+    const kids = childrenOf.get(id) ?? [];
+    return {
+      id,
+      width: getNodeW(id),
+      height: getNodeH(id),
+      children: kids.map((kid) => buildTree(kid)),
+    };
+  }
+
+  const treeData = buildTree(rootId);
+  const root = hierarchy(treeData);
+
+  const maxW = Math.max(...nodes.map((n) => getNodeW(n.id)));
+  const maxH = Math.max(...nodes.map((n) => getNodeH(n.id)));
+
+  const layout = d3tree<TreeNodeInfo>()
+    .nodeSize([maxW + hGap, maxH + vGap])
+    .separation((a, b) => {
+      const aW = a.data.width;
+      const bW = b.data.width;
+      const avgSlot = maxW + hGap;
+      const needed = (aW + bW) / 2 + hGap;
+      return needed / avgSlot;
+    });
+
+  layout(root);
+
+  const result = new Map<string, { x: number; y: number }>();
+  root.each((d) => {
+    const w = d.data.width;
+    result.set(d.data.id, {
+      x: Math.round((d.x ?? 0) - w / 2),
+      y: Math.round(d.y ?? 0),
+    });
+  });
+
+  for (const n of nodes) {
+    if (!result.has(n.id)) {
+      result.set(n.id, { x: 0, y: 0 });
+    }
+  }
+
   return result;
 }

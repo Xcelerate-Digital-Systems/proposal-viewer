@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { Globe, Figma, Image as ImageIcon, MessageSquareText } from 'lucide-react';
+import { Globe, Figma, Image as ImageIcon, MessageSquareText, ArrowUpFromLine } from 'lucide-react';
 import type { FeedbackItem, FeedbackStatus } from '@/lib/supabase';
 import { getFeedbackStatusDef } from '@/lib/feedback/status';
 import SitemapSiblingMenu, { type SiblingSide, type SiblingType } from './SitemapSiblingMenu';
@@ -12,9 +12,11 @@ export interface SitemapNodeData extends Record<string, unknown> {
   commentCount: number;
   unresolvedCount: number;
   childCount: number;
+  parentIsSection?: boolean;
   onNavigate?: (itemId: string) => void;
   onAddChild?: (parentId: string) => void;
   onAddSibling?: (itemId: string, side: SiblingSide, type: SiblingType) => void;
+  onMoveToParent?: (itemId: string) => void;
   onUpdateStatus?: (itemId: string, status: FeedbackStatus) => void | Promise<void>;
 }
 
@@ -24,7 +26,7 @@ export const NODE_H = 160;
 function SitemapPageNodeComponent({ data, selected }: NodeProps) {
   const {
     item, commentCount, unresolvedCount, childCount,
-    onNavigate, onAddChild, onAddSibling,
+    parentIsSection, onNavigate, onAddChild, onAddSibling, onMoveToParent,
   } = data as SitemapNodeData;
 
   const status = getFeedbackStatusDef(item.status);
@@ -128,6 +130,16 @@ function SitemapPageNodeComponent({ data, selected }: NodeProps) {
             </div>
           </div>
         </div>
+
+        {parentIsSection && onMoveToParent && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onMoveToParent(item.id); }}
+            className="nodrag nopan absolute -top-2.5 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-white border border-slate-300 text-slate-500 flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:border-teal hover:text-teal"
+            title="Move out of section"
+          >
+            <ArrowUpFromLine size={9} />
+          </button>
+        )}
 
         {onAddSibling && (
           <>

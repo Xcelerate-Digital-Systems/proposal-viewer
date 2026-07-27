@@ -114,13 +114,13 @@ export default function ScanSiteModal({
     );
 
     // Count children per first-level path prefix (only for pages 2+ segments deep)
+    const importedPaths = new Set(sortedByDepth.map((p) => p.path));
     const prefixChildren = new Map<string, DiscoveredPage[]>();
     for (const page of sortedByDepth) {
       if (page.path === '/') continue;
       const segments = page.path.split('/').filter(Boolean);
       if (segments.length < 2) continue;
       const prefix = '/' + segments[0];
-      // Only auto-section if the prefix itself is NOT a page being imported
       const arr = prefixChildren.get(prefix) ?? [];
       arr.push(page);
       prefixChildren.set(prefix, arr);
@@ -133,6 +133,7 @@ export default function ScanSiteModal({
       if (children.length < 2) return;
       if (pathToId.has(prefix)) return;
       if (existingSections.has(prefix)) return;
+      if (importedPaths.has(prefix)) return;
       const title = prefix.split('/').filter(Boolean).pop()?.replace(/[-_]/g, ' ')
         .replace(/\b\w/g, (c) => c.toUpperCase()) || prefix;
       sectionsToCreate.push({ prefix, title });

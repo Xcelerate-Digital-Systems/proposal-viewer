@@ -74,14 +74,19 @@ function ItemsContent({
   const [typeFilter, setTypeFilter] = useState<string | null>(initialTypeFilter);
 
   // Unique types + filtered items
+  const nonSectionItems = useMemo(
+    () => items.filter((i) => i.type !== 'section'),
+    [items]
+  );
+
   const availableTypes = useMemo(() => {
-    const types = Array.from(new Set(items.map((i) => i.type)));
+    const types = Array.from(new Set(nonSectionItems.map((i) => i.type)));
     return types.sort();
-  }, [items]);
+  }, [nonSectionItems]);
 
   const filteredItems = useMemo(
-    () => (typeFilter ? items.filter((i) => i.type === typeFilter) : items),
-    [items, typeFilter]
+    () => (typeFilter ? nonSectionItems.filter((i) => i.type === typeFilter) : nonSectionItems),
+    [nonSectionItems, typeFilter]
   );
 
   const fetchProject = useCallback(async () => {
