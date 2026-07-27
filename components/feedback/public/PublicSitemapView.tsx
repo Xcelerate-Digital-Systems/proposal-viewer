@@ -67,6 +67,7 @@ function buildPublicNodesAndEdges(
       const sectionData: SitemapSectionData = {
         item,
         childCount: childCountMap.get(item.id) ?? 0,
+        isPublic: true,
       };
       return {
         id: item.id,
@@ -85,6 +86,7 @@ function buildPublicNodesAndEdges(
       commentCount: cc.total,
       unresolvedCount: cc.unresolved,
       childCount: childCountMap.get(item.id) ?? 0,
+      isPublic: true,
       onNavigate,
     };
 
@@ -170,7 +172,6 @@ function PublicSitemapInner({ items, comments, onSelectItem }: PublicSitemapView
         maxZoom={2}
         nodesDraggable={false}
         nodesConnectable={false}
-        elementsSelectable={false}
         panOnDrag
         zoomOnScroll
         defaultEdgeOptions={{ type: 'sitemapEdge', style: { stroke: '#94a3b8', strokeWidth: 2 } }}

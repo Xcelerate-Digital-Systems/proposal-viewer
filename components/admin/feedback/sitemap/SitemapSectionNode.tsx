@@ -9,6 +9,7 @@ import SitemapSiblingMenu, { type SiblingSide, type SiblingType } from './Sitema
 export interface SitemapSectionData extends Record<string, unknown> {
   item: FeedbackItem;
   childCount: number;
+  isPublic?: boolean;
   onAddChild?: (parentId: string) => void;
   onRename?: (itemId: string, title: string) => void;
   onDelete?: (itemId: string) => void;
@@ -19,7 +20,7 @@ export const SECTION_W = 220;
 export const SECTION_H = 48;
 
 function SitemapSectionNodeComponent({ data, selected }: NodeProps) {
-  const { item, childCount, onAddChild, onRename, onDelete, onAddSibling } = data as SitemapSectionData;
+  const { item, childCount, isPublic, onAddChild, onRename, onDelete, onAddSibling } = data as SitemapSectionData;
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(item.title);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -40,10 +41,14 @@ function SitemapSectionNodeComponent({ data, selected }: NodeProps) {
 
   return (
     <>
-      <Handle id="top" type="target" position={Position.Top}
-        className="!w-2 !h-2 !bg-slate-400 !border-2 !border-white !-top-1" />
-      <Handle id="bottom" type="source" position={Position.Bottom}
-        className="!w-2 !h-2 !bg-slate-400 !border-2 !border-white !-bottom-1" />
+      {!isPublic && (
+        <>
+          <Handle id="top" type="target" position={Position.Top}
+            className="!w-2 !h-2 !bg-slate-400 !border-2 !border-white !-top-1" />
+          <Handle id="bottom" type="source" position={Position.Bottom}
+            className="!w-2 !h-2 !bg-slate-400 !border-2 !border-white !-bottom-1" />
+        </>
+      )}
 
       <div
         className={`relative flex items-center gap-2.5 px-4 py-2.5 rounded-full border shadow-sm transition-shadow cursor-default group ${

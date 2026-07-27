@@ -13,6 +13,7 @@ export interface SitemapNodeData extends Record<string, unknown> {
   unresolvedCount: number;
   childCount: number;
   parentIsSection?: boolean;
+  isPublic?: boolean;
   onNavigate?: (itemId: string) => void;
   onAddChild?: (parentId: string) => void;
   onAddSibling?: (itemId: string, side: SiblingSide, type: SiblingType) => void;
@@ -26,7 +27,7 @@ export const NODE_H = 160;
 function SitemapPageNodeComponent({ data, selected }: NodeProps) {
   const {
     item, commentCount, unresolvedCount, childCount,
-    parentIsSection, onNavigate, onAddChild, onAddSibling, onMoveToParent,
+    parentIsSection, isPublic, onNavigate, onAddChild, onAddSibling, onMoveToParent,
   } = data as SitemapNodeData;
 
   const status = getFeedbackStatusDef(item.status);
@@ -37,16 +38,21 @@ function SitemapPageNodeComponent({ data, selected }: NodeProps) {
 
   return (
     <>
-      <Handle id="top" type="target" position={Position.Top}
-        className="!w-2 !h-2 !bg-slate-400 !border-2 !border-white !-top-1" />
-      <Handle id="bottom" type="source" position={Position.Bottom}
-        className="!w-2 !h-2 !bg-slate-400 !border-2 !border-white !-bottom-1" />
+      {!isPublic && (
+        <>
+          <Handle id="top" type="target" position={Position.Top}
+            className="!w-2 !h-2 !bg-slate-400 !border-2 !border-white !-top-1" />
+          <Handle id="bottom" type="source" position={Position.Bottom}
+            className="!w-2 !h-2 !bg-slate-400 !border-2 !border-white !-bottom-1" />
+        </>
+      )}
 
       <div
         className={`relative bg-white rounded-xl border shadow-sm transition-shadow ${
           selected ? 'border-teal ring-2 ring-teal/30' : 'border-edge hover:shadow-md'
-        } cursor-grab active:cursor-grabbing group`}
+        } ${isPublic ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} group`}
         style={{ width: NODE_W }}
+        onClick={isPublic && onNavigate ? () => onNavigate(item.id) : undefined}
       >
         {/* Thumbnail */}
         <div className="relative h-[70px] overflow-hidden bg-surface rounded-t-xl border-b border-edge">
