@@ -100,6 +100,32 @@ export function useItemVersions({ item, companyId, userId }: UseItemVersionsOpti
     }) => {
       if (!itemId) return null;
       setCreating(true);
+
+      // Snapshot v1 into its own version row before the first v2 is created.
+      // Without this, the MIRROR_FIELDS update below overwrites the item row
+      // (which IS v1), making v1 and v2 look identical in the version picker.
+      if (item && nextVersionNumber === 2 && rows.length === 0) {
+        const { extractAssets } = await import('@/lib/feedback/versions');
+        const v1Assets = extractAssets(item);
+        const v1Snapshot: Record<string, unknown> = {
+          review_item_id: itemId,
+          company_id: companyId,
+          version_number: 1,
+          notes: null,
+          created_by: item.created_by,
+          created_at: item.created_at,
+        };
+        for (const [k, v] of Object.entries(v1Assets)) {
+          if (v !== null && v !== undefined) v1Snapshot[k] = v;
+        }
+        const { data: v1Row } = await supabase
+          .from('review_item_versions')
+          .insert(v1Snapshot)
+          .select()
+          .single();
+        if (v1Row) setRows((prev) => [v1Row as FeedbackItemVersion, ...prev]);
+      }
+
       const payload = {
         review_item_id: itemId,
         company_id: companyId,

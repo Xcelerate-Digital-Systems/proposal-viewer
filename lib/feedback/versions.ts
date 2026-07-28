@@ -39,18 +39,23 @@ export type VersionView = {
   priorStatus: FeedbackStatus | null;
 };
 
-/** Build an ordered list of versions for an item, v1 first. */
+/** Build an ordered list of versions for an item, v1 first.
+ *  If a snapshot row exists for v1 (version_number === 1), use its assets
+ *  so the original content is preserved even after MIRROR_FIELDS overwrites
+ *  the item row with later version content. */
 export function buildVersionList(item: FeedbackItem, rows: FeedbackItemVersion[]): VersionView[] {
+  const sorted = [...rows].sort((a, b) => a.version_number - b.version_number);
+  const v1Row = sorted.find((r) => r.version_number === 1);
   const v1: VersionView = {
-    id: null,
+    id: v1Row?.id ?? null,
     versionNumber: 1,
-    notes: null,
-    createdAt: item.created_at,
-    assets: extractAssets(item),
+    notes: v1Row?.notes ?? null,
+    createdAt: v1Row?.created_at ?? item.created_at,
+    assets: v1Row ? extractAssets(v1Row) : extractAssets(item),
     priorStatus: null,
   };
-  const rest = [...rows]
-    .sort((a, b) => a.version_number - b.version_number)
+  const rest = sorted
+    .filter((r) => r.version_number > 1)
     .map<VersionView>((r) => ({
       id: r.id,
       versionNumber: r.version_number,

@@ -415,9 +415,20 @@ const mcpHandler = createMcpHandler(
     }, async (args, extra) => {
       const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
       const sb = createServiceClient();
-      const { data: item } = await sb.from('review_items').select('id, version, status, review_project_id').eq('id', args.assetId).eq('company_id', auth.companyId).single();
+      const { data: item } = await sb.from('review_items').select('*').eq('id', args.assetId).eq('company_id', auth.companyId).single();
       if (!item) return txt('Asset not found');
       const nextVersion = (item.version || 1) + 1;
+      // Snapshot v1 before creating the first v2 — preserves original content
+      // so the version picker can show the real v1 after MIRROR_FIELDS overwrites the item row.
+      if (nextVersion === 2) {
+        const { count } = await sb.from('review_item_versions').select('id', { count: 'exact', head: true }).eq('review_item_id', args.assetId);
+        if (!count) {
+          const V1_FIELDS = ['url', 'html_content', 'image_url', 'video_url', 'pdf_url', 'ad_headline', 'ad_copy', 'ad_cta', 'ad_creative_url', 'ad_platform', 'meta_ad_variants', 'email_subject', 'email_preheader', 'email_body', 'sms_body', 'google_ad_data', 'meta_lead_form_data'];
+          const v1Snap: Record<string, unknown> = { review_item_id: args.assetId, company_id: auth.companyId, version_number: 1, notes: null, created_by: item.created_by, created_at: item.created_at };
+          for (const f of V1_FIELDS) { if (item[f] !== null && item[f] !== undefined) v1Snap[f] = item[f]; }
+          await sb.from('review_item_versions').insert(v1Snap);
+        }
+      }
       const versionRow: Record<string, unknown> = {
         review_item_id: args.assetId,
         company_id: auth.companyId,
