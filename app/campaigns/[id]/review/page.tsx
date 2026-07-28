@@ -222,16 +222,34 @@ function AssetReviewContent({
   }, [itemId, projectId, companyId, authorName, teamMember, session, activeVersionId, toast]);
 
   const resolveComment = useCallback(async (commentId: string) => {
-    await supabase.from('review_comments').update({ resolved: true, resolved_by: authorName, resolved_at: new Date().toISOString() }).eq('id', commentId);
-    setComments((prev) => prev.map((c) => c.id === commentId ? { ...c, resolved: true, resolved_by: authorName, resolved_at: new Date().toISOString() } : c));
-    setAllProjectComments((prev) => prev.map((c) => c.id === commentId ? { ...c, resolved: true } : c));
-  }, [authorName]);
+    const res = await authFetch(`/api/review-comments/${commentId}/resolve?company_id=${companyId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resolved: true, resolved_by: authorName }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setComments((prev) => prev.map((c) => c.id === commentId ? { ...c, ...updated } : c));
+      setAllProjectComments((prev) => prev.map((c) => c.id === commentId ? { ...c, resolved: true } : c));
+    } else {
+      toast.error('Could not resolve comment');
+    }
+  }, [authorName, companyId, toast]);
 
   const unresolveComment = useCallback(async (commentId: string) => {
-    await supabase.from('review_comments').update({ resolved: false, resolved_by: null, resolved_at: null }).eq('id', commentId);
-    setComments((prev) => prev.map((c) => c.id === commentId ? { ...c, resolved: false, resolved_by: null, resolved_at: null } : c));
-    setAllProjectComments((prev) => prev.map((c) => c.id === commentId ? { ...c, resolved: false } : c));
-  }, []);
+    const res = await authFetch(`/api/review-comments/${commentId}/resolve?company_id=${companyId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resolved: false }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setComments((prev) => prev.map((c) => c.id === commentId ? { ...c, ...updated } : c));
+      setAllProjectComments((prev) => prev.map((c) => c.id === commentId ? { ...c, resolved: false } : c));
+    } else {
+      toast.error('Could not unresolve comment');
+    }
+  }, [companyId, toast]);
 
   const editComment = useCallback(async (commentId: string, content: string) => {
     await supabase.from('review_comments').update({ content, updated_at: new Date().toISOString() }).eq('id', commentId);

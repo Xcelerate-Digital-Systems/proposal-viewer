@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     // Auth gate: accept either an internal server secret (server-to-server) or
     // a valid Supabase Bearer token (admin browser calls).
     const internalSecret = req.headers.get('x-internal-secret');
-    const expectedSecret = process.env.INTERNAL_NOTIFY_SECRET;
+    const expectedSecret = process.env.INTERNAL_NOTIFY_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
     const hasInternalAuth =
       !!internalSecret &&
       !!expectedSecret &&
