@@ -33,14 +33,27 @@ const ARROW_LEN = 12;
 const ARROW_ANGLE = Math.PI / 7;
 const LEGACY_COLORS = new Set(['#94a3b8', '#64748b', '#cbd5e1']); // remap old slate defaults to ink
 
-function arrowAngleFor(position: Position): number {
-  switch (position) {
-    case Position.Left: return Math.PI;
-    case Position.Right: return 0;
-    case Position.Top: return -Math.PI / 2;
-    case Position.Bottom: return Math.PI / 2;
-    default: return Math.PI;
+function controlOffset(distance: number, curvature = 0.25): number {
+  return distance === 0 ? 0 : Math.abs(distance) * curvature;
+}
+
+function bezierControlPoint(
+  pos: Position, x1: number, y1: number, x2: number, y2: number,
+): [number, number] {
+  switch (pos) {
+    case Position.Left:   return [x1 - controlOffset(x1 - x2), y1];
+    case Position.Right:  return [x1 + controlOffset(x2 - x1), y1];
+    case Position.Top:    return [x1, y1 - controlOffset(y1 - y2)];
+    case Position.Bottom: return [x1, y1 + controlOffset(y2 - y1)];
+    default: return [x1, y1];
   }
+}
+
+function bezierTangentAngle(
+  pos: Position, x: number, y: number, otherX: number, otherY: number,
+): number {
+  const [cx, cy] = bezierControlPoint(pos, x, y, otherX, otherY);
+  return Math.atan2(cy - y, cx - x);
 }
 
 function arrowHeadPath(x: number, y: number, angleRad: number): string {
@@ -81,9 +94,7 @@ function LabeledEdgeComponent({
   const arrowDir: LabeledEdgeArrowDir = edgeData.arrowDir ?? 'target';
   const edgeType: LabeledEdgePathType = edgeData.edgeType ?? 'bezier';
 
-  // Snap threshold: if source and target are within 20px on one axis, treat as
-  // perfectly aligned for bezier paths (renders a straight line automatically).
-  const SNAP_THRESHOLD = 30;
+  const SNAP_THRESHOLD = 8;
   const dy = Math.abs(targetY - sourceY);
   const dx = Math.abs(targetX - sourceX);
   const nearlyHorizontal = dy < SNAP_THRESHOLD && dx > SNAP_THRESHOLD;
@@ -138,11 +149,15 @@ function LabeledEdgeComponent({
     const useLineAngle = useStraight;
     const lineAngle = Math.atan2(snappedTargetY - snappedSourceY, snappedTargetX - snappedSourceX);
     if (arrowDir === 'target' || arrowDir === 'both') {
-      const angle = useLineAngle ? lineAngle + Math.PI : arrowAngleFor(targetPosition);
+      const angle = useLineAngle
+        ? lineAngle + Math.PI
+        : bezierTangentAngle(targetPosition, targetX, targetY, sourceX, sourceY);
       parts.push(arrowHeadPath(useLineAngle ? snappedTargetX : targetX, useLineAngle ? snappedTargetY : targetY, angle));
     }
     if (arrowDir === 'source' || arrowDir === 'both') {
-      const angle = useLineAngle ? lineAngle : arrowAngleFor(sourcePosition);
+      const angle = useLineAngle
+        ? lineAngle
+        : bezierTangentAngle(sourcePosition, sourceX, sourceY, targetX, targetY);
       parts.push(arrowHeadPath(useLineAngle ? snappedSourceX : sourceX, useLineAngle ? snappedSourceY : sourceY, angle));
     }
     return parts.join(' ');

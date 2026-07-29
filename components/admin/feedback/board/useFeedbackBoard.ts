@@ -11,7 +11,6 @@ import {
   type Connection,
   type NodeChange,
   type EdgeChange,
-  MarkerType,
 } from '@xyflow/react';
 import { type ReviewItemNodeData } from './nodes/FeedbackItemNode';
 import { type StickyNoteNodeData } from './nodes/StickyNoteNode';
@@ -164,12 +163,6 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
           type: 'labeled',
           animated: e.animated || false,
           style: { stroke: strokeColor, strokeWidth },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: strokeColor,
-            width: 16,
-            height: 16,
-          },
           data: {
             label: e.label || undefined,
             color: strokeColor,

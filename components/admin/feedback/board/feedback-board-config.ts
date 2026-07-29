@@ -1,10 +1,7 @@
-import { MarkerType } from '@xyflow/react';
-
 export const defaultEdgeOptions = {
   type: 'labeled',
   animated: false,
   style: { stroke: '#2B2B2B', strokeWidth: 1.8 },
-  markerEnd: { type: MarkerType.ArrowClosed, color: '#2B2B2B', width: 16, height: 16 },
 };
 
 export const DRAW_COLOR = '#2B2B2B';
