@@ -68,6 +68,8 @@ export default function CreateFromTemplate({
   const [title, setTitle] = useState('');
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [clientOrganisation, setClientOrganisation] = useState('');
   const [crmIdentifier, setCrmIdentifier] = useState('');
   const [description, setDescription] = useState('');
 
@@ -218,11 +220,13 @@ export default function CreateFromTemplate({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title:           title.trim(),
-          client_name:     clientName.trim(),
-          client_email:    clientEmail.trim()    || null,
-          crm_identifier:  crmIdentifier.trim()  || null,
-          description:     description.trim()    || null,
+          title:               title.trim(),
+          client_name:         clientName.trim(),
+          client_email:        clientEmail.trim()        || null,
+          client_phone:        clientPhone.trim()        || null,
+          client_organisation: clientOrganisation.trim() || null,
+          crm_identifier:      crmIdentifier.trim()      || null,
+          description:         description.trim()        || null,
           file_path:       freshFilePath,
           file_size_bytes: freshFilePath ? ((selectedTemplate as any).file_size_bytes ?? 0) : 0,
           page_names:      pageNames,
@@ -452,7 +456,9 @@ export default function CreateFromTemplate({
           onSelect={(c) => {
             if (c.name) setClientName(c.name);
             if (c.email) setClientEmail(c.email);
-            if (c.phone && !crmIdentifier) setCrmIdentifier(c.phone);
+            if (c.phone) setClientPhone(c.phone);
+            if (c.organisation) setClientOrganisation(c.organisation);
+            if (c.source === 'ghl') setCrmIdentifier(c.id);
           }}
           placeholder="Search contacts or type a name"
           type="text"
@@ -466,14 +472,26 @@ export default function CreateFromTemplate({
           onSelect={(c) => {
             if (c.email) setClientEmail(c.email);
             if (c.name && !clientName) setClientName(c.name);
-            if (c.phone && !crmIdentifier) setCrmIdentifier(c.phone);
+            if (c.phone) setClientPhone(c.phone);
+            if (c.organisation) setClientOrganisation(c.organisation);
+            if (c.source === 'ghl') setCrmIdentifier(c.id);
           }}
           placeholder="Search contacts or type email"
           label="Client Email"
           className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
         />
         <FormField
-          config={{ key: 'crm_identifier', label: 'CRM Identifier', placeholder: 'Optional deal ID or reference', optional: true }}
+          config={{ key: 'client_organisation', label: 'Business Name', placeholder: 'e.g. Acme Corp', optional: true }}
+          value={clientOrganisation}
+          onChange={(v) => setClientOrganisation(v)}
+        />
+        <FormField
+          config={{ key: 'client_phone', label: 'Phone', placeholder: 'e.g. 0400 000 000', optional: true }}
+          value={clientPhone}
+          onChange={(v) => setClientPhone(v)}
+        />
+        <FormField
+          config={{ key: 'crm_identifier', label: 'CRM Identifier', placeholder: 'GHL contact ID or deal reference', optional: true }}
           value={crmIdentifier}
           onChange={(v) => setCrmIdentifier(v)}
         />

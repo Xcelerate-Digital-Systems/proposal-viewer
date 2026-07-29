@@ -8,6 +8,7 @@ export interface GhlContact {
   firstName?: string;
   lastName?: string;
   name?: string;
+  companyName?: string;
   tags?: string[];
   customFields?: Array<{ id: string; value: string | string[] | number | boolean | null }>;
   dateAdded?: string;

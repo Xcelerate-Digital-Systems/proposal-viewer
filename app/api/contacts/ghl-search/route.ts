@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
     firstName: c.firstName || null,
     lastName: c.lastName || null,
     phone: c.phone || null,
-    organisation: null as string | null,
+    organisation: c.companyName || null,
     tags: c.tags || [],
     source: 'ghl' as const,
   }));

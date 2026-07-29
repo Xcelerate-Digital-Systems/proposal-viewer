@@ -37,9 +37,9 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
   const router = useRouter();
   const toast = useToast();
   const mode = initialTab;
-  const [form, setForm] = useState({ title: '', client_name: '', client_email: '', crm_identifier: '', description: '' });
-  const [blankForm, setBlankForm] = useState({ title: '', client_name: '', client_email: '' });
-  const [quoteForm, setQuoteForm] = useState({ title: '', client_name: '', client_email: '' });
+  const [form, setForm] = useState({ title: '', client_name: '', client_email: '', client_phone: '', client_organisation: '', crm_identifier: '', description: '' });
+  const [blankForm, setBlankForm] = useState({ title: '', client_name: '', client_email: '', client_phone: '', client_organisation: '' });
+  const [quoteForm, setQuoteForm] = useState({ title: '', client_name: '', client_email: '', client_phone: '', client_organisation: '' });
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -94,16 +94,18 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title:           form.title,
-          client_name:     form.client_name,
-          client_email:    form.client_email    || null,
-          crm_identifier:  form.crm_identifier  || null,
-          description:     form.description     || null,
-          file_path:       filePath,
-          file_size_bytes: file.size,
-          company_id:      companyId,
-          created_by_name: creatorName,
-          prepared_by:     creatorName,
+          title:               form.title,
+          client_name:         form.client_name,
+          client_email:        form.client_email        || null,
+          client_phone:        form.client_phone        || null,
+          client_organisation: form.client_organisation || null,
+          crm_identifier:      form.crm_identifier      || null,
+          description:         form.description         || null,
+          file_path:           filePath,
+          file_size_bytes:     file.size,
+          company_id:          companyId,
+          created_by_name:     creatorName,
+          prepared_by:         creatorName,
         }),
       });
 
@@ -147,12 +149,14 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title:           blankForm.title,
-          client_name:     blankForm.client_name,
-          client_email:    blankForm.client_email || null,
-          company_id:      companyId,
-          created_by_name: creatorName,
-          prepared_by:     creatorName,
+          title:               blankForm.title,
+          client_name:         blankForm.client_name,
+          client_email:        blankForm.client_email        || null,
+          client_phone:        blankForm.client_phone        || null,
+          client_organisation: blankForm.client_organisation || null,
+          company_id:          companyId,
+          created_by_name:     creatorName,
+          prepared_by:         creatorName,
         }),
       });
 
@@ -198,13 +202,15 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title:           quoteForm.title,
-          client_name:     quoteForm.client_name,
-          client_email:    quoteForm.client_email || null,
-          company_id:      companyId,
-          created_by_name: creatorName,
-          prepared_by:     creatorName,
-          entity_type:     'quote',
+          title:               quoteForm.title,
+          client_name:         quoteForm.client_name,
+          client_email:        quoteForm.client_email        || null,
+          client_phone:        quoteForm.client_phone        || null,
+          client_organisation: quoteForm.client_organisation || null,
+          company_id:          companyId,
+          created_by_name:     creatorName,
+          prepared_by:         creatorName,
+          entity_type:         'quote',
         }),
       });
 
@@ -255,7 +261,9 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                   ...prev,
                   client_name: c.name || prev.client_name,
                   client_email: c.email || prev.client_email,
-                  crm_identifier: c.phone && !prev.crm_identifier ? c.phone : prev.crm_identifier,
+                  client_phone: c.phone || prev.client_phone,
+                  client_organisation: c.organisation || prev.client_organisation,
+                  crm_identifier: c.source === 'ghl' ? c.id : prev.crm_identifier,
                 }));
               }}
               placeholder="Search contacts or type a name"
@@ -272,7 +280,9 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                   ...prev,
                   client_email: c.email,
                   client_name: c.name && !prev.client_name ? c.name : prev.client_name,
-                  crm_identifier: c.phone && !prev.crm_identifier ? c.phone : prev.crm_identifier,
+                  client_phone: c.phone || prev.client_phone,
+                  client_organisation: c.organisation || prev.client_organisation,
+                  crm_identifier: c.source === 'ghl' ? c.id : prev.crm_identifier,
                 }));
               }}
               placeholder="Search contacts or type email"
@@ -368,6 +378,8 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                   ...prev,
                   client_name: c.name || prev.client_name,
                   client_email: c.email || prev.client_email,
+                  client_phone: c.phone || prev.client_phone,
+                  client_organisation: c.organisation || prev.client_organisation,
                 }));
               }}
               placeholder="Search contacts or type a name"
@@ -384,6 +396,8 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                   ...prev,
                   client_email: c.email,
                   client_name: c.name && !prev.client_name ? c.name : prev.client_name,
+                  client_phone: c.phone || prev.client_phone,
+                  client_organisation: c.organisation || prev.client_organisation,
                 }));
               }}
               placeholder="Search contacts or type email"
@@ -453,6 +467,8 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                   ...prev,
                   client_name: c.name || prev.client_name,
                   client_email: c.email || prev.client_email,
+                  client_phone: c.phone || prev.client_phone,
+                  client_organisation: c.organisation || prev.client_organisation,
                 }));
               }}
               placeholder="Search contacts or type a name"
@@ -469,6 +485,8 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                   ...prev,
                   client_email: c.email,
                   client_name: c.name && !prev.client_name ? c.name : prev.client_name,
+                  client_phone: c.phone || prev.client_phone,
+                  client_organisation: c.organisation || prev.client_organisation,
                 }));
               }}
               placeholder="Search contacts or type email"
