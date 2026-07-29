@@ -47,32 +47,32 @@ const ROUTE_PREFIXES: Record<EditorType, string> = {
 
 const PROPOSAL_TABS: TabDef[] = [
   { key: 'cover',      label: 'Cover',     icon: ImageIcon,    path: 'cover',      group: 'content' },
-  { key: 'pages',      label: 'Pages',     icon: Pencil,       path: 'pages',      group: 'content' },
-  { key: 'text-pages', label: 'Content',   icon: PenLine,      path: 'text-pages', group: 'content' },
-  { key: 'pricing',    label: 'Quote',     icon: DollarSign,   path: 'pricing',    group: 'content' },
-  { key: 'packages',   label: 'Packages',  icon: Package,      path: 'packages',   group: 'content' },
-  { key: 'decision',   label: 'Decision',  icon: CheckCircle2, path: 'decision',   group: 'content' },
-  { key: 'design',     label: 'Design',    icon: Paintbrush,   path: 'design',     group: 'setup' },
-  { key: 'details',    label: 'Details',   icon: Settings,     path: 'details',    group: 'setup' },
-  { key: 'analytics',  label: 'Analytics', icon: BarChart3,    path: 'analytics',  group: 'setup' },
+  { key: 'pages',      label: 'Layout',      icon: Pencil,       path: 'pages',      group: 'content' },
+  { key: 'text-pages', label: 'Text Pages',  icon: PenLine,      path: 'text-pages', group: 'content' },
+  { key: 'pricing',    label: 'Quote',       icon: DollarSign,   path: 'pricing',    group: 'content' },
+  { key: 'packages',   label: 'Packages',    icon: Package,      path: 'packages',   group: 'content' },
+  { key: 'decision',   label: 'Decision',    icon: CheckCircle2, path: 'decision',   group: 'content' },
+  { key: 'design',     label: 'Design',      icon: Paintbrush,   path: 'design',     group: 'setup' },
+  { key: 'details',    label: 'Details',     icon: Settings,     path: 'details',    group: 'setup' },
+  { key: 'analytics',  label: 'Analytics',   icon: BarChart3,    path: 'analytics',  group: 'setup' },
 ];
 
 const DOCUMENT_TABS: TabDef[] = [
-  { key: 'pages',      label: 'Pages',   icon: Pencil,     path: 'pages',      group: 'content' },
-  { key: 'text-pages', label: 'Text',    icon: FileText,   path: 'text-pages', group: 'content' },
+  { key: 'pages',      label: 'Layout',      icon: Pencil,     path: 'pages',      group: 'content' },
+  { key: 'text-pages', label: 'Text Pages',  icon: FileText,   path: 'text-pages', group: 'content' },
   { key: 'design',     label: 'Design',  icon: Paintbrush, path: 'design',     group: 'setup' },
   { key: 'details',    label: 'Details', icon: Settings,   path: 'details',    group: 'setup' },
 ];
 
 const TEMPLATE_TABS: TabDef[] = [
   { key: 'cover',      label: 'Cover',    icon: ImageIcon,    path: 'cover',      group: 'content' },
-  { key: 'pages',      label: 'Pages',    icon: Pencil,       path: 'pages',      group: 'content' },
-  { key: 'text-pages', label: 'Content',  icon: PenLine,      path: 'text-pages', group: 'content' },
-  { key: 'pricing',    label: 'Quote',    icon: DollarSign,   path: 'pricing',    group: 'content' },
-  { key: 'packages',   label: 'Packages', icon: Package,      path: 'packages',   group: 'content' },
-  { key: 'decision',   label: 'Decision', icon: CheckCircle2, path: 'decision',   group: 'content' },
-  { key: 'design',     label: 'Design',   icon: Paintbrush,   path: 'design',     group: 'setup' },
-  { key: 'details',    label: 'Details',  icon: Settings,     path: 'details',    group: 'setup' },
+  { key: 'pages',      label: 'Layout',      icon: Pencil,       path: 'pages',      group: 'content' },
+  { key: 'text-pages', label: 'Text Pages',  icon: PenLine,      path: 'text-pages', group: 'content' },
+  { key: 'pricing',    label: 'Quote',       icon: DollarSign,   path: 'pricing',    group: 'content' },
+  { key: 'packages',   label: 'Packages',    icon: Package,      path: 'packages',   group: 'content' },
+  { key: 'decision',   label: 'Decision',    icon: CheckCircle2, path: 'decision',   group: 'content' },
+  { key: 'design',     label: 'Design',      icon: Paintbrush,   path: 'design',     group: 'setup' },
+  { key: 'details',    label: 'Details',     icon: Settings,     path: 'details',    group: 'setup' },
 ];
 
 const QUOTE_TABS: TabDef[] = [

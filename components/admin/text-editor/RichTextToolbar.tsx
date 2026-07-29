@@ -97,7 +97,7 @@ function useSavedSelection(editor: Editor) {
       const sel = savedSelection.current;
       savedSelection.current = null;
       let chain = editor.chain().focus();
-      if (sel && sel.from !== sel.to) {
+      if (sel) {
         chain = chain.setTextSelection(sel);
       }
       fn(chain).run();
@@ -115,12 +115,15 @@ function FontSizeInput({ editor, currentFontSize }: { editor: Editor; currentFon
   const [editing, setEditing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { save, restoreAndRun } = useSavedSelection(editor);
+  const committed = useRef(false);
 
   useEffect(() => {
     if (!editing) setLocalValue(currentFontSize);
   }, [currentFontSize, editing]);
 
   const commit = () => {
+    if (committed.current) return;
+    committed.current = true;
     setEditing(false);
     const num = parseInt(localValue, 10);
     if (localValue && num >= 1 && num <= 999) {
@@ -142,6 +145,7 @@ function FontSizeInput({ editor, currentFontSize }: { editor: Editor; currentFon
       title="Font Size"
       onMouseDown={() => save()}
       onFocus={() => {
+        committed.current = false;
         setEditing(true);
         setLocalValue(currentFontSize);
         setTimeout(() => inputRef.current?.select(), 0);
@@ -152,7 +156,7 @@ function FontSizeInput({ editor, currentFontSize }: { editor: Editor; currentFon
       }}
       onBlur={commit}
       onKeyDown={(e) => {
-        if (e.key === 'Enter') { e.preventDefault(); commit(); }
+        if (e.key === 'Enter') { e.preventDefault(); commit(); inputRef.current?.blur(); }
         if (e.key === 'Escape') { setEditing(false); setLocalValue(currentFontSize); editor.commands.focus(); }
       }}
       className="shrink-0 h-8 w-16 px-1.5 text-xs text-prose bg-white border border-edge-strong rounded hover:border-edge-hover focus:outline-none focus:border-teal text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
