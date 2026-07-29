@@ -81,7 +81,34 @@ export default function ContactAutocomplete({
       const localEmails = new Set(localContacts.map((c) => c.email?.toLowerCase()).filter(Boolean));
       const dedupedGhl = ghlContacts.filter((c) => !c.email || !localEmails.has(c.email.toLowerCase()));
 
-      const combined = [...localContacts, ...dedupedGhl].slice(0, 12);
+      // Score by relevance: starts-with > word-start > contains
+      const queryWords = q.toLowerCase().split(/\s+/).filter(Boolean);
+      const score = (c: Contact): number => {
+        const name = (c.name || '').toLowerCase();
+        const email = (c.email || '').toLowerCase();
+        // All query words must appear somewhere in name or email
+        const allMatch = queryWords.every((w) => name.includes(w) || email.includes(w));
+        if (!allMatch) return -1;
+        // Bonus: name starts with the full query
+        if (name.startsWith(q.toLowerCase())) return 100;
+        // Bonus: every query word starts a word in the name
+        const nameWords = name.split(/\s+/);
+        const allWordStart = queryWords.every((w) => nameWords.some((nw) => nw.startsWith(w)));
+        if (allWordStart) return 80;
+        // Partial: at least first query word starts a word
+        if (nameWords.some((nw) => nw.startsWith(queryWords[0]))) return 60;
+        // Email match
+        if (email.startsWith(q.toLowerCase())) return 50;
+        return 20;
+      };
+
+      const scored = [...localContacts, ...dedupedGhl]
+        .map((c) => ({ contact: c, score: score(c) }))
+        .filter((s) => s.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+
+      const combined = scored.map((s) => s.contact);
       setSuggestions(combined);
       setOpen(combined.length > 0);
       setHighlighted(-1);
