@@ -818,12 +818,13 @@ const mcpHandler = createMcpHandler(
       return txt(`Proposal updated (${fieldCount} field${fieldCount > 1 ? 's' : ''}).`);
     });
 
-    server.tool('add_proposal_page', 'Add a new page to a proposal. Returns the new page ID.', {
+    server.tool('add_proposal_page', 'Add a new page to a proposal. Returns the new page ID. For PDF pages, provide a filePath (Supabase storage path in the "proposals" bucket).', {
       proposalId: z.string(),
-      type: z.enum(['text', 'pricing', 'packages', 'toc', 'section']).describe('Page type'),
+      type: z.enum(['text', 'pdf', 'pricing', 'packages', 'toc', 'section']).describe('Page type'),
       title: z.string().optional().describe('Page title (auto-generated if omitted)'),
       position: z.number().optional().describe('Insert at this position (0-based). Omit to append at the end.'),
       content: z.string().optional().describe('HTML content for text pages'),
+      filePath: z.string().optional().describe('Supabase storage path for PDF pages (e.g. "proposals/{id}/page-3.pdf")'),
       indent: z.number().optional().describe('Indentation level (0-3). Default: 0'),
       enabled: z.boolean().optional().describe('Whether page is visible. Default: true'),
       showTitle: z.boolean().optional().describe('Show title on page. Default: true'),
@@ -833,9 +834,14 @@ const mcpHandler = createMcpHandler(
       const { data: p } = await sb.from('proposals').select('id').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
       if (!p) return txt('Proposal not found');
 
+      if (args.type === 'pdf' && !args.filePath) return txt('filePath is required for PDF pages.');
+
       const payload: Record<string, unknown> = {};
       if (args.content && args.type === 'text') {
         payload.html = args.content;
+      }
+      if (args.filePath && args.type === 'pdf') {
+        payload.file_path = args.filePath;
       }
 
       const result = await addPage(sb, 'proposal', {
@@ -853,11 +859,12 @@ const mcpHandler = createMcpHandler(
       return json({ id: result.page.id, position: result.page.position, type: result.page.type, title: result.page.title });
     });
 
-    server.tool('update_proposal_page', 'Update a page\'s title, content, or display settings.', {
+    server.tool('update_proposal_page', 'Update a page\'s title, content, file, or display settings. For PDF pages, pass filePath to replace the file.', {
       proposalId: z.string(),
       pageId: z.string(),
       title: z.string().optional(),
       content: z.string().optional().describe('HTML content (text pages only). Merges into payload.html'),
+      filePath: z.string().optional().describe('New Supabase storage path for PDF pages — replaces the existing file'),
       enabled: z.boolean().optional(),
       indent: z.number().optional(),
       showTitle: z.boolean().optional(),
@@ -880,6 +887,9 @@ const mcpHandler = createMcpHandler(
       if (args.linkLabel !== undefined) changes.link_label = args.linkLabel;
       if (args.content !== undefined) {
         changes.payload_patch = { html: args.content };
+      }
+      if (args.filePath !== undefined) {
+        changes.payload_patch = { ...(changes.payload_patch as Record<string, unknown> || {}), file_path: args.filePath };
       }
 
       if (Object.keys(changes).length === 0) return txt('No fields to update.');
