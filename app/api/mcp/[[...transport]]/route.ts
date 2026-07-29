@@ -68,7 +68,8 @@ const mcpHandler = createMcpHandler(
 - \`create_proposal_from_template\` — create a proposal pre-populated with template pages
 - \`update_proposal\` — edit title, client info, description, branding fields
 - \`update_proposal_status\` — mark as sent or pull back to draft
-- \`add_proposal_page\` — add a text/pricing/packages/toc/section page
+- \`upload_proposal_file\` — upload a file from a URL to the proposals storage bucket (returns filePath for PDF pages)
+- \`add_proposal_page\` — add a text/pdf/pricing/packages/toc/section page
 - \`update_proposal_page\` — edit a page's title, content, or settings
 - \`delete_proposal_page\` — remove a page
 - \`reorder_proposal_pages\` — reorder pages by ID array
@@ -859,6 +860,62 @@ const mcpHandler = createMcpHandler(
       return json({ id: result.page.id, position: result.page.position, type: result.page.type, title: result.page.title });
     });
 
+    server.tool('upload_proposal_file', 'Upload a file to the proposals storage bucket from a URL. Returns the filePath to use with add_proposal_page or update_proposal_page. Supports PDF, PNG, JPG, SVG, WEBP.', {
+      proposalId: z.string().describe('Proposal ID — used to namespace the storage path'),
+      url: z.string().describe('Public URL to fetch the file from'),
+      fileName: z.string().optional().describe('Override filename (e.g. "slide-1.pdf"). Auto-detected from URL if omitted.'),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: p } = await sb.from('proposals').select('id').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
+      if (!p) return txt('Proposal not found');
+
+      let res: Response;
+      try {
+        res = await fetch(args.url, { redirect: 'follow' });
+      } catch (e) {
+        return txt(`Failed to fetch URL: ${e instanceof Error ? e.message : 'network error'}`);
+      }
+      if (!res.ok) return txt(`URL returned ${res.status} ${res.statusText}`);
+
+      const contentType = res.headers.get('content-type') || 'application/octet-stream';
+      const ALLOWED_TYPES: Record<string, string> = {
+        'application/pdf': '.pdf',
+        'image/png': '.png',
+        'image/jpeg': '.jpg',
+        'image/svg+xml': '.svg',
+        'image/webp': '.webp',
+      };
+      const mimeBase = contentType.split(';')[0].trim().toLowerCase();
+      if (!ALLOWED_TYPES[mimeBase]) return txt(`Unsupported content type: ${mimeBase}. Allowed: ${Object.keys(ALLOWED_TYPES).join(', ')}`);
+
+      const bytes = await res.arrayBuffer();
+      if (bytes.byteLength === 0) return txt('Downloaded file is empty.');
+      if (bytes.byteLength > 50 * 1024 * 1024) return txt('File too large (max 50MB).');
+
+      const sanitizedId = args.proposalId.replace(/[^a-zA-Z0-9._-]/g, '');
+      let name = args.fileName;
+      if (!name) {
+        try {
+          const urlPath = new URL(args.url).pathname;
+          name = urlPath.split('/').pop() || `file${ALLOWED_TYPES[mimeBase]}`;
+        } catch {
+          name = `file${ALLOWED_TYPES[mimeBase]}`;
+        }
+      }
+      const safeName = name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const filePath = `proposals/${sanitizedId}/${safeName}`;
+
+      const { error: uploadErr } = await sb.storage.from('proposals').upload(filePath, Buffer.from(bytes), {
+        contentType: mimeBase,
+        upsert: true,
+      });
+
+      if (uploadErr) return txt(`Upload failed: ${uploadErr.message}`);
+
+      return json({ filePath, contentType: mimeBase, sizeBytes: bytes.byteLength });
+    });
+
     server.tool('update_proposal_page', 'Update a page\'s title, content, file, or display settings. For PDF pages, pass filePath to replace the file.', {
       proposalId: z.string(),
       pageId: z.string(),
@@ -1145,7 +1202,7 @@ const mcpHandler = createMcpHandler(
   },
   {
     capabilities: { tools: {} },
-    serverInfo: { name: 'agencyviz', version: '1.1.0' },
+    serverInfo: { name: 'agencyviz', version: '1.2.0' },
   },
   {
     streamableHttpEndpoint: '/api/mcp',
