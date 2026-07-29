@@ -19,6 +19,7 @@ import SupportWidget from '@/components/support/SupportWidget';
 import { supabase } from '@/lib/supabase';
 import { setBrandingColors } from '@/components/ui/ColorPickerField';
 import { useCompanyBranding } from '@/hooks/useCompanyBranding';
+import { EditorSidebarProvider } from '@/components/admin/sidebar/EditorSidebarContext';
 
 function BrandPaletteLoader({ companyId }: { companyId: string }) {
   useEffect(() => {
@@ -89,6 +90,7 @@ function AdminLayoutInner({
   );
 
   const content = (
+    <EditorSidebarProvider>
     <div className="flex h-dvh bg-ivory overflow-hidden" data-tour="admin-layout">
       {auth.session?.user && auth.teamMember && auth.companyId && (
         <>
@@ -133,6 +135,7 @@ function AdminLayoutInner({
         {children(auth)}
       </main>
     </div>
+    </EditorSidebarProvider>
   );
 
   let wrapped: React.ReactNode = content;

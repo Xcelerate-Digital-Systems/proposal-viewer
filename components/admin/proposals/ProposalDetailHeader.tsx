@@ -3,8 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, Copy, Check, ExternalLink, Trash2, BookTemplate } from 'lucide-react';
+import { Copy, Check, ExternalLink, Trash2, BookTemplate } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
 import { authedFetch } from '@/lib/api-fetch';
@@ -18,7 +17,6 @@ import {
   type ProposalStatus,
   PROPOSAL_STATUS_OPTIONS,
 } from '@/lib/proposals/status';
-import ProposalTabs from './ProposalTabs';
 
 interface ProposalDetailHeaderProps {
   proposal: Proposal;
@@ -138,16 +136,8 @@ export default function ProposalDetailHeader({
   };
 
   return (
-    <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-edge lg:border-b-0">
-      <Link
-        href="/proposals"
-        className="inline-flex items-center gap-1.5 text-sm text-faint hover:text-prose transition-colors mb-3"
-      >
-        <ArrowLeft size={14} />
-        All Proposals
-      </Link>
-
-      <div className="flex items-start justify-between gap-4 mb-4">
+    <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-5 border-b border-edge">
+      <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-xl font-semibold text-ink font-[family-name:var(--font-display)] truncate">
@@ -251,7 +241,6 @@ export default function ProposalDetailHeader({
         </div>
       </div>
 
-      <ProposalTabs proposalId={proposal.id} />
     </div>
   );
 }

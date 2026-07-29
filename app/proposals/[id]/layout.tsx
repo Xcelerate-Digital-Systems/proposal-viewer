@@ -10,6 +10,7 @@ import { ProposalDetailProvider } from '@/components/admin/proposals/ProposalDet
 import { EditorSaveStatusProvider } from '@/components/admin/EditorSaveStatusContext';
 import { EditorUndoProvider } from '@/components/admin/EditorUndoContext';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
+import { useEditorSidebar } from '@/components/admin/sidebar/EditorSidebarContext';
 
 export default function ProposalDetailLayout(
   props: {
@@ -115,6 +116,7 @@ function DetailShell({
     >
       <EditorSaveStatusProvider>
         <UnsavedChangesGuard />
+        <ProposalCompletionSync proposal={proposal} />
         <EditorUndoProvider>
           <div className="flex flex-col h-full">
             <ProposalDetailHeader
@@ -132,5 +134,27 @@ function DetailShell({
 
 function UnsavedChangesGuard() {
   useUnsavedChangesGuard();
+  return null;
+}
+
+function ProposalCompletionSync({ proposal }: { proposal: Proposal }) {
+  const { setCompletion } = useEditorSidebar();
+  const pageNames = Array.isArray(proposal.page_names) ? proposal.page_names : [];
+  const hasType = (t: string) => pageNames.some(
+    (p: unknown) => typeof p === 'object' && p !== null && (p as { type?: string }).type === t,
+  );
+
+  useEffect(() => {
+    setCompletion({
+      cover: !!proposal.cover_enabled,
+      pages: pageNames.length > 0,
+      'text-pages': hasType('text'),
+      pricing: hasType('pricing'),
+      packages: hasType('packages'),
+      decision: !!proposal.decision_page_enabled,
+      details: !!(proposal.title && proposal.client_name),
+    });
+  }, [proposal, setCompletion]);
+
   return null;
 }

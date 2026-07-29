@@ -9,11 +9,10 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft, Copy, Check, ExternalLink, Trash2, Download, BookmarkPlus,
-  PenLine, Paintbrush, SlidersHorizontal, Files, CheckSquare,
+  Copy, Check, ExternalLink, Trash2, Download, BookmarkPlus,
+  Files,
 } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
@@ -38,21 +37,6 @@ interface QuoteShellHeaderProps {
 
 const statusOptions = PROPOSAL_STATUS_OPTIONS;
 
-const tabs = [
-  { key: 'cover',    label: 'Cover',    icon: Paintbrush,        segment: 'cover' },
-  { key: '',         label: 'Builder',  icon: PenLine,           segment: '' },
-  { key: 'settings', label: 'Design',   icon: SlidersHorizontal, segment: 'settings' },
-  { key: 'decision', label: 'Decision', icon: CheckSquare,       segment: 'decision' },
-];
-
-function activeKeyFromPath(pathname: string | null): string {
-  if (!pathname) return '';
-  // /quotes/[id]            → ''
-  // /quotes/[id]/cover      → 'cover'
-  // /quotes/[id]/settings   → 'settings'
-  const segs = pathname.split('/').filter(Boolean);
-  return segs[2] ?? '';
-}
 
 export default function QuoteShellHeader({
   proposal,
@@ -60,7 +44,6 @@ export default function QuoteShellHeader({
   onProposalChange,
 }: QuoteShellHeaderProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const confirm = useConfirm();
   const toast = useToast();
   const { companyInfo } = useProposalDetail();
@@ -69,7 +52,6 @@ export default function QuoteShellHeader({
   const [showSaveAsTemplate, setShowSaveAsTemplate] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const templatePopoverRef = useRef<HTMLDivElement>(null);
-  const activeKey = activeKeyFromPath(pathname);
 
   const closeTemplatePopover = useCallback(() => {
     setShowSaveAsTemplate(false);
@@ -199,18 +181,8 @@ export default function QuoteShellHeader({
     }
   };
 
-  const tabHref = (segment: string) =>
-    segment === '' ? `/quotes/${proposal.id}` : `/quotes/${proposal.id}/${segment}`;
-
   return (
-    <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-0 border-b border-edge lg:border-b-0">
-      <Link
-        href="/quotes"
-        className="inline-flex items-center gap-1.5 text-sm text-faint hover:text-prose transition-colors mb-3"
-      >
-        <ArrowLeft size={14} />
-        All Quotes
-      </Link>
+    <div className="sticky top-0 z-10 bg-ivory px-6 lg:px-10 pt-6 pb-5 border-b border-edge">
 
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="min-w-0">
@@ -338,26 +310,6 @@ export default function QuoteShellHeader({
         </div>
       </div>
 
-      <div className="flex items-center gap-1 -mb-px">
-        {tabs.map((tab) => {
-          const isActive = activeKey === tab.key;
-          const Icon = tab.icon;
-          return (
-            <Link
-              key={tab.key}
-              href={tabHref(tab.segment)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                isActive
-                  ? 'border-teal text-teal'
-                  : 'border-transparent text-dim hover:text-prose hover:border-edge-hover'
-              }`}
-            >
-              <Icon size={16} />
-              {tab.label}
-            </Link>
-          );
-        })}
-      </div>
     </div>
   );
 }

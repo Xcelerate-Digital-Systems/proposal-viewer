@@ -12,6 +12,7 @@ import NotificationBell from '@/components/admin/NotificationBell';
 import WorkspaceSwitcher from './sidebar/WorkspaceSwitcher';
 import SwipeTypesSidebarNav from './sidebar/SwipeTypesSidebarNav';
 import FeedbackItemsSidebarNav from './sidebar/FeedbackItemsSidebarNav';
+import EditorSidebarNav, { detectEditorRoute } from './sidebar/EditorSidebarNav';
 import {
   ALL_SECTIONS, STANDALONE_ITEMS, WORKSPACE_ITEMS, getActiveSection, LayoutDashboard,
   type NavItem, type SectionDef,
@@ -120,9 +121,10 @@ export default function AdminSidebar({
   const activeSection = getActiveSection(pathname, visibleSections);
   const inSwipeSection = pathname.startsWith('/ads/swipe');
   const inFeedbackBoard = /^\/feedback\/[^/]+\/board/.test(pathname);
+  const inEditor = !!detectEditorRoute(pathname);
 
   const isTopLevel =
-    !inSwipeSection && !inFeedbackBoard && (
+    !inSwipeSection && !inFeedbackBoard && !inEditor && (
       !activeSection ||
       pathname === '/dashboard' ||
       pathname === '/clients' ||
@@ -365,9 +367,11 @@ export default function AdminSidebar({
           ? <SwipeTypesSidebarNav onNavigate={() => setMobileOpen(false)} />
           : inFeedbackBoard
             ? <FeedbackItemsSidebarNav onNavigate={() => setMobileOpen(false)} />
-            : isTopLevel
-              ? renderTopLevelNav()
-              : activeSection && renderSectionNav(activeSection)
+            : inEditor
+              ? <EditorSidebarNav onNavigate={() => setMobileOpen(false)} branded={branded} colors={branded ? c : undefined} />
+              : isTopLevel
+                ? renderTopLevelNav()
+                : activeSection && renderSectionNav(activeSection)
         }
       </nav>
 

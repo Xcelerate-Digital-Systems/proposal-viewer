@@ -9,6 +9,7 @@ import TemplateDetailHeader from '@/components/admin/templates/TemplateDetailHea
 import { TemplateDetailProvider } from '@/components/admin/templates/TemplateDetailContext';
 import { EditorSaveStatusProvider } from '@/components/admin/EditorSaveStatusContext';
 import { EditorUndoProvider } from '@/components/admin/EditorUndoContext';
+import { useEditorSidebar } from '@/components/admin/sidebar/EditorSidebarContext';
 
 export default function TemplateDetailLayout(
   props: {
@@ -99,6 +100,7 @@ function DetailShell({
       }}
     >
       <EditorSaveStatusProvider>
+        <TemplateCompletionSync template={template} />
         <EditorUndoProvider>
           <div className="flex flex-col h-full">
             <TemplateDetailHeader template={template} />
@@ -108,4 +110,26 @@ function DetailShell({
       </EditorSaveStatusProvider>
     </TemplateDetailProvider>
   );
+}
+
+function TemplateCompletionSync({ template }: { template: ProposalTemplate }) {
+  const { setCompletion } = useEditorSidebar();
+  const headers = Array.isArray(template.section_headers) ? template.section_headers : [];
+  const hasType = (t: string) => headers.some(
+    (p: unknown) => typeof p === 'object' && p !== null && (p as { type?: string }).type === t,
+  );
+
+  useEffect(() => {
+    setCompletion({
+      cover: !!template.cover_enabled,
+      pages: template.page_count > 0,
+      'text-pages': hasType('text'),
+      pricing: hasType('pricing'),
+      packages: hasType('packages'),
+      decision: !!template.decision_page_enabled,
+      details: !!template.name,
+    });
+  }, [template, setCompletion]);
+
+  return null;
 }
