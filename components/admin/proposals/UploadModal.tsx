@@ -243,28 +243,42 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
         <form onSubmit={handleUpload} className="flex flex-col min-h-0 flex-1">
           <Modal.Body className="space-y-4">
             <FormFields
-              fields={fieldsByType.proposal.filter((f) => f.key !== 'client_email')}
+              fields={fieldsByType.proposal.filter((f) => f.key !== 'client_email' && f.key !== 'client_name')}
               values={form}
               onChange={(key, value) => setForm({ ...form, [key]: value })}
             />
-            <div>
-              <label className="block text-sm font-medium text-prose mb-1">
-                Client Email <span className="text-faint font-normal">(optional)</span>
-              </label>
-              <ContactAutocomplete
-                value={form.client_email}
-                onChange={(v) => setForm({ ...form, client_email: v })}
-                onSelect={(c) => {
-                  setForm((prev) => ({
-                    ...prev,
-                    client_email: c.email,
-                    client_name: c.name && !prev.client_name ? c.name : prev.client_name,
-                  }));
-                }}
-                placeholder="john@example.com"
-                className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
-              />
-            </div>
+            <ContactAutocomplete
+              value={form.client_name}
+              onChange={(v) => setForm({ ...form, client_name: v })}
+              onSelect={(c) => {
+                setForm((prev) => ({
+                  ...prev,
+                  client_name: c.name || prev.client_name,
+                  client_email: c.email || prev.client_email,
+                  crm_identifier: c.phone && !prev.crm_identifier ? c.phone : prev.crm_identifier,
+                }));
+              }}
+              placeholder="Search contacts or type a name"
+              type="text"
+              label="Client Name"
+              required
+              className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
+            />
+            <ContactAutocomplete
+              value={form.client_email}
+              onChange={(v) => setForm({ ...form, client_email: v })}
+              onSelect={(c) => {
+                setForm((prev) => ({
+                  ...prev,
+                  client_email: c.email,
+                  client_name: c.name && !prev.client_name ? c.name : prev.client_name,
+                  crm_identifier: c.phone && !prev.crm_identifier ? c.phone : prev.crm_identifier,
+                }));
+              }}
+              placeholder="Search contacts or type email"
+              label="Client Email"
+              className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
+            />
 
             <div>
               <label className="block text-sm font-medium text-prose mb-1">PDF File</label>
@@ -346,37 +360,36 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                 className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-prose mb-1">
-                Client Name <span className="text-red-400">*</span>
-              </label>
-              <input
-                type="text"
-                value={blankForm.client_name}
-                onChange={(e) => setBlankForm({ ...blankForm, client_name: e.target.value })}
-                placeholder="e.g. Acme Corp"
-                required
-                className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-prose mb-1">
-                Client Email <span className="text-faint font-normal">(optional)</span>
-              </label>
-              <ContactAutocomplete
-                value={blankForm.client_email}
-                onChange={(v) => setBlankForm({ ...blankForm, client_email: v })}
-                onSelect={(c) => {
-                  setBlankForm((prev) => ({
-                    ...prev,
-                    client_email: c.email,
-                    client_name: c.name && !prev.client_name ? c.name : prev.client_name,
-                  }));
-                }}
-                placeholder="client@example.com"
-                className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
-              />
-            </div>
+            <ContactAutocomplete
+              value={blankForm.client_name}
+              onChange={(v) => setBlankForm({ ...blankForm, client_name: v })}
+              onSelect={(c) => {
+                setBlankForm((prev) => ({
+                  ...prev,
+                  client_name: c.name || prev.client_name,
+                  client_email: c.email || prev.client_email,
+                }));
+              }}
+              placeholder="Search contacts or type a name"
+              type="text"
+              label="Client Name"
+              required
+              className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
+            />
+            <ContactAutocomplete
+              value={blankForm.client_email}
+              onChange={(v) => setBlankForm({ ...blankForm, client_email: v })}
+              onSelect={(c) => {
+                setBlankForm((prev) => ({
+                  ...prev,
+                  client_email: c.email,
+                  client_name: c.name && !prev.client_name ? c.name : prev.client_name,
+                }));
+              }}
+              placeholder="Search contacts or type email"
+              label="Client Email"
+              className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
+            />
 
             {uploading && (
               <div className="space-y-1.5">
@@ -432,37 +445,36 @@ export default function UploadModal({ companyId, onClose, onSuccess, initialTab 
                 className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-prose mb-1">
-                Client Name <span className="text-red-400">*</span>
-              </label>
-              <input
-                type="text"
-                value={quoteForm.client_name}
-                onChange={(e) => setQuoteForm({ ...quoteForm, client_name: e.target.value })}
-                placeholder="e.g. Acme Corp"
-                required
-                className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-prose mb-1">
-                Client Email <span className="text-faint font-normal">(optional)</span>
-              </label>
-              <ContactAutocomplete
-                value={quoteForm.client_email}
-                onChange={(v) => setQuoteForm({ ...quoteForm, client_email: v })}
-                onSelect={(c) => {
-                  setQuoteForm((prev) => ({
-                    ...prev,
-                    client_email: c.email,
-                    client_name: c.name && !prev.client_name ? c.name : prev.client_name,
-                  }));
-                }}
-                placeholder="client@example.com"
-                className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
-              />
-            </div>
+            <ContactAutocomplete
+              value={quoteForm.client_name}
+              onChange={(v) => setQuoteForm({ ...quoteForm, client_name: v })}
+              onSelect={(c) => {
+                setQuoteForm((prev) => ({
+                  ...prev,
+                  client_name: c.name || prev.client_name,
+                  client_email: c.email || prev.client_email,
+                }));
+              }}
+              placeholder="Search contacts or type a name"
+              type="text"
+              label="Client Name"
+              required
+              className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
+            />
+            <ContactAutocomplete
+              value={quoteForm.client_email}
+              onChange={(v) => setQuoteForm({ ...quoteForm, client_email: v })}
+              onSelect={(c) => {
+                setQuoteForm((prev) => ({
+                  ...prev,
+                  client_email: c.email,
+                  client_name: c.name && !prev.client_name ? c.name : prev.client_name,
+                }));
+              }}
+              placeholder="Search contacts or type email"
+              label="Client Email"
+              className="w-full px-3 py-2 bg-surface rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30"
+            />
 
             {uploading && (
               <div className="space-y-1.5">

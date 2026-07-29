@@ -446,27 +446,32 @@ export default function CreateFromTemplate({
           value={title}
           onChange={(v) => setTitle(v)}
         />
-        <FormField
-          config={{ key: 'client_name', label: 'Client Name', required: true, placeholder: 'e.g. Acme Co.' }}
+        <ContactAutocomplete
           value={clientName}
-          onChange={(v) => setClientName(v)}
+          onChange={setClientName}
+          onSelect={(c) => {
+            if (c.name) setClientName(c.name);
+            if (c.email) setClientEmail(c.email);
+            if (c.phone && !crmIdentifier) setCrmIdentifier(c.phone);
+          }}
+          placeholder="Search contacts or type a name"
+          type="text"
+          label="Client Name"
+          required
+          className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
         />
-        <div>
-          <label htmlFor="client_email" className="block text-sm font-medium text-prose mb-1">
-            Client Email <span className="text-faint font-normal">(optional)</span>
-          </label>
-          <ContactAutocomplete
-            value={clientEmail}
-            onChange={setClientEmail}
-            onSelect={(c) => {
-              setClientEmail(c.email);
-              if (c.name && !clientName) setClientName(c.name);
-              if (c.phone && !crmIdentifier) setCrmIdentifier(c.phone);
-            }}
-            placeholder="Search contacts or type email"
-            className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
-          />
-        </div>
+        <ContactAutocomplete
+          value={clientEmail}
+          onChange={setClientEmail}
+          onSelect={(c) => {
+            if (c.email) setClientEmail(c.email);
+            if (c.name && !clientName) setClientName(c.name);
+            if (c.phone && !crmIdentifier) setCrmIdentifier(c.phone);
+          }}
+          placeholder="Search contacts or type email"
+          label="Client Email"
+          className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
+        />
         <FormField
           config={{ key: 'crm_identifier', label: 'CRM Identifier', placeholder: 'Optional deal ID or reference', optional: true }}
           value={crmIdentifier}
