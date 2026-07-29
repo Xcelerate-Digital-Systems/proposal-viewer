@@ -461,8 +461,9 @@ export default function CreateFromTemplate({
             onSelect={(c) => {
               setClientEmail(c.email);
               if (c.name && !clientName) setClientName(c.name);
+              if (c.phone && !crmIdentifier) setCrmIdentifier(c.phone);
             }}
-            placeholder="client@example.com"
+            placeholder="Search contacts or type email"
             className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
           />
         </div>

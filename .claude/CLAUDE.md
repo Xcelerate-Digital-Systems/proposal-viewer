@@ -1,8 +1,8 @@
-# CLAUDE.md — AgencyViz (proposal-viewer)
+# CLAUDE.md — AgencyViz
 
 ## Product Identity
 
-AgencyViz ("The Agency Toolbox") is a B2B SaaS for agencies to work with their clients. The codebase is `proposal-viewer`; the product is branded **AgencyViz** at `app.agencyviz.io`.
+AgencyViz ("The Agency Toolbox") is a B2B SaaS for agencies to work with their clients. Codebase package name is `agencyviz`; production at `app.agencyviz.io`.
 
 **Hard rules:**
 - There is **NO AI in the app** — never mention "AI writing assist" or "AI-assisted" anywhere in UI or copy.

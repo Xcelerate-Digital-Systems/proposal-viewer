@@ -11,6 +11,11 @@ type Contact = {
   email: string;
   name: string | null;
   organisation: string | null;
+  phone?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  source?: 'local' | 'ghl';
+  tags?: string[];
 };
 
 interface ContactAutocompleteProps {
@@ -25,6 +30,8 @@ interface ContactAutocompleteProps {
   label?: string;
   required?: boolean;
 }
+
+export type { Contact as AutocompleteContact };
 
 export default function ContactAutocomplete({
   value,
@@ -41,6 +48,7 @@ export default function ContactAutocomplete({
   const [suggestions, setSuggestions] = useState<Contact[]>([]);
   const [open, setOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(-1);
+  const [ghlConnected, setGhlConnected] = useState<boolean | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -53,12 +61,29 @@ export default function ContactAutocomplete({
       return;
     }
     try {
-      const res = await authFetch(`/api/contacts?q=${encodeURIComponent(q)}&limit=8`);
-      if (!res.ok) return;
-      const json = await res.json();
-      const results = (json.contacts ?? []) as Contact[];
-      setSuggestions(results);
-      setOpen(results.length > 0);
+      const [localRes, ghlRes] = await Promise.all([
+        authFetch(`/api/contacts?q=${encodeURIComponent(q)}&limit=8`),
+        authFetch(`/api/contacts/ghl-search?q=${encodeURIComponent(q)}&limit=8`),
+      ]);
+
+      const localContacts: Contact[] = localRes.ok
+        ? ((await localRes.json()).contacts ?? []).map((c: Contact) => ({ ...c, source: 'local' as const }))
+        : [];
+
+      let ghlContacts: Contact[] = [];
+      if (ghlRes.ok) {
+        const ghlJson = await ghlRes.json();
+        ghlContacts = (ghlJson.contacts ?? []) as Contact[];
+        if (ghlJson.connected !== undefined) setGhlConnected(ghlJson.connected);
+      }
+
+      // Dedupe: if a GHL contact shares an email with a local contact, prefer local
+      const localEmails = new Set(localContacts.map((c) => c.email?.toLowerCase()).filter(Boolean));
+      const dedupedGhl = ghlContacts.filter((c) => !c.email || !localEmails.has(c.email.toLowerCase()));
+
+      const combined = [...localContacts, ...dedupedGhl].slice(0, 12);
+      setSuggestions(combined);
+      setOpen(combined.length > 0);
       setHighlighted(-1);
     } catch {
       // silently ignore — autocomplete is non-critical
@@ -143,32 +168,58 @@ export default function ContactAutocomplete({
             className="fixed z-50 bg-white border border-edge rounded-xl shadow-lg py-1 max-h-60 overflow-y-auto"
             style={{ top: dropPos.top, left: dropPos.left, width: dropPos.width }}
           >
-            {suggestions.map((c, i) => (
-              <button
-                key={c.id}
-                type="button"
-                onMouseDown={(e) => { e.preventDefault(); pick(c); }}
-                onMouseEnter={() => setHighlighted(i)}
-                className={`w-full text-left px-3 py-2 flex items-center gap-2.5 transition-colors ${
-                  i === highlighted ? 'bg-surface' : 'hover:bg-surface/60'
-                }`}
-              >
-                <div className="w-7 h-7 rounded-full bg-surface flex items-center justify-center shrink-0">
-                  <User size={13} className="text-faint" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-ink truncate">
-                    {c.name || c.email}
-                    {c.organisation && (
-                      <span className="text-faint ml-1.5">· {c.organisation}</span>
-                    )}
-                  </p>
-                  {c.name && (
-                    <p className="text-xs text-faint truncate">{c.email}</p>
+            {suggestions.map((c, i) => {
+              const isGhl = c.source === 'ghl';
+              const prevSource = i > 0 ? suggestions[i - 1].source : null;
+              const showDivider = isGhl && prevSource === 'local';
+
+              return (
+                <div key={`${c.source}-${c.id}`}>
+                  {showDivider && (
+                    <div className="px-3 py-1.5 border-t border-edge">
+                      <span className="text-[10px] font-medium text-faint uppercase tracking-wider">GoHighLevel</span>
+                    </div>
                   )}
+                  <button
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); pick(c); }}
+                    onMouseEnter={() => setHighlighted(i)}
+                    className={`w-full text-left px-3 py-2 flex items-center gap-2.5 transition-colors ${
+                      i === highlighted ? 'bg-surface' : 'hover:bg-surface/60'
+                    }`}
+                  >
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                      isGhl ? 'bg-orange-50' : 'bg-surface'
+                    }`}>
+                      {isGhl ? (
+                        <span className="text-[10px] font-bold text-orange-500">G</span>
+                      ) : (
+                        <User size={13} className="text-faint" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-ink truncate">
+                        {c.name || c.email}
+                        {c.organisation && (
+                          <span className="text-faint ml-1.5">· {c.organisation}</span>
+                        )}
+                      </p>
+                      {c.name && c.email && (
+                        <p className="text-xs text-faint truncate">{c.email}</p>
+                      )}
+                      {c.phone && !c.email && (
+                        <p className="text-xs text-faint truncate">{c.phone}</p>
+                      )}
+                    </div>
+                  </button>
                 </div>
-              </button>
-            ))}
+              );
+            })}
+            {ghlConnected === false && (
+              <div className="px-3 py-1.5 border-t border-edge">
+                <p className="text-[10px] text-faint">Connect GoHighLevel in Settings to search CRM contacts</p>
+              </div>
+            )}
           </div>
         </>,
         document.body,

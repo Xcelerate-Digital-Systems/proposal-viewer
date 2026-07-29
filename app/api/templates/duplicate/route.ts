@@ -59,22 +59,33 @@ export async function POST(req: NextRequest) {
       .from('template_pages_v2')
       .select('*')
       .eq('template_id', body.template_id)
-      .order('page_number', { ascending: true });
+      .order('position', { ascending: true });
 
     if (pages && pages.length > 0) {
+      const oldToNew = new Map<string, string>();
       const newPages = pages.map(({ id, template_id, created_at, ...rest }) => ({
         ...rest,
         template_id: newTemplate.id,
       }));
-      const { error: pagesErr } = await supabase.from('template_pages_v2').insert(newPages);
+      const { data: inserted, error: pagesErr } = await supabase
+        .from('template_pages_v2')
+        .insert(newPages)
+        .select('id');
       if (pagesErr) {
         console.error('[api/templates/duplicate] pages:', pagesErr.message);
       }
 
-      await supabase
-        .from('proposal_templates')
-        .update({ page_count: newPages.length })
-        .eq('id', newTemplate.id);
+      if (inserted) {
+        pages.forEach((p, i) => oldToNew.set(p.id, inserted[i].id));
+        const newPageOrder = source.page_order
+          ? (source.page_order as string[]).map((oldId: string) => oldToNew.get(oldId) ?? oldId)
+          : inserted.map((p: { id: string }) => p.id);
+
+        await supabase
+          .from('proposal_templates')
+          .update({ page_count: inserted.length, page_order: newPageOrder })
+          .eq('id', newTemplate.id);
+      }
     }
 
     return NextResponse.json({ success: true, template_id: newTemplate.id });
