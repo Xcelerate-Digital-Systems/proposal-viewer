@@ -10,6 +10,7 @@ import { useBrandPalette } from '@/hooks/useBrandPalette';
 import CoverPage from '@/components/viewer/CoverPage';
 import PdfViewer from '@/components/viewer/PdfViewer';
 import TextPage from '@/components/viewer/TextPage';
+import HtmlPage from '@/components/viewer/HtmlPage';
 import TocPage from '@/components/viewer/TocPage';
 import FloatingToolbar from '@/components/viewer/FloatingToolbar';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
@@ -37,8 +38,11 @@ export default function DocumentViewerPage(props: { params: Promise<{ token: str
     textPages,
     isTocPage,
     isTextPage,
+    isHtmlPage,
     getTextPageId,
+    getHtmlPageId,
     getTextPage,
+    getHtmlPage,
     toPdfPage,
     tocSettings,
     pageSequence,
@@ -52,8 +56,12 @@ export default function DocumentViewerPage(props: { params: Promise<{ token: str
   const mainRef = useRef<HTMLDivElement>(null);
   const onTocPage = isTocPage(currentPage);
   const onTextPage = isTextPage(currentPage);
+  const onHtmlPage = isHtmlPage(currentPage);
   const currentTextPageId = getTextPageId(currentPage);
   const currentTextPage = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
+  const currentHtmlPageId = getHtmlPageId(currentPage);
+  const currentHtmlPage = currentHtmlPageId ? getHtmlPage(currentHtmlPageId) : undefined;
+  const currentHtmlContent = currentHtmlPage?.html ?? null;
   const pdfPage = toPdfPage(currentPage);
   const isSectionPage = pageUrls[currentPage - 1]?.type === 'section';
   const currentPageLink = useMemo(() => {
@@ -319,6 +327,18 @@ export default function DocumentViewerPage(props: { params: Promise<{ token: str
                   proposalTitle={doc?.title}
                   orientation={pageOrientation}
                 />
+              </div>
+            </div>
+          </div>
+        ) : onHtmlPage && currentHtmlContent ? (
+          <div
+            className="flex-1 relative"
+            style={{ backgroundColor: pageBg }}
+          >
+            <ViewerBackground branding={branding} />
+            <div ref={mainRef} className="absolute inset-0 overflow-auto">
+              <div className="relative min-h-full h-full">
+                <HtmlPage html={currentHtmlContent} orientation={pageOrientation} />
               </div>
             </div>
           </div>

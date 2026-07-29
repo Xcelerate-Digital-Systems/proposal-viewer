@@ -90,6 +90,11 @@ export function usePageEditorActions(editor: PageEditor) {
     if (newPage) setSelectedId(newPage.id);
   }, [addPage]);
 
+  const handleAddHtml = useCallback(async () => {
+    const newPage = await addPage('html', { title: 'HTML Page' });
+    if (newPage) setSelectedId(newPage.id);
+  }, [addPage]);
+
   /* ── Delete ─────────────────────────────────────────────────────────────── */
 
   const handleDeletePage = useCallback(async (pageId: string) => {
@@ -182,6 +187,7 @@ export function usePageEditorActions(editor: PageEditor) {
     handleAddPackages,
     handleAddSection,
     handleAddToc,
+    handleAddHtml,
 
     // Delete / update
     handleDeletePage,

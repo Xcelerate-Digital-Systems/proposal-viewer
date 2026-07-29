@@ -61,6 +61,7 @@ export function useProposalDerived(
   const isTocPage      = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'toc',      [pageUrls]);
   const isTextPage     = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'text',     [pageUrls]);
   const isDecisionPage = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'decision', [pageUrls]);
+  const isHtmlPage     = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'html',     [pageUrls]);
 
   const getPackagesId = useCallback(
     (vp: number): string | null => pageUrls[vp - 1]?.type === 'packages' ? pageUrls[vp - 1].id : null,
@@ -68,6 +69,10 @@ export function useProposalDerived(
   );
   const getTextPageId = useCallback(
     (vp: number): string | null => pageUrls[vp - 1]?.type === 'text' ? pageUrls[vp - 1].id : null,
+    [pageUrls],
+  );
+  const getHtmlPageId = useCallback(
+    (vp: number): string | null => pageUrls[vp - 1]?.type === 'html' ? pageUrls[vp - 1].id : null,
     [pageUrls],
   );
   const toPdfPage = useCallback(
@@ -94,6 +99,7 @@ export function useProposalDerived(
         if (p.type === 'packages') return { type: 'packages' as const, packagesId: p.id };
         if (p.type === 'toc') return { type: 'toc' as const };
         if (p.type === 'decision') return { type: 'decision' as const };
+        if (p.type === 'html') return { type: 'html' as const, htmlPageId: p.id };
         return { type: 'pdf' as const, pdfPage: 0 }; // section — shouldn't reach viewer
       }),
     [pageUrls],
@@ -156,6 +162,19 @@ export function useProposalDerived(
     [pageUrls, proposal],
   );
 
+  const htmlPages = useMemo(
+    () =>
+      pageUrls
+        .filter((x) => x.type === 'html')
+        .map((p) => ({ id: p.id, html: (p.payload?.html as string) || '' })),
+    [pageUrls],
+  );
+
+  const getHtmlPage = useCallback(
+    (htmlPageId: string) => htmlPages.find((hp) => hp.id === htmlPageId),
+    [htmlPages],
+  );
+
   const tocSettings = proposal ? parseTocSettings(proposal.toc_settings) : null;
 
   const pdfPageCount = useMemo(() => pageUrls.filter((p) => p.type === 'pdf').length, [pageUrls]);
@@ -182,15 +201,19 @@ export function useProposalDerived(
     isTocPage,
     isTextPage,
     isDecisionPage,
+    isHtmlPage,
     getPricingId,
     getPackagesId,
     getTextPageId,
+    getHtmlPageId,
     toPdfPage,
     pageSequence,
     pricing,
     pricingPages,
     packages,
     textPages,
+    htmlPages,
+    getHtmlPage,
     tocSettings,
     pdfPageCount,
     getPageName,

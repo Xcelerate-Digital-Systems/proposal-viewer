@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Plus, FileUp, FileText, DollarSign, X } from 'lucide-react';
+import { Plus, FileUp, FileText, DollarSign, Code2 } from 'lucide-react';
 
 interface InsertPageMenuProps {
   /** Label shown on the trigger button */
@@ -19,6 +19,8 @@ interface InsertPageMenuProps {
   onInsertTextPage: () => void;
   /** Called when user selects "Add Pricing Page" */
   onInsertPricingPage?: () => void;
+  /** Called when user selects "Add HTML Page" */
+  onInsertHtmlPage?: () => void;
 }
 
 export default function InsertPageMenu({
@@ -29,6 +31,7 @@ export default function InsertPageMenu({
   onInsertPdf,
   onInsertTextPage,
   onInsertPricingPage,
+  onInsertHtmlPage,
 }: InsertPageMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -81,6 +84,11 @@ export default function InsertPageMenu({
     onInsertPricingPage?.();
     setOpen(false);
   }, [onInsertPricingPage]);
+
+  const handleHtmlPage = useCallback(() => {
+    onInsertHtmlPage?.();
+    setOpen(false);
+  }, [onInsertHtmlPage]);
 
   const canShowPricing = showPricing && !!onInsertPricingPage;
 
@@ -158,6 +166,24 @@ export default function InsertPageMenu({
                 <div className="text-2xs text-faint mt-0.5">Add investment breakdown</div>
               </div>
             </button>
+          )}
+
+          {/* HTML page option */}
+          {onInsertHtmlPage && (
+            <>
+              <div className="border-t border-edge my-1" />
+              <button
+                type="button"
+                onClick={handleHtmlPage}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-prose hover:bg-surface hover:text-ink transition-colors text-left"
+              >
+                <Code2 size={14} className="text-teal/60 shrink-0" />
+                <div>
+                  <div className="font-medium">HTML Page</div>
+                  <div className="text-2xs text-faint mt-0.5">Custom HTML content</div>
+                </div>
+              </button>
+            </>
           )}
         </div>
       )}

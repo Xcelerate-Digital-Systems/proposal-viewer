@@ -2,7 +2,7 @@
 'use client';
 
 import {
-  DollarSign, Package, FileText, FolderOpen, List, Library,
+  DollarSign, Package, FileText, FolderOpen, List, Library, Code2,
 } from 'lucide-react';
 
 interface AddPageButtonsProps {
@@ -14,6 +14,7 @@ interface AddPageButtonsProps {
   onAddText: () => void;
   onAddSection: () => void;
   onAddToc: () => void;
+  onAddHtml: () => void;
   onImportFromTemplate?: () => void;
 }
 
@@ -29,6 +30,7 @@ export default function AddPageButtons({
   onAddText,
   onAddSection,
   onAddToc,
+  onAddHtml,
   onImportFromTemplate,
 }: AddPageButtonsProps) {
   return (
@@ -48,6 +50,10 @@ export default function AddPageButtons({
       <button onClick={onAddText} className={btnClass}>
         <FileText size={12} />
         Add Text Page
+      </button>
+      <button onClick={onAddHtml} className={btnClass}>
+        <Code2 size={12} />
+        Add HTML Page
       </button>
       <button onClick={onAddSection} className={btnClass}>
         <FolderOpen size={12} />

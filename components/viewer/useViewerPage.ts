@@ -14,8 +14,8 @@ export function useViewerPage(token: string) {
     loading, notFound, pageEntries, branding, brandingLoaded,
     comments, accepted, declined, revisionRequested,
     pricing, pricingPages, packages, textPages,
-    isPricingPage, isPackagesPage, isTocPage, isTextPage, isDecisionPage,
-    getPricingId, getPackagesId, getTextPageId, getTextPage, toPdfPage,
+    isPricingPage, isPackagesPage, isTocPage, isTextPage, isDecisionPage, isHtmlPage,
+    getPricingId, getPackagesId, getTextPageId, getHtmlPageId, getTextPage, getHtmlPage, toPdfPage,
     tocSettings, pageSequence, onDocumentLoadSuccess, pageUrls, getPageName,
     acceptProposal, declineProposal, requestRevision,
     submitComment, replyToComment, resolveComment, unresolveComment,
@@ -36,6 +36,10 @@ export function useViewerPage(token: string) {
   const onPricingPage  = isPricingPage(currentPage);
   const onPackagesPage = isPackagesPage(currentPage);
   const onDecisionPage = isDecisionPage(currentPage);
+  const onHtmlPage     = isHtmlPage(currentPage);
+  const currentHtmlPageId = getHtmlPageId(currentPage);
+  const currentHtmlPage   = currentHtmlPageId ? getHtmlPage(currentHtmlPageId) : undefined;
+  const currentHtmlContent = currentHtmlPage?.html ?? null;
   const currentTextPageId = getTextPageId(currentPage);
   const currentTextPage   = currentTextPageId ? getTextPage(currentTextPageId) : undefined;
   const currentPricingId  = getPricingId(currentPage);
@@ -188,8 +192,8 @@ export function useViewerPage(token: string) {
 
     // Derived
     palette,
-    onTocPage, onTextPage, onPricingPage, onPackagesPage, onDecisionPage,
-    currentTextPage, currentPackages, pdfPage,
+    onTocPage, onTextPage, onPricingPage, onPackagesPage, onDecisionPage, onHtmlPage,
+    currentTextPage, currentPackages, currentHtmlContent, pdfPage,
     currentPageLink,
     bgPrimary, bgSecondary, accent, border, sidebarText,
     pageOrientation, unresolvedCommentCount,

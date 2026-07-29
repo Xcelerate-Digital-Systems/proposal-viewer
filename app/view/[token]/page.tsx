@@ -281,6 +281,8 @@ export default function ProposalViewerPage(props: { params: Promise<{ token: str
             onPricingPage={v.onPricingPage}
             onPackagesPage={v.onPackagesPage}
             onDecisionPage={v.onDecisionPage}
+            onHtmlPage={v.onHtmlPage}
+            currentHtmlContent={v.currentHtmlContent}
             tocSettings={v.tocSettings}
             pageSequence={v.pageSequence}
             pageEntries={v.pageEntries}

@@ -142,9 +142,14 @@ export function useDocument(token: string) {
   // Virtual page type helpers
   const isTocPage  = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'toc',  [pageUrls]);
   const isTextPage = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'text', [pageUrls]);
+  const isHtmlPage = useCallback((vp: number) => pageUrls[vp - 1]?.type === 'html', [pageUrls]);
 
   const getTextPageId = useCallback(
     (vp: number): string | null => pageUrls[vp - 1]?.type === 'text' ? pageUrls[vp - 1].id : null,
+    [pageUrls],
+  );
+  const getHtmlPageId = useCallback(
+    (vp: number): string | null => pageUrls[vp - 1]?.type === 'html' ? pageUrls[vp - 1].id : null,
     [pageUrls],
   );
 
@@ -169,7 +174,8 @@ const pageSequence = useMemo(
       }
       if (p.type === 'text')    return { type: 'text'    as const, textPageId: p.id };
       if (p.type === 'toc')     return { type: 'toc'     as const };
-      if (p.type === 'section') return { type: 'section' as const };   // ← ADD THIS LINE
+      if (p.type === 'html')    return { type: 'html'    as const, htmlPageId: p.id };
+      if (p.type === 'section') return { type: 'section' as const };
       return { type: 'pdf' as const, pdfPage: 0 };
     }),
   [pageUrls],
@@ -206,6 +212,19 @@ const pageSequence = useMemo(
     [textPages],
   );
 
+  const htmlPages = useMemo(
+    () =>
+      pageUrls
+        .filter((x) => x.type === 'html')
+        .map((p) => ({ id: p.id, html: (p.payload?.html as string) || '' })),
+    [pageUrls],
+  );
+
+  const getHtmlPage = useCallback(
+    (htmlPageId: string) => htmlPages.find((hp) => hp.id === htmlPageId),
+    [htmlPages],
+  );
+
   const onDocumentLoadSuccess = useCallback((_: { numPages: number }) => {
     // No-op in v2: page count comes from pageUrls.length
   }, []);
@@ -226,11 +245,15 @@ const pageSequence = useMemo(
     textPages,
     isTocPage,
     isTextPage,
+    isHtmlPage,
     getTextPageId,
+    getHtmlPageId,
     toPdfPage,
     tocSettings,
     pageSequence,
     getTextPage,
+    htmlPages,
+    getHtmlPage,
     onDocumentLoadSuccess,
     getPageName,
   };

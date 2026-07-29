@@ -11,6 +11,7 @@ import PricingPreviewPanel  from './PricingPreviewPanel';
 import PackagesPreviewPanel from './PackagesPreviewPanel';
 import TextPagePreviewPanel from './TextPagePreviewPanel';
 import TocPreviewPanel      from './TocPreviewPanel';
+import HtmlPreviewPanel     from './HtmlPreviewPanel';
 
 interface PreviewRouterProps {
   proposalId: string;
@@ -104,6 +105,19 @@ export default function PreviewRouter({
       <TocPreviewPanel
         tocSettings={tocSettings}
         pages={allPages}
+        onGoPrev={onGoPrev}
+        onGoNext={onGoNext}
+        canGoPrev={canGoPrev}
+        canGoNext={canGoNext}
+      />
+    );
+  }
+
+  if (selectedPage.type === 'html') {
+    return (
+      <HtmlPreviewPanel
+        page={selectedPage}
+        onUpdate={onTextPageUpdate}
         onGoPrev={onGoPrev}
         onGoNext={onGoNext}
         canGoPrev={canGoPrev}

@@ -34,7 +34,7 @@ export interface ProposalTextPage {
 export interface PageUrlEntry {
   id:                    string;
   position:              number;
-  type:                  'pdf' | 'text' | 'pricing' | 'packages' | 'toc' | 'section' | 'decision';
+  type:                  'pdf' | 'text' | 'pricing' | 'packages' | 'toc' | 'section' | 'decision' | 'html';
   url:                   string | null;
   title:                 string;
   indent:                number;

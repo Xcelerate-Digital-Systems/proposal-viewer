@@ -7,6 +7,7 @@ import type { ProposalPricing, ProposalPackages, TocSettings, PageNameEntry } fr
 import dynamic from 'next/dynamic';
 const PdfViewer = dynamic(() => import('./PdfViewer'), { ssr: false });
 import TextPage from './TextPage';
+import HtmlPage from './HtmlPage';
 import TocPage, { type PageSequenceEntry } from './TocPage';
 import PricingPage from './PricingPage';
 import PackagesPage from './PackagesPage';
@@ -26,6 +27,8 @@ interface ViewerPageContentProps {
   onPricingPage: boolean;
   onPackagesPage: boolean;
   onDecisionPage: boolean;
+  onHtmlPage: boolean;
+  currentHtmlContent: string | null;
   // Page data
   tocSettings: TocSettings | null;
   pageSequence: PageSequenceEntry[];
@@ -119,7 +122,7 @@ function buildDecisionTokens(
 
 export default function ViewerPageContent({
   branding, bgPrimary, pageOrientation, scrollRef,
-  onTocPage, onTextPage, onPricingPage, onPackagesPage, onDecisionPage,
+  onTocPage, onTextPage, onPricingPage, onPackagesPage, onDecisionPage, onHtmlPage, currentHtmlContent,
   tocSettings, pageSequence, pageEntries, numPages,
   currentTextPage, pricing, currentPackages,
   pdfUrl, pdfPage, onLoadSuccess, accentColor, pageUrls,
@@ -323,6 +326,19 @@ export default function ViewerPageContent({
               clientName={proposal?.client_name as string | undefined}
               orientation={pageOrientation}
             />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (onHtmlPage && currentHtmlContent) {
+    return (
+      <div className="flex-1 relative" style={{ backgroundColor: pageBg }}>
+        <ViewerBackground branding={branding} />
+        <div ref={scrollRef} className="absolute inset-0 overflow-auto">
+          <div className="relative min-h-full h-full">
+            <HtmlPage html={currentHtmlContent} orientation={pageOrientation} />
           </div>
         </div>
       </div>

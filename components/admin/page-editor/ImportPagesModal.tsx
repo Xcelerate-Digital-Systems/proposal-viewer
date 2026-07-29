@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   ArrowLeft, Check, FileText, DollarSign, Package,
-  FolderOpen, List, Loader2, Library, BookOpen, Trash2,
+  FolderOpen, List, Loader2, Library, BookOpen, Trash2, Code2,
 } from 'lucide-react';
 import { supabase, type ProposalTemplate } from '@/lib/supabase';
 import { authedFetch } from '@/lib/api-fetch';
@@ -38,6 +38,7 @@ const PAGE_TYPE_ICON: Record<PageType, typeof FileText> = {
   packages: Package,
   section:  FolderOpen,
   toc:      List,
+  html:     Code2,
 };
 
 const PAGE_TYPE_LABEL: Record<PageType, string> = {
@@ -47,6 +48,7 @@ const PAGE_TYPE_LABEL: Record<PageType, string> = {
   packages: 'Packages',
   section:  'Section',
   toc:      'Contents',
+  html:     'HTML',
 };
 
 type Step = 'pick-template' | 'pick-pages';

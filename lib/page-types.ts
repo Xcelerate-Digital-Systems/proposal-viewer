@@ -22,7 +22,7 @@ export function getEntityConfig(entityType: EntityType): EntityConfig {
 
 /* ─── UnifiedPage type ───────────────────────────────────────────────────── */
 
-export type PageType = 'pdf' | 'text' | 'pricing' | 'packages' | 'toc' | 'section';
+export type PageType = 'pdf' | 'text' | 'pricing' | 'packages' | 'toc' | 'section' | 'html';
 
 export interface UnifiedPage {
   id:                    string;

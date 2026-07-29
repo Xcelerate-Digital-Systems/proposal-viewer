@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Library, FileText, DollarSign, Package, FolderOpen, List } from 'lucide-react';
+import { Loader2, Library, FileText, DollarSign, Package, FolderOpen, List, Code2 } from 'lucide-react';
 import { authedFetch } from '@/lib/api-fetch';
 import { useToast } from '@/components/ui/Toast';
 import { Modal } from '@/components/ui/Modal';
@@ -19,12 +19,12 @@ interface Props {
 
 const PAGE_TYPE_ICON: Record<PageType, typeof FileText> = {
   pdf: FileText, text: FileText, pricing: DollarSign,
-  packages: Package, section: FolderOpen, toc: List,
+  packages: Package, section: FolderOpen, toc: List, html: Code2,
 };
 
 const PAGE_TYPE_LABEL: Record<PageType, string> = {
   pdf: 'PDF', text: 'Text', pricing: 'Quote',
-  packages: 'Packages', section: 'Section', toc: 'Contents',
+  packages: 'Packages', section: 'Section', toc: 'Contents', html: 'HTML',
 };
 
 export default function SavePageToLibraryModal({

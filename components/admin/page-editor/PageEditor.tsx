@@ -25,6 +25,7 @@ import SortableTextRow      from './SortableTextRow';
 import SortableGroupRow     from './SortableGroupRow';
 import SortablePackagesRow  from './SortablePackagesRow';
 import SortableTocRow       from './SortableTocRow';
+import SortableHtmlRow      from './SortableHtmlRow';
 import InsertPageMenu       from './InsertPageMenu';
 import AddPageButtons       from './AddPageButtons';
 import ImportPagesModal     from './ImportPagesModal';
@@ -77,7 +78,7 @@ export default function PageEditor({
     isReordering, setIsReordering,
     canGoPrev, canGoNext, goPrev, goNext,
     handleInsertPdf, handleInsertText, handleInsertPricing,
-    handleAddPackages, handleAddSection, handleAddToc,
+    handleAddPackages, handleAddSection, handleAddToc, handleAddHtml,
     handleDeletePage, handleTextPageUpdate,
     pageUrlEntries, pdfEntries,
     pricingExists, tocExists,
@@ -129,6 +130,7 @@ export default function PageEditor({
           onAddText={() => handleInsertText(null)}
           onAddSection={handleAddSection}
           onAddToc={handleAddToc}
+          onAddHtml={handleAddHtml}
           onImportFromTemplate={!isDocuments ? () => setImportModalOpen(true) : undefined}
         />
       )}
@@ -156,6 +158,7 @@ export default function PageEditor({
                 onInsertPdf={(file) => handleInsertPdf(null, file)}
                 onInsertTextPage={() => handleInsertText(null)}
                 onInsertPricingPage={handleInsertPricing}
+                onInsertHtmlPage={handleAddHtml}
               />
 
               <DndContext
@@ -176,6 +179,7 @@ export default function PageEditor({
                         onInsertPdf={(file) => handleInsertPdf(page, file)}
                         onInsertTextPage={() => handleInsertText(page)}
                         onInsertPricingPage={handleInsertPricing}
+                        onInsertHtmlPage={handleAddHtml}
                       />
                     );
 
@@ -254,6 +258,26 @@ export default function PageEditor({
                           linkUrl={page.link_url ?? ''}
                           linkLabel={page.link_label ?? ''}
                           onLinkChange={(url, label) => updatePage(page.id, { link_url: url, link_label: label })}
+                          renderInsertAfter={insertAfterMenu}
+                        />
+                      );
+                    }
+
+                    if (page.type === 'html') {
+                      return (
+                        <SortableHtmlRow
+                          key={page.id}
+                          id={page.id}
+                          title={page.title}
+                          indent={page.indent}
+                          isFirst={visualIdx === 0}
+                          isSelected={selectedId === page.id}
+                          onSelect={() => setSelectedId(page.id)}
+                          onToggleIndent={() => updatePage(page.id, { indent: page.indent ? 0 : 1 })}
+                          onRemove={() => handleDeletePage(page.id)}
+                          onSaveToLibrary={() => setLibraryTarget({ id: page.id, title: page.title, type: page.type })}
+                          tocIncluded={tocExistsFromHook ? isTocIncluded(page.id) : undefined}
+                          onToggleTocInclude={tocExistsFromHook ? () => toggleTocInclude(page.id) : undefined}
                           renderInsertAfter={insertAfterMenu}
                         />
                       );
