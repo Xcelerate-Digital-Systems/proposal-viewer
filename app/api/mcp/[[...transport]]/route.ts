@@ -2,7 +2,11 @@ import { createMcpHandler, withMcpAuth } from 'mcp-handler';
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase-server';
 import { hashApiKey, API_KEY_PREFIX } from '@/lib/api-auth';
+import { addPage, updatePage, deletePage, reorderPages } from '@/lib/page-operations';
+import { getCompanyEntityDefaults } from '@/lib/company-defaults';
+import { checkResourceLimit } from '@/lib/billing/entitlements';
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
+import type { PageType } from '@/lib/page-types';
 
 type McpAuthInfo = AuthInfo & {
   companyId: string;
@@ -60,7 +64,14 @@ const mcpHandler = createMcpHandler(
 
 ### Pitch (Proposals + Quotes + Documents)
 - \`list_proposals\` → \`get_proposal\` → \`get_proposal_pages\`
+- \`create_proposal\` — create a new blank proposal or quote
+- \`create_proposal_from_template\` — create a proposal pre-populated with template pages
+- \`update_proposal\` — edit title, client info, description, branding fields
 - \`update_proposal_status\` — mark as sent or pull back to draft
+- \`add_proposal_page\` — add a text/pricing/packages/toc/section page
+- \`update_proposal_page\` — edit a page's title, content, or settings
+- \`delete_proposal_page\` — remove a page
+- \`reorder_proposal_pages\` — reorder pages by ID array
 - \`list_documents\` → \`get_document\`
 - Quotes are proposals with entity_type='pricing'
 
@@ -615,6 +626,295 @@ const mcpHandler = createMcpHandler(
       const { error } = await sb.from('proposals').update(updates).eq('id', proposalId);
       if (error) return txt(`Failed: ${error.message}`);
       return txt(`${label} status updated: ${p.status} → ${status}`);
+    });
+
+    server.tool('create_proposal', 'Create a new proposal or quote. Returns the new proposal ID. For quotes, pass entityType="pricing".', {
+      title: z.string().describe('Proposal/quote title'),
+      clientName: z.string().describe('Client name'),
+      clientEmail: z.string().optional(),
+      description: z.string().optional(),
+      entityType: z.enum(['proposal', 'pricing']).optional().describe('"proposal" (default) or "pricing" for quotes'),
+      createdByName: z.string().optional().describe('Name of the person creating this'),
+      preparedBy: z.string().optional(),
+      skipDefaultPages: z.boolean().optional().describe('If true, creates no pages. Default: false (creates an Introduction page for proposals, or Pricing+Packages+T&C for quotes)'),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const companyId = auth.companyId;
+      const isQuote = args.entityType === 'pricing';
+
+      const limitCheck = await checkResourceLimit(companyId, 'proposals');
+      if (!limitCheck.allowed) return txt(`Plan limit reached: ${limitCheck.reason || 'proposals'}`);
+
+      const brandingDefaults = await getCompanyEntityDefaults(sb, companyId, {});
+
+      let quoteNumber: number | null = null;
+      if (isQuote) {
+        const { data: counter } = await sb.rpc('claim_next_quote_number', { p_company_id: companyId });
+        if (typeof counter === 'number') quoteNumber = counter;
+      }
+
+      const { data: proposal, error } = await sb.from('proposals').insert({
+        title: args.title,
+        client_name: args.clientName,
+        client_email: args.clientEmail || null,
+        description: args.description || null,
+        file_path: '',
+        file_size_bytes: 0,
+        status: 'draft',
+        page_names: [],
+        company_id: companyId,
+        created_by_name: args.createdByName || auth.memberName,
+        prepared_by: args.preparedBy || args.createdByName || auth.memberName,
+        entity_type: isQuote ? 'quote' : 'proposal',
+        quote_number: quoteNumber,
+        ...brandingDefaults,
+      }).select('id').single();
+
+      if (error || !proposal) return txt(`Failed: ${error?.message || 'unknown'}`);
+
+      const pid = proposal.id;
+      let pageCount = 0;
+
+      if (!args.skipDefaultPages) {
+        if (isQuote) {
+          await addPage(sb, 'proposal', { entityId: pid, companyId, type: 'pricing', title: 'Pricing', position: 0 });
+          await addPage(sb, 'proposal', { entityId: pid, companyId, type: 'packages', title: 'Packages', position: 1 });
+          await addPage(sb, 'proposal', { entityId: pid, companyId, type: 'text', title: 'Terms & Conditions', position: 2 });
+          pageCount = 3;
+        } else {
+          await addPage(sb, 'proposal', { entityId: pid, companyId, type: 'text', title: 'Introduction', position: 0 });
+          pageCount = 1;
+        }
+      }
+
+      return json({ id: pid, type: isQuote ? 'quote' : 'proposal', quoteNumber, pageCount, status: 'draft' });
+    });
+
+    server.tool('create_proposal_from_template', 'Create a new proposal pre-populated with pages from a template. Returns the new proposal ID.', {
+      templateId: z.string().describe('Template to copy pages from'),
+      title: z.string().describe('Proposal title'),
+      clientName: z.string().describe('Client name'),
+      clientEmail: z.string().optional(),
+      description: z.string().optional(),
+      createdByName: z.string().optional(),
+      preparedBy: z.string().optional(),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const companyId = auth.companyId;
+
+      const { data: tmpl } = await sb.from('proposal_templates').select('id, entity_type').eq('id', args.templateId).eq('company_id', companyId).single();
+      if (!tmpl) return txt('Template not found');
+
+      const limitCheck = await checkResourceLimit(companyId, 'proposals');
+      if (!limitCheck.allowed) return txt(`Plan limit reached: ${limitCheck.reason || 'proposals'}`);
+
+      const brandingDefaults = await getCompanyEntityDefaults(sb, companyId, {});
+
+      const isQuote = tmpl.entity_type === 'quote';
+      let quoteNumber: number | null = null;
+      if (isQuote) {
+        const { data: counter } = await sb.rpc('claim_next_quote_number', { p_company_id: companyId });
+        if (typeof counter === 'number') quoteNumber = counter;
+      }
+
+      const { data: proposal, error } = await sb.from('proposals').insert({
+        title: args.title,
+        client_name: args.clientName,
+        client_email: args.clientEmail || null,
+        description: args.description || null,
+        file_path: '',
+        file_size_bytes: 0,
+        status: 'draft',
+        page_names: [],
+        company_id: companyId,
+        created_by_name: args.createdByName || auth.memberName,
+        prepared_by: args.preparedBy || args.createdByName || auth.memberName,
+        entity_type: isQuote ? 'quote' : 'proposal',
+        quote_number: quoteNumber,
+        ...brandingDefaults,
+      }).select('id').single();
+
+      if (error || !proposal) return txt(`Failed to create proposal: ${error?.message || 'unknown'}`);
+
+      const pid = proposal.id;
+
+      // Copy template pages into the new proposal
+      const { data: templatePages } = await sb.from('template_pages_v2')
+        .select('*').eq('template_id', args.templateId).order('position', { ascending: true });
+
+      let copied = 0;
+      if (templatePages?.length) {
+        const toInsert = templatePages.map(tp => ({
+          proposal_id: pid,
+          company_id: companyId,
+          position: tp.position,
+          type: tp.type,
+          title: tp.title,
+          indent: tp.indent ?? 0,
+          enabled: tp.enabled ?? true,
+          link_url: tp.link_url ?? null,
+          link_label: tp.link_label ?? null,
+          orientation: tp.orientation ?? 'auto',
+          show_title: tp.show_title ?? true,
+          show_member_badge: tp.show_member_badge ?? false,
+          show_client_logo: tp.show_client_logo ?? false,
+          payload: tp.payload ?? {},
+        }));
+
+        const { data: inserted, error: insertErr } = await sb.from('proposal_pages_v2').insert(toInsert).select('id');
+        if (insertErr) return txt(`Proposal created (${pid}) but page copy failed: ${insertErr.message}`);
+        copied = inserted?.length || 0;
+      }
+
+      return json({ id: pid, type: isQuote ? 'quote' : 'proposal', quoteNumber, pagesCopied: copied, status: 'draft' });
+    });
+
+    server.tool('update_proposal', 'Update top-level fields on a proposal or quote (title, client info, description, branding, etc.). Cannot change status — use update_proposal_status for that.', {
+      proposalId: z.string(),
+      title: z.string().optional(),
+      clientName: z.string().optional(),
+      clientEmail: z.string().optional(),
+      clientOrganisation: z.string().optional(),
+      description: z.string().optional(),
+      preparedBy: z.string().optional(),
+      currency: z.string().optional(),
+      includeGst: z.boolean().optional(),
+      gstRate: z.number().optional(),
+      requireDeposit: z.boolean().optional(),
+      depositPercent: z.number().optional(),
+      validUntil: z.string().optional().describe('ISO date string'),
+      siteAddress: z.string().optional(),
+      estimatedStartDate: z.string().optional(),
+      estimatedDuration: z.string().optional(),
+      scopeOfWorks: z.string().optional(),
+      category: z.string().optional(),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: p } = await sb.from('proposals').select('id').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
+      if (!p) return txt('Proposal not found');
+
+      const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      const MAP: [string, string][] = [
+        ['title', 'title'], ['clientName', 'client_name'], ['clientEmail', 'client_email'],
+        ['clientOrganisation', 'client_organisation'], ['description', 'description'],
+        ['preparedBy', 'prepared_by'], ['currency', 'currency'], ['includeGst', 'include_gst'],
+        ['gstRate', 'gst_rate'], ['requireDeposit', 'require_deposit'], ['depositPercent', 'deposit_percent'],
+        ['validUntil', 'valid_until'], ['siteAddress', 'site_address'],
+        ['estimatedStartDate', 'estimated_start_date'], ['estimatedDuration', 'estimated_duration'],
+        ['scopeOfWorks', 'scope_of_works'], ['category', 'category'],
+      ];
+      let fieldCount = 0;
+      for (const [param, col] of MAP) {
+        const val = (args as Record<string, unknown>)[param];
+        if (val !== undefined) { updates[col] = val; fieldCount++; }
+      }
+      if (fieldCount === 0) return txt('No fields to update — pass at least one field.');
+
+      const { error } = await sb.from('proposals').update(updates).eq('id', args.proposalId);
+      if (error) return txt(`Failed: ${error.message}`);
+      return txt(`Proposal updated (${fieldCount} field${fieldCount > 1 ? 's' : ''}).`);
+    });
+
+    server.tool('add_proposal_page', 'Add a new page to a proposal. Returns the new page ID.', {
+      proposalId: z.string(),
+      type: z.enum(['text', 'pricing', 'packages', 'toc', 'section']).describe('Page type'),
+      title: z.string().optional().describe('Page title (auto-generated if omitted)'),
+      position: z.number().optional().describe('Insert at this position (0-based). Omit to append at the end.'),
+      content: z.string().optional().describe('HTML content for text pages'),
+      indent: z.number().optional().describe('Indentation level (0-3). Default: 0'),
+      enabled: z.boolean().optional().describe('Whether page is visible. Default: true'),
+      showTitle: z.boolean().optional().describe('Show title on page. Default: true'),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: p } = await sb.from('proposals').select('id').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
+      if (!p) return txt('Proposal not found');
+
+      const payload: Record<string, unknown> = {};
+      if (args.content && args.type === 'text') {
+        payload.html = args.content;
+      }
+
+      const result = await addPage(sb, 'proposal', {
+        entityId: args.proposalId,
+        companyId: auth.companyId,
+        type: args.type as PageType,
+        title: args.title,
+        position: args.position,
+        payload: Object.keys(payload).length ? payload : undefined,
+        indent: args.indent,
+        showTitle: args.showTitle,
+      });
+
+      if (result.error || !result.page) return txt(`Failed: ${result.error || 'unknown'}`);
+      return json({ id: result.page.id, position: result.page.position, type: result.page.type, title: result.page.title });
+    });
+
+    server.tool('update_proposal_page', 'Update a page\'s title, content, or display settings.', {
+      proposalId: z.string(),
+      pageId: z.string(),
+      title: z.string().optional(),
+      content: z.string().optional().describe('HTML content (text pages only). Merges into payload.html'),
+      enabled: z.boolean().optional(),
+      indent: z.number().optional(),
+      showTitle: z.boolean().optional(),
+      orientation: z.enum(['auto', 'portrait', 'landscape']).optional(),
+      linkUrl: z.string().optional().describe('External link URL'),
+      linkLabel: z.string().optional().describe('External link label'),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: p } = await sb.from('proposals').select('id').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
+      if (!p) return txt('Proposal not found');
+
+      const changes: Record<string, unknown> = {};
+      if (args.title !== undefined) changes.title = args.title;
+      if (args.enabled !== undefined) changes.enabled = args.enabled;
+      if (args.indent !== undefined) changes.indent = args.indent;
+      if (args.showTitle !== undefined) changes.show_title = args.showTitle;
+      if (args.orientation !== undefined) changes.orientation = args.orientation;
+      if (args.linkUrl !== undefined) changes.link_url = args.linkUrl;
+      if (args.linkLabel !== undefined) changes.link_label = args.linkLabel;
+      if (args.content !== undefined) {
+        changes.payload_patch = { html: args.content };
+      }
+
+      if (Object.keys(changes).length === 0) return txt('No fields to update.');
+
+      const result = await updatePage(sb, 'proposal', args.pageId, changes, { entityId: args.proposalId });
+      if (result.error || !result.page) return txt(`Failed: ${result.error || 'unknown'}`);
+      return txt(`Page "${result.page.title}" updated.`);
+    });
+
+    server.tool('delete_proposal_page', 'Delete a page from a proposal. Cannot delete the last remaining page.', {
+      proposalId: z.string(),
+      pageId: z.string(),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: p } = await sb.from('proposals').select('id').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
+      if (!p) return txt('Proposal not found');
+
+      const result = await deletePage(sb, 'proposal', { entityId: args.proposalId, pageId: args.pageId });
+      if (!result.success) return txt(`Failed: ${result.error || 'unknown'}`);
+      return txt(`Page deleted. ${result.totalPages} page${result.totalPages !== 1 ? 's' : ''} remaining.`);
+    });
+
+    server.tool('reorder_proposal_pages', 'Reorder pages by providing the full ordered list of page IDs.', {
+      proposalId: z.string(),
+      orderedPageIds: z.array(z.string()).describe('Page IDs in the desired order. Must include all page IDs.'),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: p } = await sb.from('proposals').select('id').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
+      if (!p) return txt('Proposal not found');
+
+      const result = await reorderPages(sb, 'proposal', { entityId: args.proposalId, orderedIds: args.orderedPageIds });
+      if (!result.success) return txt(`Failed: ${result.error || 'unknown'}`);
+      return txt(`Pages reordered (${args.orderedPageIds.length} pages).`);
     });
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
