@@ -1145,7 +1145,7 @@ const mcpHandler = createMcpHandler(
   },
   {
     capabilities: { tools: {} },
-    serverInfo: { name: 'agencyviz', version: '1.0.0' },
+    serverInfo: { name: 'agencyviz', version: '1.1.0' },
   },
   {
     streamableHttpEndpoint: '/api/mcp',
