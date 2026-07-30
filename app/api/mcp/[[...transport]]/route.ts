@@ -62,7 +62,7 @@ const mcpHandler = createMcpHandler(
 - \`bulk_update_asset_status\` — move all (or filtered) assets in a campaign
 - \`update_campaign_status\` — archive or activate a campaign project
 
-### Pitch (Proposals + Quotes + Documents)
+### Pitch (Proposals + Quotes)
 - \`list_proposals\` → \`get_proposal\` → \`get_proposal_pages\`
 - \`create_proposal\` — create a new blank proposal or quote
 - \`create_proposal_from_template\` — create a proposal pre-populated with template pages
@@ -70,17 +70,29 @@ const mcpHandler = createMcpHandler(
 - \`update_proposal_status\` — mark as sent or pull back to draft
 - \`upload_proposal_file\` — upload a file from a URL to the proposals storage bucket (returns filePath for PDF pages)
 - \`add_proposal_page\` — add a text/pdf/pricing/packages/toc/section page
-- \`update_proposal_page\` — edit a page's title, content, or settings
+- \`update_proposal_page\` — edit page title, content, or settings. Use payload_patch for pricing/packages JSONB
 - \`delete_proposal_page\` — remove a page
 - \`reorder_proposal_pages\` — reorder pages by ID array
-- \`list_documents\` → \`get_document\`
 - Quotes are proposals with entity_type='pricing'
+
+### Documents
+- \`list_documents\` → \`get_document\`
+- \`create_document\` — create a new document with a default Introduction page
+- \`update_document\` — edit title or description
+- \`delete_document\` — delete document and all pages
+- \`add_document_page\` / \`update_document_page\` / \`delete_document_page\` — page CRUD
 
 ### Template Library
 - \`list_templates\` → \`get_template\`
+- \`create_template\` — create a new template (proposal or quote type)
+- \`update_template\` — edit name or description
+- \`delete_template\` — delete template and all pages
+- \`add_template_page\` / \`update_template_page\` / \`delete_template_page\` — page CRUD
 
 ### Swipe Vault
 - \`list_swipe_collections\` → \`list_swipe_files\` → \`get_swipe_file\`
+- \`create_swipe_collection\` / \`update_swipe_collection\` / \`delete_swipe_collection\` — collection CRUD
+- \`create_swipe_file\` / \`update_swipe_file\` / \`delete_swipe_file\` — swipe file CRUD
 
 ### Funnel Planner
 - \`list_funnels\` → \`get_funnel\` (includes steps, edges, and shapes)
@@ -98,6 +110,8 @@ const mcpHandler = createMcpHandler(
 - \`get_company\` — company info and branding
 - \`list_team_members\` — team roster
 - \`list_clients\` — client companies
+- \`create_client\` — create a new client company (Owner/Admin only)
+- \`update_client\` — update client name, website, email, phone
 
 ## Key concepts
 - Proposals flow: draft → sent → viewed → accepted/declined/revision_requested
@@ -1017,9 +1031,9 @@ const mcpHandler = createMcpHandler(
         .select('id, title, description, page_names, created_at, updated_at')
         .eq('id', documentId).eq('company_id', auth.companyId).single();
       if (!doc) return txt('Document not found');
-      const { data: pages } = await sb.from('proposal_pages_v2')
+      const { data: pages } = await sb.from('document_pages_v2')
         .select('id, position, type, title, indent, enabled, payload')
-        .eq('proposal_id', documentId).eq('company_id', auth.companyId).order('position', { ascending: true });
+        .eq('document_id', documentId).eq('company_id', auth.companyId).order('position', { ascending: true });
       return json({
         ...doc,
         pages: (pages || []).map(p => ({
@@ -1027,6 +1041,112 @@ const mcpHandler = createMcpHandler(
           content: p.type === 'text' && p.payload ? (p.payload as Record<string, unknown>).html || (p.payload as Record<string, unknown>).content : undefined,
         })),
       });
+    });
+
+    server.tool('create_document', 'Create a new document. Returns the document ID.', {
+      title: z.string(),
+      description: z.string().optional(),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const limitCheck = await checkResourceLimit(auth.companyId, 'documents');
+      if (!limitCheck.allowed) return txt(`Plan limit reached: ${limitCheck.reason || 'documents'}`);
+      const brandingDefaults = await getCompanyEntityDefaults(sb, auth.companyId, {});
+      const { data, error } = await sb.from('documents').insert({
+        title: args.title, description: args.description || null,
+        file_path: '', file_size_bytes: 0, page_names: [],
+        company_id: auth.companyId, ...brandingDefaults,
+      }).select('id').single();
+      if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
+      await addPage(sb, 'document', { entityId: data.id, companyId: auth.companyId, type: 'text', title: 'Introduction', position: 0 });
+      return json({ id: data.id, pageCount: 1 });
+    });
+
+    server.tool('update_document', 'Update document title or description.', {
+      documentId: z.string(),
+      title: z.string().optional(),
+      description: z.string().optional(),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: d } = await sb.from('documents').select('id').eq('id', args.documentId).eq('company_id', auth.companyId).single();
+      if (!d) return txt('Document not found');
+      const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (args.title !== undefined) updates.title = args.title;
+      if (args.description !== undefined) updates.description = args.description;
+      if (Object.keys(updates).length <= 1) return txt('No fields to update.');
+      const { error } = await sb.from('documents').update(updates).eq('id', args.documentId);
+      if (error) return txt(`Failed: ${error.message}`);
+      return txt('Document updated.');
+    });
+
+    server.tool('delete_document', 'Delete a document and all its pages.', {
+      documentId: z.string(),
+    }, async ({ documentId }, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: d } = await sb.from('documents').select('id, title').eq('id', documentId).eq('company_id', auth.companyId).single();
+      if (!d) return txt('Document not found');
+      await sb.from('document_pages_v2').delete().eq('document_id', documentId);
+      const { error } = await sb.from('documents').delete().eq('id', documentId);
+      if (error) return txt(`Failed: ${error.message}`);
+      return txt(`Document "${d.title}" deleted.`);
+    });
+
+    server.tool('add_document_page', 'Add a page to a document.', {
+      documentId: z.string(),
+      type: z.enum(['text', 'pdf', 'toc', 'section']).describe('Page type'),
+      title: z.string().optional(),
+      position: z.number().optional(),
+      content: z.string().optional().describe('HTML content for text pages'),
+      filePath: z.string().optional().describe('Storage path for PDF pages'),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: d } = await sb.from('documents').select('id').eq('id', args.documentId).eq('company_id', auth.companyId).single();
+      if (!d) return txt('Document not found');
+      if (args.type === 'pdf' && !args.filePath) return txt('filePath is required for PDF pages.');
+      const payload: Record<string, unknown> = {};
+      if (args.content && args.type === 'text') payload.html = args.content;
+      if (args.filePath && args.type === 'pdf') payload.file_path = args.filePath;
+      const result = await addPage(sb, 'document', { entityId: args.documentId, companyId: auth.companyId, type: args.type as PageType, title: args.title, position: args.position, payload: Object.keys(payload).length ? payload : undefined });
+      if (result.error || !result.page) return txt(`Failed: ${result.error || 'unknown'}`);
+      return json({ id: result.page.id, position: result.page.position, type: result.page.type, title: result.page.title });
+    });
+
+    server.tool('update_document_page', 'Update a document page.', {
+      documentId: z.string(), pageId: z.string(),
+      title: z.string().optional(), content: z.string().optional(),
+      filePath: z.string().optional(), enabled: z.boolean().optional(),
+      indent: z.number().optional(), showTitle: z.boolean().optional(),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: d } = await sb.from('documents').select('id').eq('id', args.documentId).eq('company_id', auth.companyId).single();
+      if (!d) return txt('Document not found');
+      const changes: Record<string, unknown> = {};
+      if (args.title !== undefined) changes.title = args.title;
+      if (args.enabled !== undefined) changes.enabled = args.enabled;
+      if (args.indent !== undefined) changes.indent = args.indent;
+      if (args.showTitle !== undefined) changes.show_title = args.showTitle;
+      if (args.content !== undefined) changes.payload_patch = { html: args.content };
+      if (args.filePath !== undefined) changes.payload_patch = { ...(changes.payload_patch as Record<string, unknown> || {}), file_path: args.filePath };
+      if (Object.keys(changes).length === 0) return txt('No fields to update.');
+      const result = await updatePage(sb, 'document', args.pageId, changes, { entityId: args.documentId });
+      if (result.error || !result.page) return txt(`Failed: ${result.error || 'unknown'}`);
+      return txt(`Page "${result.page.title}" updated.`);
+    });
+
+    server.tool('delete_document_page', 'Delete a page from a document.', {
+      documentId: z.string(), pageId: z.string(),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: d } = await sb.from('documents').select('id').eq('id', args.documentId).eq('company_id', auth.companyId).single();
+      if (!d) return txt('Document not found');
+      const result = await deletePage(sb, 'document', { entityId: args.documentId, pageId: args.pageId });
+      if (!result.success) return txt(`Failed: ${result.error || 'unknown'}`);
+      return txt(`Page deleted. ${result.totalPages} remaining.`);
     });
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1053,9 +1173,9 @@ const mcpHandler = createMcpHandler(
         .select('id, name, description, entity_type, section_headers, created_at, updated_at')
         .eq('id', templateId).eq('company_id', auth.companyId).single();
       if (!t) return txt('Template not found');
-      const { data: pages } = await sb.from('proposal_pages_v2')
+      const { data: pages } = await sb.from('template_pages_v2')
         .select('id, position, type, title, indent, enabled, payload')
-        .eq('proposal_id', templateId).eq('company_id', auth.companyId).order('position', { ascending: true });
+        .eq('template_id', templateId).eq('company_id', auth.companyId).order('position', { ascending: true });
       return json({
         id: t.id, name: t.name, description: t.description, type: t.entity_type || 'proposal', sectionHeaders: t.section_headers,
         pages: (pages || []).map(p => ({
@@ -1064,6 +1184,111 @@ const mcpHandler = createMcpHandler(
         })),
         updatedAt: t.updated_at,
       });
+    });
+
+    server.tool('create_template', 'Create a new template in the template library.', {
+      name: z.string(),
+      description: z.string().optional(),
+      entityType: z.enum(['proposal', 'quote']).optional().describe('Default: proposal'),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const brandingDefaults = await getCompanyEntityDefaults(sb, auth.companyId, {});
+      const { data, error } = await sb.from('proposal_templates').insert({
+        name: args.name, description: args.description || null,
+        entity_type: args.entityType || 'proposal',
+        company_id: auth.companyId, ...brandingDefaults,
+      }).select('id').single();
+      if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
+      await addPage(sb, 'template', { entityId: data.id, companyId: auth.companyId, type: 'text', title: 'Introduction', position: 0 });
+      return json({ id: data.id, pageCount: 1 });
+    });
+
+    server.tool('update_template', 'Update template name, description, or section headers.', {
+      templateId: z.string(),
+      name: z.string().optional(),
+      description: z.string().optional(),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: t } = await sb.from('proposal_templates').select('id').eq('id', args.templateId).eq('company_id', auth.companyId).single();
+      if (!t) return txt('Template not found');
+      const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (args.name !== undefined) updates.name = args.name;
+      if (args.description !== undefined) updates.description = args.description;
+      if (Object.keys(updates).length <= 1) return txt('No fields to update.');
+      const { error } = await sb.from('proposal_templates').update(updates).eq('id', args.templateId);
+      if (error) return txt(`Failed: ${error.message}`);
+      return txt('Template updated.');
+    });
+
+    server.tool('delete_template', 'Delete a template and all its pages.', {
+      templateId: z.string(),
+    }, async ({ templateId }, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: t } = await sb.from('proposal_templates').select('id, name').eq('id', templateId).eq('company_id', auth.companyId).single();
+      if (!t) return txt('Template not found');
+      await sb.from('template_pages_v2').delete().eq('template_id', templateId);
+      const { error } = await sb.from('proposal_templates').delete().eq('id', templateId);
+      if (error) return txt(`Failed: ${error.message}`);
+      return txt(`Template "${t.name}" deleted.`);
+    });
+
+    server.tool('add_template_page', 'Add a page to a template.', {
+      templateId: z.string(),
+      type: z.enum(['text', 'pdf', 'pricing', 'packages', 'toc', 'section', 'html']).describe('Page type'),
+      title: z.string().optional(),
+      position: z.number().optional(),
+      content: z.string().optional().describe('HTML content for text pages'),
+      filePath: z.string().optional().describe('Storage path for PDF pages'),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: t } = await sb.from('proposal_templates').select('id').eq('id', args.templateId).eq('company_id', auth.companyId).single();
+      if (!t) return txt('Template not found');
+      if (args.type === 'pdf' && !args.filePath) return txt('filePath is required for PDF pages.');
+      const payload: Record<string, unknown> = {};
+      if (args.content && args.type === 'text') payload.html = args.content;
+      if (args.filePath && args.type === 'pdf') payload.file_path = args.filePath;
+      const result = await addPage(sb, 'template', { entityId: args.templateId, companyId: auth.companyId, type: args.type as PageType, title: args.title, position: args.position, payload: Object.keys(payload).length ? payload : undefined });
+      if (result.error || !result.page) return txt(`Failed: ${result.error || 'unknown'}`);
+      return json({ id: result.page.id, position: result.page.position, type: result.page.type, title: result.page.title });
+    });
+
+    server.tool('update_template_page', 'Update a template page.', {
+      templateId: z.string(), pageId: z.string(),
+      title: z.string().optional(), content: z.string().optional(),
+      filePath: z.string().optional(), enabled: z.boolean().optional(),
+      indent: z.number().optional(), showTitle: z.boolean().optional(),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: t } = await sb.from('proposal_templates').select('id').eq('id', args.templateId).eq('company_id', auth.companyId).single();
+      if (!t) return txt('Template not found');
+      const changes: Record<string, unknown> = {};
+      if (args.title !== undefined) changes.title = args.title;
+      if (args.enabled !== undefined) changes.enabled = args.enabled;
+      if (args.indent !== undefined) changes.indent = args.indent;
+      if (args.showTitle !== undefined) changes.show_title = args.showTitle;
+      if (args.content !== undefined) changes.payload_patch = { html: args.content };
+      if (args.filePath !== undefined) changes.payload_patch = { ...(changes.payload_patch as Record<string, unknown> || {}), file_path: args.filePath };
+      if (Object.keys(changes).length === 0) return txt('No fields to update.');
+      const result = await updatePage(sb, 'template', args.pageId, changes, { entityId: args.templateId });
+      if (result.error || !result.page) return txt(`Failed: ${result.error || 'unknown'}`);
+      return txt(`Page "${result.page.title}" updated.`);
+    });
+
+    server.tool('delete_template_page', 'Delete a page from a template.', {
+      templateId: z.string(), pageId: z.string(),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: t } = await sb.from('proposal_templates').select('id').eq('id', args.templateId).eq('company_id', auth.companyId).single();
+      if (!t) return txt('Template not found');
+      const result = await deletePage(sb, 'template', { entityId: args.templateId, pageId: args.pageId });
+      if (!result.success) return txt(`Failed: ${result.error || 'unknown'}`);
+      return txt(`Page deleted. ${result.totalPages} remaining.`);
     });
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1116,6 +1341,133 @@ const mcpHandler = createMcpHandler(
         sourceUrl: f.source_url, brand: f.brand, notes: f.notes, tags: f.tags, collectionId: f.type_id,
         transcription: f.transcription, aiPrompt: f.ai_prompt, createdAt: f.created_at, updatedAt: f.updated_at,
       });
+    });
+
+    server.tool('create_swipe_collection', 'Create a new swipe vault collection (naming convention).', {
+      name: z.string(),
+      description: z.string().optional(),
+      sortOrder: z.number().optional(),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data, error } = await sb.from('swipe_types').insert({
+        name: args.name, description: args.description || null,
+        sort_order: args.sortOrder ?? 0, company_id: auth.companyId,
+      }).select('id, name').single();
+      if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
+      return json({ id: data.id, name: data.name });
+    });
+
+    server.tool('update_swipe_collection', 'Update a swipe vault collection.', {
+      collectionId: z.string(),
+      name: z.string().optional(),
+      description: z.string().optional(),
+      sortOrder: z.number().optional(),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: c } = await sb.from('swipe_types').select('id').eq('id', args.collectionId).eq('company_id', auth.companyId).single();
+      if (!c) return txt('Collection not found');
+      const updates: Record<string, unknown> = {};
+      if (args.name !== undefined) updates.name = args.name;
+      if (args.description !== undefined) updates.description = args.description;
+      if (args.sortOrder !== undefined) updates.sort_order = args.sortOrder;
+      if (Object.keys(updates).length === 0) return txt('No fields to update.');
+      const { error } = await sb.from('swipe_types').update(updates).eq('id', args.collectionId);
+      if (error) return txt(`Failed: ${error.message}`);
+      return txt('Collection updated.');
+    });
+
+    server.tool('delete_swipe_collection', 'Delete a swipe vault collection. Files in it will become uncategorized.', {
+      collectionId: z.string(),
+    }, async ({ collectionId }, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: c } = await sb.from('swipe_types').select('id, name').eq('id', collectionId).eq('company_id', auth.companyId).single();
+      if (!c) return txt('Collection not found');
+      await sb.from('swipe_files').update({ type_id: null }).eq('type_id', collectionId).eq('company_id', auth.companyId);
+      const { error } = await sb.from('swipe_types').delete().eq('id', collectionId);
+      if (error) return txt(`Failed: ${error.message}`);
+      return txt(`Collection "${c.name}" deleted.`);
+    });
+
+    server.tool('create_swipe_file', 'Create a new swipe file (ad creative reference).', {
+      title: z.string(),
+      collectionId: z.string().optional().describe('Swipe collection/type ID'),
+      mediaType: z.enum(['image', 'video']).describe('Media type'),
+      mediaUrl: z.string().describe('URL to the media file'),
+      thumbnailUrl: z.string().optional(),
+      headline: z.string().optional(),
+      primaryText: z.string().optional(),
+      description: z.string().optional(),
+      cta: z.string().optional().describe('Call to action text'),
+      sourceUrl: z.string().optional().describe('Original source URL'),
+      brand: z.string().optional(),
+      notes: z.string().optional(),
+      tags: z.array(z.string()).optional(),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data, error } = await sb.from('swipe_files').insert({
+        title: args.title, type_id: args.collectionId || null,
+        media_type: args.mediaType, media_url: args.mediaUrl,
+        thumbnail_url: args.thumbnailUrl || null, headline: args.headline || null,
+        primary_text: args.primaryText || null, description: args.description || null,
+        cta: args.cta || null, source_url: args.sourceUrl || null,
+        brand: args.brand || null, notes: args.notes || null,
+        tags: args.tags || [], company_id: auth.companyId,
+      }).select('id, title').single();
+      if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
+      return json({ id: data.id, title: data.title });
+    });
+
+    server.tool('update_swipe_file', 'Update a swipe file.', {
+      swipeFileId: z.string(),
+      title: z.string().optional(),
+      collectionId: z.string().optional(),
+      headline: z.string().optional(),
+      primaryText: z.string().optional(),
+      description: z.string().optional(),
+      cta: z.string().optional(),
+      mediaUrl: z.string().optional(),
+      thumbnailUrl: z.string().optional(),
+      sourceUrl: z.string().optional(),
+      brand: z.string().optional(),
+      notes: z.string().optional(),
+      tags: z.array(z.string()).optional(),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: f } = await sb.from('swipe_files').select('id').eq('id', args.swipeFileId).eq('company_id', auth.companyId).single();
+      if (!f) return txt('Swipe file not found');
+      const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      const MAP: [string, string][] = [
+        ['title', 'title'], ['collectionId', 'type_id'], ['headline', 'headline'],
+        ['primaryText', 'primary_text'], ['description', 'description'], ['cta', 'cta'],
+        ['mediaUrl', 'media_url'], ['thumbnailUrl', 'thumbnail_url'],
+        ['sourceUrl', 'source_url'], ['brand', 'brand'], ['notes', 'notes'], ['tags', 'tags'],
+      ];
+      let count = 0;
+      for (const [param, col] of MAP) {
+        const val = (args as Record<string, unknown>)[param];
+        if (val !== undefined) { updates[col] = val; count++; }
+      }
+      if (count === 0) return txt('No fields to update.');
+      const { error } = await sb.from('swipe_files').update(updates).eq('id', args.swipeFileId);
+      if (error) return txt(`Failed: ${error.message}`);
+      return txt(`Swipe file updated (${count} field${count > 1 ? 's' : ''}).`);
+    });
+
+    server.tool('delete_swipe_file', 'Delete a swipe file.', {
+      swipeFileId: z.string(),
+    }, async ({ swipeFileId }, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: f } = await sb.from('swipe_files').select('id, title').eq('id', swipeFileId).eq('company_id', auth.companyId).single();
+      if (!f) return txt('Swipe file not found');
+      const { error } = await sb.from('swipe_files').delete().eq('id', swipeFileId);
+      if (error) return txt(`Failed: ${error.message}`);
+      return txt(`Swipe file "${f.title}" deleted.`);
     });
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1453,10 +1805,53 @@ const mcpHandler = createMcpHandler(
       if (!data?.length) return txt('No client companies found.');
       return json(data);
     });
+
+    server.tool('create_client', 'Create a new client company linked to this agency. Requires Owner or Admin role.', {
+      name: z.string(),
+      slug: z.string().describe('URL-safe slug (lowercase, hyphens)'),
+      website: z.string().optional(),
+      contactEmail: z.string().optional(),
+      phone: z.string().optional(),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      if (auth.role !== 'owner' && auth.role !== 'admin') return txt('Only owners and admins can create clients.');
+      const sb = createServiceClient();
+      const { data: existing } = await sb.from('companies').select('id').eq('slug', args.slug).maybeSingle();
+      if (existing) return txt(`Slug "${args.slug}" is already taken.`);
+      const { data, error } = await sb.from('companies').insert({
+        name: args.name, slug: args.slug, account_type: 'client',
+        agency_id: auth.companyId, website: args.website || null,
+        contact_email: args.contactEmail || null, phone: args.phone || null,
+      }).select('id, name, slug').single();
+      if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
+      return json({ id: data.id, name: data.name, slug: data.slug });
+    });
+
+    server.tool('update_client', 'Update a client company.', {
+      clientId: z.string(),
+      name: z.string().optional(),
+      website: z.string().optional(),
+      contactEmail: z.string().optional(),
+      phone: z.string().optional(),
+    }, async (args, extra) => {
+      const auth = getAuth(extra); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: c } = await sb.from('companies').select('id').eq('id', args.clientId).eq('agency_id', auth.companyId).eq('account_type', 'client').single();
+      if (!c) return txt('Client not found');
+      const updates: Record<string, unknown> = {};
+      if (args.name !== undefined) updates.name = args.name;
+      if (args.website !== undefined) updates.website = args.website;
+      if (args.contactEmail !== undefined) updates.contact_email = args.contactEmail;
+      if (args.phone !== undefined) updates.phone = args.phone;
+      if (Object.keys(updates).length === 0) return txt('No fields to update.');
+      const { error } = await sb.from('companies').update(updates).eq('id', args.clientId);
+      if (error) return txt(`Failed: ${error.message}`);
+      return txt('Client updated.');
+    });
   },
   {
     capabilities: { tools: {} },
-    serverInfo: { name: 'agencyviz', version: '1.3.0' },
+    serverInfo: { name: 'agencyviz', version: '1.4.0' },
   },
   {
     streamableHttpEndpoint: '/api/mcp',
