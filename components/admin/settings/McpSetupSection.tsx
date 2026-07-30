@@ -5,21 +5,21 @@ import { useState, useCallback } from 'react';
 import { Copy, Check, ExternalLink, ChevronDown, ChevronRight, ShieldCheck, Terminal } from 'lucide-react';
 
 const CAPABILITIES = [
-  { name: 'Proposals', desc: 'List, create, and manage proposals' },
-  { name: 'Quotes', desc: 'Build and update quotes with line items' },
-  { name: 'Documents', desc: 'Create and edit documents and pages' },
-  { name: 'Templates', desc: 'Browse and apply templates' },
-  { name: 'Campaigns', desc: 'Manage campaign projects and assets' },
-  { name: 'Clients', desc: 'Access client company records' },
+  { name: 'Proposals', desc: 'Create, edit, and manage proposals with full page CRUD' },
+  { name: 'Quotes', desc: 'Build and update quotes with line items and packages' },
+  { name: 'Documents', desc: 'Create, edit, and manage documents with full page CRUD' },
+  { name: 'Templates', desc: 'Create, edit, and manage templates with full page CRUD' },
+  { name: 'Campaigns', desc: 'Manage campaign projects, assets, versions, and comments' },
+  { name: 'Clients', desc: 'Create and manage client company records' },
   { name: 'Team', desc: 'View team members and roles' },
-  { name: 'Funnels', desc: 'View funnel plans and forecasts' },
-  { name: 'Swipe Vault', desc: 'Browse swipe file collections' },
+  { name: 'Funnels', desc: 'Build and manage funnel plans with steps, edges, and forecasts' },
+  { name: 'Swipe Vault', desc: 'Create and manage swipe file collections and references' },
 ];
 
 type SetupTool = {
   name: string;
   icon: string;
-  method: 'json' | 'cli';
+  method: 'json' | 'cli' | 'url';
   instructions: string;
   value: string;
 };
@@ -52,23 +52,22 @@ export default function McpSetupSection() {
 
   const serverUrl = `${appUrl}/api/mcp`;
 
-  const configJson = `{
-  "mcpServers": {
-    "agencyviz": {
-      "url": "${serverUrl}"
-    }
-  }
-}`;
-
   const claudeCodeCmd = `claude mcp add --transport http agencyviz ${serverUrl}`;
 
   const tools: SetupTool[] = [
     {
+      name: 'claude.ai',
+      icon: '✦',
+      method: 'url',
+      instructions: 'Settings → Integrations → Add More → paste the URL below:',
+      value: serverUrl,
+    },
+    {
       name: 'Claude Desktop',
       icon: '\u{1F5A5}',
-      method: 'json',
-      instructions: 'Settings → Developer → Edit Config — paste the JSON below:',
-      value: configJson,
+      method: 'url',
+      instructions: 'Settings → Developer → Add MCP Server → paste the URL below:',
+      value: serverUrl,
     },
     {
       name: 'Claude Code',
@@ -80,16 +79,9 @@ export default function McpSetupSection() {
     {
       name: 'Cursor',
       icon: '▸',
-      method: 'json',
-      instructions: 'Settings → MCP Servers → Add new — paste the JSON below:',
-      value: configJson,
-    },
-    {
-      name: 'Windsurf',
-      icon: '\u{1F30A}',
-      method: 'json',
-      instructions: 'Settings → MCP → Add Server — paste the JSON below:',
-      value: configJson,
+      method: 'url',
+      instructions: 'Settings → MCP Servers → Add new → paste the URL below:',
+      value: serverUrl,
     },
   ];
 
@@ -154,11 +146,11 @@ export default function McpSetupSection() {
             <div className="flex items-center justify-between px-3 py-2 bg-paper border-b border-edge">
               <span className="text-xs font-medium text-muted flex items-center gap-1.5">
                 {activeTool.method === 'cli' ? <Terminal size={12} /> : null}
-                {activeTool.method === 'cli' ? 'Terminal' : 'JSON Config'}
+                {activeTool.method === 'cli' ? 'Terminal' : activeTool.method === 'url' ? 'Server URL' : 'JSON Config'}
               </span>
               <CopyButton text={activeTool.value} />
             </div>
-            <pre className="px-4 py-3 text-xs leading-relaxed overflow-x-auto bg-[#1e1e1e] text-[#d4d4d4] font-mono rounded-b-lg">
+            <pre className={`px-4 py-3 text-xs leading-relaxed overflow-x-auto bg-[#1e1e1e] text-[#d4d4d4] font-mono rounded-b-lg ${activeTool.method === 'url' ? 'select-all' : ''}`}>
               {activeTool.value}
             </pre>
           </div>
