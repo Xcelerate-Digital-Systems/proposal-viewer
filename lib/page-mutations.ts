@@ -276,6 +276,30 @@ export async function reorderPages(
   return { success: true };
 }
 
+/* ─── PDF file-path validation ───────────────────────────────────────────── */
+
+// temp_path arrives from the client. Without this check a caller who owns
+// ANY entity can point a page at another tenant's storage object, or get
+// that object deleted by the old-file cleanup below. The path must live
+// under the entity's own folder in the proposals bucket.
+function entityStorageFolder(entityType: EntityType): string {
+  return entityType === 'template' ? 'templates'
+       : entityType === 'document' ? 'documents'
+       : 'proposals';
+}
+
+export function isValidPdfPagePath(
+  entityType: EntityType,
+  entityId: string,
+  tempPath: unknown,
+): tempPath is string {
+  return (
+    typeof tempPath === 'string' &&
+    !tempPath.includes('..') &&
+    tempPath.startsWith(`${entityStorageFolder(entityType)}/${entityId}/`)
+  );
+}
+
 /* ─── replacePdfPage ─────────────────────────────────────────────────────── */
 
 /**
@@ -291,12 +315,17 @@ export async function replacePdfPage(
 
   let fetchQuery = supabase
     .from(pagesTable)
-    .select('payload')
+    .select(`payload, ${idColumn}`)
     .eq('id', opts.pageId);
   if (opts.entityId) fetchQuery = fetchQuery.eq(idColumn, opts.entityId);
   const { data: current, error: fetchError } = await fetchQuery.single();
 
   if (fetchError || !current) return { success: false, error: 'Page not found' };
+
+  const resolvedEntityId = (current as Record<string, unknown>)[idColumn] as string;
+  if (!isValidPdfPagePath(entityType, resolvedEntityId, opts.tempPath)) {
+    return { success: false, error: 'Invalid file path for this page' };
+  }
 
   const oldPayload = (current.payload ?? {}) as Record<string, unknown>;
   const oldFilePath = oldPayload.file_path as string | undefined;
@@ -338,6 +367,10 @@ export async function insertPdfPage(
   },
 ): Promise<{ page: UnifiedPage | null; totalPages: number; error?: string; status?: number }> {
   const { pagesTable, idColumn } = getEntityConfig(entityType);
+
+  if (!isValidPdfPagePath(entityType, opts.entityId, opts.tempPath)) {
+    return { page: null, totalPages: 0, error: 'Invalid file path for this page', status: 400 };
+  }
 
   const newPosition = opts.afterPosition + 1;
 

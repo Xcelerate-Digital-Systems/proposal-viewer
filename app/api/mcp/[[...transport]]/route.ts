@@ -69,7 +69,7 @@ const mcpHandler = createMcpHandler(
 - \`create_proposal_from_template\` — create a proposal pre-populated with template pages
 - \`update_proposal\` — edit title, client info, description, branding fields
 - \`update_proposal_status\` — mark as sent or pull back to draft
-- \`upload_proposal_file\` — upload a file from a URL to the proposals storage bucket (returns filePath for PDF pages)
+- \`upload_proposal_file\` — upload a file to the proposals storage bucket from a URL, or as base64 content for local files up to ~3MB (returns filePath for PDF pages)
 - \`add_proposal_page\` — add a text/pdf/pricing/packages/toc/section page
 - \`update_proposal_page\` — edit page title, content, or settings
 - \`delete_proposal_page\` — remove a page
@@ -908,6 +908,11 @@ const mcpHandler = createMcpHandler(
         payload.html = args.content;
       }
       if (args.filePath && args.type === 'pdf') {
+        // Only files under this proposal's own folder — a foreign path would
+        // point the page at (and on replace, delete) another tenant's object.
+        if (args.filePath.includes('..') || !args.filePath.startsWith(`proposals/${args.proposalId}/`)) {
+          return txt(`filePath must start with "proposals/${args.proposalId}/" — upload via upload_proposal_file first.`);
+        }
         payload.file_path = args.filePath;
       }
 
@@ -926,9 +931,11 @@ const mcpHandler = createMcpHandler(
       return json({ id: result.page.id, position: result.page.position, type: result.page.type, title: result.page.title });
     });
 
-    server.tool('upload_proposal_file', 'Upload a file to the proposals storage bucket from a URL. Returns the filePath to use with add_proposal_page or update_proposal_page. Supports PDF, PNG, JPG, SVG, WEBP.', {
+    server.tool('upload_proposal_file', 'Upload a file to the proposals storage bucket, either from a public URL or as base64 content (max ~3MB base64 — MCP request bodies are size-limited). Returns the filePath to use with add_proposal_page or update_proposal_page. Supports PDF, PNG, JPG, SVG, WEBP.', {
       proposalId: z.string().describe('Proposal ID — used to namespace the storage path'),
-      url: z.string().describe('Public URL to fetch the file from'),
+      url: z.string().optional().describe('Public URL to fetch the file from (provide url OR base64, not both)'),
+      base64: z.string().optional().describe('Base64-encoded file content (no data: prefix). Requires contentType. Max ~3MB decoded.'),
+      contentType: z.string().optional().describe('MIME type for base64 uploads (application/pdf, image/png, image/jpeg, image/svg+xml, image/webp)'),
       fileName: z.string().optional().describe('Override filename (e.g. "slide-1.pdf"). Auto-detected from URL if omitted.'),
     }, async (args, extra) => {
       const auth = getAuth(extra); if (!auth) return unauthorized();
@@ -936,15 +943,6 @@ const mcpHandler = createMcpHandler(
       const { data: p } = await sb.from('proposals').select('id').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
       if (!p) return txt('Proposal not found');
 
-      let res: Response;
-      try {
-        res = await fetch(args.url, { redirect: 'follow' });
-      } catch (e) {
-        return txt(`Failed to fetch URL: ${e instanceof Error ? e.message : 'network error'}`);
-      }
-      if (!res.ok) return txt(`URL returned ${res.status} ${res.statusText}`);
-
-      const contentType = res.headers.get('content-type') || 'application/octet-stream';
       const ALLOWED_TYPES: Record<string, string> = {
         'application/pdf': '.pdf',
         'image/png': '.png',
@@ -952,34 +950,90 @@ const mcpHandler = createMcpHandler(
         'image/svg+xml': '.svg',
         'image/webp': '.webp',
       };
-      const mimeBase = contentType.split(';')[0].trim().toLowerCase();
-      if (!ALLOWED_TYPES[mimeBase]) return txt(`Unsupported content type: ${mimeBase}. Allowed: ${Object.keys(ALLOWED_TYPES).join(', ')}`);
 
-      const bytes = await res.arrayBuffer();
-      if (bytes.byteLength === 0) return txt('Downloaded file is empty.');
-      if (bytes.byteLength > 50 * 1024 * 1024) return txt('File too large (max 50MB).');
+      // Content must look like what it claims to be, whichever way it arrived.
+      // SVG has no magic bytes; require it to parse as markup-ish text.
+      const matchesMagicBytes = (buf: Buffer, mime: string): boolean => {
+        switch (mime) {
+          case 'application/pdf': return buf.subarray(0, 5).toString('latin1') === '%PDF-';
+          case 'image/png':       return buf.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+          case 'image/jpeg':      return buf.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]));
+          case 'image/webp':      return buf.subarray(0, 4).toString('latin1') === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WEBP';
+          case 'image/svg+xml':   return buf.subarray(0, 512).toString('utf8').trimStart().startsWith('<');
+          default: return false;
+        }
+      };
+
+      if (!args.url && !args.base64) return txt('Provide either url or base64.');
+      if (args.url && args.base64) return txt('Provide url OR base64, not both.');
+
+      let buf: Buffer;
+      let mimeBase: string;
+
+      if (args.base64) {
+        mimeBase = (args.contentType || '').split(';')[0].trim().toLowerCase();
+        if (!ALLOWED_TYPES[mimeBase]) return txt(`base64 uploads require contentType. Allowed: ${Object.keys(ALLOWED_TYPES).join(', ')}`);
+        try {
+          buf = Buffer.from(args.base64, 'base64');
+        } catch {
+          return txt('Invalid base64 content.');
+        }
+        if (buf.byteLength === 0) return txt('Decoded file is empty.');
+        // MCP requests arrive as JSON on a serverless function; the platform
+        // body limit is the real ceiling, so cap well under it.
+        if (buf.byteLength > 3 * 1024 * 1024) return txt('base64 file too large (max 3MB decoded). Use the url input for larger files.');
+      } else {
+        let parsed: URL;
+        try {
+          parsed = new URL(args.url as string);
+        } catch {
+          return txt('Invalid URL.');
+        }
+        if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+          return txt('Only http(s) URLs are supported.');
+        }
+        let res: Response;
+        try {
+          res = await fetch(args.url as string, { redirect: 'follow' });
+        } catch (e) {
+          return txt(`Failed to fetch URL: ${e instanceof Error ? e.message : 'network error'}`);
+        }
+        if (!res.ok) return txt(`URL returned ${res.status} ${res.statusText}`);
+
+        const contentType = res.headers.get('content-type') || 'application/octet-stream';
+        mimeBase = contentType.split(';')[0].trim().toLowerCase();
+        if (!ALLOWED_TYPES[mimeBase]) return txt(`Unsupported content type: ${mimeBase}. Allowed: ${Object.keys(ALLOWED_TYPES).join(', ')}`);
+
+        const bytes = await res.arrayBuffer();
+        if (bytes.byteLength === 0) return txt('Downloaded file is empty.');
+        if (bytes.byteLength > 50 * 1024 * 1024) return txt('File too large (max 50MB).');
+        buf = Buffer.from(bytes);
+      }
+
+      if (!matchesMagicBytes(buf, mimeBase)) {
+        return txt(`File content does not match declared type ${mimeBase}.`);
+      }
 
       const sanitizedId = args.proposalId.replace(/[^a-zA-Z0-9._-]/g, '');
       let name = args.fileName;
-      if (!name) {
+      if (!name && args.url) {
         try {
           const urlPath = new URL(args.url).pathname;
-          name = urlPath.split('/').pop() || `file${ALLOWED_TYPES[mimeBase]}`;
-        } catch {
-          name = `file${ALLOWED_TYPES[mimeBase]}`;
-        }
+          name = urlPath.split('/').pop() || undefined;
+        } catch { /* fall through */ }
       }
+      if (!name) name = `file-${Date.now()}${ALLOWED_TYPES[mimeBase]}`;
       const safeName = name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const filePath = `proposals/${sanitizedId}/${safeName}`;
 
-      const { error: uploadErr } = await sb.storage.from('proposals').upload(filePath, Buffer.from(bytes), {
+      const { error: uploadErr } = await sb.storage.from('proposals').upload(filePath, buf, {
         contentType: mimeBase,
         upsert: true,
       });
 
       if (uploadErr) return txt(`Upload failed: ${uploadErr.message}`);
 
-      return json({ filePath, contentType: mimeBase, sizeBytes: bytes.byteLength });
+      return json({ filePath, contentType: mimeBase, sizeBytes: buf.byteLength });
     });
 
     server.tool('update_proposal_page', 'Update a page\'s title, content, file, or display settings. For PDF pages, pass filePath to replace the file.', {
@@ -1012,6 +1066,10 @@ const mcpHandler = createMcpHandler(
         changes.payload_patch = { html: args.content };
       }
       if (args.filePath !== undefined) {
+        // Same guard as add_proposal_page: no cross-tenant path references.
+        if (args.filePath.includes('..') || !args.filePath.startsWith(`proposals/${args.proposalId}/`)) {
+          return txt(`filePath must start with "proposals/${args.proposalId}/" — upload via upload_proposal_file first.`);
+        }
         changes.payload_patch = { ...(changes.payload_patch as Record<string, unknown> || {}), file_path: args.filePath };
       }
 

@@ -85,6 +85,13 @@ export default function TemplateUploadModal({
     const tempPath = `templates/temp-${Date.now()}.pdf`;
 
     try {
+      // Storage RLS requires the authenticated role: send the user's session
+      // token, never the bare anon key (which the tightened policies reject).
+      const { supabase } = await import('@/lib/supabase');
+      const { data: tokenData } = await supabase.auth.getSession();
+      const accessToken = tokenData?.session?.access_token;
+      if (!accessToken) throw new Error('Not signed in');
+
       // XHR upload with progress tracking
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -99,7 +106,8 @@ export default function TemplateUploadModal({
         });
         xhr.addEventListener('error', () => reject(new Error('Upload failed')));
         xhr.open('POST', `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/proposals/${tempPath}`);
-        xhr.setRequestHeader('Authorization', `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`);
+        xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+        xhr.setRequestHeader('apikey', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
         xhr.setRequestHeader('Content-Type', 'application/pdf');
         xhr.setRequestHeader('x-upsert', 'true');
         xhr.send(file);
