@@ -53,6 +53,7 @@ const mcpHandler = createMcpHandler(
 
 ### Campaigns (Feedback/Markup)
 - \`list_campaigns\` → \`get_campaign\` → \`list_assets\` → \`get_asset_detail\`
+- \`create_campaign\` — create a new campaign project (projectType: campaign | asset | website)
 - \`create_asset\` — add a new asset to a campaign (any content type)
 - \`create_asset_version\` — upload a new revision of an existing asset (optionally reset stage)
 - \`update_asset_content\` — edit content fields in-place without creating a new version
@@ -161,6 +162,41 @@ const mcpHandler = createMcpHandler(
       const tc: Record<string, number> = {}, sc: Record<string, number> = {};
       for (const i of items || []) { tc[i.type] = (tc[i.type] || 0) + 1; sc[i.status] = (sc[i.status] || 0) + 1; }
       return json({ id: p.id, title: p.title, client: p.client_company || p.client_name, status: p.status, assetCount: items?.length || 0, assetsByType: tc, assetsByStatus: sc, createdAt: p.created_at, updatedAt: p.updated_at });
+    });
+
+    server.tool('create_campaign', 'Create a new campaign (review project). Returns the new campaign ID.', {
+      title: z.string().describe('Campaign title'),
+      projectType: z.enum(['campaign', 'asset', 'website']).optional().describe('Project type. Default: campaign'),
+      description: z.string().optional(),
+      clientName: z.string().optional().describe('Client contact name'),
+      clientEmail: z.string().optional().describe('Client contact email'),
+      clientCompany: z.string().optional().describe('Client company name'),
+      rootDomain: z.string().optional().describe('Root domain of the site under review'),
+      companyId: z.string().optional().describe('Super admin only: target a different company'),
+    }, async ({ title, projectType, description, clientName, clientEmail, clientCompany, rootDomain, companyId }, extra) => {
+      const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
+      const trimmed = title.trim();
+      if (!trimmed) return txt('Title is required');
+      const limitCheck = await checkResourceLimit(auth.companyId, 'reviews');
+      if (!limitCheck.allowed) return txt(`Plan limit reached: your plan does not allow more campaigns (${limitCheck.used}/${limitCheck.limit ?? '∞'}). Upgrade to create more.`);
+      const sb = createServiceClient();
+      const { data: created, error } = await sb.from('review_projects').insert({
+        company_id: auth.companyId,
+        project_type: projectType || 'campaign',
+        title: trimmed,
+        description: description?.trim() || null,
+        client_name: clientName?.trim() || null,
+        client_email: clientEmail?.trim() || null,
+        client_company: clientCompany?.trim() || null,
+        root_domain: rootDomain?.trim() || null,
+        created_by: auth.userId,
+      }).select('id, title, project_type, status, share_token').single();
+      if (error || !created) return txt(`Failed: ${error?.message || 'unknown'}`);
+      await sb.from('review_project_assignees').upsert(
+        { review_project_id: created.id, team_member_id: auth.memberId },
+        { onConflict: 'review_project_id,team_member_id' },
+      );
+      return json({ id: created.id, title: created.title, projectType: created.project_type, status: created.status, shareToken: created.share_token });
     });
 
     server.tool('list_assets', 'List assets in a campaign with comment counts.', {
