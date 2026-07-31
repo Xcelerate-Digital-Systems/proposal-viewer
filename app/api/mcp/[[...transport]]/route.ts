@@ -70,7 +70,7 @@ const mcpHandler = createMcpHandler(
 - \`update_proposal\` — edit title, client info, description, branding fields
 - \`update_proposal_status\` — mark as sent or pull back to draft
 - \`upload_proposal_file\` — upload a file to the proposals storage bucket from a URL, or as base64 content for local files up to ~3MB (returns filePath for PDF pages)
-- \`add_proposal_page\` — add a text/pdf/pricing/packages/toc/section page
+- \`add_proposal_page\` — add a text/pdf/html/pricing/packages/toc/section page (html renders raw content in a sandboxed iframe — good for full-bleed designed pages)
 - \`update_proposal_page\` — edit page title, content, or settings
 - \`delete_proposal_page\` — remove a page
 - \`reorder_proposal_pages\` — reorder pages by ID array
@@ -885,12 +885,12 @@ const mcpHandler = createMcpHandler(
       return txt(`Proposal updated (${fieldCount} field${fieldCount > 1 ? 's' : ''}).`);
     });
 
-    server.tool('add_proposal_page', 'Add a new page to a proposal. Returns the new page ID. For PDF pages, provide a filePath (Supabase storage path in the "proposals" bucket).', {
+    server.tool('add_proposal_page', 'Add a new page to a proposal. Returns the new page ID. For PDF pages, provide a filePath (Supabase storage path in the "proposals" bucket). For html pages, provide content — rendered raw in a sandboxed iframe (no scripts).', {
       proposalId: z.string(),
-      type: z.enum(['text', 'pdf', 'pricing', 'packages', 'toc', 'section']).describe('Page type'),
+      type: z.enum(['text', 'pdf', 'html', 'pricing', 'packages', 'toc', 'section']).describe('Page type'),
       title: z.string().optional().describe('Page title (auto-generated if omitted)'),
       position: z.number().optional().describe('Insert at this position (0-based). Omit to append at the end.'),
-      content: z.string().optional().describe('HTML content for text pages'),
+      content: z.string().optional().describe('HTML content for text pages (TipTap-converted) or html pages (rendered raw in a sandboxed iframe)'),
       filePath: z.string().optional().describe('Supabase storage path for PDF pages (e.g. "proposals/{id}/page-3.pdf")'),
       indent: z.number().optional().describe('Indentation level (0-3). Default: 0'),
       enabled: z.boolean().optional().describe('Whether page is visible. Default: true'),
@@ -902,9 +902,10 @@ const mcpHandler = createMcpHandler(
       if (!p) return txt('Proposal not found');
 
       if (args.type === 'pdf' && !args.filePath) return txt('filePath is required for PDF pages.');
+      if (args.type === 'html' && !args.content) return txt('content is required for html pages.');
 
       const payload: Record<string, unknown> = {};
-      if (args.content && args.type === 'text') {
+      if (args.content && (args.type === 'text' || args.type === 'html')) {
         payload.html = args.content;
       }
       if (args.filePath && args.type === 'pdf') {
@@ -2114,7 +2115,7 @@ const mcpHandler = createMcpHandler(
   },
   {
     capabilities: { tools: {} },
-    serverInfo: { name: 'agencyviz', version: '1.6.0' },
+    serverInfo: { name: 'agencyviz', version: '1.7.0' },
   },
   {
     streamableHttpEndpoint: '/api/mcp',
