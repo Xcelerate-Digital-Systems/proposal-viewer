@@ -317,17 +317,23 @@ const mcpHandler = createMcpHandler(
       const sb = createServiceClient();
       const { data: comment } = await sb.from('review_comments').select('id, review_item_id, review_project_id, company_id').eq('id', commentId).eq('company_id', auth.companyId).single();
       if (!comment) return txt('Comment not found');
+      let noteAdded = false;
+      let noteError: string | null = null;
       if (note?.trim()) {
-        await sb.from('review_comments').insert({
+        const { error: noteErr } = await sb.from('review_comments').insert({
           review_item_id: comment.review_item_id, review_project_id: comment.review_project_id,
           company_id: comment.company_id, parent_comment_id: commentId,
           content: note.trim(), author_name: auth.memberName, author_user_id: auth.userId,
-          author_type: 'team', comment_type: 'general', source: 'mcp',
+          author_type: 'team', comment_type: 'general',
         });
+        // Never claim the note landed when it did not: the caller is usually
+        // telling a client something, and a silent drop loses that message.
+        if (noteErr) noteError = noteErr.message; else noteAdded = true;
       }
       const { error } = await sb.from('review_comments').update({ resolved: true, resolved_by: auth.memberName, resolved_at: new Date().toISOString() }).eq('id', commentId);
       if (error) return txt(`Failed: ${error.message}`);
-      return txt(`Comment ${commentId} resolved.${note?.trim() ? ' Note added as reply.' : ''}`);
+      if (noteError) return txt(`Comment ${commentId} resolved, but the note could NOT be added: ${noteError}`);
+      return txt(`Comment ${commentId} resolved.${noteAdded ? ' Note added as reply.' : ''}`);
     });
 
     server.tool('add_comment', 'Add a comment to an asset. Can be a thread reply.', {
@@ -345,7 +351,7 @@ const mcpHandler = createMcpHandler(
       const { data: comment, error } = await sb.from('review_comments').insert({
         review_project_id: item.review_project_id, review_item_id: assetId, company_id: auth.companyId,
         content, author_name: auth.memberName, author_user_id: auth.userId,
-        parent_comment_id: parentCommentId || null, thread_number: threadNumber, source: 'mcp',
+        parent_comment_id: parentCommentId || null, thread_number: threadNumber,
       }).select('id, thread_number').single();
       if (error || !comment) return txt(`Failed: ${error?.message || 'unknown'}`);
       return txt(`Comment added (ID: ${comment.id}${comment.thread_number ? `, thread #${comment.thread_number}` : ''}).`);
