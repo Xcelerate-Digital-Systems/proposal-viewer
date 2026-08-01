@@ -352,6 +352,9 @@ const mcpHandler = createMcpHandler(
         review_project_id: item.review_project_id, review_item_id: assetId, company_id: auth.companyId,
         content, author_name: auth.memberName, author_user_id: auth.userId,
         parent_comment_id: parentCommentId || null, thread_number: threadNumber,
+        // comment_type is NOT NULL with no default, and author_type defaults to
+        // 'client' — an MCP comment is the agency talking, not the client.
+        comment_type: 'general', author_type: 'team',
       }).select('id, thread_number').single();
       if (error || !comment) return txt(`Failed: ${error?.message || 'unknown'}`);
       return txt(`Comment added (ID: ${comment.id}${comment.thread_number ? `, thread #${comment.thread_number}` : ''}).`);
