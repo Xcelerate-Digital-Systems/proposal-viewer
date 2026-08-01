@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 import type { FeedbackStatus } from '@/lib/types/feedback';
@@ -293,37 +293,41 @@ export async function POST(
           : null;
 
     if (statusChanged && notifyEvent) {
-      try {
-        const { data: proj } = await supabase
-          .from('review_projects')
-          .select('share_token')
-          .eq('id', projectId)
-          .maybeSingle();
+      const itemId = params.itemId;
+      after(async () => {
+        try {
+          const svc = createServiceClient();
+          const { data: proj } = await svc
+            .from('review_projects')
+            .select('share_token')
+            .eq('id', projectId)
+            .maybeSingle();
 
-        const { data: itemData } = await supabase
-          .from('review_items')
-          .select('title')
-          .eq('id', params.itemId)
-          .maybeSingle();
+          const { data: itemData } = await svc
+            .from('review_items')
+            .select('title')
+            .eq('id', itemId)
+            .maybeSingle();
 
-        if (proj?.share_token) {
-          const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
-          fetch(`${appUrl}/api/review-notify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
-            body: JSON.stringify({
-              event_type: notifyEvent,
-              share_token: proj.share_token,
-              review_item_id: params.itemId,
-              item_title: itemData?.title ?? null,
-              comment_author: reviewerName || null,
-              comment_author_email: reviewerEmail || null,
-            }),
-          }).catch(() => {});
+          if (proj?.share_token) {
+            const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
+            await fetch(`${appUrl}/api/review-notify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
+              body: JSON.stringify({
+                event_type: notifyEvent,
+                share_token: proj.share_token,
+                review_item_id: itemId,
+                item_title: itemData?.title ?? null,
+                comment_author: reviewerName || null,
+                comment_author_email: reviewerEmail || null,
+              }),
+            });
+          }
+        } catch {
+          // Non-critical
         }
-      } catch {
-        // Non-critical
-      }
+      });
     }
 
     return NextResponse.json({

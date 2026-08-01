@@ -1,5 +1,5 @@
 // app/api/review-comments/[id]/resolve/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { authRateLimit } from '@/lib/rate-limit';
@@ -97,21 +97,26 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
         }
 
         if (shareToken) {
-          const notifyUrl = new URL('/api/review-notify', req.url);
-          fetch(notifyUrl.toString(), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
-            body: JSON.stringify({
-              event_type: 'review_comment_resolved',
-              share_token: shareToken,
-              review_item_id: comment.review_item_id ?? null,
-              resolved_by: resolved_by || auth.member.name || 'Team',
-              comment_author_email: auth.member.email || null,
-              author_user_id: auth.member.user_id,
-              item_title: itemTitle,
-              author_type: 'team',
-            }),
-          }).catch(() => {});
+          const notifyPayload = {
+            event_type: 'review_comment_resolved',
+            share_token: shareToken,
+            review_item_id: comment.review_item_id ?? null,
+            resolved_by: resolved_by || auth.member.name || 'Team',
+            comment_author_email: auth.member.email || null,
+            author_user_id: auth.member.user_id,
+            item_title: itemTitle,
+            author_type: 'team',
+          };
+          const notifyUrl = new URL('/api/review-notify', req.url).toString();
+          after(async () => {
+            try {
+              await fetch(notifyUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
+                body: JSON.stringify(notifyPayload),
+              });
+            } catch { /* Non-critical */ }
+          });
         }
       } catch {
         // Non-critical

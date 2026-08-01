@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 
@@ -105,18 +105,22 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
     // need to wait on downstream notifications.
     try {
       const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
-      void fetch(`${appUrl}/api/review-notify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
-        body: JSON.stringify({
-          event_type: 'review_feedback_marked_complete',
-          share_token: project.share_token,
-          comment_author: trimmedName ?? 'A reviewer',
-          comment_content: trimmedMessage ?? '',
-          author_type: 'client',
-        }),
-      }).catch((err) => {
-        console.error('review-notify dispatch failed:', err);
+      after(async () => {
+        try {
+          await fetch(`${appUrl}/api/review-notify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
+            body: JSON.stringify({
+              event_type: 'review_feedback_marked_complete',
+              share_token: project.share_token,
+              comment_author: trimmedName ?? 'A reviewer',
+              comment_content: trimmedMessage ?? '',
+              author_type: 'client',
+            }),
+          });
+        } catch (err) {
+          console.error('review-notify dispatch failed:', err);
+        }
       });
     } catch (err) {
       console.error('review-notify dispatch threw:', err);

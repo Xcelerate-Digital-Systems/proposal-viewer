@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { isValidHttpUrl } from '@/lib/sanitize';
 import { rateLimit, ipFromRequest } from '@/lib/rate-limit';
@@ -251,7 +251,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
     // Fire participant notifications (top-level + reply). Resolve the
     // project share token so /api/review-notify can locate the project even
     // if the public URL was an item-level token.
-    void notifyParticipantsAsync({
+    after(() => notifyParticipantsAsync({
       review_item_id,
       review_comment_id: comment.id,
       itemProjectId: item.review_project_id,
@@ -259,7 +259,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       author_email,
       content,
       parent_comment_id: parent_comment_id || null,
-    });
+    }));
 
     return NextResponse.json(comment);
   } catch (err) {
