@@ -85,13 +85,28 @@ function showAnnotationForm(type,px,py,extra){
 
     pfSend.disabled=true;pfSend.textContent="Capturing\\u2026";
 
+    /* Re-resolve the anchor element to get fresh page coordinates.
+       Between placing the pin and clicking Post the page may have
+       reflowed (lazy images, web fonts, dynamic content) shifting the
+       target element. Without this, the marker and crop centre use the
+       stale click-time coordinates and the screenshot shows the pin in
+       the wrong spot. */
+    var freshPx=px,freshPy=py;
+    if(type==="pin"&&extra&&extra.anchor){
+      var resolved=resolveAnchor(extra.anchor);
+      if(resolved){
+        freshPx=resolved.x;freshPy=resolved.y;
+        if(marker){marker.style.left=freshPx+"px";marker.style.top=freshPy+"px";}
+      }
+    }
+
     /* Hide form + existing annotations, keep only pending marker/box visible */
     f.style.display="none";
     annotations.forEach(function(a){if(a.el)a.el.style.display="none";});
 
     /* Centre the screenshot crop on the pin/box anchor */
-    var cropCx=type==="box"&&extra?pctToPxX(extra.x):px;
-    var cropCy=type==="box"&&extra?pctToPxY(extra.y):py;
+    var cropCx=type==="box"&&extra?pctToPxX(extra.x):freshPx;
+    var cropCy=type==="box"&&extra?pctToPxY(extra.y):freshPy;
     captureAutoScreenshot(function(dataUrl){
       /* Restore existing annotations */
       annotations.forEach(function(a){if(a.el)a.el.style.display="";});
@@ -101,7 +116,7 @@ function showAnnotationForm(type,px,py,extra){
         var maxTn=0;comments.forEach(function(c){if(c.thread_number&&c.thread_number>maxTn)maxTn=c.thread_number;});
         var payload={
           author_name:n,author_email:guestEmail||null,content:t,comment_type:type,
-          pin_x:pxToPctX(px),pin_y:pxToPctY(py),
+          pin_x:pxToPctX(freshPx),pin_y:pxToPctY(freshPy),
           thread_number:maxTn+1,
           screenshot_url:ssUrl||null,
           annotation_data:null,
