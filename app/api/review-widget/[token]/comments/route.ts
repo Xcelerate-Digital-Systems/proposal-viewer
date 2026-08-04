@@ -299,6 +299,22 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ token: 
 
     /* ── Resolve/unresolve (query param mode) ──────────── */
     if (resolve !== null) {
+      // Only allow resolving client-authored comments from the widget
+      const { data: resolveTarget } = await supabase
+        .from('review_comments')
+        .select('author_type')
+        .eq('id', commentId)
+        .eq('review_item_id', itemId)
+        .is('parent_comment_id', null)
+        .single();
+
+      if (!resolveTarget) {
+        return corsJson({ error: 'Comment not found' }, 404);
+      }
+      if (resolveTarget.author_type !== 'client') {
+        return corsJson({ error: 'Cannot resolve team comments from the widget' }, 403);
+      }
+
       const resolved = resolve === 'true';
       const { error } = await supabase
         .from('review_comments')

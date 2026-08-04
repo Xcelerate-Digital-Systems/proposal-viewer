@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
-import { authRateLimit } from '@/lib/rate-limit';
+import { authRateLimit, rateLimit, ipFromRequest } from '@/lib/rate-limit';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -50,7 +50,10 @@ async function authoriseReactionAccess(req: NextRequest, commentId: string) {
     return { supabase, comment };
   }
 
-  // Public path — verify share_token matches the comment's review project
+  // Public path — rate limit by IP, then verify share_token
+  const rl = await rateLimit({ key: `pub-reactions:${ipFromRequest(req)}`, limit: 60, windowSeconds: 60 });
+  if (!rl.success) return { error: NextResponse.json({ error: 'Too many requests' }, { status: 429 }) };
+
   let projectId: string | null = null;
   if (comment.review_item_id) {
     const { data: item } = await supabase
