@@ -313,7 +313,7 @@ export async function POST(
             const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
             await fetch(`${appUrl}/api/review-notify`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
+              headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.INTERNAL_NOTIFY_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
               body: JSON.stringify({
                 event_type: notifyEvent,
                 share_token: proj.share_token,

@@ -112,7 +112,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
             try {
               await fetch(notifyUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
+                headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.INTERNAL_NOTIFY_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
                 body: JSON.stringify(notifyPayload),
               });
             } catch { /* Non-critical */ }

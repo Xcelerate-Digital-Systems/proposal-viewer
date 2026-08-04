@@ -109,7 +109,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
         try {
           await fetch(`${appUrl}/api/review-notify`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
+            headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': process.env.INTERNAL_NOTIFY_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || '' },
             body: JSON.stringify({
               event_type: 'review_feedback_marked_complete',
               share_token: project.share_token,
