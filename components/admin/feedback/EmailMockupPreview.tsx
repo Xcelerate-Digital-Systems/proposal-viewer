@@ -13,7 +13,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 
-export type EmailClient = 'inbox_preview' | 'email';
+export type EmailClient = 'inbox_preview' | 'email' | 'html_preview';
 
 interface EmailMockupPreviewProps {
   /** Email subject line */
@@ -46,39 +46,59 @@ export function isFullHtmlEmail(text: string): boolean {
   return /<!doctype\s+html|<html[\s>]|<table[\s>]|<head[\s>]/i.test(text);
 }
 
-const CLIENT_OPTIONS: { key: EmailClient; label: string }[] = [
-  { key: 'inbox_preview', label: 'Inbox' },
-  { key: 'email', label: 'Email' },
-];
-
 export default function EmailMockupPreview({
   subject,
   preheader,
   body,
   senderName = 'Your Brand',
   senderEmail = 'hello@yourbrand.com',
-  client = 'inbox_preview',
+  client,
   showClientToggle = false,
   onClientChange,
   accentColor,
   dark = false,
 }: EmailMockupPreviewProps) {
-  const [currentClient, setCurrentClient] = useState<EmailClient>(client);
-  // Sync to the controlled prop so the parent can drive the active client
-  // (e.g. when navigating to a pin scoped to a specific client).
-  useEffect(() => { setCurrentClient(client); }, [client]);
+  const fullHtml = isFullHtmlEmail(body);
+  const defaultClient: EmailClient = fullHtml ? 'html_preview' : (client || 'inbox_preview');
+
+  const [currentClient, setCurrentClient] = useState<EmailClient>(defaultClient);
+
+  useEffect(() => {
+    if (client !== undefined) setCurrentClient(client);
+  }, [client]);
+
+  // When body switches between rich-text and full-HTML, reset to the right default
+  useEffect(() => {
+    if (fullHtml && currentClient === 'email') {
+      setCurrentClient('html_preview');
+      onClientChange?.('html_preview');
+    } else if (!fullHtml && currentClient === 'html_preview') {
+      setCurrentClient('email');
+      onClientChange?.('email');
+    }
+  }, [fullHtml]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClientChange = (c: EmailClient) => {
     setCurrentClient(c);
     onClientChange?.(c);
   };
 
+  const toggleOptions: { key: EmailClient; label: string }[] = fullHtml
+    ? [
+        { key: 'inbox_preview', label: 'Inbox' },
+        { key: 'html_preview', label: 'HTML Preview' },
+      ]
+    : [
+        { key: 'inbox_preview', label: 'Inbox' },
+        { key: 'email', label: 'Email' },
+      ];
+
   return (
     <div className="w-full max-w-[600px]">
       {/* Client toggle */}
       {showClientToggle && (
-        <div className="flex items-center gap-1 mb-4 bg-surface rounded-full p-1 max-w-[240px] mx-auto">
-          {CLIENT_OPTIONS.map((c) => (
+        <div className="flex items-center gap-1 mb-4 bg-surface rounded-full p-1 max-w-[280px] mx-auto">
+          {toggleOptions.map((c) => (
             <button
               key={c.key}
               onClick={() => handleClientChange(c.key)}
@@ -115,6 +135,11 @@ export default function EmailMockupPreview({
           senderEmail={senderEmail}
           dark={dark}
         />
+      )}
+      {currentClient === 'html_preview' && (
+        <div className="rounded-2xl border border-edge overflow-hidden shadow-sm">
+          <HtmlEmailIframe html={body} />
+        </div>
       )}
     </div>
   );
@@ -330,28 +355,22 @@ function EmailOpenPreview({
       </div>
 
       {/* Body */}
-      {isFullHtmlEmail(body) ? (
-        <div className="px-6 pb-6">
-          <HtmlEmailIframe html={body} />
-        </div>
-      ) : (
-        <div className="px-6 pb-6 pl-[76px]">
-          {isHtml(body) ? (
-            <SanitizedHtml
-              html={body}
-              className="text-sm leading-relaxed prose prose-sm max-w-none [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5 [&_p]:min-h-[1.5em]"
-              style={{ color: text }}
-            />
-          ) : (
-            <div
-              className="text-sm leading-relaxed whitespace-pre-wrap"
-              style={{ color: text }}
-            >
-              {body || 'Email body text will appear here…'}
-            </div>
-          )}
-        </div>
-      )}
+      <div className="px-6 pb-6 pl-[76px]">
+        {isHtml(body) ? (
+          <SanitizedHtml
+            html={body}
+            className="text-sm leading-relaxed prose prose-sm max-w-none [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5 [&_p]:min-h-[1.5em]"
+            style={{ color: text }}
+          />
+        ) : (
+          <div
+            className="text-sm leading-relaxed whitespace-pre-wrap"
+            style={{ color: text }}
+          >
+            {body || 'Email body text will appear here…'}
+          </div>
+        )}
+      </div>
 
       {/* Reply / Forward buttons */}
       <div className="px-6 pb-5 pl-[76px] flex items-center gap-2">
@@ -387,20 +406,35 @@ function SanitizedHtml({ html, className, style }: { html: string; className?: s
 function HtmlEmailIframe({ html }: { html: string }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const resizeIframe = useCallback(() => {
+  const syncHeight = useCallback(() => {
     const iframe = iframeRef.current;
     if (!iframe?.contentDocument?.body) return;
     const height = iframe.contentDocument.documentElement.scrollHeight;
     iframe.style.height = `${Math.max(height, 100)}px`;
   }, []);
 
+  const handleLoad = useCallback(() => {
+    const iframe = iframeRef.current;
+    if (!iframe?.contentDocument?.body) return;
+    syncHeight();
+
+    const observer = new ResizeObserver(syncHeight);
+    observer.observe(iframe.contentDocument.body);
+
+    iframe.contentDocument.querySelectorAll('img').forEach((img) => {
+      if (!img.complete) img.addEventListener('load', syncHeight, { once: true });
+    });
+
+    return () => observer.disconnect();
+  }, [syncHeight]);
+
   return (
     <iframe
       ref={iframeRef}
       srcDoc={html}
       sandbox="allow-same-origin"
-      onLoad={resizeIframe}
-      className="w-full border-0 rounded-lg"
+      onLoad={handleLoad}
+      className="w-full border-0 pointer-events-none"
       style={{ minHeight: 200 }}
       title="HTML email preview"
     />

@@ -28,7 +28,7 @@ const nextConfig = {
       `worker-src 'self' blob:`,
       `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com`,
       `font-src 'self' https://fonts.gstatic.com https://cdn.fontshare.com data:`,
-      `img-src 'self' blob: data: https://${supabaseHost} https://*.supabase.co`,
+      `img-src 'self' blob: data: https: http: https://${supabaseHost} https://*.supabase.co`,
       `connect-src 'self' ${supabaseUrl} wss://${supabaseHost} ${posthogHost} https://api.stripe.com https://api.resend.com https://*.ingest.sentry.io`,
       `frame-src 'self' https://js.stripe.com`,
       `object-src 'none'`,

@@ -218,6 +218,7 @@ export function useScreenshotCapture({
             filter: (node: Node) => {
               if (node instanceof HTMLElement) {
                 if (node.classList?.contains('z-40') || node.classList?.contains('z-50')) return false;
+                if (node.tagName === 'IFRAME') return false;
               }
               return true;
             },
