@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import DOMPurify from 'dompurify';
 import {
   Star,
@@ -40,6 +40,10 @@ interface EmailMockupPreviewProps {
 
 function isHtml(text: string): boolean {
   return /<[a-z][\s\S]*>/i.test(text);
+}
+
+export function isFullHtmlEmail(text: string): boolean {
+  return /<!doctype\s+html|<html[\s>]|<table[\s>]|<head[\s>]/i.test(text);
 }
 
 const CLIENT_OPTIONS: { key: EmailClient; label: string }[] = [
@@ -326,22 +330,28 @@ function EmailOpenPreview({
       </div>
 
       {/* Body */}
-      <div className="px-6 pb-6 pl-[76px]">
-        {isHtml(body) ? (
-          <SanitizedHtml
-            html={body}
-            className="text-sm leading-relaxed prose prose-sm max-w-none [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5 [&_p]:min-h-[1.5em]"
-            style={{ color: text }}
-          />
-        ) : (
-          <div
-            className="text-sm leading-relaxed whitespace-pre-wrap"
-            style={{ color: text }}
-          >
-            {body || 'Email body text will appear here…'}
-          </div>
-        )}
-      </div>
+      {isFullHtmlEmail(body) ? (
+        <div className="px-6 pb-6">
+          <HtmlEmailIframe html={body} />
+        </div>
+      ) : (
+        <div className="px-6 pb-6 pl-[76px]">
+          {isHtml(body) ? (
+            <SanitizedHtml
+              html={body}
+              className="text-sm leading-relaxed prose prose-sm max-w-none [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5 [&_p]:min-h-[1.5em]"
+              style={{ color: text }}
+            />
+          ) : (
+            <div
+              className="text-sm leading-relaxed whitespace-pre-wrap"
+              style={{ color: text }}
+            >
+              {body || 'Email body text will appear here…'}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Reply / Forward buttons */}
       <div className="px-6 pb-5 pl-[76px] flex items-center gap-2">
@@ -372,4 +382,27 @@ const SANITIZE_CONFIG = {
 function SanitizedHtml({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {
   const clean = useMemo(() => DOMPurify.sanitize(html, SANITIZE_CONFIG) as string, [html]);
   return <div className={className} style={style} dangerouslySetInnerHTML={{ __html: clean }} />;
+}
+
+function HtmlEmailIframe({ html }: { html: string }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const resizeIframe = useCallback(() => {
+    const iframe = iframeRef.current;
+    if (!iframe?.contentDocument?.body) return;
+    const height = iframe.contentDocument.documentElement.scrollHeight;
+    iframe.style.height = `${Math.max(height, 100)}px`;
+  }, []);
+
+  return (
+    <iframe
+      ref={iframeRef}
+      srcDoc={html}
+      sandbox="allow-same-origin"
+      onLoad={resizeIframe}
+      className="w-full border-0 rounded-lg"
+      style={{ minHeight: 200 }}
+      title="HTML email preview"
+    />
+  );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Upload } from 'lucide-react';
+import { X, Upload, Code, Type } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import type { FeedbackItemVersion } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
@@ -11,6 +11,7 @@ import { authFetch } from '@/lib/auth-fetch';
 import { getFeedbackStatusDef } from '@/lib/feedback/status';
 import AdMockupPreview, { type AdPlatform } from '@/components/admin/feedback/AdMockupPreview';
 import EmailBodyEditor from '@/components/admin/feedback/EmailBodyEditor';
+import { type EmailEditorMode } from '@/components/admin/feedback/feedback-item-forms/EmailItemForm';
 
 import {
   type AddVersionModalProps,
@@ -44,6 +45,10 @@ export default function AddVersionModal({
   const [emailSubject, setEmailSubject] = useState(seed.email_subject ?? '');
   const [emailPreheader, setEmailPreheader] = useState(seed.email_preheader ?? '');
   const [emailBody, setEmailBody] = useState(seed.email_body ?? '');
+  const [emailEditorMode, setEmailEditorMode] = useState<EmailEditorMode>(() => {
+    const body = seed.email_body ?? '';
+    return /<!doctype\s+html|<html[\s>]|<table[\s>]|<head[\s>]/i.test(body) ? 'html' : 'richtext';
+  });
   const [smsBody, setSmsBody] = useState(seed.sms_body ?? '');
 
   // Meta ad copy
@@ -403,7 +408,46 @@ export default function AddVersionModal({
           <>
             <Field label="Subject"><input className={inputCls} value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} /></Field>
             <Field label="Preheader"><input className={inputCls} value={emailPreheader} onChange={(e) => setEmailPreheader(e.target.value)} /></Field>
-            <Field label="Body"><EmailBodyEditor content={emailBody} onChange={setEmailBody} /></Field>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-medium text-dim uppercase tracking-wider">
+                  {emailEditorMode === 'richtext' ? 'Body' : 'HTML Email Code'}
+                </label>
+                <div className="flex items-center gap-0.5 bg-surface rounded-full p-0.5 border border-edge">
+                  <button
+                    type="button"
+                    onClick={() => setEmailEditorMode('richtext')}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-medium transition-colors ${
+                      emailEditorMode === 'richtext' ? 'bg-teal text-white' : 'text-dim hover:text-prose'
+                    }`}
+                  >
+                    <Type size={11} />
+                    Rich Text
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEmailEditorMode('html')}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-medium transition-colors ${
+                      emailEditorMode === 'html' ? 'bg-teal text-white' : 'text-dim hover:text-prose'
+                    }`}
+                  >
+                    <Code size={11} />
+                    HTML
+                  </button>
+                </div>
+              </div>
+              {emailEditorMode === 'richtext' ? (
+                <EmailBodyEditor content={emailBody} onChange={setEmailBody} />
+              ) : (
+                <textarea
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                  placeholder={'Paste your full HTML email code here…'}
+                  className={`${inputCls} font-mono leading-relaxed min-h-[200px] resize-y`}
+                  spellCheck={false}
+                />
+              )}
+            </div>
           </>
         )}
 

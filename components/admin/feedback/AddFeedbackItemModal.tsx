@@ -80,7 +80,7 @@ const CATEGORIES: Category[] = [
     description: 'Email and SMS content',
     icon: Mail,
     items: [
-      { value: 'email', label: 'Email', icon: Mail, description: 'Subject line, preheader & body text' },
+      { value: 'email', label: 'Email', icon: Mail, description: 'Rich text or full HTML email for review' },
       { value: 'sms', label: 'SMS', icon: Smartphone, description: 'Text message preview with character count' },
     ],
   },

@@ -1,9 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { Code, Type } from 'lucide-react';
 import EmailMockupPreview from '@/components/admin/feedback/EmailMockupPreview';
 import EmailBodyEditor from '@/components/admin/feedback/EmailBodyEditor';
 import FormActions from './FormActions';
+
+export type EmailEditorMode = 'richtext' | 'html';
 
 interface EmailItemFormProps {
   onSubmit: (payload: Record<string, unknown>) => Promise<void>;
@@ -18,6 +21,7 @@ export default function EmailItemForm({ onSubmit, onBack, onCancel, uploading, o
   const [emailSubject, setEmailSubject] = useState('');
   const [emailPreheader, setEmailPreheader] = useState('');
   const [emailBody, setEmailBody] = useState('');
+  const [editorMode, setEditorMode] = useState<EmailEditorMode>('richtext');
   const [showPreview, setShowPreview] = useState(false);
 
   const togglePreview = () => {
@@ -87,13 +91,57 @@ export default function EmailItemForm({ onSubmit, onBack, onCancel, uploading, o
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-dim uppercase tracking-wider mb-1">
-            Body Text
-          </label>
-          <EmailBodyEditor
-            content={emailBody}
-            onChange={setEmailBody}
-          />
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-xs font-medium text-dim uppercase tracking-wider">
+              {editorMode === 'richtext' ? 'Body Text' : 'HTML Email Code'}
+            </label>
+            <div className="flex items-center gap-0.5 bg-surface rounded-full p-0.5 border border-edge">
+              <button
+                type="button"
+                onClick={() => setEditorMode('richtext')}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-medium transition-colors ${
+                  editorMode === 'richtext'
+                    ? 'bg-teal text-white'
+                    : 'text-dim hover:text-prose'
+                }`}
+              >
+                <Type size={11} />
+                Rich Text
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditorMode('html')}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-medium transition-colors ${
+                  editorMode === 'html'
+                    ? 'bg-teal text-white'
+                    : 'text-dim hover:text-prose'
+                }`}
+              >
+                <Code size={11} />
+                HTML
+              </button>
+            </div>
+          </div>
+
+          {editorMode === 'richtext' ? (
+            <EmailBodyEditor
+              content={emailBody}
+              onChange={setEmailBody}
+            />
+          ) : (
+            <div className="space-y-1.5">
+              <textarea
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+                placeholder={'Paste your full HTML email code here…\n\n<!DOCTYPE html>\n<html>\n<head>…</head>\n<body>…</body>\n</html>'}
+                className="w-full px-3 py-2.5 bg-surface border border-edge-strong rounded-2xl text-sm text-ink placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-teal/20 font-mono leading-relaxed min-h-[240px] resize-y"
+                spellCheck={false}
+              />
+              <p className="text-2xs text-faint">
+                Paste full HTML from Mailchimp, Klaviyo, or any email builder. Preview will render exactly as it appears in email clients.
+              </p>
+            </div>
+          )}
         </div>
 
         <FormActions
