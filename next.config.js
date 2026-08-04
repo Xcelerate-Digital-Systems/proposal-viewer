@@ -18,28 +18,11 @@ const nextConfig = {
   },
 
   async headers() {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://*.supabase.co';
-    const supabaseHost = supabaseUrl.replace(/^https?:\/\//, '');
-    const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
-
-    const csp = [
-      `default-src 'self'`,
-      `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''} https://js.stripe.com https://unpkg.com ${posthogHost}`,
-      `worker-src 'self' blob:`,
-      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com`,
-      `font-src 'self' https://fonts.gstatic.com https://cdn.fontshare.com data:`,
-      `img-src 'self' blob: data: https: http: https://${supabaseHost} https://*.supabase.co`,
-      `connect-src 'self' ${supabaseUrl} wss://${supabaseHost} ${posthogHost} https://api.stripe.com https://api.resend.com https://*.ingest.sentry.io`,
-      `frame-src 'self' https://js.stripe.com`,
-      `object-src 'none'`,
-      `base-uri 'self'`,
-      `form-action 'self'`,
-    ].join('; ');
-
+    // CSP is set per-request in proxy.ts (nonce-based).
+    // Static security headers remain here.
     return [{
       source: '/(.*)',
       headers: [
-        { key: 'Content-Security-Policy', value: csp },
         { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
         { key: 'X-Content-Type-Options', value: 'nosniff' },
         { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },

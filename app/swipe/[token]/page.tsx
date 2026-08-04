@@ -66,7 +66,7 @@ export async function generateMetadata(props: { params: Promise<{ token: string 
  * Visually hidden with sr-only so designers still see the React modal,
  * but fully present in the raw HTML for AI agents, crawlers, and unfurlers.
  */
-function SwipeStructuredContent({ file, typeName }: { file: SwipeFile; typeName: string | null }) {
+async function SwipeStructuredContent({ file, typeName }: { file: SwipeFile; typeName: string | null }) {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CreativeWork',
@@ -80,13 +80,13 @@ function SwipeStructuredContent({ file, typeName }: { file: SwipeFile; typeName:
     dateCreated: file.created_at,
   };
 
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
+
   return (
     <>
       <script
         type="application/ld+json"
-        // JSON.stringify does NOT escape `</script>`; without this replace,
-        // a swipe file with `title: "</script><script>alert(1)</script>"`
-        // would break out and run on every public viewer.
+        nonce={nonce}
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c'),
         }}
