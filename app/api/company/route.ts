@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
     const { data: company, error } = await supabase
       .from('companies')
-      .select('*')
+      .select('id, name, slug, created_at, logo_path, website, accent_color, bg_primary, bg_secondary, bg_divider, sidebar_text_color, sidebar_inactive_text_color, accept_text_color, cover_bg_style, cover_bg_color_1, cover_bg_color_2, cover_text_color, cover_subtitle_color, cover_button_bg, cover_button_text, cover_overlay_opacity, cover_gradient_type, cover_gradient_angle, font_heading, font_body, font_sidebar, font_heading_weight, font_body_weight, font_sidebar_weight, font_button, font_button_weight, text_page_bg_color, text_page_text_color, text_page_heading_color, text_page_font_size, text_page_border_enabled, text_page_border_color, text_page_border_radius, text_page_layout, bg_image_path, bg_image_overlay_opacity, cover_image_path, brand_colors, show_job_fields, phone, contact_email, abn, address, quote_number_prefix, quote_number_pad_width, decision_action_bg_color, decision_action_text_color, decision_action_heading_color, decision_action_accent_color, decision_decline_button_color, decision_revision_button_color, decision_checkbox_color')
       .eq('id', companyId)
       .single();
 
@@ -257,7 +257,7 @@ export async function PATCH(req: NextRequest) {
       .from('companies')
       .update(updates)
       .eq('id', companyId)
-      .select('*')
+      .select('id, name, slug, created_at, logo_path, website, accent_color, bg_primary, bg_secondary, bg_divider, sidebar_text_color, sidebar_inactive_text_color, accept_text_color, cover_bg_style, cover_bg_color_1, cover_bg_color_2, cover_text_color, cover_subtitle_color, cover_button_bg, cover_button_text, cover_overlay_opacity, cover_gradient_type, cover_gradient_angle, font_heading, font_body, font_sidebar, font_heading_weight, font_body_weight, font_sidebar_weight, font_button, font_button_weight, text_page_bg_color, text_page_text_color, text_page_heading_color, text_page_font_size, text_page_border_enabled, text_page_border_color, text_page_border_radius, text_page_layout, bg_image_path, bg_image_overlay_opacity, cover_image_path, brand_colors, show_job_fields, phone, contact_email, abn, address, quote_number_prefix, quote_number_pad_width, decision_action_bg_color, decision_action_text_color, decision_action_heading_color, decision_action_accent_color, decision_decline_button_color, decision_revision_button_color, decision_checkbox_color')
       .single();
 
     if (error) {

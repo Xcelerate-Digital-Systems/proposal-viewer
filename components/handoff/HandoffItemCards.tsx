@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { Download, Copy, Check, ExternalLink, Globe } from 'lucide-react';
 import type { CompanyBranding } from '@/lib/types/branding';
 import type { MetaAdVariant } from '@/lib/types/feedback';
-import DOMPurify from 'isomorphic-dompurify';
+import DOMPurify from 'dompurify';
 
 export type HandoffItem = {
   id: string;

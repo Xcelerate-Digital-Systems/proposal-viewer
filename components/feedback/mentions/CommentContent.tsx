@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import DOMPurify from 'isomorphic-dompurify';
+import DOMPurify from 'dompurify';
 import { isRichComment } from '@/lib/feedback/mention-html';
 
 // DOMPurify config — tight allowlist matching what MentionEditor can emit:
