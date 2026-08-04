@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
+import { isValidWebhookUrl } from '@/lib/sanitize';
+import { rateLimit } from '@/lib/rate-limit';
 
 interface DiscoveredPage {
   url: string;
@@ -82,12 +84,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing url' }, { status: 400 });
   }
 
+  const rl = await rateLimit({
+    key: `campaigns:scan-site:${auth.companyId}`,
+    limit: 5,
+    windowSeconds: 60,
+  });
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+  }
+
   let rootUrl: URL;
   try {
     rootUrl = new URL(body.url);
     if (!/^https?:$/.test(rootUrl.protocol)) throw new Error('Invalid protocol');
   } catch {
     return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
+  }
+
+  if (!isValidWebhookUrl(rootUrl.toString())) {
+    return NextResponse.json({ error: 'URL not allowed' }, { status: 400 });
   }
 
   const visited = new Set<string>();
@@ -117,7 +132,7 @@ export async function POST(req: NextRequest) {
         let childLinks: string[] = [];
         if (depth < MAX_DEPTH) {
           childLinks = extractInternalLinks(html, parsed)
-            .filter((l) => !visited.has(l));
+            .filter((l) => !visited.has(l) && isValidWebhookUrl(l));
         }
 
         return { page, childLinks, depth };

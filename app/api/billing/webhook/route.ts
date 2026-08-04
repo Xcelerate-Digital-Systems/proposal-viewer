@@ -9,6 +9,7 @@
 // sync with Stripe's source of truth.
 
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import type Stripe from 'stripe';
 import { getStripe, getWebhookSecret } from '@/lib/billing/stripe';
 import { createServiceClient } from '@/lib/supabase-server';
@@ -95,6 +96,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal error';
+    Sentry.captureException(err);
     console.error('Stripe webhook handler error:', message);
 
     // Permanent / deterministic failures (missing data, bad metadata) should

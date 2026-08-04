@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   try {
     // Tight rate limit to prevent brute force (10 attempts per minute per IP)
     const ip = ipFromRequest(req);
-    const rl = await rateLimit({ key: `share-pw:${ip}`, limit: 10, windowSeconds: 60 });
+    const rl = await rateLimit({ key: `share-pw:${ip}`, limit: 10, windowSeconds: 60, failClosed: true });
     if (!rl.success) {
       return NextResponse.json(
         { error: 'Too many attempts. Please try again later.' },

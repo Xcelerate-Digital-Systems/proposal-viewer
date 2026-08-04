@@ -25,7 +25,7 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get('invite');
   const nextUrl = searchParams.get('next');
-  const postLoginTarget = nextUrl && nextUrl.startsWith('/') ? nextUrl : '/';
+  const postLoginTarget = nextUrl && nextUrl.startsWith('/') && !nextUrl.startsWith('//') ? nextUrl : '/';
   const {
     signInWithPassword,
     signInWithMagicLink,

@@ -173,6 +173,7 @@ CREATE OR REPLACE FUNCTION public.get_funnel_data(p_token text)
 RETURNS json
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = 'public'
 AS $$
 DECLARE
   v_funnel  json;

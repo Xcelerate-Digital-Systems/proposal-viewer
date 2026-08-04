@@ -1,4 +1,5 @@
 // app/api/billing/checkout/route.ts
+import * as Sentry from '@sentry/nextjs';
 //
 // POST /api/billing/checkout
 // Body: { billing_cycle: 'monthly' | 'yearly' }
@@ -168,6 +169,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url: session.url });
   } catch (err) {
+    Sentry.captureException(err);
     console.error('Billing checkout error:', err);
     return NextResponse.json(
       { error: 'Internal server error' },

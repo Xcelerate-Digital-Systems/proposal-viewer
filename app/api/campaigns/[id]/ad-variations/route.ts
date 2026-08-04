@@ -115,14 +115,23 @@ export async function POST(
     return NextResponse.json({ error: 'Failed to create ad variations' }, { status: 500 });
   }
 
-  // Auto-link to item if requested
+  // Auto-link to item if requested — verify ownership first
   if (link_to_item_id && created.length > 0) {
-    const junctionRows = created.map((v, i) => ({
-      review_item_id: link_to_item_id,
-      ad_copy_variation_id: v.id,
-      sort_order: start_sort_order + i,
-    }));
-    await supabase.from('review_item_ad_variations').insert(junctionRows);
+    const { data: linkedItem } = await supabase
+      .from('review_items')
+      .select('id')
+      .eq('id', link_to_item_id)
+      .eq('review_project_id', projectId)
+      .maybeSingle();
+
+    if (linkedItem) {
+      const junctionRows = created.map((v, i) => ({
+        review_item_id: link_to_item_id,
+        ad_copy_variation_id: v.id,
+        sort_order: start_sort_order + i,
+      }));
+      await supabase.from('review_item_ad_variations').insert(junctionRows);
+    }
   }
 
   return NextResponse.json({ variations: created }, { status: 201 });

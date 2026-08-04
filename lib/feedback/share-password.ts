@@ -52,8 +52,8 @@ export function verifySharePassword(password: string, storedHash: string): boole
 export function generateShareAuthCookie(shareToken: string): string {
   const timestamp = Date.now().toString();
   const payload = `${shareToken}:${timestamp}`;
-  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!secret) throw new Error('SUPABASE_SERVICE_ROLE_KEY required for share auth cookies');
+  const secret = process.env.SHARE_AUTH_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!secret) throw new Error('SHARE_AUTH_SECRET (or SUPABASE_SERVICE_ROLE_KEY fallback) required for share auth cookies');
 
   const sig = createHmac('sha256', secret).update(payload).digest('hex').slice(0, 32);
   return `${payload}:${sig}`;
@@ -69,7 +69,7 @@ export function verifyShareAuthCookie(cookieValue: string): { token: string; tim
 
   const [token, timestampStr, sig] = parts;
   const payload = `${token}:${timestampStr}`;
-  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const secret = process.env.SHARE_AUTH_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!secret) return null;
 
   const expected = createHmac('sha256', secret).update(payload).digest('hex').slice(0, 32);
@@ -81,6 +81,9 @@ export function verifyShareAuthCookie(cookieValue: string): { token: string; tim
 
   const timestamp = parseInt(timestampStr, 10);
   if (isNaN(timestamp)) return null;
+
+  const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+  if (Date.now() - timestamp > MAX_AGE_MS) return null;
 
   return { token, timestamp };
 }

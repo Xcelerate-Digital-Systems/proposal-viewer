@@ -6,6 +6,7 @@
 // monthly ↔ yearly.
 
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { getAuthContext } from '@/lib/api-auth';
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit';
 import { getStripe } from '@/lib/billing/stripe';
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url: session.url });
   } catch (err) {
+    Sentry.captureException(err);
     console.error('Billing portal error:', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Internal server error' },

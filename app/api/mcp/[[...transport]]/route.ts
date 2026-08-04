@@ -5,6 +5,7 @@ import { hashApiKey, API_KEY_PREFIX } from '@/lib/api-auth';
 import { addPage, updatePage, deletePage, reorderPages } from '@/lib/page-operations';
 import { getCompanyEntityDefaults } from '@/lib/company-defaults';
 import { checkResourceLimit } from '@/lib/billing/entitlements';
+import { isValidWebhookUrl } from '@/lib/sanitize';
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
 import type { PageType } from '@/lib/page-types';
 
@@ -1001,6 +1002,9 @@ const mcpHandler = createMcpHandler(
         }
         if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
           return txt('Only http(s) URLs are supported.');
+        }
+        if (!isValidWebhookUrl(parsed.toString())) {
+          return txt('URL not allowed: private/internal addresses are blocked.');
         }
         let res: Response;
         try {

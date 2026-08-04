@@ -276,7 +276,7 @@ async function authenticateClient(form: Record<string, string>): Promise<
 // ── Main handler ──────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  const rl = await rateLimit({ key: `oauth:token:${ipFromRequest(req)}`, limit: 10, windowSeconds: 60 });
+  const rl = await rateLimit({ key: `oauth:token:${ipFromRequest(req)}`, limit: 10, windowSeconds: 60, failClosed: true });
   if (!rl.success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
   const form = await readForm(req);

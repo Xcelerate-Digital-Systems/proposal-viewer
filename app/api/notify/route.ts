@@ -1,5 +1,6 @@
 // app/api/notify/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { createServiceClient } from '@/lib/supabase-server';
 import { sendNotifications } from '@/lib/notifications';
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit';
@@ -111,6 +112,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (err) {
+    Sentry.captureException(err);
     console.error('Notification error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

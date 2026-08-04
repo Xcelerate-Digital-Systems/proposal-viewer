@@ -366,7 +366,7 @@ function EmailOpenPreview({
 
 const SANITIZE_CONFIG = {
   ALLOWED_TAGS: ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'a', 'ul', 'ol', 'li', 'span'],
-  ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'],
+  ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
 };
 
 function SanitizedHtml({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) {

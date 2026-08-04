@@ -1,5 +1,6 @@
 // app/api/auth/register/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { createServiceClient } from '@/lib/supabase-server';
 import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
@@ -204,6 +205,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ id: member.id, company_id: company.id });
   } catch (err) {
+    Sentry.captureException(err);
     console.error('Register error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

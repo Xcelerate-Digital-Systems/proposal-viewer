@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate file type
-    const validTypes = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'];
+    const validTypes = ['image/png', 'image/jpeg', 'image/webp'];
     if (!validTypes.includes(file.type)) {
       return NextResponse.json(
         { error: 'Invalid file type. Use PNG, JPEG, SVG, or WebP' },
@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createServiceClient();
-    const ext = file.name.split('.').pop() || 'png';
+    const rawExt = file.name.split('.').pop() || 'png';
+    const ext = rawExt.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10) || 'png';
     const filePath = `${companyId}/logo.${ext}`;
 
     // Upload to storage

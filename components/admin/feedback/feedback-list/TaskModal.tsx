@@ -56,10 +56,13 @@ export default function TaskModal({
 
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    const MAX_SIZE = 10 * 1024 * 1024;
     setUploading(true);
     const newAttachments: CommentTaskAttachment[] = [];
     for (const file of Array.from(files)) {
-      const path = `task-attachments/${companyId}/${commentId}/${Date.now()}-${file.name}`;
+      if (file.size > MAX_SIZE) continue;
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `task-attachments/${companyId}/${commentId}/${Date.now()}-${safeName}`;
       const { error } = await supabase.storage.from('company-assets').upload(path, file, {
         cacheControl: '3600',
         upsert: false,

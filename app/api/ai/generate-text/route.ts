@@ -171,6 +171,7 @@ export async function POST(req: NextRequest) {
     key: `ai:gen:${auth.companyId}`,
     limit: AI_BURST_LIMIT,
     windowSeconds: AI_BURST_WINDOW_SECONDS,
+    failClosed: true,
   });
   if (!burstRl.success) {
     return NextResponse.json(

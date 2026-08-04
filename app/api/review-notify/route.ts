@@ -1,5 +1,6 @@
 // app/api/review-notify/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { createServiceClient } from '@/lib/supabase-server';
 import { fromEmail } from '@/lib/resend';
 import { sendAndLogEmail } from '@/lib/email-log';
@@ -42,7 +43,10 @@ export async function POST(req: NextRequest) {
     // Auth gate: accept either an internal server secret (server-to-server) or
     // a valid Supabase Bearer token (admin browser calls).
     const internalSecret = req.headers.get('x-internal-secret');
-    const expectedSecret = process.env.INTERNAL_NOTIFY_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const expectedSecret = process.env.INTERNAL_NOTIFY_SECRET;
+    if (!expectedSecret && internalSecret) {
+      return NextResponse.json({ error: 'INTERNAL_NOTIFY_SECRET not configured' }, { status: 500 });
+    }
     const hasInternalAuth =
       !!internalSecret &&
       !!expectedSecret &&
@@ -508,6 +512,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ sent, enqueued, mentioned, recipients: recipientEmails.size });
   } catch (err) {
+    Sentry.captureException(err);
     console.error('Review notification error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

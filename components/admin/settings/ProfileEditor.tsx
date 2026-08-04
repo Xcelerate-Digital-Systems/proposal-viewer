@@ -46,8 +46,13 @@ export default function ProfileEditor({
 
   /* ── Avatar upload ─────────────────────────────────────── */
   const handleAvatarUpload = async (file: File) => {
+    const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+    const MAX_SIZE = 2 * 1024 * 1024;
+    if (!ALLOWED_TYPES.includes(file.type)) return;
+    if (file.size > MAX_SIZE) return;
     setUploading(true);
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const rawExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const ext = rawExt.replace(/[^a-z0-9]/g, '').slice(0, 10) || 'jpg';
     const filePath = `avatars/${companyId}/${memberId}-${Date.now()}.${ext}`;
 
     // Remove old avatar if exists
