@@ -38,7 +38,17 @@ export async function POST(
 
   const supabase = createServiceClient();
 
-  // Verify item belongs to this project + company
+  // Verify the project belongs to this company
+  const { data: project } = await supabase
+    .from('review_projects')
+    .select('id')
+    .eq('id', projectId)
+    .eq('company_id', auth.companyId)
+    .single();
+
+  if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+
+  // Verify item belongs to this project
   const { data: item } = await supabase
     .from('review_items')
     .select('id, review_project_id')

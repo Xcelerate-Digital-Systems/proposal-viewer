@@ -175,6 +175,7 @@ async function handlePdfUpload(req: NextRequest) {
       const { success, error } = await replacePdfPage(supabase, 'template', {
         pageId:   replacePageId,
         tempPath,
+        entityId: templateId,
       });
 
       if (!success) {
@@ -267,6 +268,7 @@ async function handleReplacePdf(body: Record<string, unknown>) {
     const { success, error } = await replacePdfPage(supabase, 'template', {
       pageId:   page_id as string,
       tempPath: temp_path as string,
+      entityId: template_id as string,
     });
 
     if (!success) {

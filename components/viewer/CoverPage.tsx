@@ -115,7 +115,7 @@ export default function CoverPage({
     if (!needsName && !needsAvatar) return;
 
     const resolve = async () => {
-      const res = await fetch(`/api/member-badge?member_id=${memberId}`);
+      const res = await fetch(`/api/member-badge?member_id=${memberId}&company_id=${proposal.company_id}`);
       if (!res.ok) return;
       const data = await res.json();
 

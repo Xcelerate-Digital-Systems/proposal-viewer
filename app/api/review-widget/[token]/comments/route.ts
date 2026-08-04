@@ -339,8 +339,11 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ token: 
       return corsJson({ error: 'Comment not found' }, 404);
     }
 
-    // Widget callers must prove authorship — match author_name + author_email.
-    // Team members editing via the admin UI use authenticated routes, not this one.
+    // Widget callers can only edit client-authored comments.
+    if (existing.author_type !== 'client') {
+      return corsJson({ error: 'You can only edit your own comments' }, 403);
+    }
+
     if (
       !author_name ||
       existing.author_name?.trim().toLowerCase() !== author_name.trim().toLowerCase() ||
@@ -403,7 +406,11 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ token:
       return corsJson({ error: 'Comment not found' }, 404);
     }
 
-    // Widget callers must prove authorship before deleting.
+    // Widget callers can only delete client-authored comments.
+    if (existing.author_type !== 'client') {
+      return corsJson({ error: 'You can only delete your own comments' }, 403);
+    }
+
     if (
       !authorName ||
       existing.author_name?.trim().toLowerCase() !== authorName.trim().toLowerCase() ||

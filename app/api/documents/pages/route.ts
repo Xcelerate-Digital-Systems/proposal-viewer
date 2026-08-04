@@ -161,6 +161,7 @@ async function handleReplacePdf(supabase: ReturnType<typeof createServiceClient>
   const { success, error } = await replacePdfPage(supabase, 'document', {
     pageId:   page_id as string,
     tempPath: temp_path as string,
+    entityId: body.document_id as string,
   });
 
   if (!success) {

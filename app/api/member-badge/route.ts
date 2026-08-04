@@ -70,12 +70,15 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Member ID lookup
-    const { data, error } = await supabase
+    // Scope to company_id when provided to prevent cross-tenant enumeration
+    const companyId = req.nextUrl.searchParams.get('company_id');
+
+    let query = supabase
       .from('team_members')
       .select('name, avatar_path')
-      .eq('id', memberId!)
-      .single();
+      .eq('id', memberId!);
+    if (companyId) query = query.eq('company_id', companyId);
+    const { data, error } = await query.single();
 
     if (error || !data) {
       return NextResponse.json({ error: 'Member not found' }, { status: 404 });
