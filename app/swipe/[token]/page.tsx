@@ -66,7 +66,7 @@ export async function generateMetadata(props: { params: Promise<{ token: string 
  * Visually hidden with sr-only so designers still see the React modal,
  * but fully present in the raw HTML for AI agents, crawlers, and unfurlers.
  */
-async function SwipeStructuredContent({ file, typeName }: { file: SwipeFile; typeName: string | null }) {
+function SwipeStructuredContent({ file, typeName }: { file: SwipeFile; typeName: string | null }) {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CreativeWork',
@@ -80,13 +80,10 @@ async function SwipeStructuredContent({ file, typeName }: { file: SwipeFile; typ
     dateCreated: file.created_at,
   };
 
-  const nonce = (await headers()).get('x-nonce') ?? undefined;
-
   return (
     <>
       <script
         type="application/ld+json"
-        nonce={nonce}
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c'),
         }}

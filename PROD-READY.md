@@ -6,7 +6,7 @@ Source files: 987  |  Tests: 51 (boundary)  |  CI: GitHub Actions  |  Build: pas
 
 ## Verdict
 
-**SHIP** — No critical vulnerabilities. All Highs and Mediums resolved. 51 boundary tests with CI pipeline. Nonce-based CSP. RLS audit of 158 service-role routes completed — 7 authorization gaps closed. Only upstream dependency items remain (pdf-lib unmaintained, tippy.js archived).
+**SHIP** — No critical vulnerabilities. All Highs and Mediums resolved. 51 boundary tests with CI pipeline. CSP with tight allowlists (nonce reverted — incompatible with Next.js inline scripts). RLS audit of 158 service-role routes completed — 7 authorization gaps closed. Only upstream dependency items remain (pdf-lib unmaintained, tippy.js archived).
 
 ## Remediation summary
 
@@ -23,7 +23,7 @@ All original 24 findings addressed. RLS audit added 10 more; 7 fixed, 3 accepted
 | 7. SSRF MCP upload | ✅ Fixed |
 | 8. SSRF swipe import | ✅ Already had guard |
 | 9. IDOR ad-variations | ✅ Fixed |
-| 10. CSP unsafe-inline | ✅ Fixed (nonce-based CSP in middleware) |
+| 10. CSP unsafe-inline | ⚠️ Reverted — nonce blocks Next.js inline scripts; `unsafe-inline` + middleware-set CSP with tight allowlists |
 | 11. frame-src wildcards | ✅ Fixed |
 | 12. Rate limiter fail-open (×3) | ✅ Fixed |
 | 13. Logo upload ext + SVG | ✅ Fixed |
