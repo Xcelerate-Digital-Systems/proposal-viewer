@@ -102,6 +102,11 @@ export default function HandoffPage(props: { params: Promise<{ token: string }> 
     }
   }, [project]);
 
+  useEffect(() => {
+    document.body.style.overflow = 'auto';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
   if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: 'transparent' }} />;
   if (loading) return <ViewerLoader branding={branding} loading={true} label="Loading handoff…" />;
 
@@ -131,7 +136,7 @@ export default function HandoffPage(props: { params: Promise<{ token: string }> 
         className="border-b border-gray-200"
         style={{ backgroundColor: branding.bg_secondary || branding.bg_primary || '#043946' }}
       >
-        <div className="max-w-4xl mx-auto px-6 py-5 flex items-center gap-4">
+        <div className="max-w-[1600px] mx-auto px-6 py-5 flex items-center gap-4">
           {branding.logo_url ? (
             <img
               src={branding.logo_url}
@@ -156,7 +161,7 @@ export default function HandoffPage(props: { params: Promise<{ token: string }> 
       </header>
 
       {/* Campaign info */}
-      <div className="max-w-4xl mx-auto px-6 pt-8 pb-6">
+      <div className="max-w-[1600px] mx-auto px-6 pt-8 pb-6">
         <h1
           className="text-xl font-semibold text-gray-900 tracking-tight"
           style={{ fontFamily: headingFont }}
@@ -177,11 +182,11 @@ export default function HandoffPage(props: { params: Promise<{ token: string }> 
 
       {/* Items */}
       {items.length === 0 ? (
-        <div className="max-w-4xl mx-auto px-6 py-16 text-center">
+        <div className="max-w-[1600px] mx-auto px-6 py-16 text-center">
           <p className="text-sm text-gray-500">No approved assets in this campaign yet.</p>
         </div>
       ) : (
-        <div className="max-w-4xl mx-auto px-6 pb-16 space-y-10">
+        <div className="max-w-[1600px] mx-auto px-6 pb-16 space-y-10">
           {groups.map((group) => (
             <section key={group.key}>
               <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-gray-100">
@@ -196,7 +201,7 @@ export default function HandoffPage(props: { params: Promise<{ token: string }> 
               </div>
 
               <div className="grid gap-4" style={{
-                gridTemplateColumns: group.key === 'webpages' ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))',
+                gridTemplateColumns: group.key === 'webpages' ? '1fr' : 'repeat(4, 1fr)',
               }}>
                 {group.items.map((item) => (
                   <ItemCard key={item.id} item={item} branding={branding} />
