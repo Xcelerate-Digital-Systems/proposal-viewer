@@ -63,7 +63,6 @@ export default function SitemapDropZones({ zones, activeZoneId, sectionTargets, 
 
       {sectionTargets.map((sec) => {
         const isActive = sec.id === activeSectionId;
-        if (!isActive) return null;
         return (
           <div
             key={`sec-hl-${sec.id}`}
@@ -73,9 +72,10 @@ export default function SitemapDropZones({ zones, activeZoneId, sectionTargets, 
               top: sec.y - 4,
               width: sec.w + 8,
               height: sec.h + 8,
-              border: '2px solid #017C87',
-              background: 'rgba(1,124,135,0.08)',
-              boxShadow: '0 0 12px rgba(1,124,135,0.3)',
+              border: isActive ? '2px solid #017C87' : '2px dashed #94a3b8',
+              background: isActive ? 'rgba(1,124,135,0.08)' : 'transparent',
+              boxShadow: isActive ? '0 0 12px rgba(1,124,135,0.3)' : 'none',
+              opacity: isActive ? 1 : 0.5,
               transition: 'all 0.12s',
             }}
           />

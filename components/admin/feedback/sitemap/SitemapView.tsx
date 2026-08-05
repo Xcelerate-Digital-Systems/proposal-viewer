@@ -258,8 +258,9 @@ function findSectionTarget(
   cx: number,
   cy: number,
 ): string | null {
+  const PAD = 40;
   for (const t of targets) {
-    if (cx >= t.x && cx <= t.x + t.w && cy >= t.y && cy <= t.y + t.h) {
+    if (cx >= t.x - PAD && cx <= t.x + t.w + PAD && cy >= t.y - PAD && cy <= t.y + t.h + PAD) {
       return t.id;
     }
   }
