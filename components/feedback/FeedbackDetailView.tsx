@@ -307,7 +307,7 @@ export default function FeedbackDetailView({
 
       {MobileGate}
 
-      <div className={`hidden lg:flex ${isAdmin ? 'h-full' : 'h-screen overflow-hidden'} flex-col bg-white`}>
+      <div className={`hidden lg:flex ${isAdmin ? 'h-full overflow-hidden' : 'h-screen overflow-hidden'} flex-col bg-white`}>
         <FeedbackHeaderBar
           project={project}
           items={items}
@@ -387,7 +387,7 @@ export default function FeedbackDetailView({
               onRemoveTask={isAdmin ? onRemoveTask : undefined}
               currentMemberId={isAdmin ? currentMemberId : undefined}
               onOpenTaskDetail={isAdmin ? onOpenTaskDetail : undefined}
-              className="w-[360px] shrink-0 bg-warm flex flex-col"
+              className="w-[360px] shrink-0 bg-warm flex flex-col overflow-hidden"
               commentPlaceholder={(() => {
                 if (selectedItem?.type !== 'google_search_ad') return undefined;
                 const asset = parseGoogleAdAssetView(currentMockupView);
