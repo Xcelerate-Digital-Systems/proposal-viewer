@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Copy, Check, ExternalLink, Trash2, BookTemplate } from 'lucide-react';
+import { Copy, Check, ExternalLink, Trash2, BookTemplate, CopyPlus } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
 import { authedFetch } from '@/lib/api-fetch';
@@ -34,6 +34,7 @@ export default function ProposalDetailHeader({
   const toast = useToast();
 
   const [copied, setCopied] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const [showSaveAsTemplate, setShowSaveAsTemplate] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
@@ -114,6 +115,25 @@ export default function ProposalDetailHeader({
       toast.error(err?.message || 'Failed to save template');
     } finally {
       setSavingTemplate(false);
+    }
+  };
+
+  const duplicateProposal = async () => {
+    setDuplicating(true);
+    try {
+      const res = await authedFetch(`/api/proposals/${proposal.id}/duplicate`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to duplicate');
+      toast.success('Pitch duplicated!');
+      router.push(
+        proposal.entity_type === 'quote'
+          ? `/proposals/${data.id}/quote-pricing`
+          : `/proposals/${data.id}/pages`
+      );
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to duplicate');
+    } finally {
+      setDuplicating(false);
     }
   };
 
@@ -226,6 +246,16 @@ export default function ProposalDetailHeader({
               </div>
             )}
           </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={CopyPlus}
+            onClick={duplicateProposal}
+            loading={duplicating}
+          >
+            Duplicate
+          </Button>
 
           <Button
             variant="ghost"

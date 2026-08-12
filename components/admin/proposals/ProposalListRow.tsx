@@ -3,9 +3,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Copy, Check, Trash2, ExternalLink } from 'lucide-react';
+import { Copy, Check, Trash2, ExternalLink, CopyPlus } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
+import { authedFetch } from '@/lib/api-fetch';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import {
@@ -42,6 +43,7 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain, 
   const confirm = useConfirm();
   const toast = useToast();
   const [copied, setCopied] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   const status = (p.status as ProposalStatus) || 'draft';
   const def = PROPOSAL_STATUS_CONFIG[status] ?? PROPOSAL_STATUS_CONFIG.draft;
@@ -54,6 +56,22 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain, 
     setCopied(true);
     toast.success('Link copied!');
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const duplicateProposal = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDuplicating(true);
+    try {
+      const res = await authedFetch(`/api/proposals/${p.id}/duplicate`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to duplicate');
+      toast.success('Pitch duplicated!');
+      onRefresh();
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to duplicate');
+    } finally {
+      setDuplicating(false);
+    }
   };
 
   const deleteProposal = async (e: React.MouseEvent) => {
@@ -135,6 +153,14 @@ export default function ProposalListRow({ proposal: p, onRefresh, customDomain, 
         >
           <ExternalLink size={14} />
         </a>
+        <button
+          onClick={duplicateProposal}
+          disabled={duplicating}
+          className="p-1.5 rounded-lg text-faint hover:text-ink hover:bg-surface transition-colors disabled:opacity-50"
+          title="Duplicate"
+        >
+          <CopyPlus size={14} className={duplicating ? 'animate-pulse' : ''} />
+        </button>
         <button
           onClick={deleteProposal}
           className="p-1.5 rounded-lg text-faint hover:text-red-500 hover:bg-red-50 transition-colors"

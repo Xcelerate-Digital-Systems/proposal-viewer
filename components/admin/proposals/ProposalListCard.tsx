@@ -2,9 +2,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Copy, Check, ExternalLink, Eye } from 'lucide-react';
+import { Copy, Check, ExternalLink, Eye, CopyPlus } from 'lucide-react';
 import { supabase, type Proposal } from '@/lib/supabase';
 import { buildProposalUrl } from '@/lib/proposal-url';
+import { authedFetch } from '@/lib/api-fetch';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import StatusDropdown from '@/components/ui/StatusDropdown';
@@ -28,6 +29,7 @@ export default function ProposalListCard({ proposal: p, onRefresh, customDomain,
   const confirm = useConfirm();
   const toast = useToast();
   const [copied, setCopied] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   const href = hrefOverride ?? (p.entity_type === 'quote'
     ? `/proposals/${p.id}/quote-pricing`
@@ -54,6 +56,23 @@ export default function ProposalListCard({ proposal: p, onRefresh, customDomain,
     } else {
       toast.success(`Marked as ${PROPOSAL_STATUS_OPTIONS.find((o) => o.value === newStatus)?.label}`);
       onRefresh();
+    }
+  };
+
+  const handleDuplicate = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDuplicating(true);
+    try {
+      const res = await authedFetch(`/api/proposals/${p.id}/duplicate`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to duplicate');
+      toast.success('Pitch duplicated!');
+      onRefresh();
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to duplicate');
+    } finally {
+      setDuplicating(false);
     }
   };
 
@@ -134,6 +153,14 @@ export default function ProposalListCard({ proposal: p, onRefresh, customDomain,
             <ExternalLink size={12} />
             Preview
           </a>
+          <button
+            onClick={handleDuplicate}
+            disabled={duplicating}
+            className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-ink hover:bg-surface transition-colors disabled:opacity-50"
+          >
+            <CopyPlus size={12} className={duplicating ? 'animate-pulse' : ''} />
+            {duplicating ? 'Duplicating…' : 'Duplicate'}
+          </button>
         </>
       }
       onDelete={handleDelete}
