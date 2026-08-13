@@ -67,7 +67,11 @@ export default function PackagesPage({ packages, branding, clientName, orientati
 
   const styling = normalizePackageStyling(packages.styling);
   const titleColor = styling.title_color || textColor;
-  const tiers = [...(packages.packages ?? [])]; // Order preserved from DB — sort_order within JSONB tiers is not reliably maintained by the editor
+  const tiers = (packages.packages ?? []).map(t => ({
+    ...t,
+    conditions: t.conditions ?? [],
+    features: (t.features ?? []).map(f => ({ ...f, children: f.children ?? [] })),
+  }));
   const bodyFont = fontFamily(branding.font_body, 'system-ui, sans-serif');
 
   return (

@@ -66,6 +66,14 @@ const DEFAULT_FORM: PackagesFormState = {
 
 /* ─── Converters ──────────────────────────────────────────────── */
 
+function normalizeTiers(tiers: PackageTier[] | null | undefined): PackageTier[] {
+  return (tiers ?? []).map(t => ({
+    ...t,
+    conditions: t.conditions ?? [],
+    features: (t.features ?? []).map(f => ({ ...f, children: f.children ?? [] })),
+  }));
+}
+
 function unifiedToProposalPackages(page: UnifiedPage): ProposalPackages {
   return {
     id: page.id,
@@ -77,7 +85,7 @@ function unifiedToProposalPackages(page: UnifiedPage): ProposalPackages {
     indent: page.indent,
     title: page.title,
     intro_text: (page.payload.intro_text as string | null) ?? null,
-    packages: (page.payload.packages as PackageTier[]) || [],
+    packages: normalizeTiers(page.payload.packages as PackageTier[]),
     footer_text: (page.payload.footer_text as string | null) ?? null,
     styling: normalizePackageStyling(page.payload.styling as PackageStyling | null),
     created_at: page.created_at,
@@ -90,7 +98,7 @@ function formFromRecord(record: ProposalPackages): PackagesFormState {
     enabled: record.enabled,
     title: record.title || 'Your Investment',
     intro_text: record.intro_text,
-    packages: record.packages || [],
+    packages: normalizeTiers(record.packages),
     footer_text: record.footer_text,
     styling: normalizePackageStyling(record.styling),
   };

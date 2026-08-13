@@ -52,7 +52,11 @@ export default function PackageTemplateEditorModal({
       if (template) {
         setName(template.name);
         setDescription(template.description ?? '');
-        setTier({ ...template.tier });
+        setTier({
+          ...template.tier,
+          conditions: template.tier.conditions ?? [],
+          features: (template.tier.features ?? []).map(f => ({ ...f, children: f.children ?? [] })),
+        });
       } else {
         setName('');
         setDescription('');
