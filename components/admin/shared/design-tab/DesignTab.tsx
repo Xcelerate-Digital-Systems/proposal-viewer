@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useToast } from '@/components/ui/Toast';
 import { useReportSaveStatus } from '@/components/admin/EditorSaveStatusContext';
 import {
   EntityType,
@@ -135,6 +136,7 @@ export default function DesignTab({
 }: DesignTabProps) {
   const table = tableByType[type];
   const storagePrefix = storagePrefixByType[type];
+  const toast = useToast();
 
   /* ================================================================ */
   /*  BACKGROUND IMAGE STATE                                           */
@@ -468,6 +470,8 @@ const [pageNumTextColor, setPageNumTextColor] = useState<string | null>(
       setBgMode('custom');
       const { data } = supabase.storage.from('company-assets').getPublicUrl(path);
       if (data?.publicUrl) setBgImageUrl(data.publicUrl);
+    } catch {
+      toast.error('Failed to upload background image');
     } finally {
       setUploading(false);
     }
