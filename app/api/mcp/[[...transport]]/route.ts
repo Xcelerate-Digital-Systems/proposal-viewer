@@ -12,6 +12,8 @@ import { registerTemplateTools } from '@/lib/mcp/tools/templates';
 import { registerSwipeTools } from '@/lib/mcp/tools/swipe';
 import { registerFunnelTools } from '@/lib/mcp/tools/funnels';
 import { registerWorkspaceTools } from '@/lib/mcp/tools/workspace';
+import { registerDesignTools } from '@/lib/mcp/tools/design';
+import { registerLibraryTools } from '@/lib/mcp/tools/library';
 
 const mcpHandler = createMcpHandler(
   (server) => {
@@ -106,6 +108,8 @@ const mcpHandler = createMcpHandler(
     registerSwipeTools(server);
     registerFunnelTools(server);
     registerWorkspaceTools(server);
+    registerDesignTools(server);
+    registerLibraryTools(server);
   },
   {
     capabilities: { tools: {} },

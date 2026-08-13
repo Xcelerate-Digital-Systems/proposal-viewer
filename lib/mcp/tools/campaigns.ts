@@ -501,4 +501,108 @@ export function registerCampaignTools(server: McpServer) {
       return txt(`Asset updated (${fieldCount} field${fieldCount > 1 ? 's' : ''}).`);
     });
 
+    server.tool('list_campaign_guests', 'List all guest reviewers on a campaign.', {
+      campaignId: z.string(),
+      companyId: z.string().optional().describe('Super admin only: target a different company'),
+    }, async ({ campaignId, companyId }, extra) => {
+      const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data, error } = await sb.from('review_project_guests')
+        .select('id, name, email, stages, created_at')
+        .eq('review_project_id', campaignId).eq('company_id', auth.companyId)
+        .order('created_at', { ascending: true });
+      if (error) return txt(`Error: ${error.message}`);
+      if (!data?.length) return txt('No guests on this campaign.');
+      return json(data);
+    });
+
+    server.tool('add_campaign_guest', 'Add a guest reviewer to a campaign.', {
+      campaignId: z.string(),
+      name: z.string(),
+      email: z.string(),
+      stages: z.array(z.string()).optional().describe('Stages the guest can see. Default: ["client_review"]'),
+      companyId: z.string().optional().describe('Super admin only: target a different company'),
+    }, async (args, extra) => {
+      const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: camp } = await sb.from('review_projects').select('id').eq('id', args.campaignId).eq('company_id', auth.companyId).single();
+      if (!camp) return txt('Campaign not found');
+      const { data, error } = await sb.from('review_project_guests').insert({
+        review_project_id: args.campaignId, company_id: auth.companyId,
+        name: args.name, email: args.email,
+        stages: args.stages || ['client_review'],
+      }).select('id, name, email').single();
+      if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
+      return json(data);
+    });
+
+    server.tool('remove_campaign_guest', 'Remove a guest reviewer from a campaign.', {
+      guestId: z.string(),
+      campaignId: z.string(),
+      companyId: z.string().optional().describe('Super admin only: target a different company'),
+    }, async ({ guestId, campaignId, companyId }, extra) => {
+      const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: g } = await sb.from('review_project_guests').select('id')
+        .eq('id', guestId).eq('review_project_id', campaignId).eq('company_id', auth.companyId).single();
+      if (!g) return txt('Guest not found');
+      const { error } = await sb.from('review_project_guests').delete().eq('id', guestId);
+      if (error) return txt(`Failed: ${error.message}`);
+      return txt('Guest removed.');
+    });
+
+    server.tool('list_campaign_assignees', 'List team members assigned to a campaign.', {
+      campaignId: z.string(),
+      companyId: z.string().optional().describe('Super admin only: target a different company'),
+    }, async ({ campaignId, companyId }, extra) => {
+      const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: camp } = await sb.from('review_projects').select('id').eq('id', campaignId).eq('company_id', auth.companyId).single();
+      if (!camp) return txt('Campaign not found');
+      const { data, error } = await sb.from('review_project_assignees')
+        .select('id, team_member_id, stages')
+        .eq('review_project_id', campaignId);
+      if (error) return txt(`Error: ${error.message}`);
+      if (!data?.length) return txt('No assignees on this campaign.');
+      const memberIds = data.map(a => (a as Record<string, unknown>).team_member_id as string);
+      const { data: members } = await sb.from('team_members').select('id, name, email, role').in('id', memberIds);
+      const memberMap = new Map((members || []).map(m => [(m as Record<string, unknown>).id, m]));
+      return json(data.map(a => {
+        const rec = a as Record<string, unknown>;
+        const member = memberMap.get(rec.team_member_id as string) as Record<string, unknown> | undefined;
+        return { id: rec.id, teamMemberId: rec.team_member_id, stages: rec.stages, memberName: member?.name, memberEmail: member?.email, memberRole: member?.role };
+      }));
+    });
+
+    server.tool('assign_campaign_member', 'Assign a team member to a campaign.', {
+      campaignId: z.string(),
+      teamMemberId: z.string(),
+      stages: z.array(z.string()).optional().describe('Stages to assign. Default: all stages'),
+      companyId: z.string().optional().describe('Super admin only: target a different company'),
+    }, async (args, extra) => {
+      const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { data: camp } = await sb.from('review_projects').select('id').eq('id', args.campaignId).eq('company_id', auth.companyId).single();
+      if (!camp) return txt('Campaign not found');
+      const { error } = await sb.from('review_project_assignees').upsert({
+        review_project_id: args.campaignId, team_member_id: args.teamMemberId,
+        stages: args.stages || ['draft', 'internal_review', 'client_review', 'approved', 'revision_needed', 'rejected'],
+      }, { onConflict: 'review_project_id,team_member_id' });
+      if (error) return txt(`Failed: ${error.message}`);
+      return txt('Team member assigned.');
+    });
+
+    server.tool('unassign_campaign_member', 'Remove a team member assignment from a campaign.', {
+      campaignId: z.string(),
+      teamMemberId: z.string(),
+      companyId: z.string().optional().describe('Super admin only: target a different company'),
+    }, async ({ campaignId, teamMemberId, companyId }, extra) => {
+      const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
+      const sb = createServiceClient();
+      const { error } = await sb.from('review_project_assignees').delete()
+        .eq('review_project_id', campaignId).eq('team_member_id', teamMemberId);
+      if (error) return txt(`Failed: ${error.message}`);
+      return txt('Team member unassigned.');
+    });
+
 }

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase-server';
-import { addPage, updatePage, deletePage } from '@/lib/page-operations';
+import { addPage, updatePage, deletePage, reorderPages, getPageUrls } from '@/lib/page-operations';
 import { checkResourceLimit } from '@/lib/billing/entitlements';
 import { getCompanyEntityDefaults } from '@/lib/company-defaults';
 import type { PageType } from '@/lib/page-types';
@@ -152,5 +152,32 @@ export function registerDocumentTools(server: McpServer) {
     const result = await deletePage(sb, 'document', { entityId: args.documentId, pageId: args.pageId });
     if (!result.success) return txt(`Failed: ${result.error || 'unknown'}`);
     return txt(`Page deleted. ${result.totalPages} remaining.`);
+  });
+
+  server.tool('reorder_document_pages', 'Reorder pages by providing the full ordered list of page IDs.', {
+    documentId: z.string(),
+    orderedPageIds: z.array(z.string()).describe('Page IDs in the desired order. Must include all page IDs.'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async (args, extra) => {
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
+    const sb = createServiceClient();
+    const { data: d } = await sb.from('documents').select('id').eq('id', args.documentId).eq('company_id', auth.companyId).single();
+    if (!d) return txt('Document not found');
+    const result = await reorderPages(sb, 'document', { entityId: args.documentId, orderedIds: args.orderedPageIds });
+    if (!result.success) return txt(`Failed: ${result.error || 'unknown'}`);
+    return txt(`Pages reordered (${args.orderedPageIds.length} pages).`);
+  });
+
+  server.tool('get_document_page_urls', 'Get signed download URLs for all pages in a document (needed to view PDF pages).', {
+    documentId: z.string(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ documentId, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
+    const sb = createServiceClient();
+    const { data: d } = await sb.from('documents').select('id').eq('id', documentId).eq('company_id', auth.companyId).single();
+    if (!d) return txt('Document not found');
+    const result = await getPageUrls(sb, 'document', { entityId: documentId });
+    if (result.error) return txt(`Error: ${result.error}`);
+    return json(result.pages);
   });
 }

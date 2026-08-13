@@ -100,4 +100,45 @@ export function registerWorkspaceTools(server: McpServer) {
     if (error) return txt(`Failed: ${error.message}`);
     return txt('Client updated.');
   });
+
+  server.tool('update_company', 'Update company profile fields (name, website, contact info, branding).', {
+    name: z.string().optional(),
+    website: z.string().optional(),
+    contactEmail: z.string().optional(),
+    phone: z.string().optional(),
+    abn: z.string().optional(),
+    address: z.string().optional(),
+    accentColor: z.string().optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async (args, extra) => {
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
+    const sb = createServiceClient();
+    const { data: c } = await sb.from('companies').select('id').eq('id', auth.companyId).single();
+    if (!c) return txt('Company not found');
+    const updates: Record<string, unknown> = {};
+    if (args.name !== undefined) updates.name = args.name;
+    if (args.website !== undefined) updates.website = args.website;
+    if (args.contactEmail !== undefined) updates.contact_email = args.contactEmail;
+    if (args.phone !== undefined) updates.phone = args.phone;
+    if (args.abn !== undefined) updates.abn = args.abn;
+    if (args.address !== undefined) updates.address = args.address;
+    if (args.accentColor !== undefined) updates.accent_color = args.accentColor;
+    if (Object.keys(updates).length === 0) return txt('No fields to update.');
+    const { error } = await sb.from('companies').update(updates).eq('id', auth.companyId);
+    if (error) return txt(`Failed: ${error.message}`);
+    return txt('Company updated.');
+  });
+
+  server.tool('delete_client', 'Delete a client company linked to this agency.', {
+    clientId: z.string(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ clientId, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
+    const sb = createServiceClient();
+    const { data: c } = await sb.from('companies').select('id').eq('id', clientId).eq('agency_id', auth.companyId).eq('account_type', 'client').single();
+    if (!c) return txt('Client not found');
+    const { error } = await sb.from('companies').delete().eq('id', clientId).eq('agency_id', auth.companyId).eq('account_type', 'client');
+    if (error) return txt(`Failed: ${error.message}`);
+    return txt('Client deleted.');
+  });
 }

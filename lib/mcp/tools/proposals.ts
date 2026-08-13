@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase-server';
-import { addPage, updatePage, deletePage, reorderPages } from '@/lib/page-operations';
+import { addPage, updatePage, deletePage, reorderPages, getPageUrls } from '@/lib/page-operations';
 import { getCompanyEntityDefaults } from '@/lib/company-defaults';
 import { checkResourceLimit } from '@/lib/billing/entitlements';
 import { isValidWebhookUrl } from '@/lib/sanitize';
@@ -512,6 +512,119 @@ export function registerProposalTools(server: McpServer) {
     const result = await reorderPages(sb, 'proposal', { entityId: args.proposalId, orderedIds: args.orderedPageIds });
     if (!result.success) return txt(`Failed: ${result.error || 'unknown'}`);
     return txt(`Pages reordered (${args.orderedPageIds.length} pages).`);
+  });
+
+  server.tool('get_proposal_page_urls', 'Get signed download URLs for all pages in a proposal (needed to view PDF pages).', {
+    proposalId: z.string(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ proposalId, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
+    const sb = createServiceClient();
+    const { data: p } = await sb.from('proposals').select('id').eq('id', proposalId).eq('company_id', auth.companyId).single();
+    if (!p) return txt('Proposal not found');
+    const result = await getPageUrls(sb, 'proposal', { entityId: proposalId });
+    if (result.error) return txt(`Error: ${result.error}`);
+    return json(result.pages);
+  });
+
+  server.tool('duplicate_proposal', 'Duplicate a proposal or quote, including all pages. Returns the new ID.', {
+    proposalId: z.string(),
+    newTitle: z.string().optional().describe('Title for the duplicate. Default: "Copy of {original title}"'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async (args, extra) => {
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
+    const sb = createServiceClient();
+    const { data: src } = await sb.from('proposals').select('*').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
+    if (!src) return txt('Proposal not found');
+    const source = src as Record<string, unknown>;
+    const OMIT = new Set(['id', 'share_token', 'status', 'sent_at', 'first_viewed_at', 'last_viewed_at',
+      'view_count', 'accepted_at', 'accepted_by_name', 'declined_at', 'declined_by_name',
+      'decline_reason', 'revision_requested_at', 'created_at', 'updated_at', 'quote_number']);
+    const row: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(source)) { if (!OMIT.has(k)) row[k] = v; }
+    row.title = args.newTitle || `Copy of ${source.title}`;
+    row.status = 'draft';
+    if (source.entity_type === 'quote') {
+      const { data: qn } = await sb.rpc('claim_next_quote_number', { p_company_id: auth.companyId });
+      if (qn) row.quote_number = qn;
+    }
+    const { data: newProp, error } = await sb.from('proposals').insert(row).select('id, title, entity_type, quote_number').single();
+    if (error || !newProp) return txt(`Failed: ${error?.message || 'unknown'}`);
+    const { data: pages } = await sb.from('proposal_pages_v2').select('*').eq('proposal_id', args.proposalId).order('position');
+    let pagesCopied = 0;
+    if (pages?.length) {
+      const newPages = pages.map(p => {
+        const pg = p as Record<string, unknown>;
+        const { id: _id, created_at: _ca, updated_at: _ua, ...rest } = pg;
+        return { ...rest, proposal_id: (newProp as Record<string, unknown>).id };
+      });
+      const { error: pErr } = await sb.from('proposal_pages_v2').insert(newPages);
+      if (!pErr) pagesCopied = newPages.length;
+    }
+    const np = newProp as Record<string, unknown>;
+    return json({ id: np.id, title: np.title, type: np.entity_type, quoteNumber: np.quote_number, pagesCopied, status: 'draft' });
+  });
+
+  server.tool('save_proposal_as_template', 'Save a proposal as a reusable template. Copies all branding and pages.', {
+    proposalId: z.string(),
+    name: z.string().optional().describe('Template name. Default: proposal title'),
+    description: z.string().optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async (args, extra) => {
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
+    const sb = createServiceClient();
+    const { data: src } = await sb.from('proposals').select('*').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
+    if (!src) return txt('Proposal not found');
+    const source = src as Record<string, unknown>;
+    const COPY_COLUMNS = [
+      'entity_type', 'file_path',
+      'cover_image_path', 'cover_enabled', 'cover_subtitle', 'cover_button_text',
+      'cover_bg_style', 'cover_bg_color_1', 'cover_bg_color_2',
+      'cover_gradient_type', 'cover_gradient_angle', 'cover_gradient_position_x', 'cover_gradient_position_y',
+      'cover_gradient_stops', 'cover_overlay_opacity', 'cover_text_color', 'cover_subtitle_color',
+      'cover_button_bg', 'cover_button_text_color', 'cover_client_logo_path', 'cover_client_logo_tint_color',
+      'cover_avatar_path', 'cover_date', 'cover_show_client_logo', 'cover_show_avatar',
+      'cover_show_date', 'cover_show_prepared_by', 'prepared_by', 'prepared_by_member_id',
+      'bg_image_path', 'bg_image_overlay_opacity', 'bg_image_blur',
+      'page_orientation', 'toc_settings', 'page_order',
+      'text_page_bg_color', 'text_page_text_color', 'text_page_heading_color',
+      'text_page_font_size', 'text_page_border_enabled', 'text_page_border_color',
+      'text_page_border_radius', 'text_page_layout',
+      'title_font_family', 'title_font_weight', 'title_font_size', 'title_font_transform',
+      'font_heading_family', 'font_heading_weight', 'font_heading_size', 'font_heading_transform',
+      'font_body_family', 'font_body_weight', 'font_body_transform',
+      'font_button_family', 'font_button_weight',
+      'page_num_circle_color', 'page_num_text_color',
+      'quote_page_bg_color', 'quote_header_bg_color_1', 'quote_header_bg_color_2',
+      'quote_header_text_color', 'quote_header_subtitle_color',
+      'post_accept_action', 'post_accept_redirect_url', 'post_accept_message', 'package_styling',
+      'decision_action_bg_color', 'decision_action_text_color', 'decision_action_heading_color',
+      'decision_action_accent_color', 'decision_decline_button_color', 'decision_revision_button_color',
+      'decision_checkbox_color', 'decision_page_enabled', 'decision_page_title', 'decision_extras',
+      'pricing_header_text_color', 'pricing_text_color', 'pricing_price_title_color', 'pricing_price_color',
+      'pricing_payment_schedule_name_color', 'pricing_payment_schedule_price_color',
+      'pricing_accent_bar_color', 'pricing_dot_color',
+    ];
+    const tmplRow: Record<string, unknown> = {
+      name: args.name || source.title, description: args.description || source.description || null,
+      company_id: auth.companyId,
+    };
+    for (const col of COPY_COLUMNS) { if (source[col] !== undefined) tmplRow[col] = source[col]; }
+    const { data: tmpl, error } = await sb.from('proposal_templates').insert(tmplRow).select('id, name').single();
+    if (error || !tmpl) return txt(`Failed: ${error?.message || 'unknown'}`);
+    const { data: pages } = await sb.from('proposal_pages_v2').select('*').eq('proposal_id', args.proposalId).order('position');
+    let pagesCopied = 0;
+    if (pages?.length) {
+      const newPages = pages.map(p => {
+        const pg = p as Record<string, unknown>;
+        const { id: _id, created_at: _ca, updated_at: _ua, proposal_id: _pid, ...rest } = pg;
+        return { ...rest, template_id: (tmpl as Record<string, unknown>).id };
+      });
+      const { error: pErr } = await sb.from('template_pages_v2').insert(newPages);
+      if (!pErr) pagesCopied = newPages.length;
+    }
+    const t = tmpl as Record<string, unknown>;
+    return json({ id: t.id, name: t.name, pagesCopied });
   });
 
 }

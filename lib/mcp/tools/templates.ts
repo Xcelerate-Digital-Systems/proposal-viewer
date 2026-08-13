@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase-server';
-import { addPage, updatePage, deletePage } from '@/lib/page-operations';
+import { addPage, updatePage, deletePage, reorderPages, getPageUrls } from '@/lib/page-operations';
 import type { PageType } from '@/lib/page-types';
 import { getAuth, unauthorized, txt, json, type McpServer } from '@/lib/mcp/types';
 import { getCompanyEntityDefaults } from '@/lib/company-defaults';
@@ -151,5 +151,61 @@ export function registerTemplateTools(server: McpServer) {
     const result = await deletePage(sb, 'template', { entityId: args.templateId, pageId: args.pageId });
     if (!result.success) return txt(`Failed: ${result.error || 'unknown'}`);
     return txt(`Page deleted. ${result.totalPages} remaining.`);
+  });
+
+  server.tool('reorder_template_pages', 'Reorder pages by providing the full ordered list of page IDs.', {
+    templateId: z.string(),
+    orderedPageIds: z.array(z.string()).describe('Page IDs in the desired order. Must include all page IDs.'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async (args, extra) => {
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
+    const sb = createServiceClient();
+    const { data: t } = await sb.from('proposal_templates').select('id').eq('id', args.templateId).eq('company_id', auth.companyId).single();
+    if (!t) return txt('Template not found');
+    const result = await reorderPages(sb, 'template', { entityId: args.templateId, orderedIds: args.orderedPageIds });
+    if (!result.success) return txt(`Failed: ${result.error || 'unknown'}`);
+    return txt(`Pages reordered (${args.orderedPageIds.length} pages).`);
+  });
+
+  server.tool('get_template_page_urls', 'Get signed download URLs for all pages in a template (needed to view PDF pages).', {
+    templateId: z.string(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ templateId, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
+    const sb = createServiceClient();
+    const { data: t } = await sb.from('proposal_templates').select('id').eq('id', templateId).eq('company_id', auth.companyId).single();
+    if (!t) return txt('Template not found');
+    const result = await getPageUrls(sb, 'template', { entityId: templateId });
+    if (result.error) return txt(`Error: ${result.error}`);
+    return json(result.pages);
+  });
+
+  server.tool('duplicate_template', 'Duplicate a template, including all pages. Returns the new template ID.', {
+    templateId: z.string(),
+    newName: z.string().optional().describe('Name for the duplicate. Default: "Copy of {original name}"'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async (args, extra) => {
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
+    const sb = createServiceClient();
+    const { data: src } = await sb.from('proposal_templates').select('*').eq('id', args.templateId).eq('company_id', auth.companyId).single();
+    if (!src) return txt('Template not found');
+    const source = src as Record<string, unknown>;
+    const { id: _id, created_at: _ca, updated_at: _ua, ...rest } = source;
+    const row = { ...rest, name: args.newName || `Copy of ${source.name}` };
+    const { data: newTmpl, error } = await sb.from('proposal_templates').insert(row).select('id, name').single();
+    if (error || !newTmpl) return txt(`Failed: ${error?.message || 'unknown'}`);
+    const { data: pages } = await sb.from('template_pages_v2').select('*').eq('template_id', args.templateId).order('position');
+    let pagesCopied = 0;
+    if (pages?.length) {
+      const newPages = pages.map(p => {
+        const pg = p as Record<string, unknown>;
+        const { id: _pid, created_at: _pca, updated_at: _pua, ...pRest } = pg;
+        return { ...pRest, template_id: (newTmpl as Record<string, unknown>).id };
+      });
+      const { error: pErr } = await sb.from('template_pages_v2').insert(newPages);
+      if (!pErr) pagesCopied = newPages.length;
+    }
+    const nt = newTmpl as Record<string, unknown>;
+    return json({ id: nt.id, name: nt.name, pagesCopied });
   });
 }
