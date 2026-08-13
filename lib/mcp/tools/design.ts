@@ -164,7 +164,7 @@ export function registerDesignTools(server: McpServer) {
     const updates = buildUpdates(args);
     if (Object.keys(updates).length === 0) return txt('No design fields provided.');
     updates.updated_at = new Date().toISOString();
-    const { error } = await sb.from('proposals').update(updates).eq('id', args.proposalId);
+    const { error } = await sb.from('proposals').update(updates).eq('id', args.proposalId).eq('company_id', auth.companyId);
     if (error) return txt(`Failed: ${error.message}`);
     return txt(`Proposal design updated (${Object.keys(updates).length - 1} fields).`);
   });
@@ -182,7 +182,7 @@ export function registerDesignTools(server: McpServer) {
     const updates = buildUpdates(args);
     if (Object.keys(updates).length === 0) return txt('No design fields provided.');
     updates.updated_at = new Date().toISOString();
-    const { error } = await sb.from('proposal_templates').update(updates).eq('id', args.templateId);
+    const { error } = await sb.from('proposal_templates').update(updates).eq('id', args.templateId).eq('company_id', auth.companyId);
     if (error) return txt(`Failed: ${error.message}`);
     return txt(`Template design updated (${Object.keys(updates).length - 1} fields).`);
   });
@@ -197,7 +197,8 @@ export function registerDesignTools(server: McpServer) {
     const { data, error } = await sb.from('proposals')
       .select(`id, ${DESIGN_COLUMNS}`)
       .eq('id', args.proposalId).eq('company_id', auth.companyId).single();
-    if (error || !data) return txt('Proposal not found');
+    if (error) return txt(error.code === 'PGRST116' ? 'Proposal not found' : `Query error: ${error.message}`);
+    if (!data) return txt('Proposal not found');
     return json(rowToCamel(data as unknown as Record<string, unknown>));
   });
 
@@ -211,7 +212,8 @@ export function registerDesignTools(server: McpServer) {
     const { data, error } = await sb.from('proposal_templates')
       .select(`id, ${DESIGN_COLUMNS}`)
       .eq('id', args.templateId).eq('company_id', auth.companyId).single();
-    if (error || !data) return txt('Template not found');
+    if (error) return txt(error.code === 'PGRST116' ? 'Template not found' : `Query error: ${error.message}`);
+    if (!data) return txt('Template not found');
     return json(rowToCamel(data as unknown as Record<string, unknown>));
   });
 }
