@@ -11,7 +11,7 @@
 import React from 'react';
 import { MessageSquare, Check, AlertTriangle } from 'lucide-react';
 import AdMockupPreview, { type AdPlatform } from '@/components/admin/feedback/AdMockupPreview';
-import type { MetaAdVariant } from '@/lib/types/feedback';
+import type { MetaAdVariant, AdCreative } from '@/lib/types/feedback';
 import type { VariantDecisionSummary } from '@/hooks/useVariantDecisions';
 
 interface VariantCompareViewProps {
@@ -38,6 +38,8 @@ interface VariantCompareViewProps {
   onSelectVariant: (variantId: string) => void;
   /** Per-variant decision summaries. */
   decisionSummaries?: Record<string, VariantDecisionSummary>;
+  /** Multi-format creatives (passed through to AdMockupPreview). */
+  formatCreatives?: AdCreative[];
 }
 
 export default function VariantCompareView({
@@ -53,6 +55,7 @@ export default function VariantCompareView({
   commentCountsByVariantId,
   onSelectVariant,
   decisionSummaries,
+  formatCreatives,
 }: VariantCompareViewProps) {
   // Compute grid columns: 2 for 2 variants, 2 for 3–4, 3 for 5–6, etc.
   const cols = variants.length <= 2 ? variants.length : variants.length <= 4 ? 2 : 3;
@@ -136,6 +139,7 @@ export default function VariantCompareView({
                 displayUrl={displayUrl}
                 accentColor={accentColor}
                 dark={dark}
+                formatCreatives={formatCreatives}
               />
             </div>
           </button>

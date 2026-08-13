@@ -298,6 +298,36 @@ export function parseMetaAdVariantView(view: FeedbackItemView): { id: string } |
   return match ? { id: match[1] } : null;
 }
 
+/* ================================================================== */
+/*  Multi-format ad creatives                                          */
+/* ================================================================== */
+
+export type AdCreativeFormat = 'square' | 'vertical';
+
+export type AdCreative = {
+  id: string;
+  url: string;
+  format: AdCreativeFormat;
+  filename?: string;
+};
+
+export function getAdCreatives(item: Pick<FeedbackItem, 'ad_creatives' | 'ad_creative_url'>): AdCreative[] {
+  if (Array.isArray(item.ad_creatives) && item.ad_creatives.length > 0) return item.ad_creatives;
+  if (item.ad_creative_url) return [{ id: 'legacy', url: item.ad_creative_url, format: 'square' }];
+  return [];
+}
+
+export function getCreativeUrl(item: Pick<FeedbackItem, 'ad_creatives' | 'ad_creative_url'>, format: AdCreativeFormat): string | null {
+  const creatives = getAdCreatives(item);
+  const match = creatives.find((c) => c.format === format);
+  if (match) return match.url;
+  return creatives[0]?.url ?? item.ad_creative_url ?? null;
+}
+
+export function hasMultipleFormats(item: Pick<FeedbackItem, 'ad_creatives'>): boolean {
+  return Array.isArray(item.ad_creatives) && item.ad_creatives.length >= 2;
+}
+
 /** Returns the variants array for an ad item, synthesising a single
  *  fallback variant from the legacy `ad_headline` / `ad_copy` columns when
  *  no explicit variants have been saved yet. The synthesised id is stable
@@ -393,6 +423,7 @@ export type FeedbackItem = {
    *  a sidebar of (primary_text, headline) variants. ad_headline / ad_copy
    *  are kept in sync with the first variant for legacy consumers. */
   meta_ad_variants: MetaAdVariant[] | null;
+  ad_creatives: AdCreative[] | null;
   // Email fields
   email_subject: string | null;
   email_preheader: string | null;
@@ -449,6 +480,7 @@ export type FeedbackItemVersion = {
   ad_creative_url: string | null;
   ad_platform: string | null;
   meta_ad_variants: MetaAdVariant[] | null;
+  ad_creatives: AdCreative[] | null;
   email_subject: string | null;
   email_preheader: string | null;
   email_body: string | null;

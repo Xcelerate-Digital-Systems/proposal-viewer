@@ -112,9 +112,27 @@ export function useFeedbackItemSubmit({
         // Don't persist the variation metadata to the item row
         delete fullPayload._ad_variation_data;
 
+        // Build ad_creatives array for multi-format ads
+        const adExtraCreatives = payload._ad_extra_creatives as
+          | { format: string; url: string; filename?: string }[]
+          | undefined;
+        delete fullPayload._ad_extra_creatives;
+
         // Set type-specific URL fields based on the uploaded file
         if (payload.type === 'ad') {
           fullPayload.ad_creative_url = imageUrl;
+          // Build ad_creatives JSONB when extra formats are present
+          const creatives: { id: string; url: string; format: string; filename?: string }[] = [
+            { id: crypto.randomUUID().slice(0, 8), url: imageUrl, format: 'square' },
+          ];
+          if (adExtraCreatives && adExtraCreatives.length > 0) {
+            for (const c of adExtraCreatives) {
+              creatives.push({ id: crypto.randomUUID().slice(0, 8), url: c.url, format: c.format, filename: c.filename });
+            }
+          }
+          if (creatives.length >= 2) {
+            fullPayload.ad_creatives = creatives;
+          }
         } else if (payload.type === 'google_banner_ad') {
           // Banner image lives inside the google_ad_data jsonb so the type
           // owns its own asset reference instead of relying on ad_creative_url.

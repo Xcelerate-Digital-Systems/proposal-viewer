@@ -5,7 +5,7 @@ import {
   ThumbsUp, MessageCircle, Share2, MoreHorizontal, Heart, Bookmark, Send, Globe,
   ChevronRight, MessageSquare, Plus, Copy, Check, LayoutGrid, AlertTriangle,
 } from 'lucide-react';
-import type { MetaAdVariant } from '@/lib/types/feedback';
+import type { MetaAdVariant, AdCreative, AdCreativeFormat } from '@/lib/types/feedback';
 import type { VariantDecision, VariantDecisionSummary } from '@/hooks/useVariantDecisions';
 
 export type AdPlatform = 'facebook_feed' | 'instagram_feed' | 'instagram_story';
@@ -55,6 +55,13 @@ interface AdMockupPreviewProps {
   variantDecisionSummaries?: Record<string, VariantDecisionSummary>;
   /** Callback when reviewer clicks a variant decision icon. */
   onVariantDecision?: (variantId: string, decision: VariantDecision) => void;
+  /** Multi-format creatives (square + vertical). When present, shows a
+   *  format picker and switches the creative image + aspect ratio. */
+  formatCreatives?: AdCreative[];
+  /** Currently active format. Defaults to 'square'. */
+  activeFormat?: AdCreativeFormat;
+  /** Callback when format changes. */
+  onFormatChange?: (format: AdCreativeFormat) => void;
 }
 
 export default function AdMockupPreview({
@@ -79,16 +86,34 @@ export default function AdMockupPreview({
   myVariantDecisions,
   variantDecisionSummaries,
   onVariantDecision,
+  formatCreatives,
+  activeFormat: activeFormatProp,
+  onFormatChange,
 }: AdMockupPreviewProps) {
   const [activePlatform, setActivePlatform] = useState<AdPlatform>(platform);
   useEffect(() => { setActivePlatform(platform); }, [platform]);
+  const [internalFormat, setInternalFormat] = useState<AdCreativeFormat>(activeFormatProp ?? 'square');
+  useEffect(() => { if (activeFormatProp) setInternalFormat(activeFormatProp); }, [activeFormatProp]);
 
   const handlePlatformChange = (p: AdPlatform) => {
     setActivePlatform(p);
     onPlatformChange?.(p);
   };
 
+  const handleFormatChange = (f: AdCreativeFormat) => {
+    setInternalFormat(f);
+    onFormatChange?.(f);
+  };
+
   const currentPlatform = showPlatformToggle ? activePlatform : platform;
+  const showFormatPicker = formatCreatives && formatCreatives.length >= 2;
+  const currentFormat = internalFormat;
+  const effectiveCreativeUrl = (() => {
+    if (!formatCreatives || formatCreatives.length === 0) return creativeUrl;
+    const match = formatCreatives.find((c) => c.format === currentFormat);
+    return match?.url ?? creativeUrl;
+  })();
+  const creativeAspect = currentFormat === 'vertical' ? 'aspect-[9/16]' : 'aspect-square';
 
   // Pick the active variant. When no variants are passed, synthesise a
   // single-row list from the legacy props so the downstream mockup code
@@ -156,38 +181,69 @@ export default function AdMockupPreview({
         </div>
       )}
 
-      {showPlatformToggle && (
-        <div
-          className="flex rounded-lg overflow-hidden border"
-          style={{
-            borderColor: dark ? '#ffffff18' : '#e5e7eb',
-            backgroundColor: dark ? '#ffffff08' : '#f9fafb',
-          }}
-        >
-          {([
-            { key: 'facebook_feed' as AdPlatform, label: 'Facebook' },
-            { key: 'instagram_feed' as AdPlatform, label: 'Instagram' },
-          ]).map((p) => (
-            <button
-              key={p.key}
-              onClick={(e) => { e.stopPropagation(); handlePlatformChange(p.key); }}
-              className="px-4 py-1.5 text-xs font-medium transition-colors"
-              style={{
-                backgroundColor: currentPlatform === p.key ? brand : 'transparent',
-                color: currentPlatform === p.key
-                  ? '#ffffff'
-                  : (dark ? '#ffffff88' : '#6b7280'),
-              }}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Platform + Format toggles */}
+      <div className="flex items-center gap-2">
+        {showPlatformToggle && (
+          <div
+            className="flex rounded-lg overflow-hidden border"
+            style={{
+              borderColor: dark ? '#ffffff18' : '#e5e7eb',
+              backgroundColor: dark ? '#ffffff08' : '#f9fafb',
+            }}
+          >
+            {([
+              { key: 'facebook_feed' as AdPlatform, label: 'Facebook' },
+              { key: 'instagram_feed' as AdPlatform, label: 'Instagram' },
+            ]).map((p) => (
+              <button
+                key={p.key}
+                onClick={(e) => { e.stopPropagation(); handlePlatformChange(p.key); }}
+                className="px-4 py-1.5 text-xs font-medium transition-colors"
+                style={{
+                  backgroundColor: currentPlatform === p.key ? brand : 'transparent',
+                  color: currentPlatform === p.key
+                    ? '#ffffff'
+                    : (dark ? '#ffffff88' : '#6b7280'),
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        )}
+        {showFormatPicker && (
+          <div
+            className="flex rounded-lg overflow-hidden border"
+            style={{
+              borderColor: dark ? '#ffffff18' : '#e5e7eb',
+              backgroundColor: dark ? '#ffffff08' : '#f9fafb',
+            }}
+          >
+            {([
+              { key: 'square' as AdCreativeFormat, label: '1:1' },
+              { key: 'vertical' as AdCreativeFormat, label: '9:16' },
+            ]).map((f) => (
+              <button
+                key={f.key}
+                onClick={(e) => { e.stopPropagation(); handleFormatChange(f.key); }}
+                className="px-3 py-1.5 text-xs font-medium transition-colors"
+                style={{
+                  backgroundColor: currentFormat === f.key ? brand : 'transparent',
+                  color: currentFormat === f.key
+                    ? '#ffffff'
+                    : (dark ? '#ffffff88' : '#6b7280'),
+                }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {currentPlatform === 'facebook_feed' && (
         <FacebookFeedAd
-          creativeUrl={creativeUrl}
+          creativeUrl={effectiveCreativeUrl}
           headline={effectiveHeadline}
           primaryText={effectivePrimaryText}
           ctaText={ctaText}
@@ -195,17 +251,19 @@ export default function AdMockupPreview({
           pageImageUrl={pageImageUrl}
           displayUrl={displayUrl}
           dark={dark}
+          creativeAspect={creativeAspect}
         />
       )}
       {currentPlatform === 'instagram_feed' && (
         <InstagramFeedAd
-          creativeUrl={creativeUrl}
+          creativeUrl={effectiveCreativeUrl}
           headline={effectiveHeadline}
           primaryText={effectivePrimaryText}
           ctaText={ctaText}
           pageName={pageName}
           pageImageUrl={pageImageUrl}
           dark={dark}
+          creativeAspect={creativeAspect}
         />
       )}
     </div>
@@ -361,10 +419,10 @@ export function AdMockupPreviewAddVariantButton({ onClick }: { onClick: () => vo
 /* ================================================================== */
 
 function FacebookFeedAd({
-  creativeUrl, headline, primaryText, ctaText, pageName, pageImageUrl, displayUrl, dark,
+  creativeUrl, headline, primaryText, ctaText, pageName, pageImageUrl, displayUrl, dark, creativeAspect = 'aspect-square',
 }: {
   creativeUrl: string; headline: string; primaryText: string; ctaText: string;
-  pageName: string; pageImageUrl?: string; displayUrl?: string; dark?: boolean;
+  pageName: string; pageImageUrl?: string; displayUrl?: string; dark?: boolean; creativeAspect?: string;
 }) {
   const bg = dark ? '#242526' : '#ffffff';
   const text = dark ? '#e4e6eb' : '#050505';
@@ -409,7 +467,7 @@ function FacebookFeedAd({
           placed here gets stamped with the shared `creative` view instead
           of the active variant; that way creative feedback is visible on
           every variant (the image doesn't change between them). */}
-      <div data-creative className="w-full aspect-square bg-surface overflow-hidden">
+      <div data-creative className={`w-full ${creativeAspect} bg-surface overflow-hidden`}>
         <img
           src={creativeUrl}
           alt="Ad creative"
@@ -472,10 +530,10 @@ function FacebookFeedAd({
 /* ================================================================== */
 
 function InstagramFeedAd({
-  creativeUrl, headline, primaryText, ctaText, pageName, pageImageUrl, dark,
+  creativeUrl, headline, primaryText, ctaText, pageName, pageImageUrl, dark, creativeAspect = 'aspect-square',
 }: {
   creativeUrl: string; headline: string; primaryText: string; ctaText: string;
-  pageName: string; pageImageUrl?: string; dark?: boolean;
+  pageName: string; pageImageUrl?: string; dark?: boolean; creativeAspect?: string;
 }) {
   const bg = dark ? '#000000' : '#ffffff';
   const text = dark ? '#f5f5f5' : '#262626';
@@ -510,7 +568,7 @@ function InstagramFeedAd({
       </div>
 
       {/* Creative image — see FacebookFeedAd for the data-creative rationale. */}
-      <div data-creative className="w-full aspect-square overflow-hidden">
+      <div data-creative className={`w-full ${creativeAspect} overflow-hidden`}>
         <img
           src={creativeUrl}
           alt="Ad creative"

@@ -273,6 +273,7 @@ export default function AddFeedbackItemModal({
             onPreviewChange={handlePreviewChange}
             reviewProjectId={reviewProjectId}
             companyId={companyId}
+            uploadAsset={uploadAsset}
           />
         )}
         {step === 'details' && itemType === 'email' && (

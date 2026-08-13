@@ -22,6 +22,7 @@ export interface AdItemFormProps {
   onPreviewChange?: (visible: boolean) => void;
   reviewProjectId?: string;
   companyId?: string;
+  uploadAsset?: (file: File) => Promise<string | null>;
 }
 
 export function newTempId(): string {
