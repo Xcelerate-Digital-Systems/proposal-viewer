@@ -6,8 +6,9 @@ export function registerPricingTools(server: McpServer) {
   server.tool('get_pricing_page', 'Get the full pricing data for a pricing page (line items, tax, payment schedule, column config).', {
     proposalId: z.string(),
     pageId: z.string(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: page } = await sb.from('proposal_pages_v2')
       .select('id, type, title, payload, enabled, position')
@@ -44,8 +45,9 @@ export function registerPricingTools(server: McpServer) {
       discount_pct: z.number().optional().describe('0-100 discount percentage'),
       percentage: z.number().optional().describe('Display-only column. Usually 0'),
     })),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: page } = await sb.from('proposal_pages_v2')
       .select('id, type, payload').eq('id', args.pageId).eq('proposal_id', args.proposalId).eq('company_id', auth.companyId).single();
@@ -75,8 +77,9 @@ export function registerPricingTools(server: McpServer) {
       }).optional(),
       recurring: z.object({ enabled: z.boolean(), amount: z.number(), frequency: z.enum(['weekly', 'fortnightly', 'monthly', 'quarterly', 'annually']), label: z.string(), note: z.string() }).optional(),
     }).optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: page } = await sb.from('proposal_pages_v2')
       .select('id, type, payload').eq('id', args.pageId).eq('proposal_id', args.proposalId).eq('company_id', auth.companyId).single();
@@ -102,8 +105,9 @@ export function registerPricingTools(server: McpServer) {
   server.tool('get_packages_page', 'Get the full packages data for a packages page (tiers, features, styling).', {
     proposalId: z.string(),
     pageId: z.string(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: page } = await sb.from('proposal_pages_v2')
       .select('id, type, title, payload, enabled, position')
@@ -141,8 +145,9 @@ export function registerPricingTools(server: McpServer) {
     })),
     introText: z.string().optional(),
     footerText: z.string().optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: page } = await sb.from('proposal_pages_v2')
       .select('id, type, payload').eq('id', args.pageId).eq('proposal_id', args.proposalId).eq('company_id', auth.companyId).single();

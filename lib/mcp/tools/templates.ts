@@ -6,8 +6,10 @@ import { getAuth, unauthorized, txt, json, type McpServer } from '@/lib/mcp/type
 import { getCompanyEntityDefaults } from '@/lib/company-defaults';
 
 export function registerTemplateTools(server: McpServer) {
-  server.tool('list_templates', 'List all templates in the template library.', {}, async (_args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+  server.tool('list_templates', 'List all templates in the template library.', {
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data, error } = await sb.from('proposal_templates')
       .select('id, name, description, entity_type, created_at, updated_at')
@@ -19,8 +21,9 @@ export function registerTemplateTools(server: McpServer) {
 
   server.tool('get_template', 'Get template detail and its pages.', {
     templateId: z.string(),
-  }, async ({ templateId }, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ templateId, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: t } = await sb.from('proposal_templates')
       .select('id, name, description, entity_type, section_headers, created_at, updated_at')
@@ -43,8 +46,9 @@ export function registerTemplateTools(server: McpServer) {
     name: z.string(),
     description: z.string().optional(),
     entityType: z.enum(['proposal', 'quote']).optional().describe('Default: proposal'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const brandingDefaults = await getCompanyEntityDefaults(sb, auth.companyId, {});
     const { data, error } = await sb.from('proposal_templates').insert({
@@ -61,8 +65,9 @@ export function registerTemplateTools(server: McpServer) {
     templateId: z.string(),
     name: z.string().optional(),
     description: z.string().optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: t } = await sb.from('proposal_templates').select('id').eq('id', args.templateId).eq('company_id', auth.companyId).single();
     if (!t) return txt('Template not found');
@@ -77,8 +82,9 @@ export function registerTemplateTools(server: McpServer) {
 
   server.tool('delete_template', 'Delete a template and all its pages.', {
     templateId: z.string(),
-  }, async ({ templateId }, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ templateId, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: t } = await sb.from('proposal_templates').select('id, name').eq('id', templateId).eq('company_id', auth.companyId).single();
     if (!t) return txt('Template not found');
@@ -95,8 +101,9 @@ export function registerTemplateTools(server: McpServer) {
     position: z.number().optional(),
     content: z.string().optional().describe('HTML content for text pages'),
     filePath: z.string().optional().describe('Storage path for PDF pages'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: t } = await sb.from('proposal_templates').select('id').eq('id', args.templateId).eq('company_id', auth.companyId).single();
     if (!t) return txt('Template not found');
@@ -114,8 +121,9 @@ export function registerTemplateTools(server: McpServer) {
     title: z.string().optional(), content: z.string().optional(),
     filePath: z.string().optional(), enabled: z.boolean().optional(),
     indent: z.number().optional(), showTitle: z.boolean().optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: t } = await sb.from('proposal_templates').select('id').eq('id', args.templateId).eq('company_id', auth.companyId).single();
     if (!t) return txt('Template not found');
@@ -134,8 +142,9 @@ export function registerTemplateTools(server: McpServer) {
 
   server.tool('delete_template_page', 'Delete a page from a template.', {
     templateId: z.string(), pageId: z.string(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: t } = await sb.from('proposal_templates').select('id').eq('id', args.templateId).eq('company_id', auth.companyId).single();
     if (!t) return txt('Template not found');

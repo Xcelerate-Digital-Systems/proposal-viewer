@@ -154,8 +154,9 @@ export function registerCampaignTools(server: McpServer) {
     server.tool('get_unresolved', 'Get all unresolved comments across a campaign, grouped by asset. Includes attachments.', {
       campaignId: z.string(),
       since: z.string().optional().describe('ISO 8601 timestamp — only return comments created after this time'),
-    }, async ({ campaignId, since }, extra) => {
-      const auth = getAuth(extra); if (!auth) return unauthorized();
+      companyId: z.string().optional().describe('Super admin only: target a different company'),
+    }, async ({ campaignId, since, companyId }, extra) => {
+      const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
       const sb = createServiceClient();
       const { data: campaignItems } = await sb.from('review_items').select('id, title, type, status').eq('review_project_id', campaignId).eq('company_id', auth.companyId);
       if (!campaignItems?.length) return txt('No assets in this campaign.');
@@ -185,8 +186,9 @@ export function registerCampaignTools(server: McpServer) {
     server.tool('resolve_comment', 'Mark a comment as resolved, with an optional note.', {
       commentId: z.string(),
       note: z.string().optional().describe('Resolution note (e.g. "fixed in deploy abc123"). Added as a reply before resolving.'),
-    }, async ({ commentId, note }, extra) => {
-      const auth = getAuth(extra); if (!auth) return unauthorized();
+      companyId: z.string().optional().describe('Super admin only: target a different company'),
+    }, async ({ commentId, note, companyId }, extra) => {
+      const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
       const sb = createServiceClient();
       const { data: comment } = await sb.from('review_comments').select('id, review_item_id, review_project_id, company_id').eq('id', commentId).eq('company_id', auth.companyId).single();
       if (!comment) return txt('Comment not found');
@@ -211,8 +213,9 @@ export function registerCampaignTools(server: McpServer) {
 
     server.tool('add_comment', 'Add a comment to an asset. Can be a thread reply.', {
       assetId: z.string(), content: z.string(), parentCommentId: z.string().optional(),
-    }, async ({ assetId, content, parentCommentId }, extra) => {
-      const auth = getAuth(extra); if (!auth) return unauthorized();
+      companyId: z.string().optional().describe('Super admin only: target a different company'),
+    }, async ({ assetId, content, parentCommentId, companyId }, extra) => {
+      const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
       const sb = createServiceClient();
       const { data: item } = await sb.from('review_items').select('id, review_project_id').eq('id', assetId).eq('company_id', auth.companyId).single();
       if (!item) return txt('Asset not found');
@@ -250,8 +253,9 @@ export function registerCampaignTools(server: McpServer) {
     server.tool('update_campaign_status', 'Archive or activate a campaign project.', {
       campaignId: z.string(),
       status: z.enum(['active', 'archived']),
-    }, async ({ campaignId, status }, extra) => {
-      const auth = getAuth(extra); if (!auth) return unauthorized();
+      companyId: z.string().optional().describe('Super admin only: target a different company'),
+    }, async ({ campaignId, status, companyId }, extra) => {
+      const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
       const sb = createServiceClient();
       const { data: project } = await sb.from('review_projects').select('id, status').eq('id', campaignId).eq('company_id', auth.companyId).single();
       if (!project) return txt('Campaign not found');

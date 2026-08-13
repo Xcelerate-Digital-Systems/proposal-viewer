@@ -5,8 +5,9 @@ import { getAuth, unauthorized, txt, json, type McpServer } from '@/lib/mcp/type
 export function registerFunnelTools(server: McpServer) {
   server.tool('list_funnels', 'List all funnels in the workspace.', {
     status: z.enum(['draft', 'active', 'archived', 'all']).optional(),
-  }, async ({ status }, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ status, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     let q = sb.from('funnels')
       .select('id, name, description, status, currency, forecast_period, is_template, created_at, updated_at')
@@ -20,8 +21,9 @@ export function registerFunnelTools(server: McpServer) {
 
   server.tool('get_funnel', 'Get funnel detail with all steps, edges, and shapes.', {
     funnelId: z.string(),
-  }, async ({ funnelId }, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ funnelId, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: funnel } = await sb.from('funnels').select('*').eq('id', funnelId).eq('company_id', auth.companyId).single();
     if (!funnel) return txt('Funnel not found');
@@ -59,8 +61,9 @@ export function registerFunnelTools(server: McpServer) {
     currency: z.enum(['USD', 'AUD', 'GBP', 'EUR', 'CAD', 'NZD']).optional().describe('Default: USD'),
     forecastPeriod: z.enum(['total', 'monthly', 'yearly']).optional(),
     defaultDealValue: z.number().optional().describe('Default revenue per conversion'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const row: Record<string, unknown> = {
       company_id: auth.companyId,
@@ -84,8 +87,9 @@ export function registerFunnelTools(server: McpServer) {
     currency: z.enum(['USD', 'AUD', 'GBP', 'EUR', 'CAD', 'NZD']).optional(),
     forecastPeriod: z.enum(['total', 'monthly', 'yearly']).optional(),
     defaultDealValue: z.number().optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: f } = await sb.from('funnels').select('id').eq('id', args.funnelId).eq('company_id', auth.companyId).single();
     if (!f) return txt('Funnel not found');
@@ -108,8 +112,9 @@ export function registerFunnelTools(server: McpServer) {
 
   server.tool('delete_funnel', 'Delete a funnel and all its steps, edges, notes, and shapes.', {
     funnelId: z.string(),
-  }, async ({ funnelId }, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ funnelId, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: f } = await sb.from('funnels').select('id, name').eq('id', funnelId).eq('company_id', auth.companyId).single();
     if (!f) return txt('Funnel not found');
@@ -135,8 +140,9 @@ export function registerFunnelTools(server: McpServer) {
       recurring_months: z.number().optional().describe('Months of recurring revenue per conversion'),
       notes: z.string().optional(),
     }).optional().describe('Forecast metrics'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: f } = await sb.from('funnels').select('id').eq('id', args.funnelId).eq('company_id', auth.companyId).single();
     if (!f) return txt('Funnel not found');
@@ -173,8 +179,9 @@ export function registerFunnelTools(server: McpServer) {
       recurring_months: z.number().optional(),
       notes: z.string().optional(),
     }).optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: step } = await sb.from('funnel_steps').select('id').eq('id', args.stepId).eq('funnel_id', args.funnelId).eq('company_id', auth.companyId).single();
     if (!step) return txt('Step not found');
@@ -195,8 +202,9 @@ export function registerFunnelTools(server: McpServer) {
   server.tool('delete_funnel_step', 'Delete a step node and its connected edges.', {
     stepId: z.string(),
     funnelId: z.string(),
-  }, async ({ stepId, funnelId }, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ stepId, funnelId, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: step } = await sb.from('funnel_steps').select('id, label').eq('id', stepId).eq('funnel_id', funnelId).eq('company_id', auth.companyId).single();
     if (!step) return txt('Step not found');
@@ -218,8 +226,9 @@ export function registerFunnelTools(server: McpServer) {
     animated: z.boolean().optional(),
     splitPercent: z.number().optional().describe('0-100 flow split percentage'),
     edgeType: z.string().optional().describe('Edge type. Default: labeled'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: f } = await sb.from('funnels').select('id').eq('id', args.funnelId).eq('company_id', auth.companyId).single();
     if (!f) return txt('Funnel not found');
@@ -253,8 +262,9 @@ export function registerFunnelTools(server: McpServer) {
     animated: z.boolean().optional(),
     splitPercent: z.number().optional(),
     edgeType: z.string().optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: e } = await sb.from('funnel_board_edges').select('id').eq('id', args.edgeId).eq('funnel_id', args.funnelId).eq('company_id', auth.companyId).single();
     if (!e) return txt('Edge not found');
@@ -274,8 +284,9 @@ export function registerFunnelTools(server: McpServer) {
   server.tool('delete_funnel_edge', 'Delete an edge (connection) from a funnel.', {
     edgeId: z.string(),
     funnelId: z.string(),
-  }, async ({ edgeId, funnelId }, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ edgeId, funnelId, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: e } = await sb.from('funnel_board_edges').select('id').eq('id', edgeId).eq('funnel_id', funnelId).eq('company_id', auth.companyId).single();
     if (!e) return txt('Edge not found');

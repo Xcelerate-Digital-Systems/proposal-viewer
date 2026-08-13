@@ -3,8 +3,10 @@ import { createServiceClient } from '@/lib/supabase-server';
 import { getAuth, unauthorized, txt, json, type McpServer } from '@/lib/mcp/types';
 
 export function registerSwipeTools(server: McpServer) {
-  server.tool('list_swipe_collections', 'List all swipe vault collections (naming conventions).', {}, async (_args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+  server.tool('list_swipe_collections', 'List all swipe vault collections (naming conventions).', {
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data, error } = await sb.from('swipe_types')
       .select('id, name, description, sort_order, created_at')
@@ -17,8 +19,9 @@ export function registerSwipeTools(server: McpServer) {
   server.tool('list_swipe_files', 'List swipe files, optionally filtered by collection.', {
     collectionId: z.string().optional().describe('Filter by swipe type/collection ID'),
     mediaType: z.enum(['image', 'video', 'all']).optional(),
-  }, async ({ collectionId, mediaType }, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ collectionId, mediaType, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     let q = sb.from('swipe_files')
       .select('id, title, headline, primary_text, description, cta, media_type, media_url, thumbnail_url, source_url, brand, notes, tags, type_id, transcription, created_at, updated_at')
@@ -38,8 +41,9 @@ export function registerSwipeTools(server: McpServer) {
 
   server.tool('get_swipe_file', 'Get full detail of a single swipe file.', {
     swipeFileId: z.string(),
-  }, async ({ swipeFileId }, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ swipeFileId, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: f } = await sb.from('swipe_files').select('*').eq('id', swipeFileId).eq('company_id', auth.companyId).single();
     if (!f) return txt('Swipe file not found');
@@ -55,8 +59,9 @@ export function registerSwipeTools(server: McpServer) {
     name: z.string(),
     description: z.string().optional(),
     sortOrder: z.number().optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data, error } = await sb.from('swipe_types').insert({
       name: args.name, description: args.description || null,
@@ -71,8 +76,9 @@ export function registerSwipeTools(server: McpServer) {
     name: z.string().optional(),
     description: z.string().optional(),
     sortOrder: z.number().optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: c } = await sb.from('swipe_types').select('id').eq('id', args.collectionId).eq('company_id', auth.companyId).single();
     if (!c) return txt('Collection not found');
@@ -88,8 +94,9 @@ export function registerSwipeTools(server: McpServer) {
 
   server.tool('delete_swipe_collection', 'Delete a swipe vault collection. Files in it will become uncategorized.', {
     collectionId: z.string(),
-  }, async ({ collectionId }, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ collectionId, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: c } = await sb.from('swipe_types').select('id, name').eq('id', collectionId).eq('company_id', auth.companyId).single();
     if (!c) return txt('Collection not found');
@@ -113,8 +120,9 @@ export function registerSwipeTools(server: McpServer) {
     brand: z.string().optional(),
     notes: z.string().optional(),
     tags: z.array(z.string()).optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data, error } = await sb.from('swipe_files').insert({
       title: args.title, type_id: args.collectionId || null,
@@ -143,8 +151,9 @@ export function registerSwipeTools(server: McpServer) {
     brand: z.string().optional(),
     notes: z.string().optional(),
     tags: z.array(z.string()).optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: f } = await sb.from('swipe_files').select('id').eq('id', args.swipeFileId).eq('company_id', auth.companyId).single();
     if (!f) return txt('Swipe file not found');
@@ -168,8 +177,9 @@ export function registerSwipeTools(server: McpServer) {
 
   server.tool('delete_swipe_file', 'Delete a swipe file.', {
     swipeFileId: z.string(),
-  }, async ({ swipeFileId }, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ swipeFileId, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: f } = await sb.from('swipe_files').select('id, title').eq('id', swipeFileId).eq('company_id', auth.companyId).single();
     if (!f) return txt('Swipe file not found');

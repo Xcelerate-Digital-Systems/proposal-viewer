@@ -7,8 +7,10 @@ import type { PageType } from '@/lib/page-types';
 import { getAuth, unauthorized, txt, json, type McpServer } from '@/lib/mcp/types';
 
 export function registerDocumentTools(server: McpServer) {
-  server.tool('list_documents', 'List all documents in the workspace.', {}, async (_args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+  server.tool('list_documents', 'List all documents in the workspace.', {
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data, error } = await sb.from('documents')
       .select('id, title, description, created_at, updated_at')
@@ -20,8 +22,9 @@ export function registerDocumentTools(server: McpServer) {
 
   server.tool('get_document', 'Get document detail and its pages.', {
     documentId: z.string(),
-  }, async ({ documentId }, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ documentId, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: doc } = await sb.from('documents')
       .select('id, title, description, page_names, created_at, updated_at')
@@ -42,8 +45,9 @@ export function registerDocumentTools(server: McpServer) {
   server.tool('create_document', 'Create a new document. Returns the document ID.', {
     title: z.string(),
     description: z.string().optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const limitCheck = await checkResourceLimit(auth.companyId, 'documents');
     if (!limitCheck.allowed) return txt(`Plan limit reached: ${limitCheck.reason || 'documents'}`);
@@ -62,8 +66,9 @@ export function registerDocumentTools(server: McpServer) {
     documentId: z.string(),
     title: z.string().optional(),
     description: z.string().optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: d } = await sb.from('documents').select('id').eq('id', args.documentId).eq('company_id', auth.companyId).single();
     if (!d) return txt('Document not found');
@@ -78,8 +83,9 @@ export function registerDocumentTools(server: McpServer) {
 
   server.tool('delete_document', 'Delete a document and all its pages.', {
     documentId: z.string(),
-  }, async ({ documentId }, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ documentId, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: d } = await sb.from('documents').select('id, title').eq('id', documentId).eq('company_id', auth.companyId).single();
     if (!d) return txt('Document not found');
@@ -96,8 +102,9 @@ export function registerDocumentTools(server: McpServer) {
     position: z.number().optional(),
     content: z.string().optional().describe('HTML content for text pages'),
     filePath: z.string().optional().describe('Storage path for PDF pages'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: d } = await sb.from('documents').select('id').eq('id', args.documentId).eq('company_id', auth.companyId).single();
     if (!d) return txt('Document not found');
@@ -115,8 +122,9 @@ export function registerDocumentTools(server: McpServer) {
     title: z.string().optional(), content: z.string().optional(),
     filePath: z.string().optional(), enabled: z.boolean().optional(),
     indent: z.number().optional(), showTitle: z.boolean().optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: d } = await sb.from('documents').select('id').eq('id', args.documentId).eq('company_id', auth.companyId).single();
     if (!d) return txt('Document not found');
@@ -135,8 +143,9 @@ export function registerDocumentTools(server: McpServer) {
 
   server.tool('delete_document_page', 'Delete a page from a document.', {
     documentId: z.string(), pageId: z.string(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: d } = await sb.from('documents').select('id').eq('id', args.documentId).eq('company_id', auth.companyId).single();
     if (!d) return txt('Document not found');

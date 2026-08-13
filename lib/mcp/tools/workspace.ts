@@ -19,8 +19,10 @@ export function registerWorkspaceTools(server: McpServer) {
     return json((data || []).map(c => ({ id: c.id, name: c.name, slug: c.slug, type: c.account_type, createdAt: c.created_at })));
   });
 
-  server.tool('get_company', 'Get company profile, branding, and settings.', {}, async (_args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+  server.tool('get_company', 'Get company profile, branding, and settings.', {
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: c } = await sb.from('companies')
       .select('id, name, slug, website, phone, contact_email, abn, address, accent_color, font_heading, font_body, custom_domain, domain_verified, account_type, brand_colors, created_at')
@@ -29,8 +31,10 @@ export function registerWorkspaceTools(server: McpServer) {
     return json(c);
   });
 
-  server.tool('list_team_members', 'List all team members in the workspace.', {}, async (_args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+  server.tool('list_team_members', 'List all team members in the workspace.', {
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data, error } = await sb.from('team_members')
       .select('id, name, email, role, created_at')
@@ -39,8 +43,10 @@ export function registerWorkspaceTools(server: McpServer) {
     return json((data || []).map(m => ({ id: m.id, name: m.name, email: m.email, role: m.role, joinedAt: m.created_at })));
   });
 
-  server.tool('list_clients', 'List client companies linked to this agency.', {}, async (_args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+  server.tool('list_clients', 'List client companies linked to this agency.', {
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data, error } = await sb.from('companies')
       .select('id, name, slug, website, contact_email, phone, created_at')
@@ -56,8 +62,9 @@ export function registerWorkspaceTools(server: McpServer) {
     website: z.string().optional(),
     contactEmail: z.string().optional(),
     phone: z.string().optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     if (auth.role !== 'owner' && auth.role !== 'admin') return txt('Only owners and admins can create clients.');
     const sb = createServiceClient();
     const { data: existing } = await sb.from('companies').select('id').eq('slug', args.slug).maybeSingle();
@@ -77,8 +84,9 @@ export function registerWorkspaceTools(server: McpServer) {
     website: z.string().optional(),
     contactEmail: z.string().optional(),
     phone: z.string().optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: c } = await sb.from('companies').select('id').eq('id', args.clientId).eq('agency_id', auth.companyId).eq('account_type', 'client').single();
     if (!c) return txt('Client not found');

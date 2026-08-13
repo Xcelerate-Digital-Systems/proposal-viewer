@@ -12,8 +12,9 @@ export function registerProposalTools(server: McpServer) {
   server.tool('list_proposals', 'List all proposals and quotes. Quotes have entity_type="pricing".', {
     status: z.enum(['draft', 'sent', 'viewed', 'accepted', 'declined', 'revision_requested', 'all']).optional().describe('Filter by status. Default: all'),
     entityType: z.enum(['proposal', 'pricing', 'all']).optional().describe('Filter: proposal, pricing (quotes), or all. Default: all'),
-  }, async ({ status, entityType }, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ status, entityType, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     let q = sb.from('proposals')
       .select('id, title, client_name, client_email, client_organisation, status, entity_type, quote_number, created_at, updated_at, sent_at, accepted_at, declined_at')
@@ -32,8 +33,9 @@ export function registerProposalTools(server: McpServer) {
 
   server.tool('get_proposal', 'Get full proposal/quote detail including pricing and job info.', {
     proposalId: z.string(),
-  }, async ({ proposalId }, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ proposalId, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: p } = await sb.from('proposals')
       .select('id, title, client_name, client_email, client_organisation, description, status, entity_type, quote_number, currency, include_gst, gst_rate, require_deposit, deposit_percent, valid_until, site_address, estimated_start_date, estimated_duration, scope_of_works, category, revision_notes, decline_reason, created_by_name, prepared_by, share_token, created_at, updated_at, sent_at, accepted_at, declined_at, revision_requested_at')
@@ -50,8 +52,9 @@ export function registerProposalTools(server: McpServer) {
 
   server.tool('get_proposal_pages', 'Get the pages/sections of a proposal or document.', {
     proposalId: z.string(),
-  }, async ({ proposalId }, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ proposalId, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: pages, error } = await sb.from('proposal_pages_v2')
       .select('id, position, type, title, indent, enabled, link_url, link_label, orientation, show_title, payload')
@@ -69,8 +72,9 @@ export function registerProposalTools(server: McpServer) {
   server.tool('update_proposal_status', 'Move a proposal or quote through the pipeline. Agency-side: draft↔sent. Use "draft" to pull back a sent proposal for edits.', {
     proposalId: z.string(),
     status: z.enum(['draft', 'sent']).describe('"sent" marks it as sent to the client. "draft" pulls it back for editing.'),
-  }, async ({ proposalId, status }, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ proposalId, status, companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: p } = await sb.from('proposals').select('id, status, entity_type').eq('id', proposalId).eq('company_id', auth.companyId).single();
     if (!p) return txt('Proposal not found');
@@ -94,8 +98,9 @@ export function registerProposalTools(server: McpServer) {
     createdByName: z.string().optional().describe('Name of the person creating this'),
     preparedBy: z.string().optional(),
     skipDefaultPages: z.boolean().optional().describe('If true, creates no pages. Default: false (creates an Introduction page for proposals, or Pricing+Packages+T&C for quotes)'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const companyId = auth.companyId;
     const isQuote = args.entityType === 'pricing';
@@ -156,8 +161,9 @@ export function registerProposalTools(server: McpServer) {
     description: z.string().optional(),
     createdByName: z.string().optional(),
     preparedBy: z.string().optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const companyId = auth.companyId;
 
@@ -247,8 +253,9 @@ export function registerProposalTools(server: McpServer) {
     estimatedDuration: z.string().optional(),
     scopeOfWorks: z.string().optional(),
     category: z.string().optional(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: p } = await sb.from('proposals').select('id').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
     if (!p) return txt('Proposal not found');
@@ -285,8 +292,9 @@ export function registerProposalTools(server: McpServer) {
     indent: z.number().optional().describe('Indentation level (0-3). Default: 0'),
     enabled: z.boolean().optional().describe('Whether page is visible. Default: true'),
     showTitle: z.boolean().optional().describe('Show title on page. Default: true'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: p } = await sb.from('proposals').select('id').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
     if (!p) return txt('Proposal not found');
@@ -328,8 +336,9 @@ export function registerProposalTools(server: McpServer) {
     base64: z.string().optional().describe('Base64-encoded file content (no data: prefix). Requires contentType. Max ~3MB decoded.'),
     contentType: z.string().optional().describe('MIME type for base64 uploads (application/pdf, image/png, image/jpeg, image/svg+xml, image/webp)'),
     fileName: z.string().optional().describe('Override filename (e.g. "slide-1.pdf"). Auto-detected from URL if omitted.'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: p } = await sb.from('proposals').select('id').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
     if (!p) return txt('Proposal not found');
@@ -442,8 +451,9 @@ export function registerProposalTools(server: McpServer) {
     orientation: z.enum(['auto', 'portrait', 'landscape']).optional(),
     linkUrl: z.string().optional().describe('External link URL'),
     linkLabel: z.string().optional().describe('External link label'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: p } = await sb.from('proposals').select('id').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
     if (!p) return txt('Proposal not found');
@@ -477,8 +487,9 @@ export function registerProposalTools(server: McpServer) {
   server.tool('delete_proposal_page', 'Delete a page from a proposal. Cannot delete the last remaining page.', {
     proposalId: z.string(),
     pageId: z.string(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: p } = await sb.from('proposals').select('id').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
     if (!p) return txt('Proposal not found');
@@ -491,8 +502,9 @@ export function registerProposalTools(server: McpServer) {
   server.tool('reorder_proposal_pages', 'Reorder pages by providing the full ordered list of page IDs.', {
     proposalId: z.string(),
     orderedPageIds: z.array(z.string()).describe('Page IDs in the desired order. Must include all page IDs.'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
-    const auth = getAuth(extra); if (!auth) return unauthorized();
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const { data: p } = await sb.from('proposals').select('id').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
     if (!p) return txt('Proposal not found');
