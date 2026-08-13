@@ -9,9 +9,9 @@ import { getAuth, unauthorized, txt, json, type McpServer } from '@/lib/mcp/type
 
 export function registerProposalTools(server: McpServer) {
 
-  server.tool('list_proposals', 'List all proposals and quotes. Quotes have entity_type="pricing".', {
+  server.tool('list_proposals', 'List all proposals and quotes. Quotes have entity_type="quote".', {
     status: z.enum(['draft', 'sent', 'viewed', 'accepted', 'declined', 'revision_requested', 'all']).optional().describe('Filter by status. Default: all'),
-    entityType: z.enum(['proposal', 'pricing', 'all']).optional().describe('Filter: proposal, pricing (quotes), or all. Default: all'),
+    entityType: z.enum(['proposal', 'quote', 'all']).optional().describe('Filter: proposal, quote, or all. Default: all'),
     companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async ({ status, entityType, companyId }, extra) => {
     const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
@@ -84,7 +84,7 @@ export function registerProposalTools(server: McpServer) {
     if (status === 'draft' && !['sent', 'viewed'].includes(p.status)) return txt(`Can only pull back to draft from sent/viewed. Current status: "${p.status}".`);
     const updates: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
     if (status === 'sent') updates.sent_at = new Date().toISOString();
-    const { error } = await sb.from('proposals').update(updates).eq('id', proposalId);
+    const { error } = await sb.from('proposals').update(updates).eq('id', proposalId).eq('company_id', auth.companyId);
     if (error) return txt(`Failed: ${error.message}`);
     return txt(`${label} status updated: ${p.status} → ${status}`);
   });
@@ -94,7 +94,7 @@ export function registerProposalTools(server: McpServer) {
     clientName: z.string().describe('Client name'),
     clientEmail: z.string().optional(),
     description: z.string().optional(),
-    entityType: z.enum(['proposal', 'pricing']).optional().describe('"proposal" (default) or "pricing" for quotes'),
+    entityType: z.enum(['proposal', 'quote']).optional().describe('"proposal" (default) or "quote" for quotes'),
     createdByName: z.string().optional().describe('Name of the person creating this'),
     preparedBy: z.string().optional(),
     skipDefaultPages: z.boolean().optional().describe('If true, creates no pages. Default: false (creates an Introduction page for proposals, or Pricing+Packages+T&C for quotes)'),
@@ -103,7 +103,7 @@ export function registerProposalTools(server: McpServer) {
     const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
     const companyId = auth.companyId;
-    const isQuote = args.entityType === 'pricing';
+    const isQuote = args.entityType === 'quote';
 
     const limitCheck = await checkResourceLimit(companyId, 'proposals');
     if (!limitCheck.allowed) return txt(`Plan limit reached: ${limitCheck.reason || 'proposals'}`);
@@ -205,7 +205,7 @@ export function registerProposalTools(server: McpServer) {
 
     // Copy template pages into the new proposal
     const { data: templatePages } = await sb.from('template_pages_v2')
-      .select('*').eq('template_id', args.templateId).order('position', { ascending: true });
+      .select('*').eq('template_id', args.templateId).eq('company_id', companyId).order('position', { ascending: true });
 
     let copied = 0;
     if (templatePages?.length) {
@@ -277,7 +277,7 @@ export function registerProposalTools(server: McpServer) {
     }
     if (fieldCount === 0) return txt('No fields to update — pass at least one field.');
 
-    const { error } = await sb.from('proposals').update(updates).eq('id', args.proposalId);
+    const { error } = await sb.from('proposals').update(updates).eq('id', args.proposalId).eq('company_id', auth.companyId);
     if (error) return txt(`Failed: ${error.message}`);
     return txt(`Proposal updated (${fieldCount} field${fieldCount > 1 ? 's' : ''}).`);
   });
@@ -402,6 +402,9 @@ export function registerProposalTools(server: McpServer) {
         return txt(`Failed to fetch URL: ${e instanceof Error ? e.message : 'network error'}`);
       }
       if (!res.ok) return txt(`URL returned ${res.status} ${res.statusText}`);
+      if (res.url && res.url !== args.url && !isValidWebhookUrl(res.url)) {
+        return txt('URL redirected to a private/internal address — blocked.');
+      }
 
       const contentType = res.headers.get('content-type') || 'application/octet-stream';
       mimeBase = contentType.split(';')[0].trim().toLowerCase();
@@ -550,13 +553,13 @@ export function registerProposalTools(server: McpServer) {
     }
     const { data: newProp, error } = await sb.from('proposals').insert(row).select('id, title, entity_type, quote_number').single();
     if (error || !newProp) return txt(`Failed: ${error?.message || 'unknown'}`);
-    const { data: pages } = await sb.from('proposal_pages_v2').select('*').eq('proposal_id', args.proposalId).order('position');
+    const { data: pages } = await sb.from('proposal_pages_v2').select('*').eq('proposal_id', args.proposalId).eq('company_id', auth.companyId).order('position');
     let pagesCopied = 0;
     if (pages?.length) {
       const newPages = pages.map(p => {
         const pg = p as Record<string, unknown>;
         const { id: _id, created_at: _ca, updated_at: _ua, ...rest } = pg;
-        return { ...rest, proposal_id: (newProp as Record<string, unknown>).id };
+        return { ...rest, proposal_id: (newProp as Record<string, unknown>).id, company_id: auth.companyId };
       });
       const { error: pErr } = await sb.from('proposal_pages_v2').insert(newPages);
       if (!pErr) pagesCopied = newPages.length;
@@ -612,13 +615,13 @@ export function registerProposalTools(server: McpServer) {
     for (const col of COPY_COLUMNS) { if (source[col] !== undefined) tmplRow[col] = source[col]; }
     const { data: tmpl, error } = await sb.from('proposal_templates').insert(tmplRow).select('id, name').single();
     if (error || !tmpl) return txt(`Failed: ${error?.message || 'unknown'}`);
-    const { data: pages } = await sb.from('proposal_pages_v2').select('*').eq('proposal_id', args.proposalId).order('position');
+    const { data: pages } = await sb.from('proposal_pages_v2').select('*').eq('proposal_id', args.proposalId).eq('company_id', auth.companyId).order('position');
     let pagesCopied = 0;
     if (pages?.length) {
       const newPages = pages.map(p => {
         const pg = p as Record<string, unknown>;
         const { id: _id, created_at: _ca, updated_at: _ua, proposal_id: _pid, ...rest } = pg;
-        return { ...rest, template_id: (tmpl as Record<string, unknown>).id };
+        return { ...rest, template_id: (tmpl as Record<string, unknown>).id, company_id: auth.companyId };
       });
       const { error: pErr } = await sb.from('template_pages_v2').insert(newPages);
       if (!pErr) pagesCopied = newPages.length;

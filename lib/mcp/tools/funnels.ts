@@ -35,7 +35,7 @@ export function registerFunnelTools(server: McpServer) {
     return json({
       id: funnel.id, name: funnel.name, description: funnel.description, status: funnel.status,
       currency: funnel.currency, forecastPeriod: funnel.forecast_period, defaultDealValue: funnel.default_deal_value,
-      isTemplate: funnel.is_template, shareToken: funnel.share_token,
+      isTemplate: funnel.is_template,
       createdAt: funnel.created_at, updatedAt: funnel.updated_at,
       steps: (steps || []).map(s => ({
         id: s.id, type: s.step_type, label: s.label, icon: s.icon, url: s.url, color: s.color,
@@ -74,9 +74,9 @@ export function registerFunnelTools(server: McpServer) {
     if (args.currency) row.currency = args.currency;
     if (args.forecastPeriod) row.forecast_period = args.forecastPeriod;
     if (args.defaultDealValue !== undefined) row.default_deal_value = args.defaultDealValue;
-    const { data, error } = await sb.from('funnels').insert(row).select('id, share_token').single();
+    const { data, error } = await sb.from('funnels').insert(row).select('id').single();
     if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
-    return json({ id: data.id, shareToken: data.share_token });
+    return json({ id: data.id });
   });
 
   server.tool('update_funnel', 'Update funnel name, description, status, currency, or forecast settings.', {

@@ -101,7 +101,7 @@ export function registerWorkspaceTools(server: McpServer) {
     return txt('Client updated.');
   });
 
-  server.tool('update_company', 'Update company profile fields (name, website, contact info, branding).', {
+  server.tool('update_company', 'Update company profile fields (name, website, contact info, branding). Requires Owner or Admin role.', {
     name: z.string().optional(),
     website: z.string().optional(),
     contactEmail: z.string().optional(),
@@ -112,6 +112,7 @@ export function registerWorkspaceTools(server: McpServer) {
     companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
     const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
+    if (auth.role !== 'owner' && auth.role !== 'admin' && !auth.isSuperAdmin) return txt('Permission denied: requires Owner or Admin role.');
     const sb = createServiceClient();
     const { data: c } = await sb.from('companies').select('id').eq('id', auth.companyId).single();
     if (!c) return txt('Company not found');

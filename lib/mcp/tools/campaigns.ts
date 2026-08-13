@@ -63,13 +63,13 @@ export function registerCampaignTools(server: McpServer) {
         client_company: clientCompany?.trim() || null,
         root_domain: rootDomain?.trim() || null,
         created_by: auth.userId,
-      }).select('id, title, project_type, status, share_token').single();
+      }).select('id, title, project_type, status').single();
       if (error || !created) return txt(`Failed: ${error?.message || 'unknown'}`);
       await sb.from('review_project_assignees').upsert(
         { review_project_id: created.id, team_member_id: auth.memberId },
         { onConflict: 'review_project_id,team_member_id' },
       );
-      return json({ id: created.id, title: created.title, projectType: created.project_type, status: created.status, shareToken: created.share_token });
+      return json({ id: created.id, title: created.title, projectType: created.project_type, status: created.status });
     });
 
     server.tool('list_assets', 'List assets in a campaign with comment counts.', {
@@ -281,11 +281,19 @@ export function registerCampaignTools(server: McpServer) {
       if (!items?.length) return txt('No matching assets found.');
       const toUpdate = items.filter(i => i.status !== status);
       if (!toUpdate.length) return txt(`All ${items.length} assets are already in "${status}".`);
-      const { error } = await sb.from('review_items')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('review_project_id', campaignId).eq('company_id', auth.companyId)
-        .in('id', toUpdate.map(i => i.id));
-      if (error) return txt(`Failed: ${error.message}`);
+      const byPrior: Record<string, string[]> = {};
+      for (const item of toUpdate) {
+        if (!byPrior[item.status]) byPrior[item.status] = [];
+        byPrior[item.status].push(item.id);
+      }
+      const now = new Date().toISOString();
+      for (const [priorStatus, ids] of Object.entries(byPrior)) {
+        const { error } = await sb.from('review_items')
+          .update({ status, prior_status: priorStatus, updated_at: now })
+          .eq('company_id', auth.companyId)
+          .in('id', ids);
+        if (error) return txt(`Failed: ${error.message}`);
+      }
       return txt(`${toUpdate.length} asset(s) moved to "${status}".`);
     });
 
@@ -599,6 +607,8 @@ export function registerCampaignTools(server: McpServer) {
     }, async ({ campaignId, teamMemberId, companyId }, extra) => {
       const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
       const sb = createServiceClient();
+      const { data: camp } = await sb.from('review_projects').select('id').eq('id', campaignId).eq('company_id', auth.companyId).single();
+      if (!camp) return txt('Campaign not found');
       const { error } = await sb.from('review_project_assignees').delete()
         .eq('review_project_id', campaignId).eq('team_member_id', teamMemberId);
       if (error) return txt(`Failed: ${error.message}`);

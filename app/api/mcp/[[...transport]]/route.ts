@@ -48,12 +48,13 @@ const mcpHandler = createMcpHandler(
 - \`reorder_proposal_pages\` — reorder pages by ID array
 - Quotes are proposals with entity_type='pricing'
 
-### Quote Pricing & Packages (within proposal/quote pages)
+### Quote Pricing & Packages (works on proposal OR template pages)
 - \`get_pricing_page\` — read line items, tax, payment schedule, column config from a pricing page
 - \`set_pricing_line_items\` — write the full line items array (replaces existing)
 - \`set_pricing_settings\` — update tax, intro text, payment schedule, column visibility
 - \`get_packages_page\` — read package tiers, features, and styling from a packages page
 - \`set_package_tiers\` — write the full package tiers array with features (replaces existing)
+- All pricing/package tools accept \`proposalId\` OR \`templateId\` — pass one or the other
 
 ### Documents
 - \`list_documents\` → \`get_document\`
@@ -67,6 +68,7 @@ const mcpHandler = createMcpHandler(
 - \`create_template\` — create a new template (proposal or quote type)
 - \`update_template\` — edit name or description
 - \`delete_template\` — delete template and all pages
+- \`upload_template_file\` — upload a file to the templates storage bucket (returns filePath for PDF pages — files live under templates/{id}/ so they're independent of any proposal)
 - \`add_template_page\` / \`update_template_page\` / \`delete_template_page\` — page CRUD
 
 ### Swipe Vault
@@ -113,7 +115,7 @@ const mcpHandler = createMcpHandler(
   },
   {
     capabilities: { tools: {} },
-    serverInfo: { name: 'agencyviz', version: '1.7.0' },
+    serverInfo: { name: 'agencyviz', version: '1.8.0' },
   },
   {
     streamableHttpEndpoint: '/api/mcp',
