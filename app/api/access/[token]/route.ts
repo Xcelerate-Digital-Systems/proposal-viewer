@@ -20,7 +20,7 @@ async function getAgencyBranding(supabase: ReturnType<typeof createServiceClient
 
   const { data: accessConfig } = await supabase
     .from('agency_access_config')
-    .select('wordpress_admin_email')
+    .select('wordpress_admin_email, platform_config')
     .eq('company_id', companyId)
     .maybeSingle();
 
@@ -42,6 +42,7 @@ async function getAgencyBranding(supabase: ReturnType<typeof createServiceClient
     font_heading: branding?.font_heading ?? null,
     font_body: branding?.font_body ?? null,
     wordpress_email: accessConfig?.wordpress_admin_email ?? null,
+    platform_config: accessConfig?.platform_config ?? null,
   };
 }
 
