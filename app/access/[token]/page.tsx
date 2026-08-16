@@ -80,7 +80,7 @@ export default function AccessTokenPage() {
       setData(json);
       if (json.type === 'request') {
         const hasAnyGrant = json.grants?.some((g: Grant) => g.status !== 'pending');
-        setStep(hasAnyGrant ? 'status' : 'connect');
+        setStep(hasAnyGrant ? 'status' : 'landing');
       } else {
         setStep('landing');
       }
@@ -120,10 +120,19 @@ export default function AccessTokenPage() {
   const accentColor = agency.accent_color || '#017C87';
   const fonts = [agency.font_heading, agency.font_body].filter(Boolean) as string[];
 
-  if (data.type === 'universal' && step === 'landing') {
+  if (step === 'landing') {
+    const clientName = data.type === 'request' ? data.request.client_name : null;
+    const nextStep = data.type === 'universal' ? 'register' : 'connect';
     return (
       <WizardShell agency={agency} fonts={fonts}>
-        <LandingStep agencyName={agency.name} accentColor={accentColor} onStart={() => setStep('register')} />
+        <LandingStep
+          agencyName={agency.name}
+          agencyLogoUrl={agency.logo_url}
+          accentColor={accentColor}
+          bgPrimary={agency.bg_primary || '#01434A'}
+          clientName={clientName}
+          onStart={() => setStep(nextStep)}
+        />
       </WizardShell>
     );
   }
@@ -272,22 +281,45 @@ function StepIndicator({ currentStep, steps, accentColor }: {
 
 /* ========== Landing Step ========== */
 
-function LandingStep({ agencyName, accentColor, onStart }: {
+function LandingStep({ agencyName, agencyLogoUrl, accentColor, bgPrimary, clientName, onStart }: {
   agencyName: string;
+  agencyLogoUrl: string | null;
   accentColor: string;
+  bgPrimary: string;
+  clientName: string | null;
   onStart: () => void;
 }) {
   return (
     <div className="text-center">
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8">
-        3 Simple Steps to Grant {agencyName} Access
-      </h1>
+      {/* Agency branding hero */}
+      <div className="rounded-2xl overflow-hidden mb-8" style={{ backgroundColor: bgPrimary }}>
+        <div className="px-6 py-10 sm:py-14">
+          {agencyLogoUrl ? (
+            <img src={agencyLogoUrl} alt={agencyName} className="h-12 sm:h-14 object-contain mx-auto mb-5" />
+          ) : (
+            <div
+              className="w-14 h-14 rounded-xl flex items-center justify-center text-white text-xl font-bold mx-auto mb-5"
+              style={{ backgroundColor: accentColor }}
+            >
+              {agencyName.charAt(0)}
+            </div>
+          )}
+          <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">
+            {clientName ? `Hi ${clientName}!` : 'Welcome!'}
+          </h1>
+          <p className="text-sm text-white/70 max-w-md mx-auto">
+            <strong className="text-white">{agencyName}</strong> is requesting partner access to your marketing accounts. Follow the steps below to get started.
+          </p>
+        </div>
+      </div>
+
+      <h2 className="text-lg font-bold text-gray-900 mb-5">3 Simple Steps</h2>
 
       <div className="grid sm:grid-cols-3 gap-4 mb-10">
         {[
-          { num: 1, title: 'Connect Your Accounts', desc: 'Sign in with your Social account to get started.' },
-          { num: 2, title: 'Select Your Assets', desc: `Choose the specific assets you'd like to grant access to ${agencyName}.` },
-          { num: 3, title: 'Review Access Status', desc: `Check the granted access status to ensure ${agencyName} has access to the selected assets.` },
+          { num: 1, title: 'Connect Your Accounts', desc: 'Sign in with your Google or Meta account to get started.' },
+          { num: 2, title: 'Grant Access', desc: `Approve the specific permissions ${agencyName} needs to manage your accounts.` },
+          { num: 3, title: 'Review Status', desc: 'Confirm everything is connected and you\'re all set.' },
         ].map((item) => (
           <div key={item.num} className="bg-white border border-gray-200 rounded-xl p-5 text-left">
             <div
