@@ -174,6 +174,7 @@ export async function fetchAccessibleCustomers(accessToken: string): Promise<str
   const devToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
   if (!devToken) throw new Error('GOOGLE_ADS_DEVELOPER_TOKEN not set');
 
+  console.log(`[google-ads] listAccessibleCustomers: devToken=${devToken.slice(0, 4)}...${devToken.slice(-4)}`);
   const res = await fetch(`${GOOGLE_ADS_BASE}/customers:listAccessibleCustomers`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -181,6 +182,7 @@ export async function fetchAccessibleCustomers(accessToken: string): Promise<str
     },
   });
   const json = await res.json();
+  console.log(`[google-ads] listAccessibleCustomers response: status=${res.status}, body=${JSON.stringify(json).slice(0, 500)}`);
   if (!res.ok) throw new GoogleApiError(res.status, json);
   return (json.resourceNames ?? []) as string[];
 }
@@ -193,9 +195,7 @@ export async function createMccLink(opts: {
   const devToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
   if (!devToken) throw new Error('GOOGLE_ADS_DEVELOPER_TOKEN not set');
 
-  // Client-initiated: the client's token calls CustomerManagerLinkService
-  // to invite the manager (agency MCC). This creates a PENDING link the
-  // agency accepts in their Google Ads UI.
+  console.log(`[google-ads] createMccLink: client=${opts.clientCustomerId}, manager=${opts.managerCustomerId}`);
   const res = await fetch(
     `${GOOGLE_ADS_BASE}/customers/${opts.clientCustomerId}/customerManagerLinks:mutate`,
     {
@@ -220,6 +220,7 @@ export async function createMccLink(opts: {
   );
 
   const json = await res.json();
+  console.log(`[google-ads] createMccLink response: status=${res.status}, body=${JSON.stringify(json).slice(0, 500)}`);
   if (!res.ok) throw new GoogleApiError(res.status, json);
   const results = json.results ?? json.mutateOperationResponses ?? [];
   return results[0]?.resourceName ?? results[0]?.customerManagerLinkResult?.resourceName ?? '';

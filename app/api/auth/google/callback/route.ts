@@ -136,27 +136,35 @@ export async function GET(req: NextRequest) {
 
   try {
     if (platform === 'google_ga4') {
+      console.log(`[google-cb] GA4 grant starting, agencyEmail=${agencyConfig?.google_analytics_email ?? 'NONE'}`);
       const result = await handleGA4Grant(accessToken, agencyConfig?.google_analytics_email);
       grantStatus = result.status;
       accountName = result.accountName;
       metadata = result.metadata;
     } else if (platform === 'google_gtm') {
+      console.log(`[google-cb] GTM grant starting, agencyEmail=${agencyConfig?.google_gtm_email ?? 'NONE'}`);
       const result = await handleGTMGrant(accessToken, agencyConfig?.google_gtm_email);
       grantStatus = result.status;
       accountName = result.accountName;
       metadata = result.metadata;
     } else if (platform === 'google_ads') {
+      console.log(`[google-cb] Google Ads grant starting, mccId=${agencyConfig?.google_mcc_id ?? 'NONE'}`);
       const result = await handleGoogleAdsGrant(accessToken, agencyConfig?.google_mcc_id);
       grantStatus = result.status;
       accountName = result.accountName;
       metadata = result.metadata;
+      console.log(`[google-cb] Google Ads grant result: status=${result.status}, accounts=${result.accountName}, meta=${JSON.stringify(result.metadata)}`);
     }
   } catch (e) {
-    const msg = e instanceof Error ? e.message.slice(0, 200) : 'unknown';
-    console.error(`[api/auth/google/callback] ${platform} grant failed:`, msg);
+    const msg = e instanceof Error ? e.message.slice(0, 500) : 'unknown';
+    const stack = e instanceof Error ? e.stack?.slice(0, 300) : '';
+    console.error(`[google-cb] ${platform} grant FAILED:`, msg);
+    if (stack) console.error(`[google-cb] stack:`, stack);
     grantStatus = 'failed';
     metadata = { error: msg };
   }
+
+  console.log(`[google-cb] Final grant update: platform=${platform}, status=${grantStatus}, account=${accountName}`);
 
   await supabase
     .from('client_access_grants')
@@ -192,7 +200,11 @@ export async function GET(req: NextRequest) {
     .eq('id', stateRow.access_request_id);
 
   const queryStatus = grantStatus === 'granted' ? 'connected' : grantStatus === 'request_sent' ? 'pending' : 'error';
-  return accessRedirect(appUrl, token, { [platform]: queryStatus });
+  const redirectQuery: Record<string, string> = { [platform]: queryStatus };
+  if (queryStatus === 'error' && metadata.error) {
+    redirectQuery.reason = String(metadata.error).slice(0, 200);
+  }
+  return accessRedirect(appUrl, token, redirectQuery);
 }
 
 // --- Platform-specific grant handlers ---
@@ -294,18 +306,25 @@ async function handleGoogleAdsGrant(
   }
 
   let linkedCount = 0;
+  const linkErrors: string[] = [];
   for (const customerId of customerIds) {
     try {
       await createMccLink({ accessToken, clientCustomerId: customerId, managerCustomerId: mccId });
       linkedCount++;
     } catch (e) {
-      console.error(`[Google Ads] MCC link failed for ${customerId}:`, e);
+      const errMsg = e instanceof Error ? e.message.slice(0, 300) : String(e);
+      console.error(`[google-ads] MCC link failed for ${customerId}:`, errMsg);
+      linkErrors.push(`${customerId}: ${errMsg}`);
     }
   }
 
   return {
     status: linkedCount > 0 ? 'request_sent' : 'failed',
     accountName: customerIds.join(', '),
-    metadata: { links_sent: linkedCount, total_customers: customerIds.length },
+    metadata: {
+      links_sent: linkedCount,
+      total_customers: customerIds.length,
+      ...(linkErrors.length > 0 ? { link_errors: linkErrors, error: linkErrors[0] } : {}),
+    },
   };
 }
