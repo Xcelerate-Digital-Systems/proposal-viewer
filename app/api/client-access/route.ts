@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from('client_access_requests')
-    .select('id, company_id, client_id, share_token, platforms, status, expires_at, created_by, client_name, client_email, notes, created_at, updated_at')
+    .select('id, company_id, client_id, share_token, platforms, platform_config, status, expires_at, created_by, client_name, client_email, notes, created_at, updated_at')
     .eq('company_id', verified.agencyId)
     .order('created_at', { ascending: false });
 
@@ -123,6 +123,7 @@ export async function POST(req: NextRequest) {
     client_email,
     notes,
     expires_in_days,
+    platform_config,
   } = body as {
     client_id?: string;
     platforms?: string[];
@@ -130,6 +131,7 @@ export async function POST(req: NextRequest) {
     client_email?: string;
     notes?: string;
     expires_in_days?: number;
+    platform_config?: Record<string, unknown>;
   };
 
   if (!platforms || !Array.isArray(platforms) || platforms.length === 0) {
@@ -186,6 +188,7 @@ export async function POST(req: NextRequest) {
       client_name: client_name?.trim() || null,
       client_email: client_email?.trim() || null,
       notes: notes?.trim() || null,
+      platform_config: platform_config || null,
     })
     .select('id, company_id, client_id, share_token, platforms, status, expires_at, created_by, client_name, client_email, notes, created_at, updated_at')
     .single();

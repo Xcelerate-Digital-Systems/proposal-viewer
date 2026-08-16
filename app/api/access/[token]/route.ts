@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 
-const REQUEST_COLUMNS = 'id, company_id, client_id, share_token, platforms, status, expires_at, client_name, client_email, notes, created_at';
+const REQUEST_COLUMNS = 'id, company_id, client_id, share_token, platforms, platform_config, status, expires_at, client_name, client_email, notes, created_at';
 const GRANT_COLUMNS = 'id, request_id, platform, status, platform_account_name, error_message, granted_at';
 
 async function getAgencyBranding(supabase: ReturnType<typeof createServiceClient>, companyId: string) {
@@ -95,6 +95,7 @@ export async function GET(
       request: {
         id: request.id,
         platforms: request.platforms,
+        platform_config: request.platform_config,
         status: request.status,
         client_name: request.client_name,
         notes: request.notes,
@@ -167,7 +168,7 @@ export async function POST(
 
   const { data: config } = await supabase
     .from('agency_access_config')
-    .select('company_id')
+    .select('company_id, platform_config')
     .eq('universal_share_token', token)
     .single();
 
@@ -175,12 +176,13 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid link' }, { status: 404 });
   }
 
-  // Create a request row for this client
+  // Create a request row for this client, copying the agency's platform_config
   const { data: accessRequest, error: reqError } = await supabase
     .from('client_access_requests')
     .insert({
       company_id: config.company_id,
       platforms,
+      platform_config: config.platform_config || null,
       client_name: clientName,
       client_email: clientEmail,
       status: 'pending',

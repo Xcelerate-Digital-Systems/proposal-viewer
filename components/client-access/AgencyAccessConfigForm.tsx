@@ -4,11 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link2, Unlink, CheckCircle2, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { authFetch } from '@/lib/auth-fetch';
-import {
-  META_ASSETS, GOOGLE_ASSETS,
-  defaultPlatformConfig,
-  type PlatformConfig, type AssetDefinition,
-} from '@/lib/client-access/platform-config';
 
 interface MetaBusiness {
   id: string;
@@ -24,7 +19,6 @@ interface ConfigData {
   google_analytics_email: string | null;
   google_user_name: string | null;
   wordpress_admin_email: string;
-  platform_config: PlatformConfig;
 }
 
 export default function AgencyAccessConfigForm() {
@@ -37,7 +31,6 @@ export default function AgencyAccessConfigForm() {
     google_analytics_email: null,
     google_user_name: null,
     wordpress_admin_email: '',
-    platform_config: defaultPlatformConfig(),
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,12 +38,10 @@ export default function AgencyAccessConfigForm() {
   const [connectingGoogle, setConnectingGoogle] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // BM picker
   const [businesses, setBusinesses] = useState<MetaBusiness[]>([]);
   const [loadingBusinesses, setLoadingBusinesses] = useState(false);
   const [savingBm, setSavingBm] = useState(false);
 
-  // Accordion state
   const [expandedPlatform, setExpandedPlatform] = useState<string | null>(null);
 
   useEffect(() => {
@@ -66,7 +57,6 @@ export default function AgencyAccessConfigForm() {
           google_analytics_email: data.google_analytics_email || null,
           google_user_name: data.google_user_name || null,
           wordpress_admin_email: data.wordpress_admin_email || '',
-          platform_config: data.platform_config || defaultPlatformConfig(),
         });
       })
       .catch(() => {})
@@ -148,35 +138,6 @@ export default function AgencyAccessConfigForm() {
     finally { setSaving(false); }
   };
 
-  const updateAsset = (platformKey: 'meta' | 'google', assetKey: string, field: 'enabled' | 'role', value: boolean | string | null) => {
-    setConfig((prev) => {
-      const pc = JSON.parse(JSON.stringify(prev.platform_config)) as PlatformConfig;
-      const platformAssets = pc[platformKey] as Record<string, { enabled: boolean; role: string | null }>;
-      platformAssets[assetKey] = { ...platformAssets[assetKey], [field]: value };
-      if (field === 'enabled' && !value) {
-        platformAssets[assetKey].role = null;
-      }
-      return { ...prev, platform_config: pc };
-    });
-  };
-
-  const savePlatformConfig = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      const res = await authFetch('/api/agency-access-config', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platform_config: config.platform_config }),
-      });
-      if (!res.ok) setError('Failed to save configuration');
-    } catch {
-      setError('Failed to save');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const saveWordpress = async () => {
     setSaving(true);
     try {
@@ -213,18 +174,14 @@ export default function AgencyAccessConfigForm() {
         saving={saving}
       >
         {googleConnected && config.google_mcc_id && (
-          <div className="mb-4 px-1">
+          <div className="px-1">
             <p className="text-xs text-muted mb-1">MCC Account</p>
             <p className="text-sm text-ink font-medium">{config.google_mcc_id}</p>
           </div>
         )}
-        <AssetToggles
-          assets={GOOGLE_ASSETS}
-          values={config.platform_config.google as Record<string, { enabled: boolean; role: string | null }>}
-          onChange={(key, field, val) => updateAsset('google', key, field, val)}
-          onSave={savePlatformConfig}
-          saving={saving}
-        />
+        {googleConnected && !config.google_mcc_id && (
+          <p className="text-xs text-dim px-1">Connected. Select assets and roles when creating request links.</p>
+        )}
       </PlatformAccordion>
 
       {/* Meta Platform Card */}
@@ -242,7 +199,7 @@ export default function AgencyAccessConfigForm() {
         saving={saving}
       >
         {metaConnected && (
-          <div className="mb-4 px-1">
+          <div className="px-1">
             <p className="text-xs text-muted mb-1.5">Select Business Manager</p>
             {loadingBusinesses ? (
               <div className="flex items-center gap-2 text-xs text-dim py-1">
@@ -269,13 +226,6 @@ export default function AgencyAccessConfigForm() {
             )}
           </div>
         )}
-        <AssetToggles
-          assets={META_ASSETS}
-          values={config.platform_config.meta as Record<string, { enabled: boolean; role: string | null }>}
-          onChange={(key, field, val) => updateAsset('meta', key, field, val)}
-          onSave={savePlatformConfig}
-          saving={saving}
-        />
       </PlatformAccordion>
 
       {/* WordPress Card */}
@@ -381,64 +331,6 @@ function PlatformAccordion({
           {(platform !== 'wordpress' || connected || !onConnect) && children}
         </div>
       )}
-    </div>
-  );
-}
-
-function AssetToggles({
-  assets,
-  values,
-  onChange,
-  onSave,
-  saving,
-}: {
-  assets: AssetDefinition[];
-  values: Record<string, { enabled: boolean; role: string | null }>;
-  onChange: (key: string, field: 'enabled' | 'role', value: boolean | string | null) => void;
-  onSave: () => void;
-  saving: boolean;
-}) {
-  return (
-    <div>
-      <p className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-3 px-1">Select Assets</p>
-      <div className="space-y-2.5">
-        {assets.map((asset) => {
-          const val = values[asset.key] || { enabled: false, role: null };
-          return (
-            <div key={asset.key} className="flex items-center gap-3">
-              <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                <input
-                  type="checkbox"
-                  checked={val.enabled}
-                  onChange={(e) => onChange(asset.key, 'enabled', e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:bg-teal transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
-              </label>
-              <span className="text-sm text-ink flex-1 min-w-0">{asset.label}</span>
-              <div className="relative shrink-0">
-                <select
-                  value={val.role || ''}
-                  onChange={(e) => onChange(asset.key, 'role', e.target.value || null)}
-                  disabled={!val.enabled}
-                  className="appearance-none pl-3 pr-7 py-1.5 rounded-lg bg-surface border border-edge text-xs text-ink focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed min-w-[120px]"
-                >
-                  <option value="">Select Role</option>
-                  {asset.roles.map((r) => (
-                    <option key={r.value} value={r.value}>{r.label}</option>
-                  ))}
-                </select>
-                <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-4 flex justify-end">
-        <Button variant="primary" size="sm" onClick={onSave} loading={saving}>
-          Save Configuration
-        </Button>
-      </div>
     </div>
   );
 }

@@ -38,6 +38,7 @@ interface RequestData {
   request: {
     id: string;
     platforms: AccessPlatform[];
+    platform_config: PlatformConfig | null;
     status: string;
     client_name: string | null;
     notes: string | null;
@@ -424,7 +425,7 @@ function ConnectStep({ token, request, grants, agency, accentColor, onRefresh, o
     window.location.href = `/api/access/${token}/${platformRoute}/start?platform=${platform}`;
   };
 
-  const platformConfig = agency.platform_config;
+  const platformConfig = request.platform_config;
   const metaAssets = platformConfig?.meta;
   const googleAssets = platformConfig?.google;
 
