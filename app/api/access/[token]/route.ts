@@ -8,15 +8,9 @@ const GRANT_COLUMNS = 'id, request_id, platform, status, platform_account_name, 
 async function getAgencyBranding(supabase: ReturnType<typeof createServiceClient>, companyId: string) {
   const { data: company } = await supabase
     .from('companies')
-    .select('id, name, slug')
+    .select('id, name, slug, accent_color, bg_primary, bg_secondary, font_heading, font_body, logo_path')
     .eq('id', companyId)
     .single();
-
-  const { data: branding } = await supabase
-    .from('company_branding')
-    .select('*')
-    .eq('company_id', companyId)
-    .maybeSingle();
 
   const { data: accessConfig } = await supabase
     .from('agency_access_config')
@@ -25,10 +19,10 @@ async function getAgencyBranding(supabase: ReturnType<typeof createServiceClient
     .maybeSingle();
 
   let logoUrl: string | null = null;
-  if (branding?.logo_path) {
+  if (company?.logo_path) {
     const { data: urlData } = supabase.storage
       .from('company-assets')
-      .getPublicUrl(branding.logo_path);
+      .getPublicUrl(company.logo_path);
     logoUrl = urlData?.publicUrl ?? null;
   }
 
@@ -36,11 +30,11 @@ async function getAgencyBranding(supabase: ReturnType<typeof createServiceClient
     name: company?.name ?? 'Agency',
     slug: company?.slug ?? null,
     logo_url: logoUrl,
-    accent_color: branding?.accent_color ?? '#017C87',
-    bg_primary: branding?.bg_primary ?? '#01434A',
-    bg_secondary: branding?.bg_secondary ?? '#141414',
-    font_heading: branding?.font_heading ?? null,
-    font_body: branding?.font_body ?? null,
+    accent_color: company?.accent_color ?? '#017C87',
+    bg_primary: company?.bg_primary ?? '#01434A',
+    bg_secondary: company?.bg_secondary ?? '#141414',
+    font_heading: company?.font_heading ?? null,
+    font_body: company?.font_body ?? null,
     wordpress_email: accessConfig?.wordpress_admin_email ?? null,
     platform_config: accessConfig?.platform_config ?? null,
   };
