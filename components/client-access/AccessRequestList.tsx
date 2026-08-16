@@ -68,7 +68,7 @@ export default function AccessRequestList({ clientId, refreshKey }: AccessReques
   const revokeRequest = async (id: string) => {
     const res = await authFetch(`/api/client-access/${id}`, { method: 'DELETE' });
     if (res.ok) {
-      setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: 'revoked' } : r));
+      setRequests((prev) => prev.filter((r) => r.id !== id));
     }
   };
 

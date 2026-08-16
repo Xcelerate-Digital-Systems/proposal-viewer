@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Shield, Check, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
-import ViewerLoader from '@/components/viewer/ViewerLoader';
 import PlatformStatusBadge from '@/components/client-access/PlatformStatusBadge';
 import WordPressInstructions from '@/components/client-access/WordPressInstructions';
 import type { AccessPlatform, AccessGrantStatus } from '@/lib/client-access/types';
@@ -94,10 +93,12 @@ export default function AccessTokenPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   if (loading) {
-    const fallbackBranding = { accent_color: '#017C87', bg_primary: '#01434A', bg_secondary: '#141414', sidebar_text_color: '#ffffff' };
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#141414' }}>
-        <ViewerLoader branding={fallbackBranding as never} loading={true} label="Loading…" />
+      <div className="min-h-screen bg-[#f0f2f5] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 size={28} className="animate-spin text-gray-400 mx-auto mb-3" />
+          <p className="text-sm text-gray-500">Loading…</p>
+        </div>
       </div>
     );
   }
