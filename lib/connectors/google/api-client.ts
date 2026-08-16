@@ -168,6 +168,40 @@ export interface GoogleAdsCustomer {
   resourceName: string;
   id: string;
   descriptiveName: string;
+  manager: boolean;
+}
+
+export async function fetchCustomerDetails(
+  accessToken: string,
+  customerId: string,
+): Promise<GoogleAdsCustomer | null> {
+  const devToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
+  if (!devToken) throw new Error('GOOGLE_ADS_DEVELOPER_TOKEN not set');
+
+  const res = await fetch(`${GOOGLE_ADS_BASE}/customers/${customerId}:searchStream`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'developer-token': devToken,
+      'Content-Type': 'application/json',
+      'login-customer-id': customerId,
+    },
+    body: JSON.stringify({
+      query: `SELECT customer.id, customer.descriptive_name, customer.manager FROM customer LIMIT 1`,
+    }),
+  });
+
+  const json = await res.json();
+  if (!res.ok) return null;
+
+  const row = json[0]?.results?.[0]?.customer;
+  if (!row) return null;
+  return {
+    resourceName: `customers/${row.id}`,
+    id: String(row.id),
+    descriptiveName: row.descriptiveName || `Account ${row.id}`,
+    manager: row.manager === true,
+  };
 }
 
 export async function fetchAccessibleCustomers(accessToken: string): Promise<string[]> {

@@ -10,6 +10,11 @@ interface MetaBusiness {
   name: string;
 }
 
+interface GoogleMccAccount {
+  id: string;
+  name: string;
+}
+
 interface ConfigData {
   meta_business_id: string | null;
   meta_business_name: string | null;
@@ -41,6 +46,10 @@ export default function AgencyAccessConfigForm() {
   const [businesses, setBusinesses] = useState<MetaBusiness[]>([]);
   const [loadingBusinesses, setLoadingBusinesses] = useState(false);
   const [savingBm, setSavingBm] = useState(false);
+
+  const [mccAccounts, setMccAccounts] = useState<GoogleMccAccount[]>([]);
+  const [loadingMcc, setLoadingMcc] = useState(false);
+  const [savingMcc, setSavingMcc] = useState(false);
 
   const [expandedPlatform, setExpandedPlatform] = useState<string | null>(null);
 
@@ -81,6 +90,39 @@ export default function AgencyAccessConfigForm() {
   useEffect(() => {
     if (metaConnected) fetchBusinesses();
   }, [metaConnected, fetchBusinesses]);
+
+  const fetchMccAccounts = useCallback(async () => {
+    setLoadingMcc(true);
+    try {
+      const res = await authFetch('/api/agency-access-config/google/customers');
+      if (res.ok) {
+        const data = await res.json();
+        setMccAccounts(data.customers || []);
+      }
+    } catch { /* ignore */ }
+    finally { setLoadingMcc(false); }
+  }, []);
+
+  useEffect(() => {
+    if (googleConnected) fetchMccAccounts();
+  }, [googleConnected, fetchMccAccounts]);
+
+  const handleSelectMcc = async (mccId: string) => {
+    const mcc = mccAccounts.find((a) => a.id === mccId);
+    if (!mcc) return;
+    setSavingMcc(true);
+    try {
+      const res = await authFetch('/api/agency-access-config/google/select-mcc', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ google_mcc_id: mcc.id, google_mcc_name: mcc.name }),
+      });
+      if (res.ok) {
+        setConfig((p) => ({ ...p, google_mcc_id: mcc.id }));
+      }
+    } catch { /* ignore */ }
+    finally { setSavingMcc(false); }
+  };
 
   const handleSelectBm = async (bmId: string) => {
     const bm = businesses.find((b) => b.id === bmId);
@@ -133,6 +175,7 @@ export default function AgencyAccessConfigForm() {
         setBusinesses([]);
       } else {
         setConfig((p) => ({ ...p, google_mcc_id: null, google_analytics_email: null, google_user_name: null }));
+        setMccAccounts([]);
       }
     } catch { setError('Failed to disconnect'); }
     finally { setSaving(false); }
@@ -173,14 +216,33 @@ export default function AgencyAccessConfigForm() {
         connecting={connectingGoogle}
         saving={saving}
       >
-        {googleConnected && config.google_mcc_id && (
+        {googleConnected && (
           <div className="px-1">
-            <p className="text-xs text-muted mb-1">MCC Account</p>
-            <p className="text-sm text-ink font-medium">{config.google_mcc_id}</p>
+            <p className="text-xs text-muted mb-1.5">Select MCC Account</p>
+            {loadingMcc ? (
+              <div className="flex items-center gap-2 text-xs text-dim py-1">
+                <Loader2 size={14} className="animate-spin" />
+                Loading MCC accounts…
+              </div>
+            ) : mccAccounts.length === 0 ? (
+              <p className="text-xs text-dim">No MCC (Manager) accounts found.</p>
+            ) : (
+              <div className="relative">
+                <select
+                  value={config.google_mcc_id || ''}
+                  onChange={(e) => handleSelectMcc(e.target.value)}
+                  disabled={savingMcc}
+                  className="w-full appearance-none px-3 py-2 pr-8 rounded-lg bg-surface border border-edge text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 disabled:opacity-50"
+                >
+                  <option value="">— Select —</option>
+                  {mccAccounts.map((mcc) => (
+                    <option key={mcc.id} value={mcc.id}>{mcc.name} ({mcc.id})</option>
+                  ))}
+                </select>
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+              </div>
+            )}
           </div>
-        )}
-        {googleConnected && !config.google_mcc_id && (
-          <p className="text-xs text-dim px-1">Connected. Select assets and roles when creating request links.</p>
         )}
       </PlatformAccordion>
 

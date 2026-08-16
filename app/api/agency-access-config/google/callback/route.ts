@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { createServiceClient } from '@/lib/supabase-server';
-import { exchangeGoogleCode, fetchAccessibleCustomers } from '@/lib/connectors/google/api-client';
+import { exchangeGoogleCode } from '@/lib/connectors/google/api-client';
 import { encryptToken } from '@/lib/connectors/google/token-crypto';
 import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 
@@ -87,19 +87,6 @@ export async function GET(req: NextRequest) {
   // Get the agency's Google email
   const userInfo = await fetchGoogleUserInfo(accessToken).catch(() => ({ email: '', name: undefined }));
 
-  // Try to find MCC accounts
-  let mccId: string | null = null;
-  let mccCustomers: string[] = [];
-  try {
-    const customerResources = await fetchAccessibleCustomers(accessToken);
-    mccCustomers = customerResources.map((r) => r.replace('customers/', ''));
-    if (mccCustomers.length > 0) {
-      mccId = mccCustomers[0];
-    }
-  } catch {
-    // Google Ads developer token may not be set — MCC detection is optional
-  }
-
   const updateFields: Record<string, unknown> = {
     company_id: stateRow.company_id,
     google_analytics_email: userInfo.email || null,
@@ -107,10 +94,6 @@ export async function GET(req: NextRequest) {
     google_user_name: userInfo.name ?? null,
     updated_at: new Date().toISOString(),
   };
-
-  if (mccId) {
-    updateFields.google_mcc_id = mccId;
-  }
 
   if (refreshToken) {
     updateFields.google_refresh_token_encrypted = encryptToken(refreshToken);
