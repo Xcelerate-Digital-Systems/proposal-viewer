@@ -80,8 +80,10 @@ export default function AccessTokenPage() {
       const json = await res.json();
       setData(json);
       if (json.type === 'request') {
-        const hasAnyGrant = json.grants?.some((g: Grant) => g.status !== 'pending');
-        setStep(hasAnyGrant ? 'status' : 'landing');
+        const hasSuccessfulGrant = json.grants?.some((g: Grant) =>
+          g.status === 'granted' || g.status === 'self_reported' || g.status === 'request_sent' || g.status === 'oauth_complete'
+        );
+        setStep(hasSuccessfulGrant ? 'connect' : 'landing');
       } else {
         setStep('landing');
       }
