@@ -21,6 +21,7 @@ export type Plan = {
   review_limit: number | null;
   whiteboard_limit: number | null;
   meta_connection_limit: number | null;
+  client_access_limit: number | null;
   ai_daily_quota: number;
   has_custom_domain: boolean;
   features: Record<string, unknown>;

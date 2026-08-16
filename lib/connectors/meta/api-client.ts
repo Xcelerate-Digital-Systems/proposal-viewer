@@ -121,6 +121,66 @@ export async function fetchAdAccounts(accessToken: string): Promise<AdAccountSum
   return accounts;
 }
 
+// --- Business Manager -------------------------------------------------------
+
+export interface BusinessSummary {
+  id: string;
+  name: string;
+}
+
+export async function fetchBusinesses(accessToken: string): Promise<BusinessSummary[]> {
+  const businesses: BusinessSummary[] = [];
+  let url: string | null =
+    `${BASE_URL}/me/businesses?${new URLSearchParams({
+      access_token: accessToken,
+      fields: 'id,name',
+      limit: '100',
+    })}`;
+  while (url) {
+    const res = await fetch(url);
+    const text = await res.text();
+    if (!res.ok) {
+      let parsed: unknown;
+      try { parsed = JSON.parse(text); } catch { parsed = text; }
+      throw new MetaApiError(res.status, parsed);
+    }
+    const json = JSON.parse(text) as { data?: BusinessSummary[]; paging?: { next?: string } };
+    businesses.push(...(json.data ?? []));
+    url = json.paging?.next ?? null;
+  }
+  return businesses;
+}
+
+export async function sendPartnerRequest(opts: {
+  agencyBmId: string;
+  clientAdAccountId: string;
+  accessToken: string;
+  permittedTasks?: string[];
+}): Promise<{ request_id: string }> {
+  const tasks = opts.permittedTasks ?? ['ADVERTISE', 'ANALYZE'];
+  const url = `${BASE_URL}/${opts.agencyBmId}/client_ad_accounts`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      adaccount_id: opts.clientAdAccountId,
+      permitted_tasks: tasks,
+      access_token: opts.accessToken,
+    }),
+  });
+
+  const text = await res.text();
+  if (!res.ok) {
+    let parsed: unknown;
+    try { parsed = JSON.parse(text); } catch { parsed = text; }
+    throw new MetaApiError(res.status, parsed);
+  }
+
+  const json = JSON.parse(text) as { id?: string; request_id?: string };
+  return { request_id: json.request_id ?? json.id ?? '' };
+}
+
 // --- Insights ---------------------------------------------------------------
 
 // Bounded parallel map — avoids slamming Meta with N simultaneous chunks.

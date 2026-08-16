@@ -4,7 +4,7 @@
 import {
   LayoutDashboard, MessageSquareText, FileText, Files, LayoutTemplate,
   Palette, Settings as SettingsIcon, Bookmark, Plug, ReceiptText,
-  Workflow,
+  Workflow, KeyRound,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -77,6 +77,7 @@ export const ALL_SECTIONS: SectionDef[] = [
  *  children). Rendered alongside the section entries in renderTopLevelNav. */
 export const WORKSPACE_ITEMS: NavItem[] = [
   { href: '/integrations/looker-studio', label: 'Looker Studio', icon: Plug },
+  { href: '/client-access', label: 'Client Access', icon: KeyRound },
 ];
 
 export const STANDALONE_ITEMS: NavItem[] = [

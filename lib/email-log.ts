@@ -16,7 +16,9 @@ export type EmailCategory =
   | 'proposal_confirmation'
   | 'billing'
   | 'auth'
-  | 'integration_health';
+  | 'integration_health'
+  | 'client_access_invite'
+  | 'client_access_granted';
 
 export interface SendAndLogOptions {
   from: string;

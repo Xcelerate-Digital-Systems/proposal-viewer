@@ -36,7 +36,8 @@ export type Resource =
   | 'documents'
   | 'reviews'
   | 'seats'
-  | 'meta_connections';
+  | 'meta_connections'
+  | 'client_access_requests';
 
 export type Entitlements = {
   plan: Plan | null;
@@ -59,6 +60,7 @@ export type Entitlements = {
     documents: number | null;
     reviews: number | null;
     metaConnections: number | null;
+    clientAccessRequests: number | null;
     aiDaily: number;
   };
 };
@@ -110,6 +112,7 @@ export async function getEntitlements(companyId: string): Promise<Entitlements> 
       documents: plan?.document_limit ?? null,
       reviews: plan?.review_limit ?? null,
       metaConnections: plan?.meta_connection_limit ?? null,
+      clientAccessRequests: plan?.client_access_limit ?? null,
       aiDaily: plan?.ai_daily_quota ?? 50,
     },
   };
@@ -121,6 +124,7 @@ export type ResourceUsage = {
   documents: number;
   reviews: number;
   metaConnections: number;
+  clientAccessRequests: number;
   aiToday: number;
 };
 
@@ -135,6 +139,7 @@ export async function getResourceUsage(companyId: string): Promise<ResourceUsage
     { count: documents },
     { count: reviews },
     { count: metaConnections },
+    { count: clientAccessRequests },
     { data: aiRow },
   ] = await Promise.all([
     supabase
@@ -167,6 +172,11 @@ export async function getResourceUsage(companyId: string): Promise<ResourceUsage
       .eq('company_id', companyId)
       .eq('status', 'active'),
     supabase
+      .from('client_access_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('company_id', companyId)
+      .not('status', 'in', '("expired","revoked")'),
+    supabase
       .from('ai_usage')
       .select('request_count')
       .eq('company_id', companyId)
@@ -180,6 +190,7 @@ export async function getResourceUsage(companyId: string): Promise<ResourceUsage
     documents: documents ?? 0,
     reviews: reviews ?? 0,
     metaConnections: metaConnections ?? 0,
+    clientAccessRequests: clientAccessRequests ?? 0,
     aiToday: (aiRow?.request_count as number | undefined) ?? 0,
   };
 }
@@ -298,6 +309,8 @@ function limitFor(ent: Entitlements, resource: Resource): number | null {
       return ent.limits.seats;
     case 'meta_connections':
       return ent.limits.metaConnections;
+    case 'client_access_requests':
+      return ent.limits.clientAccessRequests;
   }
 }
 
@@ -348,6 +361,14 @@ async function countResource(companyId: string, resource: Resource): Promise<num
         .select('id', { count: 'exact', head: true })
         .eq('company_id', companyId)
         .eq('status', 'active');
+      return count ?? 0;
+    }
+    case 'client_access_requests': {
+      const { count } = await supabase
+        .from('client_access_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .not('status', 'in', '("expired","revoked")');
       return count ?? 0;
     }
   }
