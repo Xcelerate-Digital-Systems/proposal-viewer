@@ -47,7 +47,7 @@ No test suite or linter configured. Use `npm run build` to verify changes compil
 
 ## Tech Stack
 
-- **Framework**: Next.js 16.2.6 (App Router, Turbopack), React 19.2.6, TypeScript 5.4
+- **Framework**: Next.js 16.3.1 (App Router, Turbopack), React 19.2.6, TypeScript 5.4
 - **Styling**: Tailwind CSS 3.4, lucide-react 0.400 icons
 - **Database**: Supabase (PostgreSQL + Auth + Storage + RLS)
 - **Payments**: Stripe 22.1
