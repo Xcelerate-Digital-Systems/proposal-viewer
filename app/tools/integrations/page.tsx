@@ -4,11 +4,11 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight, Check, X,
-  Plug, ChartBar, ArrowsClockwise, Database,
-  Shield, Lightning, Globe, Key,
-  LinkSimple, Gear, Lock,
-  Image, TreeStructure, Eye,
-} from '@phosphor-icons/react';
+  Plug, BarChart3, RefreshCw, Database,
+  Shield, Zap, Globe, Key,
+  Link as LinkIcon, Settings, Lock,
+  ImageIcon, Network, Eye,
+} from 'lucide-react';
 import { LiquidButton } from '@/components/ui/liquid-glass-button';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SiteHeader } from '@/components/marketing/SiteHeader';
@@ -24,7 +24,7 @@ const CTA_LABEL = PUBLIC_SIGNUP_ON ? 'Start free trial' : 'See pricing';
 
 const CONNECTORS = [
   { icon: Globe, label: 'Meta Ads' },
-  { icon: Lightning, label: 'GoHighLevel' },
+  { icon: Zap, label: 'GoHighLevel' },
   { icon: Plug, label: 'Webhooks' },
   { icon: Key, label: 'OAuth2' },
 ];
@@ -65,12 +65,12 @@ const WORKFLOW_TABS = [
 ];
 
 const FEATURES = [
-  { icon: ChartBar, title: '95+ insight fields', desc: 'Spend, clicks, impressions, CTR, CPC, CPM, ROAS, video metrics, quality ranking, and more.' },
-  { icon: Image, title: 'Creative fields', desc: 'Ad thumbnails, copy, CTAs, and destination URLs right inside Looker Studio.' },
-  { icon: TreeStructure, title: 'Breakdowns', desc: 'Age, gender, country, region, DMA, device, platform, placement, and hourly.' },
+  { icon: BarChart3, title: '95+ insight fields', desc: 'Spend, clicks, impressions, CTR, CPC, CPM, ROAS, video metrics, quality ranking, and more.' },
+  { icon: ImageIcon, title: 'Creative fields', desc: 'Ad thumbnails, copy, CTAs, and destination URLs right inside Looker Studio.' },
+  { icon: Network, title: 'Breakdowns', desc: 'Age, gender, country, region, DMA, device, platform, placement, and hourly.' },
   { icon: Database, title: 'Passthrough architecture', desc: 'No data stored. Every request hits Meta live. Your data never sits in a third party.' },
-  { icon: LinkSimple, title: 'Multiple accounts', desc: 'Connect as many Meta accounts as your plan allows. Each pipes into the same connector.' },
-  { icon: Gear, title: 'Date rollups', desc: 'Month, quarter, year, week, and day of week derived automatically from daily data.' },
+  { icon: LinkIcon, title: 'Multiple accounts', desc: 'Connect as many Meta accounts as your plan allows. Each pipes into the same connector.' },
+  { icon: Settings, title: 'Date rollups', desc: 'Month, quarter, year, week, and day of week derived automatically from daily data.' },
 ];
 
 const USE_CASES = [
@@ -113,7 +113,7 @@ export default function IntegrationsPage() {
           <div className="max-w-4xl mx-auto px-6 text-center mb-12">
             <ScrollReveal>
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-white bg-white/10 border border-white/20 rounded-full px-3.5 py-1.5 mb-6">
-                <Plug size={14} weight="bold" /> Looker Studio Connector
+                <Plug size={14} /> Looker Studio Connector
               </span>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-[1.1]">
                 Your report. Your data.<br />
@@ -126,7 +126,7 @@ export default function IntegrationsPage() {
               <div className="mt-8">
                 <LiquidButton asChild size="xl" className="text-white font-semibold">
                   <Link href={CTA_HREF} className="gap-2">
-                    {CTA_LABEL} <ArrowRight size={16} weight="bold" />
+                    {CTA_LABEL} <ArrowRight size={16} />
                   </Link>
                 </LiquidButton>
               </div>
@@ -155,7 +155,7 @@ export default function IntegrationsPage() {
             <div className="flex flex-wrap justify-center gap-3">
               {CONNECTORS.map(c => (
                 <div key={c.label} className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/[0.07] border border-white/10">
-                  <c.icon size={20} weight="duotone" className="text-surface-dark-accent" />
+                  <c.icon size={20} className="text-surface-dark-accent" />
                   <span className="text-sm text-white/80 font-medium">{c.label}</span>
                 </div>
               ))}
@@ -184,7 +184,7 @@ export default function IntegrationsPage() {
                 <ul className="mt-6 space-y-3">
                   {BEFORE.map(item => (
                     <li key={item} className="flex items-start gap-2.5 text-sm text-ink/70">
-                      <X size={14} weight="bold" className="text-red-400 shrink-0 mt-0.5" /> {item}
+                      <X size={14} className="text-red-400 shrink-0 mt-0.5" /> {item}
                     </li>
                   ))}
                 </ul>
@@ -197,7 +197,7 @@ export default function IntegrationsPage() {
                 <ul className="mt-6 space-y-3">
                   {AFTER.map(item => (
                     <li key={item} className="flex items-start gap-2.5 text-sm text-ink/70">
-                      <Check size={14} weight="bold" className="text-teal shrink-0 mt-0.5" /> {item}
+                      <Check size={14} className="text-teal shrink-0 mt-0.5" /> {item}
                     </li>
                   ))}
                 </ul>
@@ -234,19 +234,19 @@ export default function IntegrationsPage() {
               </p>
               <ul className="mt-6 space-y-3 text-sm text-ink">
                 <li className="flex items-start gap-2.5">
-                  <Database size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <Database size={16} className="text-teal shrink-0 mt-0.5" />
                   Pure passthrough — every request hits Meta live
                 </li>
                 <li className="flex items-start gap-2.5">
-                  <Shield size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <Shield size={16} className="text-teal shrink-0 mt-0.5" />
                   AES-256-GCM encrypted token storage
                 </li>
                 <li className="flex items-start gap-2.5">
-                  <ArrowsClockwise size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <RefreshCw size={16} className="text-teal shrink-0 mt-0.5" />
                   Auto-refresh tokens via cron — no manual management
                 </li>
                 <li className="flex items-start gap-2.5">
-                  <Lock size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <Lock size={16} className="text-teal shrink-0 mt-0.5" />
                   Company-scoped connections with row-level security
                 </li>
               </ul>
@@ -271,7 +271,7 @@ export default function IntegrationsPage() {
               {FEATURES.map(f => (
                 <div key={f.title} className="rounded-2xl border border-edge bg-white p-6 hover-lift group">
                   <div className="w-10 h-10 rounded-xl bg-teal/8 flex items-center justify-center mb-4 group-hover:bg-teal/12 transition-colors">
-                    <f.icon size={20} weight="duotone" className="text-teal" />
+                    <f.icon size={20} className="text-teal" />
                   </div>
                   <h3 className="text-sm font-semibold text-ink">{f.title}</h3>
                   <p className="mt-1.5 text-xs text-muted leading-relaxed">{f.desc}</p>
@@ -310,21 +310,21 @@ export default function IntegrationsPage() {
             <div className="grid grid-cols-3 gap-6 md:gap-10">
               <div className="text-center">
                 <div className="w-10 h-10 mx-auto rounded-xl bg-teal/8 flex items-center justify-center mb-3">
-                  <Shield size={20} weight="duotone" className="text-teal" />
+                  <Shield size={20} className="text-teal" />
                 </div>
                 <p className="text-sm font-semibold text-ink">AES-256-GCM</p>
                 <p className="text-xs text-muted mt-0.5">Encrypted token storage</p>
               </div>
               <div className="text-center">
                 <div className="w-10 h-10 mx-auto rounded-xl bg-teal/8 flex items-center justify-center mb-3">
-                  <Database size={20} weight="duotone" className="text-teal" />
+                  <Database size={20} className="text-teal" />
                 </div>
                 <p className="text-sm font-semibold text-ink">Zero retention</p>
                 <p className="text-xs text-muted mt-0.5">No ad data stored</p>
               </div>
               <div className="text-center">
                 <div className="w-10 h-10 mx-auto rounded-xl bg-teal/8 flex items-center justify-center mb-3">
-                  <ArrowsClockwise size={20} weight="duotone" className="text-teal" />
+                  <RefreshCw size={20} className="text-teal" />
                 </div>
                 <p className="text-sm font-semibold text-ink">Live data</p>
                 <p className="text-xs text-muted mt-0.5">Every refresh hits Meta</p>
@@ -368,12 +368,12 @@ export default function IntegrationsPage() {
             <div className="mt-8 flex items-center justify-center gap-4 flex-wrap">
               <LiquidButton asChild size="xl" className="text-white font-semibold">
                 <Link href={CTA_HREF} className="gap-2">
-                  {CTA_LABEL} <ArrowRight size={16} weight="bold" />
+                  {CTA_LABEL} <ArrowRight size={16} />
                 </Link>
               </LiquidButton>
               <LiquidButton asChild size="default" className="text-white font-semibold">
                 <Link href="/pricing" className="gap-2">
-                  View pricing <ArrowRight size={14} weight="bold" />
+                  View pricing <ArrowRight size={14} />
                 </Link>
               </LiquidButton>
             </div>
@@ -449,7 +449,7 @@ function WorkflowTabs() {
 
 function PassthroughDiagram() {
   const steps = [
-    { label: 'Looker Studio', sub: 'Refresh request', icon: ChartBar, bg: 'bg-blue-50', border: 'border-blue-200', color: 'text-blue-600' },
+    { label: 'Looker Studio', sub: 'Refresh request', icon: BarChart3, bg: 'bg-blue-50', border: 'border-blue-200', color: 'text-blue-600' },
     { label: 'AgencyViz', sub: 'Pass through (0 data stored)', icon: Plug, bg: 'bg-teal/[0.06]', border: 'border-teal/20', color: 'text-teal' },
     { label: 'Meta Ads API', sub: 'Live response', icon: Globe, bg: 'bg-violet-50', border: 'border-violet-200', color: 'text-violet-600' },
   ];
@@ -462,7 +462,7 @@ function PassthroughDiagram() {
           <div key={s.label}>
             <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border ${s.bg} ${s.border}`}>
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${s.bg}`}>
-                <s.icon size={18} weight="duotone" className={s.color} />
+                <s.icon size={18} className={s.color} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className={`text-sm font-semibold ${s.color}`}>{s.label}</div>
@@ -481,7 +481,7 @@ function PassthroughDiagram() {
       </div>
       <div className="mt-5 pt-4 border-t border-edge/50 text-center">
         <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-[10px] font-semibold text-emerald-600 border border-emerald-100">
-          <Shield size={12} weight="fill" /> Zero data retention
+          <Shield size={12} /> Zero data retention
         </div>
       </div>
     </div>
@@ -525,11 +525,11 @@ function MockIntegrationsUI() {
     <div className="flex flex-col h-full bg-white text-ink" aria-hidden="true" role="img" aria-label="Preview of the Looker Studio connector interface">
       <div className="flex items-center justify-between px-4 md:px-5 py-2.5 shrink-0">
         <div className="flex items-center gap-2">
-          <Plug size={14} weight="duotone" className="text-teal" />
+          <Plug size={14} className="text-teal" />
           <span className="text-xs md:text-sm font-semibold">Looker Studio Connector</span>
         </div>
         <div className="px-2.5 py-1 rounded-md border border-edge text-[9px] text-muted flex items-center gap-1">
-          <Gear size={10} /> Settings
+          <Settings size={10} /> Settings
         </div>
       </div>
       <div className="flex-1 flex min-h-0 overflow-hidden">
@@ -613,7 +613,7 @@ function TabMockup({ variant }: { variant: 'connect' | 'select' | 'report' }) {
     <div className="h-full bg-paper flex items-center justify-center p-4">
       <div className="w-[85%] aspect-[16/10] rounded-lg bg-white border border-edge shadow-card p-3 space-y-2">
         <div className="flex items-center gap-2">
-          <ChartBar size={10} weight="duotone" className="text-teal" />
+          <BarChart3 size={10} className="text-teal" />
           <span className="text-[8px] font-semibold">Looker Studio Report</span>
         </div>
         <div className="flex gap-2 h-[60%]">

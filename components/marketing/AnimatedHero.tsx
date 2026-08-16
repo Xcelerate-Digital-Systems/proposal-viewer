@@ -6,7 +6,7 @@
 
 import { motion, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowRight } from '@phosphor-icons/react';
+import { ArrowRight } from 'lucide-react';
 import { LiquidButton } from '@/components/ui/liquid-glass-button';
 
 
@@ -120,7 +120,7 @@ export function AnimatedHero({ publicSignupOn }: { publicSignupOn: boolean }) {
         >
           <LiquidButton asChild size="xl" className="text-white font-semibold">
             <Link href="/pricing" className="gap-2">
-              {publicSignupOn ? 'Start your free trial' : 'See pricing'} <ArrowRight size={16} weight="bold" />
+              {publicSignupOn ? 'Start your free trial' : 'See pricing'} <ArrowRight size={16} />
             </Link>
           </LiquidButton>
           <a href="https://app.agencyviz.io/login" className="press-scale inline-flex items-center gap-2 h-12 px-7 rounded-lg border border-white/25 text-white font-semibold hover:bg-white/10 transition-colors">

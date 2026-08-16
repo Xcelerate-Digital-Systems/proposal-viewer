@@ -21,6 +21,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
+import { authRateLimit } from '@/lib/rate-limit';
 import { createServiceClient } from '@/lib/supabase-server';
 import { fetchInsights, MetaApiError } from '@/lib/connectors/meta/api-client';
 import { decryptToken } from '@/lib/connectors/meta/token-crypto';
@@ -39,6 +40,8 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export async function POST(req: NextRequest) {
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const limited = await authRateLimit(auth.companyId, 'connectors/meta/data');
+  if (limited) return limited;
 
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== 'object') return badRequest('Body must be JSON object');

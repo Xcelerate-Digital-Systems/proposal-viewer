@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
+import { authRateLimit } from '@/lib/rate-limit';
 import { createServiceClient } from '@/lib/supabase-server';
 import { decryptFigmaToken } from '@/lib/connectors/figma/token-crypto';
 import { getFileStructure, getFrameThumbnails } from '@/lib/connectors/figma/api';
@@ -11,6 +12,8 @@ import { parseFigmaUrl } from '@/lib/connectors/figma/url-parser';
 export async function GET(req: NextRequest) {
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const limited = await authRateLimit(auth.companyId, 'connectors/figma/files');
+  if (limited) return limited;
 
   const url = req.nextUrl.searchParams.get('url');
   if (!url) {

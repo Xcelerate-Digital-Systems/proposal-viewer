@@ -4,13 +4,13 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight, Check, X,
-  FlowArrow, Globe, ShareNetwork, Presentation,
-  CursorClick, Stack, Envelope,
-  Lightning, LinkSimple, ChartBar,
-  Calculator, CopySimple, Layout, Keyboard,
-  Export, Note, TreeStructure,
+  Workflow, Globe, Share2, Projector,
+  MousePointerClick, Layers, Mail,
+  Zap, Link as LinkIcon, BarChart3,
+  Calculator, Copy, LayoutGrid, Keyboard,
+  Download, StickyNote, Network,
   Eye,
-} from '@phosphor-icons/react';
+} from 'lucide-react';
 import { LiquidButton } from '@/components/ui/liquid-glass-button';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SiteHeader } from '@/components/marketing/SiteHeader';
@@ -26,11 +26,11 @@ const CTA_LABEL = PUBLIC_SIGNUP_ON ? 'Start free trial' : 'See pricing';
 
 const NODE_TYPES = [
   { icon: Globe, label: 'Landing Pages' },
-  { icon: Envelope, label: 'Email & SMS' },
-  { icon: CursorClick, label: 'Ads & Traffic' },
-  { icon: TreeStructure, label: 'Decisions' },
-  { icon: Lightning, label: 'Automations' },
-  { icon: Note, label: 'Sticky Notes' },
+  { icon: Mail, label: 'Email & SMS' },
+  { icon: MousePointerClick, label: 'Ads & Traffic' },
+  { icon: Network, label: 'Decisions' },
+  { icon: Zap, label: 'Automations' },
+  { icon: StickyNote, label: 'Sticky Notes' },
 ];
 
 const BEFORE = [
@@ -69,14 +69,14 @@ const WORKFLOW_TABS = [
 ];
 
 const FEATURES = [
-  { icon: FlowArrow, title: 'Visual funnel builder', desc: 'Drag-and-drop on an infinite canvas with smart alignment guides.' },
-  { icon: Stack, title: '60+ node types', desc: 'Traffic sources, pages, offers, decisions, automations, and sticky notes.' },
+  { icon: Workflow, title: 'Visual funnel builder', desc: 'Drag-and-drop on an infinite canvas with smart alignment guides.' },
+  { icon: Layers, title: '60+ node types', desc: 'Traffic sources, pages, offers, decisions, automations, and sticky notes.' },
   { icon: Calculator, title: 'Forecast engine', desc: 'Projected revenue, cost, profit, and ROAS from per-step metrics.' },
   { icon: Eye, title: 'Numbers Layer', desc: 'Toggle the forecast overlay on and off for clean presentations.' },
-  { icon: CopySimple, title: 'What-if scenarios', desc: 'Duplicate any funnel and compare strategies side by side.' },
-  { icon: Layout, title: 'Template gallery', desc: 'Start from Lead Gen, E-commerce, Service, or Course templates.' },
-  { icon: LinkSimple, title: 'Public viewer', desc: 'Share a link. Client sees the funnel and forecast in the browser.' },
-  { icon: Export, title: 'PNG & PDF export', desc: 'Export as image or PDF for decks and documents.' },
+  { icon: Copy, title: 'What-if scenarios', desc: 'Duplicate any funnel and compare strategies side by side.' },
+  { icon: LayoutGrid, title: 'Template gallery', desc: 'Start from Lead Gen, E-commerce, Service, or Course templates.' },
+  { icon: LinkIcon, title: 'Public viewer', desc: 'Share a link. Client sees the funnel and forecast in the browser.' },
+  { icon: Download, title: 'PNG & PDF export', desc: 'Download as image or PDF for decks and documents.' },
   { icon: Keyboard, title: 'Keyboard shortcuts', desc: 'Cmd-Z undo, Cmd-D duplicate. Power-user speed.' },
 ];
 
@@ -120,7 +120,7 @@ export default function FunnelPlannerPage() {
           <div className="max-w-4xl mx-auto px-6 text-center mb-12">
             <ScrollReveal>
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-white bg-white/10 border border-white/20 rounded-full px-3.5 py-1.5 mb-6">
-                <FlowArrow size={14} weight="bold" /> Funnel Planner
+                <Workflow size={14} /> Funnel Planner
               </span>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-[1.1]">
                 Map the strategy.<br />
@@ -133,7 +133,7 @@ export default function FunnelPlannerPage() {
               <div className="mt-8">
                 <LiquidButton asChild size="xl" className="text-white font-semibold">
                   <Link href={CTA_HREF} className="gap-2">
-                    {CTA_LABEL} <ArrowRight size={16} weight="bold" />
+                    {CTA_LABEL} <ArrowRight size={16} />
                   </Link>
                 </LiquidButton>
               </div>
@@ -162,7 +162,7 @@ export default function FunnelPlannerPage() {
             <div className="flex flex-wrap justify-center gap-2.5">
               {NODE_TYPES.map(nt => (
                 <div key={nt.label} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.07] border border-white/10">
-                  <nt.icon size={18} weight="duotone" className="text-surface-dark-accent" />
+                  <nt.icon size={18} className="text-surface-dark-accent" />
                   <span className="text-sm text-white/80 font-medium">{nt.label}</span>
                 </div>
               ))}
@@ -182,13 +182,13 @@ export default function FunnelPlannerPage() {
               </div>
               <div>
                 <div className="text-3xl md:text-4xl font-bold text-teal flex justify-center">
-                  <ChartBar size={40} weight="fill" />
+                  <BarChart3 size={40} />
                 </div>
                 <div className="mt-1 text-sm text-muted">Built-in forecast</div>
               </div>
               <div>
                 <div className="text-3xl md:text-4xl font-bold text-teal flex justify-center">
-                  <CopySimple size={40} weight="fill" />
+                  <Copy size={40} />
                 </div>
                 <div className="mt-1 text-sm text-muted">What-if scenarios</div>
               </div>
@@ -217,7 +217,7 @@ export default function FunnelPlannerPage() {
                 <ul className="mt-6 space-y-3">
                   {BEFORE.map(item => (
                     <li key={item} className="flex items-start gap-2.5 text-sm text-ink/70">
-                      <X size={14} weight="bold" className="text-red-400 shrink-0 mt-0.5" /> {item}
+                      <X size={14} className="text-red-400 shrink-0 mt-0.5" /> {item}
                     </li>
                   ))}
                 </ul>
@@ -230,7 +230,7 @@ export default function FunnelPlannerPage() {
                 <ul className="mt-6 space-y-3">
                   {AFTER.map(item => (
                     <li key={item} className="flex items-start gap-2.5 text-sm text-ink/70">
-                      <Check size={14} weight="bold" className="text-teal shrink-0 mt-0.5" /> {item}
+                      <Check size={14} className="text-teal shrink-0 mt-0.5" /> {item}
                     </li>
                   ))}
                 </ul>
@@ -268,19 +268,19 @@ export default function FunnelPlannerPage() {
               </p>
               <ul className="mt-6 space-y-3 text-sm text-ink">
                 <li className="flex items-start gap-2.5">
-                  <ChartBar size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <BarChart3 size={16} className="text-teal shrink-0 mt-0.5" />
                   Revenue, cost, profit, and ROAS always visible on the board
                 </li>
                 <li className="flex items-start gap-2.5">
-                  <Eye size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <Eye size={16} className="text-teal shrink-0 mt-0.5" />
                   Numbers Layer toggles on and off for clean presentations
                 </li>
                 <li className="flex items-start gap-2.5">
-                  <CopySimple size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <Copy size={16} className="text-teal shrink-0 mt-0.5" />
                   Duplicate as a what-if scenario and compare strategies
                 </li>
                 <li className="flex items-start gap-2.5">
-                  <Globe size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <Globe size={16} className="text-teal shrink-0 mt-0.5" />
                   Six currencies and three period options for localised forecasts
                 </li>
               </ul>
@@ -306,7 +306,7 @@ export default function FunnelPlannerPage() {
               {FEATURES.map(f => (
                 <div key={f.title} className="rounded-2xl border border-edge bg-white p-6 hover-lift group">
                   <div className="w-10 h-10 rounded-xl bg-teal/8 flex items-center justify-center mb-4 group-hover:bg-teal/12 transition-colors">
-                    <f.icon size={20} weight="duotone" className="text-teal" />
+                    <f.icon size={20} className="text-teal" />
                   </div>
                   <h3 className="text-sm font-semibold text-ink">{f.title}</h3>
                   <p className="mt-1.5 text-xs text-muted leading-relaxed">{f.desc}</p>
@@ -375,12 +375,12 @@ export default function FunnelPlannerPage() {
             <div className="mt-8 flex items-center justify-center gap-4 flex-wrap">
               <LiquidButton asChild size="xl" className="text-white font-semibold">
                 <Link href={CTA_HREF} className="gap-2">
-                  {CTA_LABEL} <ArrowRight size={16} weight="bold" />
+                  {CTA_LABEL} <ArrowRight size={16} />
                 </Link>
               </LiquidButton>
               <LiquidButton asChild size="default" className="text-white font-semibold">
                 <Link href="/pricing" className="gap-2">
-                  View pricing <ArrowRight size={14} weight="bold" />
+                  View pricing <ArrowRight size={14} />
                 </Link>
               </LiquidButton>
             </div>
@@ -467,7 +467,7 @@ function ForecastMockup() {
       <div className="px-5 py-3.5 border-b border-edge/60 flex items-center justify-between">
         <span className="text-xs font-semibold text-ink">Board Summary</span>
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal/8 text-[9px] font-medium text-teal">
-          <Eye size={10} weight="bold" /> Numbers Layer ON
+          <Eye size={10} /> Numbers Layer ON
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3 p-5">
@@ -481,7 +481,7 @@ function ForecastMockup() {
       <div className="px-5 pb-5">
         <div className="rounded-xl border border-edge/60 p-3.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CopySimple size={14} className="text-muted" />
+            <Copy size={14} className="text-muted" />
             <span className="text-[10px] font-medium text-ink">Scenario A</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -582,7 +582,7 @@ function MockFunnelUI() {
         <span className="text-xs md:text-sm font-semibold">Spring Campaign Funnel</span>
         <div className="flex gap-1.5">
           <div className="px-2 py-1 rounded-md border border-edge text-[9px] text-muted">Share</div>
-          <div className="px-2 py-1 rounded-md border border-edge text-[9px] text-muted">Export</div>
+          <div className="px-2 py-1 rounded-md border border-edge text-[9px] text-muted">Download</div>
         </div>
       </div>
       <div
@@ -699,7 +699,7 @@ function TabMockup({ variant }: { variant: 'build' | 'forecast' | 'share' }) {
   return (
     <div className="h-full bg-paper flex items-center justify-center p-4">
       <div className="bg-white rounded-xl border border-edge p-4 max-w-[65%] text-center space-y-2 shadow-card">
-        <ShareNetwork size={16} weight="duotone" className="text-teal mx-auto" />
+        <Share2 size={16} className="text-teal mx-auto" />
         <div className="h-2 w-24 bg-ink/10 rounded mx-auto" />
         <div className="h-7 w-full rounded-lg bg-surface border border-edge flex items-center px-2">
           <span className="text-[7px] text-faint truncate">https://app.agencyviz.io/funnel/abc123</span>

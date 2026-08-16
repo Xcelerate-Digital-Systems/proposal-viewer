@@ -13,6 +13,7 @@ import { supabase, type FeedbackItem, type FeedbackStatus, type FeedbackItemType
 import type { SiblingSide, SiblingType } from './SitemapSiblingMenu';
 import { treeLayout } from '@/components/admin/shared/board-utils';
 import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { Button } from '@/components/ui/Button';
 import SitemapPageNode, { type SitemapNodeData, NODE_W, NODE_H } from './SitemapPageNode';
 import SitemapSectionNode, { type SitemapSectionData, SECTION_W, SECTION_H } from './SitemapSectionNode';
@@ -271,6 +272,7 @@ function SitemapViewInner({
   projectId, companyId, userId, rootDomain, items, onRefresh, onNavigateToItem,
 }: SitemapViewProps) {
   const toast = useToast();
+  const confirm = useConfirm();
   const { fitView } = useReactFlow();
   const [commentCounts, setCommentCounts] = useState<Map<string, { total: number; unresolved: number }>>(new Map());
   const [showAddPage, setShowAddPage] = useState(false);
@@ -332,6 +334,16 @@ function SitemapViewInner({
     if (!section) return;
 
     const children = items.filter((i) => i.parent_item_id === itemId);
+    const ok = await confirm({
+      title: 'Delete section',
+      message: children.length > 0
+        ? `Delete "${section.title}"? Its ${children.length} child item${children.length === 1 ? '' : 's'} will be moved up one level.`
+        : `Delete "${section.title}"?`,
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
+
     if (children.length > 0) {
       const parentId = section.parent_item_id || null;
       for (const child of children) {
@@ -351,7 +363,7 @@ function SitemapViewInner({
     }
     toast.success(`Deleted section "${section.title}"`);
     onRefresh();
-  }, [items, toast, onRefresh]);
+  }, [items, toast, confirm, onRefresh]);
 
   const handleMoveToParent = useCallback(async (itemId: string) => {
     const item = items.find((i) => i.id === itemId);

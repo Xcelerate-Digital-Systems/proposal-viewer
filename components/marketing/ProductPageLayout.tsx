@@ -5,7 +5,7 @@ import {
   type ReactNode,
 } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Check, CaretDown } from '@phosphor-icons/react';
+import { ArrowRight, Check, ChevronDown } from 'lucide-react';
 import {
   motion, useReducedMotion, AnimatePresence,
 } from 'framer-motion';
@@ -153,7 +153,7 @@ function FeatureCard({ feature, index }: { feature: Feature; index: number }) {
           {feature.mockup}
         </div>
       ) : (
-        <Icon className="text-teal/70 size-6 relative" weight="duotone" aria-hidden />
+        <Icon className="text-teal/70 size-6 relative" aria-hidden />
       )}
 
       <h3 className="relative mt-2 text-sm md:text-base font-semibold text-ink">{feature.title}</h3>
@@ -218,7 +218,7 @@ export function ProductPageLayout({
       >
         <LiquidButton asChild size="xl" className="text-white font-semibold">
           <Link href={PUBLIC_SIGNUP_ON ? 'https://app.agencyviz.io/signup' : '/pricing'} className="gap-2">
-            {PUBLIC_SIGNUP_ON ? 'Start free trial' : 'See pricing'} <ArrowRight size={16} weight="bold" />
+            {PUBLIC_SIGNUP_ON ? 'Start free trial' : 'See pricing'} <ArrowRight size={16} />
           </Link>
         </LiquidButton>
       </motion.div>
@@ -342,14 +342,14 @@ export function ProductPageLayout({
         <div className="max-w-3xl mx-auto px-6 text-center">
           <Reveal>
             <div className="w-20 h-20 rounded-3xl bg-teal/10 flex items-center justify-center mx-auto mb-6">
-              <Icon size={40} weight="duotone" className="text-teal" />
+              <Icon size={40} className="text-teal" />
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-ink tracking-tight">Get a 7-day free trial today.</h2>
             <p className="mt-4 text-prose max-w-md mx-auto leading-relaxed">{name} comes with the full AgencyViz toolkit. Delightfully all in one place.</p>
             <div className="mt-8">
               <LiquidButton asChild size="xl" className="text-white font-semibold">
                 <Link href={PUBLIC_SIGNUP_ON ? 'https://app.agencyviz.io/signup' : '/pricing'} className="gap-2">
-                  {PUBLIC_SIGNUP_ON ? 'Start free trial' : 'See pricing'} <ArrowRight size={16} weight="bold" />
+                  {PUBLIC_SIGNUP_ON ? 'Start free trial' : 'See pricing'} <ArrowRight size={16} />
                 </Link>
               </LiquidButton>
               <p className="mt-3 text-xs text-faint">No credit card required.</p>
@@ -383,12 +383,12 @@ export function ProductPageLayout({
             <div className="mt-8 flex items-center justify-center gap-4 flex-wrap">
               <LiquidButton asChild size="xl" className="text-white font-semibold">
                 <Link href={PUBLIC_SIGNUP_ON ? 'https://app.agencyviz.io/signup' : '/pricing'} className="gap-2">
-                  Start free trial <ArrowRight size={16} weight="bold" />
+                  Start free trial <ArrowRight size={16} />
                 </Link>
               </LiquidButton>
               <LiquidButton asChild size="default" className="text-white font-semibold">
                 <Link href="/pricing" className="gap-2">
-                  View pricing <ArrowRight size={14} weight="bold" />
+                  View pricing <ArrowRight size={14} />
                 </Link>
               </LiquidButton>
             </div>

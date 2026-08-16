@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Check, ArrowRight, CaretDown } from '@phosphor-icons/react/dist/ssr';
+import { Check, ArrowRight, ChevronDown } from 'lucide-react';
 import { getDefaultPlan } from '@/lib/billing/plan';
 import { WaitlistForm } from '@/components/marketing/WaitlistForm';
 import { AnimatedPricing } from '@/components/marketing/AnimatedPricing';
@@ -160,7 +160,7 @@ export default async function PricingPage() {
                   <ul className="space-y-2.5">
                     {g.items.map(item => (
                       <li key={item} className="flex items-start gap-2 text-xs text-ink/70 leading-relaxed">
-                        <Check size={12} weight="bold" className="text-teal shrink-0 mt-0.5" /> {item}
+                        <Check size={12} className="text-teal shrink-0 mt-0.5" /> {item}
                       </li>
                     ))}
                   </ul>
@@ -171,7 +171,7 @@ export default async function PricingPage() {
               <summary className="flex items-center justify-center gap-2 text-sm font-medium text-teal cursor-pointer hover:text-primary-hover transition-colors py-4 mt-2 list-none [&::-webkit-details-marker]:hidden">
                 <span className="group-open/feat:hidden">Show all features</span>
                 <span className="hidden group-open/feat:inline">Show fewer</span>
-                <CaretDown size={14} weight="bold" className="shrink-0 group-open/feat:rotate-180 transition-transform duration-200" />
+                <ChevronDown size={14} className="shrink-0 group-open/feat:rotate-180 transition-transform duration-200" />
               </summary>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {INCLUDED.slice(3).map(g => (
@@ -180,7 +180,7 @@ export default async function PricingPage() {
                     <ul className="space-y-2.5">
                       {g.items.map(item => (
                         <li key={item} className="flex items-start gap-2 text-xs text-ink/70 leading-relaxed">
-                          <Check size={12} weight="bold" className="text-teal shrink-0 mt-0.5" /> {item}
+                          <Check size={12} className="text-teal shrink-0 mt-0.5" /> {item}
                         </li>
                       ))}
                     </ul>
@@ -237,7 +237,7 @@ export default async function PricingPage() {
                   href="https://app.agencyviz.io/signup"
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-teal hover:text-primary-hover transition-colors"
                 >
-                  Start your free trial <ArrowRight size={14} weight="bold" />
+                  Start your free trial <ArrowRight size={14} />
                 </a>
               </p>
             )}
@@ -282,7 +282,7 @@ export default async function PricingPage() {
                   href="https://app.agencyviz.io/signup"
                   className="press-scale inline-flex items-center gap-2 h-12 px-7 rounded-lg bg-white text-teal font-semibold hover:bg-white/90 transition-colors"
                 >
-                  Start your 7-day free trial <ArrowRight size={16} weight="bold" />
+                  Start your 7-day free trial <ArrowRight size={16} />
                 </a>
               ) : (
                 <div className="max-w-md w-full">

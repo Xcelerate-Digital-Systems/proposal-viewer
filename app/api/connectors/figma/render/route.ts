@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
+import { authRateLimit } from '@/lib/rate-limit';
 import { createServiceClient } from '@/lib/supabase-server';
 import { decryptFigmaToken } from '@/lib/connectors/figma/token-crypto';
 import { renderFrames } from '@/lib/connectors/figma/api';
@@ -10,6 +11,8 @@ import { renderFrames } from '@/lib/connectors/figma/api';
 export async function POST(req: NextRequest) {
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const limited = await authRateLimit(auth.companyId, 'connectors/figma/render');
+  if (limited) return limited;
 
   const body = await req.json();
   const { reviewProjectId, fileKey, fileName, frames, figmaVersionId } = body;

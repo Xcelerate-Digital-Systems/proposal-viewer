@@ -4,12 +4,12 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight, Check, X,
-  Image, VideoCamera, FileText, Envelope, ChatDots, Globe,
-  Megaphone, MagnifyingGlass,
-  PushPin, PencilLine, Stack, Users, Clock,
-  GitBranch, Highlighter, LinkSimple, BellRinging,
-  Eye, EyeSlash, CheckCircle,
-} from '@phosphor-icons/react';
+  ImageIcon, Video, FileText, Mail, MessageCircle, Globe,
+  Megaphone, Search,
+  Pin, PenLine, Layers, Users, Clock,
+  GitBranch, Highlighter, Link as LinkIcon, BellRing,
+  Eye, EyeOff, CheckCircle2,
+} from 'lucide-react';
 import { LiquidButton } from '@/components/ui/liquid-glass-button';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SiteHeader } from '@/components/marketing/SiteHeader';
@@ -24,14 +24,14 @@ const CTA_LABEL = PUBLIC_SIGNUP_ON ? 'Start free trial' : 'See pricing';
 /* ── Data ──────────────────────────────────────────────────── */
 
 const CONTENT_TYPES = [
-  { icon: Image, label: 'Images' },
-  { icon: VideoCamera, label: 'Video' },
+  { icon: ImageIcon, label: 'Images' },
+  { icon: Video, label: 'Video' },
   { icon: FileText, label: 'PDFs' },
-  { icon: Envelope, label: 'Email' },
-  { icon: ChatDots, label: 'SMS' },
+  { icon: Mail, label: 'Email' },
+  { icon: MessageCircle, label: 'SMS' },
   { icon: Globe, label: 'Webpages' },
   { icon: Megaphone, label: 'Meta Ads' },
-  { icon: MagnifyingGlass, label: 'Google Ads' },
+  { icon: Search, label: 'Google Ads' },
 ];
 
 const BEFORE = [
@@ -77,15 +77,15 @@ const STAGES = [
 ];
 
 const FEATURES = [
-  { icon: PushPin, title: 'Pin comments', desc: 'Click anywhere on the creative to leave a numbered comment.' },
-  { icon: PencilLine, title: 'Drawing annotations', desc: 'Draw arrows, boxes, and text directly on the creative.' },
-  { icon: Stack, title: 'Stage-based workflow', desc: 'Eight stages from Draft to Archived. Assign reviewers per stage.' },
+  { icon: Pin, title: 'Pin comments', desc: 'Click anywhere on the creative to leave a numbered comment.' },
+  { icon: PenLine, title: 'Drawing annotations', desc: 'Draw arrows, boxes, and text directly on the creative.' },
+  { icon: Layers, title: 'Stage-based workflow', desc: 'Eight stages from Draft to Archived. Assign reviewers per stage.' },
   { icon: Users, title: 'Per-reviewer approvals', desc: 'Every reviewer signs off individually. Auto-advance when all approve.' },
   { icon: Clock, title: 'Version history', desc: 'Upload new versions. Every version keeps its own comments and history.' },
   { icon: GitBranch, title: 'Whiteboard view', desc: 'Map your campaign on an infinite canvas with shapes and sticky notes.' },
   { icon: Highlighter, title: 'Text highlighting', desc: 'Highlight text and comment inline on emails and SMS copy.' },
-  { icon: LinkSimple, title: 'Guest access', desc: 'Share a link. Clients review and approve without creating an account.' },
-  { icon: BellRinging, title: 'Stage-scoped notifications', desc: 'Reviewers get notified about their stages only. No noise.' },
+  { icon: LinkIcon, title: 'Guest access', desc: 'Share a link. Clients review and approve without creating an account.' },
+  { icon: BellRing, title: 'Stage-scoped notifications', desc: 'Reviewers get notified about their stages only. No noise.' },
 ];
 
 const USE_CASES = [
@@ -128,7 +128,7 @@ export default function MarkupPage() {
           <div className="max-w-4xl mx-auto px-6 text-center mb-12">
             <ScrollReveal>
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-white bg-white/10 border border-white/20 rounded-full px-3.5 py-1.5 mb-6">
-                <ChatDots size={14} weight="bold" /> Markup
+                <MessageCircle size={14} /> Markup
               </span>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-[1.1]">
                 Feedback that lands<br />
@@ -142,7 +142,7 @@ export default function MarkupPage() {
               <div className="mt-8">
                 <LiquidButton asChild size="xl" className="text-white font-semibold">
                   <Link href={CTA_HREF} className="gap-2">
-                    {CTA_LABEL} <ArrowRight size={16} weight="bold" />
+                    {CTA_LABEL} <ArrowRight size={16} />
                   </Link>
                 </LiquidButton>
               </div>
@@ -171,7 +171,7 @@ export default function MarkupPage() {
             <div className="flex flex-wrap justify-center gap-2.5">
               {CONTENT_TYPES.map(ct => (
                 <div key={ct.label} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.07] border border-white/10">
-                  <ct.icon size={18} weight="duotone" className="text-surface-dark-accent" />
+                  <ct.icon size={18} className="text-surface-dark-accent" />
                   <span className="text-sm text-white/80 font-medium">{ct.label}</span>
                 </div>
               ))}
@@ -195,7 +195,7 @@ export default function MarkupPage() {
               </div>
               <div>
                 <div className="text-3xl md:text-4xl font-bold text-teal flex justify-center">
-                  <CheckCircle size={40} weight="fill" />
+                  <CheckCircle2 size={40} />
                 </div>
                 <div className="mt-1 text-sm text-muted">Per-reviewer sign-off</div>
               </div>
@@ -223,7 +223,7 @@ export default function MarkupPage() {
                 <ul className="mt-6 space-y-3">
                   {BEFORE.map(item => (
                     <li key={item} className="flex items-start gap-2.5 text-sm text-ink/70">
-                      <X size={14} weight="bold" className="text-red-400 shrink-0 mt-0.5" /> {item}
+                      <X size={14} className="text-red-400 shrink-0 mt-0.5" /> {item}
                     </li>
                   ))}
                 </ul>
@@ -236,7 +236,7 @@ export default function MarkupPage() {
                 <ul className="mt-6 space-y-3">
                   {AFTER.map(item => (
                     <li key={item} className="flex items-start gap-2.5 text-sm text-ink/70">
-                      <Check size={14} weight="bold" className="text-teal shrink-0 mt-0.5" /> {item}
+                      <Check size={14} className="text-teal shrink-0 mt-0.5" /> {item}
                     </li>
                   ))}
                 </ul>
@@ -274,15 +274,15 @@ export default function MarkupPage() {
               </p>
               <ul className="mt-6 space-y-3 text-sm text-ink">
                 <li className="flex items-start gap-2.5">
-                  <Eye size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <Eye size={16} className="text-teal shrink-0 mt-0.5" />
                   Share a project or individual asset with one link
                 </li>
                 <li className="flex items-start gap-2.5">
-                  <EyeSlash size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <EyeOff size={16} className="text-teal shrink-0 mt-0.5" />
                   Draft and Internal Review stages hidden from guests
                 </li>
                 <li className="flex items-start gap-2.5">
-                  <CheckCircle size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <CheckCircle2 size={16} className="text-teal shrink-0 mt-0.5" />
                   Clients pin feedback, approve, and submit without signing up
                 </li>
               </ul>
@@ -308,7 +308,7 @@ export default function MarkupPage() {
               {FEATURES.map(f => (
                 <div key={f.title} className="rounded-2xl border border-edge bg-white p-6 hover-lift group">
                   <div className="w-10 h-10 rounded-xl bg-teal/8 flex items-center justify-center mb-4 group-hover:bg-teal/12 transition-colors">
-                    <f.icon size={20} weight="duotone" className="text-teal" />
+                    <f.icon size={20} className="text-teal" />
                   </div>
                   <h3 className="text-sm font-semibold text-ink">{f.title}</h3>
                   <p className="mt-1.5 text-xs text-muted leading-relaxed">{f.desc}</p>
@@ -377,12 +377,12 @@ export default function MarkupPage() {
             <div className="mt-8 flex items-center justify-center gap-4 flex-wrap">
               <LiquidButton asChild size="xl" className="text-white font-semibold">
                 <Link href={CTA_HREF} className="gap-2">
-                  {CTA_LABEL} <ArrowRight size={16} weight="bold" />
+                  {CTA_LABEL} <ArrowRight size={16} />
                 </Link>
               </LiquidButton>
               <LiquidButton asChild size="default" className="text-white font-semibold">
                 <Link href="/pricing" className="gap-2">
-                  View pricing <ArrowRight size={14} weight="bold" />
+                  View pricing <ArrowRight size={14} />
                 </Link>
               </LiquidButton>
             </div>
@@ -461,7 +461,7 @@ function StageVisibility() {
     <div className="rounded-2xl border border-edge bg-white p-6 md:p-8 shadow-card-soft">
       <div className="flex items-center justify-between mb-5">
         <div className="text-xs font-semibold text-muted flex items-center gap-1.5">
-          <EyeSlash size={14} /> Internal only
+          <EyeOff size={14} /> Internal only
         </div>
         <div className="text-xs font-semibold text-teal flex items-center gap-1.5">
           <Eye size={14} /> Client sees this
@@ -482,7 +482,7 @@ function StageVisibility() {
               {s.name}
             </span>
             {s.internal ? (
-              <EyeSlash size={16} className="text-muted/40" />
+              <EyeOff size={16} className="text-muted/40" />
             ) : (
               <Eye size={16} className="text-teal" />
             )}
@@ -634,7 +634,7 @@ function TabMockup({ variant }: { variant: 'pin' | 'kanban' | 'approve' }) {
         </div>
         <div className="h-16 rounded bg-gradient-to-br from-sky-100 to-cyan-50" />
         <div className="flex items-center gap-1 text-[7px] text-muted">
-          <CheckCircle size={10} weight="bold" className="text-emerald-400" /> All 3 reviewers approved
+          <CheckCircle2 size={10} className="text-emerald-400" /> All 3 reviewers approved
         </div>
       </div>
     </div>

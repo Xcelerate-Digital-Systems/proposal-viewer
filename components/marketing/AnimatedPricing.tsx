@@ -8,7 +8,7 @@
 import { useState, type ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import NumberFlow from '@number-flow/react';
-import { Check } from '@phosphor-icons/react';
+import { Check } from 'lucide-react';
 
 type Cta =
   | { mode: 'link'; href: string; label: string }
@@ -100,7 +100,7 @@ export function AnimatedPricing({
             {features.map((f) => (
               <li key={f} className="flex items-start gap-2 text-sm text-ink">
                 <span className="h-5 w-5 rounded-full bg-teal/10 grid place-content-center shrink-0 mt-0.5">
-                  <Check size={12} weight="bold" className="text-teal" />
+                  <Check size={12} className="text-teal" />
                 </span>
                 <span>{f}</span>
               </li>

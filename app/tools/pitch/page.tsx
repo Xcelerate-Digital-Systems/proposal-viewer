@@ -4,12 +4,12 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight, Check, X,
-  FileText, Receipt, MonitorPlay, Layout,
-  Stack, CursorClick, Palette, Globe, LinkSimple,
-  Eye, Copy, PaperPlaneTilt, Lock,
-  ChartBar, PenNib, DeviceMobile,
-  CheckCircle,
-} from '@phosphor-icons/react';
+  FileText, Receipt, MonitorPlay, LayoutGrid,
+  Layers, MousePointerClick, Palette, Globe, Link as LinkIcon,
+  Eye, Copy, Send, Lock,
+  BarChart3, PenTool, Smartphone,
+  CheckCircle2,
+} from 'lucide-react';
 import { LiquidButton } from '@/components/ui/liquid-glass-button';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SiteHeader } from '@/components/marketing/SiteHeader';
@@ -27,7 +27,7 @@ const PITCH_TOOLS = [
   { icon: FileText, label: 'Proposals' },
   { icon: Receipt, label: 'Quotes' },
   { icon: MonitorPlay, label: 'Documents' },
-  { icon: Layout, label: 'Templates' },
+  { icon: LayoutGrid, label: 'Templates' },
 ];
 
 const BEFORE = [
@@ -66,15 +66,15 @@ const WORKFLOW_TABS = [
 ];
 
 const FEATURES = [
-  { icon: Stack, title: 'Drag-and-drop page builder', desc: 'Reorder pages, add sections, and build proposals visually.' },
+  { icon: Layers, title: 'Drag-and-drop page builder', desc: 'Reorder pages, add sections, and build proposals visually.' },
   { icon: Receipt, title: 'Embedded quotes', desc: 'Line-item pricing, packages, and add-ons inside the proposal.' },
-  { icon: CursorClick, title: 'Package tiers', desc: 'Present Good/Better/Best packages with a recommended badge.' },
+  { icon: MousePointerClick, title: 'Package tiers', desc: 'Present Good/Better/Best packages with a recommended badge.' },
   { icon: Palette, title: 'Custom branding', desc: 'Your logo, colours, fonts on every proposal. Full design control.' },
-  { icon: Layout, title: 'Template library', desc: 'Save pages, packages, and full proposals as reusable templates.' },
+  { icon: LayoutGrid, title: 'Template library', desc: 'Save pages, packages, and full proposals as reusable templates.' },
   { icon: Eye, title: 'View analytics', desc: 'Know when your client opens and how far they read.' },
-  { icon: PenNib, title: 'E-signature', desc: 'Draw or type a signature on acceptance. No DocuSign needed.' },
+  { icon: PenTool, title: 'E-signature', desc: 'Draw or type a signature on acceptance. No DocuSign needed.' },
   { icon: Globe, title: 'Custom domains', desc: 'Send proposals from proposals.youragency.com.' },
-  { icon: DeviceMobile, title: 'Mobile-responsive viewer', desc: 'Proposals look perfect on desktop, tablet, and mobile.' },
+  { icon: Smartphone, title: 'Mobile-responsive viewer', desc: 'Proposals look perfect on desktop, tablet, and mobile.' },
 ];
 
 const USE_CASES = [
@@ -117,7 +117,7 @@ export default function PitchPage() {
           <div className="max-w-4xl mx-auto px-6 text-center mb-12">
             <ScrollReveal>
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-white bg-white/10 border border-white/20 rounded-full px-3.5 py-1.5 mb-6">
-                <FileText size={14} weight="bold" /> Pitch
+                <FileText size={14} /> Pitch
               </span>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-[1.1]">
                 Win the pitch<br />
@@ -130,7 +130,7 @@ export default function PitchPage() {
               <div className="mt-8">
                 <LiquidButton asChild size="xl" className="text-white font-semibold">
                   <Link href={CTA_HREF} className="gap-2">
-                    {CTA_LABEL} <ArrowRight size={16} weight="bold" />
+                    {CTA_LABEL} <ArrowRight size={16} />
                   </Link>
                 </LiquidButton>
               </div>
@@ -166,7 +166,7 @@ export default function PitchPage() {
             <div className="flex flex-wrap justify-center gap-3">
               {PITCH_TOOLS.map(t => (
                 <div key={t.label} className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/[0.07] border border-white/10">
-                  <t.icon size={20} weight="duotone" className="text-surface-dark-accent" />
+                  <t.icon size={20} className="text-surface-dark-accent" />
                   <span className="text-sm text-white/80 font-medium">{t.label}</span>
                 </div>
               ))}
@@ -190,7 +190,7 @@ export default function PitchPage() {
               </div>
               <div>
                 <div className="text-3xl md:text-4xl font-bold text-teal flex justify-center">
-                  <LinkSimple size={40} weight="bold" />
+                  <LinkIcon size={40} />
                 </div>
                 <div className="mt-1 text-sm text-muted">One link. No login.</div>
               </div>
@@ -218,7 +218,7 @@ export default function PitchPage() {
                 <ul className="mt-6 space-y-3">
                   {BEFORE.map(item => (
                     <li key={item} className="flex items-start gap-2.5 text-sm text-ink/70">
-                      <X size={14} weight="bold" className="text-red-400 shrink-0 mt-0.5" /> {item}
+                      <X size={14} className="text-red-400 shrink-0 mt-0.5" /> {item}
                     </li>
                   ))}
                 </ul>
@@ -231,7 +231,7 @@ export default function PitchPage() {
                 <ul className="mt-6 space-y-3">
                   {AFTER.map(item => (
                     <li key={item} className="flex items-start gap-2.5 text-sm text-ink/70">
-                      <Check size={14} weight="bold" className="text-teal shrink-0 mt-0.5" /> {item}
+                      <Check size={14} className="text-teal shrink-0 mt-0.5" /> {item}
                     </li>
                   ))}
                 </ul>
@@ -269,19 +269,19 @@ export default function PitchPage() {
               </p>
               <ul className="mt-6 space-y-3 text-sm text-ink">
                 <li className="flex items-start gap-2.5">
-                  <Palette size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <Palette size={16} className="text-teal shrink-0 mt-0.5" />
                   Branded cover page sets the tone before they read a word
                 </li>
                 <li className="flex items-start gap-2.5">
-                  <CursorClick size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <MousePointerClick size={16} className="text-teal shrink-0 mt-0.5" />
                   Accept, decline, or request changes — with optional e-signature
                 </li>
                 <li className="flex items-start gap-2.5">
-                  <Eye size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <Eye size={16} className="text-teal shrink-0 mt-0.5" />
                   View analytics: when they opened, pages viewed, time spent
                 </li>
                 <li className="flex items-start gap-2.5">
-                  <PaperPlaneTilt size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <Send size={16} className="text-teal shrink-0 mt-0.5" />
                   Auto-redirect to payment or booking after acceptance
                 </li>
               </ul>
@@ -307,7 +307,7 @@ export default function PitchPage() {
               {FEATURES.map(f => (
                 <div key={f.title} className="rounded-2xl border border-edge bg-white p-6 hover-lift group">
                   <div className="w-10 h-10 rounded-xl bg-teal/8 flex items-center justify-center mb-4 group-hover:bg-teal/12 transition-colors">
-                    <f.icon size={20} weight="duotone" className="text-teal" />
+                    <f.icon size={20} className="text-teal" />
                   </div>
                   <h3 className="text-sm font-semibold text-ink">{f.title}</h3>
                   <p className="mt-1.5 text-xs text-muted leading-relaxed">{f.desc}</p>
@@ -376,12 +376,12 @@ export default function PitchPage() {
             <div className="mt-8 flex items-center justify-center gap-4 flex-wrap">
               <LiquidButton asChild size="xl" className="text-white font-semibold">
                 <Link href={CTA_HREF} className="gap-2">
-                  {CTA_LABEL} <ArrowRight size={16} weight="bold" />
+                  {CTA_LABEL} <ArrowRight size={16} />
                 </Link>
               </LiquidButton>
               <LiquidButton asChild size="default" className="text-white font-semibold">
                 <Link href="/pricing" className="gap-2">
-                  View pricing <ArrowRight size={14} weight="bold" />
+                  View pricing <ArrowRight size={14} />
                 </Link>
               </LiquidButton>
             </div>
@@ -460,7 +460,7 @@ function ViewerMockup() {
     <div className="rounded-2xl border border-edge bg-white shadow-card-soft overflow-hidden">
       <div className="bg-gradient-to-br from-teal/10 to-primary-tint p-6 md:p-8 text-center border-b border-edge/50">
         <div className="w-10 h-10 rounded-xl bg-teal/20 flex items-center justify-center mx-auto mb-3">
-          <FileText size={20} weight="duotone" className="text-teal" />
+          <FileText size={20} className="text-teal" />
         </div>
         <div className="h-3 w-32 bg-ink/10 rounded mx-auto mb-2" />
         <div className="h-2 w-20 bg-ink/5 rounded mx-auto" />
@@ -478,12 +478,12 @@ function ViewerMockup() {
               <Eye size={10} /> 3 views
             </div>
             <div className="flex items-center gap-1 text-[9px] text-muted">
-              <ChartBar size={10} /> 4m avg
+              <BarChart3 size={10} /> 4m avg
             </div>
           </div>
           <div className="flex gap-1.5">
             <div className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-[8px] font-semibold flex items-center gap-1">
-              <Check size={8} weight="bold" /> Accept
+              <Check size={8} /> Accept
             </div>
             <div className="px-3 py-1.5 rounded-lg bg-surface border border-edge text-[8px] font-medium text-muted">
               Request changes
@@ -549,7 +549,7 @@ function TabMockup({ variant }: { variant: 'build' | 'send' | 'close' }) {
     <div className="h-full bg-paper flex items-center justify-center p-6">
       <div className="bg-white rounded-xl border border-edge p-5 max-w-[70%] text-center space-y-3 shadow-card">
         <div className="w-8 h-8 rounded-full bg-teal/10 mx-auto flex items-center justify-center">
-          <PaperPlaneTilt size={14} className="text-teal" />
+          <Send size={14} className="text-teal" />
         </div>
         <div className="h-2.5 w-32 bg-ink/10 rounded mx-auto" />
         <div className="h-1.5 w-48 bg-ink/5 rounded mx-auto" />

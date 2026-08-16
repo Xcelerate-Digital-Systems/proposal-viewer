@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
+import { authRateLimit } from '@/lib/rate-limit';
 import { createServiceClient } from '@/lib/supabase-server';
 import { encryptFigmaToken } from '@/lib/connectors/figma/token-crypto';
 import { validateToken } from '@/lib/connectors/figma/api';
@@ -11,6 +12,8 @@ import { validateToken } from '@/lib/connectors/figma/api';
 export async function POST(req: NextRequest) {
   const auth = await getAuthContext(req);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const limited = await authRateLimit(auth.companyId, 'connectors/figma/connect');
+  if (limited) return limited;
 
   const { personalAccessToken } = await req.json();
   if (!personalAccessToken || typeof personalAccessToken !== 'string') {

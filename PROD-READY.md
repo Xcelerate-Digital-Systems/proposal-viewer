@@ -137,20 +137,13 @@ HEAD at audit start: `6432ed9`
   - Fix: Investigate Next.js 16's nonce support or `strict-dynamic` as alternatives. If neither works, document as accepted risk with the specific Next.js limitation.
   - Detected by: Stage 3 security scan  |  Verified by: reading `proxy.ts`
 
-- [ ] **M-2 No rate limiting on external-API-cost-bearing connector routes** — `app/api/connectors/meta/data/route.ts`, `app/api/connectors/ghl/data/route.ts`, `app/api/connectors/figma/*`
-  - What: These routes proxy live calls to Meta Graph API, GHL, and Figma. Authenticated but not rate-limited. A compromised or malicious account could hammer these to exhaust API quotas or run up costs.
-  - Fix: Add `rateLimit()` calls with appropriate limits (e.g., 60/min per company).
+- [x] **M-2 No rate limiting on external-API-cost-bearing connector routes** — `app/api/connectors/meta/data/route.ts`, `app/api/connectors/ghl/data/route.ts`, `app/api/connectors/figma/*` ⟶ **CLOSED** — `authRateLimit(companyId, routeKey)` added to all 8 connector routes (meta/data, meta/health, ghl/data, ghl/locations, figma/render, figma/files, figma/sync, figma/connect POST)
   - Detected by: Stage 3 security scan
 
-- [ ] **M-3 ARCHITECTURE.md is stale** — `docs/ARCHITECTURE.md`
-  - What: Document claims "0 automated tests, no CI pipeline" when both exist (4 test files, GitHub Actions CI). Route counts are outdated (163 → 181 API routes, ~90 → ~140 authenticated). MCP route line count stale after god-file split.
-  - Fix: Refresh the document with current numbers. The structure and analysis are sound — only the quantities need updating.
+- [x] **M-3 ARCHITECTURE.md is stale** — `docs/ARCHITECTURE.md` ⟶ **CLOSED** — refreshed: Next.js 16.3.1, ~1,038 source files, 181 API routes, ~129 authenticated routes, 4 test files + GitHub Actions CI noted
   - Detected by: Stage 1 architecture scan
 
-- [ ] **M-4 SitemapView `handleDeleteSection` — no confirmation** — `components/admin/feedback/sitemap/SitemapView.tsx:330-342`
-  - What: Deleting a sitemap section silently reparents child items and destroys the section with a single click. No confirmation dialog, no undo.
-  - Why it matters: Accidental click destroys real campaign structure. Inconsistent with rest of app's delete-confirmation pattern.
-  - Fix: Wrap in `ConfirmDialog` (existing UI primitive).
+- [x] **M-4 SitemapView `handleDeleteSection` — no confirmation** — `components/admin/feedback/sitemap/SitemapView.tsx:330-342` ⟶ **CLOSED** — `useConfirm()` dialog added with destructive styling; message shows child count when children will be reparented
   - Detected by: Stage 4 code health scan
 
 - [ ] **M-5 Duplicated board drawer components** — `components/admin/funnels/board/NoteSideDrawer.tsx` vs `components/admin/feedback/board/NoteSideDrawer.tsx` (118 lines each); `ShapeSideDrawer.tsx` (260/273 lines)
@@ -169,12 +162,10 @@ HEAD at audit start: `6432ed9`
   - Last release Nov 2021 (~4.5 years). Used in 10 files. No CVEs currently but no patches will come if one surfaces. No maintained drop-in replacement available.
   - Detected by: supply-chain scan
 
-- [ ] **L-2 `tippy.js` archived** — `package.json`
-  - Last release Nov 2021. Used in exactly 1 place. Replace with existing UI primitive (CSS/Radix tooltip) and drop the dependency.
+- [x] **L-2 `tippy.js` archived** — `package.json` ⟶ **ACCEPTED RISK** — used as TipTap mention autocomplete popover; no drop-in Lucide/Radix replacement available for this integration
   - Detected by: supply-chain scan
 
-- [ ] **L-3 Duplicate icon library** — `@phosphor-icons/react` (16 imports, 57MB)
-  - `lucide-react` is the standard (391 imports). Migrate the 16 Phosphor usages to Lucide equivalents and drop the package.
+- [x] **L-3 Duplicate icon library** — `@phosphor-icons/react` (16 imports, 57MB) ⟶ **CLOSED** — all 16 files migrated to Lucide equivalents, `@phosphor-icons/react` removed from package.json
   - Detected by: supply-chain scan
 
 - [ ] **L-4 SSRF hostname DNS rebinding TOCTOU** — `lib/sanitize.ts:59`
@@ -199,6 +190,10 @@ HEAD at audit start: `6432ed9`
 | H-1 | `purge_stale_email_log()` callable by anon | `REVOKE EXECUTE FROM PUBLIC, anon, authenticated; GRANT TO service_role` | `has_function_privilege` returns `{}` for anon + authenticated |
 | H-2 | `claim_next_quote_number()` cross-tenant | `REVOKE EXECUTE FROM PUBLIC, authenticated; GRANT TO service_role` | `has_function_privilege` returns `{}` for authenticated |
 | H-3 | next@16.2.6 — 4 high CVEs | `npm audit fix` → next@16.3.1 | `npm audit` returns 0 vulnerabilities; build passes |
+| M-2 | No rate limiting on connector routes | `authRateLimit(companyId, routeKey)` added to 8 routes | `grep -l authRateLimit app/api/connectors/` matches all 8 |
+| M-3 | ARCHITECTURE.md stale numbers | Refreshed: 16.3.1, ~1038 files, 181 routes, CI noted | `docs/ARCHITECTURE.md` updated |
+| M-4 | SitemapView delete — no confirmation | `useConfirm()` with destructive dialog | `SitemapView.tsx` imports `useConfirm`, wraps `handleDeleteSection` |
+| L-3 | Duplicate icon library (@phosphor-icons) | All 16 files migrated to Lucide; package removed | 0 `@phosphor-icons/react` imports; package absent from `package.json` |
 
 Migration file: `lib/prod-ready-fixes-2026-08-16-migration.sql`
 

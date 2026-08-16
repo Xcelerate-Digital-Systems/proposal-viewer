@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
-  ArrowLeft, Plus, Columns, GitBranch, GridFour, ChatCircle, Gear, Bell,
-  Cursor, Square, Circle, ArrowLineRight, Minus, TextT, Note, FlowArrow,
-  Image as ImageIcon, Envelope, Globe, DeviceMobile, Eye, CaretDown,
-  ChatText, Megaphone, FileText,
-} from '@phosphor-icons/react';
+  ArrowLeft, Plus, Columns3, GitBranch, Grid2x2, MessageCircle, Settings, Bell,
+  MousePointer, Square, Circle, MoveRight, Minus, Type, StickyNote, Workflow,
+  ImageIcon, Mail, Globe, Smartphone, Eye, ChevronDown,
+  MessageSquare, Megaphone, FileText,
+} from 'lucide-react';
 
 /* ── Animation config ────────────────────────────────────────────── */
 
@@ -18,26 +18,26 @@ const SCENE_MS = (TOTAL_DURATION / SCENE_COUNT) * 1000;
 /* ── Tab bar (matches real ProjectTabs) ──────────────────────────── */
 
 const TABS = [
-  { icon: Columns, label: 'Kanban' },
+  { icon: Columns3, label: 'Kanban' },
   { icon: GitBranch, label: 'Board', active: true },
-  { icon: GridFour, label: 'Assets' },
-  { icon: ChatCircle, label: 'Comments' },
-  { icon: Gear, label: 'Setup' },
+  { icon: Grid2x2, label: 'Assets' },
+  { icon: MessageCircle, label: 'Comments' },
+  { icon: Settings, label: 'Setup' },
   { icon: Bell, label: 'Members' },
 ];
 
 /* ── Drawing toolbar (matches real BoardTopToolbar) ──────────────── */
 
 const DRAW_TOOLS = [
-  { icon: Cursor, active: true },
+  { icon: MousePointer, active: true },
   { icon: Square },
   { icon: Circle },
-  { icon: ArrowLineRight },
+  { icon: MoveRight },
   { icon: Minus },
-  { icon: TextT },
-  { icon: Note },
+  { icon: Type },
+  { icon: StickyNote },
   { icon: null },
-  { icon: FlowArrow },
+  { icon: Workflow },
 ];
 
 /* ── Palette sidebar items ───────────────────────────────────────── */
@@ -58,8 +58,8 @@ const FLOW_NODES = [
   { id: 'landing', icon: Globe, label: 'Landing Page', status: 'Approved', dot: 'bg-emerald-400', thumb: 'from-sky-200 to-cyan-100', type: 'card' as const, typeLabel: 'Web' },
   { id: 'form', icon: FileText, label: 'Form Page', status: 'Internal Review', dot: 'bg-amber-400', thumb: 'from-amber-100 to-yellow-50', type: 'card' as const, typeLabel: 'Web' },
   { id: 'thankyou', icon: Globe, label: 'Thank You Page', status: 'Internal Review', dot: 'bg-amber-400', thumb: 'from-emerald-100 to-teal-50', type: 'card' as const, typeLabel: 'Web' },
-  { id: 'sms', icon: DeviceMobile, label: 'SMS 01', status: 'Client Review', dot: 'bg-blue-400', thumb: '', type: 'icon' as const, typeLabel: 'SMS' },
-  { id: 'email', icon: Envelope, label: 'EMAIL 01', status: 'Client Review', dot: 'bg-blue-400', thumb: '', type: 'icon' as const, typeLabel: 'Email' },
+  { id: 'sms', icon: Smartphone, label: 'SMS 01', status: 'Client Review', dot: 'bg-blue-400', thumb: '', type: 'icon' as const, typeLabel: 'SMS' },
+  { id: 'email', icon: Mail, label: 'EMAIL 01', status: 'Client Review', dot: 'bg-blue-400', thumb: '', type: 'icon' as const, typeLabel: 'Email' },
 ];
 
 const STICKIES = [
@@ -158,13 +158,13 @@ function BoardView({
             Coastal Realty – Spring Campaign
           </h1>
           <div className="hidden md:flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface text-[8px] font-medium text-muted">
-            <CaretDown size={8} />
+            <ChevronDown size={8} />
             Active
           </div>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="hidden md:flex items-center gap-1 px-2 py-1 rounded-md border border-edge text-[9px] text-muted">
-            <ChatText size={10} /> Note
+            <MessageSquare size={10} /> Note
           </div>
           <div className="px-2 py-1 rounded-md border border-edge text-[9px] text-muted">Copy link</div>
           <div className="px-2.5 py-1 rounded-md bg-teal text-white text-[9px] font-medium flex items-center gap-1">
@@ -235,7 +235,7 @@ function BoardView({
                 <div key={i} className={`w-7 h-7 rounded-lg flex items-center justify-center ${
                   t.active ? 'bg-teal text-white' : 'text-ink/50'
                 }`}>
-                  <t.icon size={13} weight="bold" />
+                  <t.icon size={13} />
                 </div>
               )
             )}
@@ -271,7 +271,7 @@ function BoardView({
                             </div>
                           </div>
                           <div className="flex items-center justify-between px-1.5 md:px-2 py-1 border-t border-edge/50">
-                            <span className="text-[6px] text-ink/30 flex items-center gap-0.5"><ChatCircle size={6} /> 2</span>
+                            <span className="text-[6px] text-ink/30 flex items-center gap-0.5"><MessageCircle size={6} /> 2</span>
                             <span className="text-[6px] text-teal flex items-center gap-0.5"><Eye size={6} /> View</span>
                           </div>
                         </div>

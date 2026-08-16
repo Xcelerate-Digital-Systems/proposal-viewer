@@ -4,11 +4,11 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight, Check, X,
-  BookmarkSimple, MagnifyingGlass, Tag, FolderOpen,
-  ShareNetwork, Image, VideoCamera,
-  Funnel, LinkSimple, DeviceMobile,
-  FileText, CloudArrowUp, Eye,
-} from '@phosphor-icons/react';
+  Bookmark, Search, Tag, FolderOpen,
+  Share2, ImageIcon, Video,
+  Filter, Link as LinkIcon, Smartphone,
+  FileText, CloudUpload, Eye,
+} from 'lucide-react';
 import { LiquidButton } from '@/components/ui/liquid-glass-button';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SiteHeader } from '@/components/marketing/SiteHeader';
@@ -23,9 +23,9 @@ const CTA_LABEL = PUBLIC_SIGNUP_ON ? 'Start free trial' : 'See pricing';
 /* ── Data ──────────────────────────────────────────────────── */
 
 const SAVE_TYPES = [
-  { icon: Image, label: 'Images' },
-  { icon: VideoCamera, label: 'Video' },
-  { icon: DeviceMobile, label: 'Feed Mockups' },
+  { icon: ImageIcon, label: 'Images' },
+  { icon: Video, label: 'Video' },
+  { icon: Smartphone, label: 'Feed Mockups' },
   { icon: FileText, label: 'Ad Copy' },
   { icon: Tag, label: 'Persuasion Tags' },
   { icon: FolderOpen, label: 'Folders' },
@@ -73,15 +73,15 @@ const WORKFLOW_TABS = [
 ];
 
 const FEATURES = [
-  { icon: BookmarkSimple, title: 'Save with full metadata', desc: 'Headline, primary text, CTA, source URL, and notes alongside the creative.' },
-  { icon: DeviceMobile, title: 'Facebook feed mockup', desc: 'Realistic preview of how every saved ad looks in the Facebook feed.' },
+  { icon: Bookmark, title: 'Save with full metadata', desc: 'Headline, primary text, CTA, source URL, and notes alongside the creative.' },
+  { icon: Smartphone, title: 'Facebook feed mockup', desc: 'Realistic preview of how every saved ad looks in the Facebook feed.' },
   { icon: Tag, title: '9 persuasion angle tags', desc: 'Clarity, proof, urgency, curiosity — categorise ads by what makes them work.' },
   { icon: FolderOpen, title: 'Folders & boards', desc: 'Organise saves by client, campaign, industry, or any scheme.' },
-  { icon: Funnel, title: 'Grid view & filters', desc: 'AND-logic filtering across tags, format, and folder. Find anything fast.' },
-  { icon: VideoCamera, title: 'Video transcription', desc: 'Save the spoken words alongside the video. Reference what was said.' },
-  { icon: CloudArrowUp, title: 'Bulk upload', desc: 'Upload multiple assets at once after a research session.' },
-  { icon: LinkSimple, title: 'Shareable links', desc: 'Rich link previews with Open Graph and Twitter cards per save.' },
-  { icon: MagnifyingGlass, title: 'Search your vault', desc: 'Find any saved ad by keyword across titles, tags, and notes.' },
+  { icon: Filter, title: 'Grid view & filters', desc: 'AND-logic filtering across tags, format, and folder. Find anything fast.' },
+  { icon: Video, title: 'Video transcription', desc: 'Save the spoken words alongside the video. Reference what was said.' },
+  { icon: CloudUpload, title: 'Bulk upload', desc: 'Upload multiple assets at once after a research session.' },
+  { icon: LinkIcon, title: 'Shareable links', desc: 'Rich link previews with Open Graph and Twitter cards per save.' },
+  { icon: Search, title: 'Search your vault', desc: 'Find any saved ad by keyword across titles, tags, and notes.' },
 ];
 
 const USE_CASES = [
@@ -124,7 +124,7 @@ export default function SwipeVaultPage() {
           <div className="max-w-4xl mx-auto px-6 text-center mb-12">
             <ScrollReveal>
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-white bg-white/10 border border-white/20 rounded-full px-3.5 py-1.5 mb-6">
-                <BookmarkSimple size={14} weight="bold" /> Swipe Vault
+                <Bookmark size={14} /> Swipe Vault
               </span>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-[1.1]">
                 Save the winners.<br />
@@ -137,7 +137,7 @@ export default function SwipeVaultPage() {
               <div className="mt-8">
                 <LiquidButton asChild size="xl" className="text-white font-semibold">
                   <Link href={CTA_HREF} className="gap-2">
-                    {CTA_LABEL} <ArrowRight size={16} weight="bold" />
+                    {CTA_LABEL} <ArrowRight size={16} />
                   </Link>
                 </LiquidButton>
               </div>
@@ -166,7 +166,7 @@ export default function SwipeVaultPage() {
             <div className="flex flex-wrap justify-center gap-2.5">
               {SAVE_TYPES.map(t => (
                 <div key={t.label} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.07] border border-white/10">
-                  <t.icon size={18} weight="duotone" className="text-surface-dark-accent" />
+                  <t.icon size={18} className="text-surface-dark-accent" />
                   <span className="text-sm text-white/80 font-medium">{t.label}</span>
                 </div>
               ))}
@@ -186,13 +186,13 @@ export default function SwipeVaultPage() {
               </div>
               <div>
                 <div className="text-3xl md:text-4xl font-bold text-teal flex justify-center">
-                  <DeviceMobile size={40} weight="fill" />
+                  <Smartphone size={40} />
                 </div>
                 <div className="mt-1 text-sm text-muted">Feed mockup</div>
               </div>
               <div>
                 <div className="text-3xl md:text-4xl font-bold text-teal flex justify-center">
-                  <VideoCamera size={40} weight="fill" />
+                  <Video size={40} />
                 </div>
                 <div className="mt-1 text-sm text-muted">Video transcription</div>
               </div>
@@ -220,7 +220,7 @@ export default function SwipeVaultPage() {
                 <ul className="mt-6 space-y-3">
                   {BEFORE.map(item => (
                     <li key={item} className="flex items-start gap-2.5 text-sm text-ink/70">
-                      <X size={14} weight="bold" className="text-red-400 shrink-0 mt-0.5" /> {item}
+                      <X size={14} className="text-red-400 shrink-0 mt-0.5" /> {item}
                     </li>
                   ))}
                 </ul>
@@ -233,7 +233,7 @@ export default function SwipeVaultPage() {
                 <ul className="mt-6 space-y-3">
                   {AFTER.map(item => (
                     <li key={item} className="flex items-start gap-2.5 text-sm text-ink/70">
-                      <Check size={14} weight="bold" className="text-teal shrink-0 mt-0.5" /> {item}
+                      <Check size={14} className="text-teal shrink-0 mt-0.5" /> {item}
                     </li>
                   ))}
                 </ul>
@@ -272,15 +272,15 @@ export default function SwipeVaultPage() {
               </p>
               <ul className="mt-6 space-y-3 text-sm text-ink">
                 <li className="flex items-start gap-2.5">
-                  <Tag size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <Tag size={16} className="text-teal shrink-0 mt-0.5" />
                   Nine angles based on advertising persuasion psychology
                 </li>
                 <li className="flex items-start gap-2.5">
-                  <Funnel size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <Filter size={16} className="text-teal shrink-0 mt-0.5" />
                   AND-logic filtering — combine tags, formats, and folders
                 </li>
                 <li className="flex items-start gap-2.5">
-                  <Eye size={16} weight="bold" className="text-teal shrink-0 mt-0.5" />
+                  <Eye size={16} className="text-teal shrink-0 mt-0.5" />
                   Realistic Facebook feed mockup on every saved ad
                 </li>
               </ul>
@@ -332,7 +332,7 @@ export default function SwipeVaultPage() {
               {FEATURES.map(f => (
                 <div key={f.title} className="rounded-2xl border border-edge bg-white p-6 hover-lift group">
                   <div className="w-10 h-10 rounded-xl bg-teal/8 flex items-center justify-center mb-4 group-hover:bg-teal/12 transition-colors">
-                    <f.icon size={20} weight="duotone" className="text-teal" />
+                    <f.icon size={20} className="text-teal" />
                   </div>
                   <h3 className="text-sm font-semibold text-ink">{f.title}</h3>
                   <p className="mt-1.5 text-xs text-muted leading-relaxed">{f.desc}</p>
@@ -401,12 +401,12 @@ export default function SwipeVaultPage() {
             <div className="mt-8 flex items-center justify-center gap-4 flex-wrap">
               <LiquidButton asChild size="xl" className="text-white font-semibold">
                 <Link href={CTA_HREF} className="gap-2">
-                  {CTA_LABEL} <ArrowRight size={16} weight="bold" />
+                  {CTA_LABEL} <ArrowRight size={16} />
                 </Link>
               </LiquidButton>
               <LiquidButton asChild size="default" className="text-white font-semibold">
                 <Link href="/pricing" className="gap-2">
-                  View pricing <ArrowRight size={14} weight="bold" />
+                  View pricing <ArrowRight size={14} />
                 </Link>
               </LiquidButton>
             </div>
@@ -522,12 +522,12 @@ function MockSwipeUI() {
     <div className="flex flex-col h-full bg-white text-ink">
       <div className="flex items-center justify-between px-4 md:px-5 py-2.5 shrink-0">
         <div className="flex items-center gap-2">
-          <BookmarkSimple size={14} className="text-teal" />
+          <Bookmark size={14} className="text-teal" />
           <span className="text-xs md:text-sm font-semibold">Swipe Vault</span>
         </div>
         <div className="flex gap-1.5">
           <div className="flex items-center gap-1 px-2.5 py-1 rounded-md border border-edge text-[9px] text-muted">
-            <MagnifyingGlass size={10} /> Search
+            <Search size={10} /> Search
           </div>
           <div className="px-2.5 py-1 rounded-md bg-teal text-white text-[9px] font-medium">+ Save Ad</div>
         </div>
@@ -595,7 +595,7 @@ function TabMockup({ variant }: { variant: 'save' | 'organise' | 'share' }) {
   return (
     <div className="h-full bg-paper flex items-center justify-center p-4">
       <div className="bg-white rounded-xl border border-edge p-4 max-w-[65%] text-center space-y-2 shadow-card">
-        <ShareNetwork size={16} className="text-teal mx-auto" />
+        <Share2 size={16} className="text-teal mx-auto" />
         <div className="h-2 w-20 bg-ink/10 rounded mx-auto" />
         <div className="h-6 w-full rounded-lg bg-surface border border-edge flex items-center px-2">
           <span className="text-[7px] text-faint truncate">https://app.agencyviz.io/swipe/board123</span>

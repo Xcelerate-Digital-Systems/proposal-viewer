@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
   ArrowRight, Check, X, FileText,
-  FlowArrow, BookmarkSimple, ChatDots, Plug,
-} from '@phosphor-icons/react/dist/ssr';
+  Workflow, Bookmark, MessageCircle, Plug,
+} from 'lucide-react';
 import { getDefaultPlan } from '@/lib/billing/plan';
 import { WaitlistForm } from '@/components/marketing/WaitlistForm';
 import { ScrollReveal } from '@/components/marketing/ScrollReveal';
@@ -56,8 +56,8 @@ const MARKUP_BULLETS = [
 ];
 
 const SECONDARY = [
-  { icon: FlowArrow, title: 'Funnel Planner', desc: 'Build campaign funnels on an infinite canvas with 60+ node types. The built-in forecast engine calculates projected revenue, cost, profit, and ROAS before you spend a dollar.', bullets: ['60+ node types for any campaign', 'Built-in revenue & ROAS forecast', 'What-if scenarios to compare strategies'], href: '/tools/funnel-planner', accent: 'from-teal/6 to-cyan-50/40', iconBg: 'bg-teal/8 group-hover:bg-teal/12' },
-  { icon: BookmarkSimple, title: 'Swipe Vault', desc: 'Save ads with the creative, the copy, and the metadata. Tag by persuasion angle. Every save gets a realistic Facebook feed mockup your whole team draws from.', bullets: ['9 persuasion angle tags', 'Realistic Facebook feed mockup', 'Shared team library with video transcription'], href: '/tools/swipe-vault', accent: 'from-amber-50/60 to-orange-50/30', iconBg: 'bg-amber-100/60 group-hover:bg-amber-100/80' },
+  { icon: Workflow, title: 'Funnel Planner', desc: 'Build campaign funnels on an infinite canvas with 60+ node types. The built-in forecast engine calculates projected revenue, cost, profit, and ROAS before you spend a dollar.', bullets: ['60+ node types for any campaign', 'Built-in revenue & ROAS forecast', 'What-if scenarios to compare strategies'], href: '/tools/funnel-planner', accent: 'from-teal/6 to-cyan-50/40', iconBg: 'bg-teal/8 group-hover:bg-teal/12' },
+  { icon: Bookmark, title: 'Swipe Vault', desc: 'Save ads with the creative, the copy, and the metadata. Tag by persuasion angle. Every save gets a realistic Facebook feed mockup your whole team draws from.', bullets: ['9 persuasion angle tags', 'Realistic Facebook feed mockup', 'Shared team library with video transcription'], href: '/tools/swipe-vault', accent: 'from-amber-50/60 to-orange-50/30', iconBg: 'bg-amber-100/60 group-hover:bg-amber-100/80' },
   { icon: Plug, title: 'Looker Studio Connector', desc: 'Connect Meta to Looker Studio and pull 95+ fields live: spend, clicks, ROAS, creative thumbnails, and breakdowns. No data stored. No CSV exports.', bullets: ['95+ insight fields from Meta', 'Passthrough, zero data retention', 'GoHighLevel two-way CRM sync'], href: '/tools/integrations', accent: 'from-violet-50/50 to-indigo-50/30', iconBg: 'bg-violet-100/50 group-hover:bg-violet-100/70' },
 ];
 
@@ -144,7 +144,7 @@ export default async function HomePage() {
                 <ul className="mt-6 space-y-3">
                   {BEFORE.map(item => (
                     <li key={item} className="flex items-start gap-2.5 text-sm text-ink/70">
-                      <X size={14} weight="bold" className="text-red-400 shrink-0 mt-0.5" /> {item}
+                      <X size={14} className="text-red-400 shrink-0 mt-0.5" /> {item}
                     </li>
                   ))}
                 </ul>
@@ -160,7 +160,7 @@ export default async function HomePage() {
                 <ul className="mt-6 space-y-3">
                   {AFTER.map(item => (
                     <li key={item} className="flex items-start gap-2.5 text-sm text-white/80">
-                      <Check size={14} weight="bold" className="text-surface-dark-accent shrink-0 mt-0.5" /> {item}
+                      <Check size={14} className="text-surface-dark-accent shrink-0 mt-0.5" /> {item}
                     </li>
                   ))}
                 </ul>
@@ -187,7 +187,7 @@ export default async function HomePage() {
               <ul className="mt-6 space-y-3">
                 {PITCH_BULLETS.map(b => (
                   <li key={b} className="flex items-start gap-2.5 text-sm text-ink">
-                    <Check size={16} weight="bold" className="text-teal shrink-0 mt-0.5" /> {b}
+                    <Check size={16} className="text-teal shrink-0 mt-0.5" /> {b}
                   </li>
                 ))}
               </ul>
@@ -224,7 +224,7 @@ export default async function HomePage() {
               <ul className="mt-6 space-y-3">
                 {MARKUP_BULLETS.map(b => (
                   <li key={b} className="flex items-start gap-2.5 text-sm text-ink">
-                    <Check size={16} weight="bold" className="text-teal shrink-0 mt-0.5" /> {b}
+                    <Check size={16} className="text-teal shrink-0 mt-0.5" /> {b}
                   </li>
                 ))}
               </ul>
@@ -261,19 +261,19 @@ export default async function HomePage() {
                 <div className={`h-2 bg-gradient-to-r ${s.accent}`} />
                 <div className="p-7 pt-5 flex flex-col flex-1">
                   <div className={`w-11 h-11 rounded-xl ${s.iconBg} flex items-center justify-center mb-5 transition-colors`}>
-                    <s.icon size={22} weight="duotone" className="text-teal" />
+                    <s.icon size={22} className="text-teal" />
                   </div>
                   <h3 className="text-base font-semibold text-ink">{s.title}</h3>
                   <p className="mt-2.5 text-sm text-muted leading-relaxed">{s.desc}</p>
                   <ul className="mt-4 space-y-2 flex-1">
                     {s.bullets.map((b: string) => (
                       <li key={b} className="flex items-start gap-2 text-xs text-ink/70">
-                        <Check size={12} weight="bold" className="text-teal shrink-0 mt-0.5" /> {b}
+                        <Check size={12} className="text-teal shrink-0 mt-0.5" /> {b}
                       </li>
                     ))}
                   </ul>
                   <Link href={s.href} className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-teal hover:text-teal/80 transition-colors py-1.5">
-                    Learn more <ArrowRight size={14} weight="bold" />
+                    Learn more <ArrowRight size={14} />
                   </Link>
                 </div>
               </div>

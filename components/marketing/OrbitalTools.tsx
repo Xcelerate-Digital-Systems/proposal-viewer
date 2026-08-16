@@ -3,16 +3,16 @@
 import { useReducedMotion } from 'framer-motion';
 import {
   FileText, Receipt, MonitorPlay,
-  FlowArrow, BookmarkSimple, ChatDots,
-} from '@phosphor-icons/react';
+  Workflow, Bookmark, MessageCircle,
+} from 'lucide-react';
 
 const TOOLS = [
   { icon: FileText, label: 'Proposals' },
   { icon: Receipt, label: 'Quotes' },
   { icon: MonitorPlay, label: 'Docs' },
-  { icon: ChatDots, label: 'Markup' },
-  { icon: FlowArrow, label: 'Funnels' },
-  { icon: BookmarkSimple, label: 'Swipe Vault' },
+  { icon: MessageCircle, label: 'Markup' },
+  { icon: Workflow, label: 'Funnels' },
+  { icon: Bookmark, label: 'Swipe Vault' },
 ];
 
 const DURATION = 24;
@@ -50,7 +50,7 @@ export function OrbitalTools() {
             }
           >
             <div className="w-8 h-8 rounded-full bg-surface-dark-deep border-2 border-surface-dark-accent/30 flex items-center justify-center shadow-[0_0_10px_rgba(138,217,209,0.1)]">
-              <Icon size={13} weight="duotone" className="text-surface-dark-accent" />
+              <Icon size={13} className="text-surface-dark-accent" />
             </div>
             <span className="absolute top-9 left-1/2 -translate-x-1/2 whitespace-nowrap text-[8px] font-medium text-white/50 tracking-wide">
               {tool.label}

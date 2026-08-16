@@ -3,16 +3,16 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
-  ArrowRight, CaretDown,
-  FileText, ChatDots, FlowArrow, BookmarkSimple, Plug,
-} from '@phosphor-icons/react';
+  ArrowRight, ChevronDown,
+  FileText, MessageCircle, Workflow, Bookmark, Plug,
+} from 'lucide-react';
 import { LiquidButton } from '@/components/ui/liquid-glass-button';
 
 const PRODUCTS = [
   { label: 'Pitch', href: '/tools/pitch', desc: 'Proposals, quotes, docs & templates', icon: FileText },
-  { label: 'Markup', href: '/tools/markup', desc: 'Creative review & feedback', icon: ChatDots },
-  { label: 'Funnel Planner', href: '/tools/funnel-planner', desc: 'Visual campaign mapping', icon: FlowArrow },
-  { label: 'Swipe Vault', href: '/tools/swipe-vault', desc: 'Save & organise ad inspiration', icon: BookmarkSimple },
+  { label: 'Markup', href: '/tools/markup', desc: 'Creative review & feedback', icon: MessageCircle },
+  { label: 'Funnel Planner', href: '/tools/funnel-planner', desc: 'Visual campaign mapping', icon: Workflow },
+  { label: 'Swipe Vault', href: '/tools/swipe-vault', desc: 'Save & organise ad inspiration', icon: Bookmark },
   { label: 'Integrations', href: '/tools/integrations', desc: 'Looker Studio connector', icon: Plug },
 ];
 
@@ -104,7 +104,7 @@ export function SiteHeader({
               }`}
             >
               Products
-              <CaretDown size={14} className={`transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown size={14} className={`transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {dropdownOpen && (
@@ -118,7 +118,7 @@ export function SiteHeader({
                       className="flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors group"
                     >
                       <div className="w-8 h-8 rounded-lg bg-white/5 group-hover:bg-white/10 flex items-center justify-center shrink-0 mt-0.5 transition-colors">
-                        <p.icon size={16} weight="duotone" className="text-surface-dark-accent" />
+                        <p.icon size={16} className="text-surface-dark-accent" />
                       </div>
                       <div className="min-w-0">
                         <div className="text-sm font-medium text-white">{p.label}</div>
@@ -150,7 +150,7 @@ export function SiteHeader({
           </a>
           <LiquidButton asChild size="sm" className="ml-1 text-white font-semibold">
             <a href={ctaHref} className="gap-1.5">
-              {ctaLabel} <ArrowRight size={14} weight="bold" />
+              {ctaLabel} <ArrowRight size={14} />
             </a>
           </LiquidButton>
         </nav>
@@ -178,7 +178,7 @@ export function SiteHeader({
                 onClick={() => setMobileOpen(false)}
                 className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-white/80 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
               >
-                <p.icon size={15} weight="duotone" className="text-surface-dark-accent/70" />
+                <p.icon size={15} className="text-surface-dark-accent/70" />
                 {p.label}
               </Link>
             ))}
@@ -191,7 +191,7 @@ export function SiteHeader({
             </a>
             <LiquidButton asChild size="lg" className="mt-2 text-white font-semibold w-full justify-center">
               <a href={ctaHref} className="gap-1.5">
-                {ctaLabel} <ArrowRight size={15} weight="bold" />
+                {ctaLabel} <ArrowRight size={15} />
               </a>
             </LiquidButton>
           </nav>

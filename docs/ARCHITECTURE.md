@@ -12,7 +12,7 @@ Production is deployed at `app.agencyviz.io`. Codebase package name is `agencyvi
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 16.2.6 (App Router, Turbopack) |
+| Framework | Next.js 16.3.1 (App Router, Turbopack) |
 | UI | React 19, TypeScript 5.4, Tailwind CSS 3.4 |
 | Database / Auth / Storage | Supabase (PostgreSQL + Auth + Storage + RLS) |
 | Payments | Stripe 22.1 |
@@ -25,12 +25,12 @@ Production is deployed at `app.agencyviz.io`. Codebase package name is `agencyvi
 | Error tracking | Sentry |
 | Hosting | Vercel |
 
-Codebase size: 987 source files (`.ts`/`.tsx`/`.js`). **0 automated tests, no CI pipeline** — see [Known Structural Issues](#known-structural-issues).
+Codebase size: ~1,038 source files (`.ts`/`.tsx`/`.js`). **4 test files, GitHub Actions CI pipeline** — see [Known Structural Issues](#known-structural-issues).
 
 ## Deployment
 
 - GitHub `main` → Vercel auto-deploy (per project CLAUDE.md).
-- No CI gate observed between push and deploy — no test suite, no lint/build gate confirmed in the audit beyond `npm run build` being the documented manual verification step.
+- GitHub Actions CI pipeline runs against pushes/PRs (4 test files), in addition to `npm run build` as the documented manual verification step.
 
 > ASSUMPTION: Preview deployments exist per-PR via Vercel's default GitHub integration, but this was not directly confirmed in the audit.
 
@@ -38,9 +38,9 @@ Codebase size: 987 source files (`.ts`/`.tsx`/`.js`). **0 automated tests, no CI
 
 ## Module Map
 
-163 API routes under `app/api/`, grouped by trust level (see [Trust Boundaries](#trust-boundaries)):
+181 API routes under `app/api/`, grouped by trust level (see [Trust Boundaries](#trust-boundaries)):
 
-- **~90 authenticated routes** — `getAuthContext`-gated. Cover campaigns, templates, proposals, documents, settings, company, team, billing, connectors, ads, support.
+- **~129 authenticated routes** — `getAuthContext`-gated. Cover campaigns, templates, proposals, documents, settings, company, team, billing, connectors, ads, support.
 - **11 `review`/`review-widget` routes** — public, token-scoped (guest/client access to Campaigns review flow).
 - **1 MCP route** — `app/api/mcp/[[...transport]]`, 2,162 lines, 75 tool handlers, own auth path via `getAuth` (distinct from `getAuthContext`).
 - **6 OAuth routes** — `/oauth/*`, PKCE-based, for third-party OAuth2 clients (Zapier/Make-style integrations).
@@ -69,7 +69,7 @@ Two Supabase client paths, chosen by execution context:
 
 Standard API route pattern: validate auth → validate input → service-client operation → return `{ success, data }` or `{ error }` JSON.
 
-> ASSUMPTION: `getAuthContext` and `createServiceClient` are used consistently across all ~90 authenticated routes. The audit counted 180 files calling `createServiceClient()` (more than the route count), meaning service-role access also happens from lib/helper modules, not just route handlers directly — each such call site is independently responsible for its own authorization check (see TB-6 below).
+> ASSUMPTION: `getAuthContext` and `createServiceClient` are used consistently across all ~129 authenticated routes. The audit counted 180 files calling `createServiceClient()` (more than the route count), meaning service-role access also happens from lib/helper modules, not just route handlers directly — each such call site is independently responsible for its own authorization check (see TB-6 below).
 
 ## Auth & Multi-tenancy
 
@@ -83,7 +83,7 @@ Standard API route pattern: validate auth → validate input → service-client 
 
 | ID | Boundary | Notes |
 |---|---|---|
-| TB-1 | Browser → authenticated API routes | Bearer token via `getAuthContext`. Standard path for ~90 routes. |
+| TB-1 | Browser → authenticated API routes | Bearer token via `getAuthContext`. Standard path for ~129 routes. |
 | TB-2 | Public guest → token-scoped viewers | 21 `review-widget` routes; **share token is the sole gate** — no user account. |
 | TB-3 | Stripe → billing webhook | Signature-verified (`/api/billing/webhook`). |
 | TB-4 | Resend → inbound webhook | `webhooks/resend`, signature/verification path not detailed in audit inputs. |
@@ -127,9 +127,9 @@ The practical implication of TB-6: because RLS is bypassed for service-role acce
 
 ## Known Structural Issues
 
-1. **Zero automated test coverage across 987 source files, no CI pipeline.** There is no boundary/contract test coverage for any of the 163 API routes, the 75 MCP tools, or the trust-boundary logic described above. `npm run build` (TypeScript compile) is the only automated verification step currently in the loop, and it runs manually, not in CI.
+1. **Limited automated test coverage across ~1,038 source files (4 test files), though a GitHub Actions CI pipeline now runs.** There is still no boundary/contract test coverage for most of the 181 API routes, the 75 MCP tools, or the trust-boundary logic described above. `npm run build` (TypeScript compile) remains the primary verification step, now run automatically in CI alongside the existing test files rather than only manually.
 2. **180 RLS-bypassing call sites (TB-6) with no centralized authorization layer.** Each `createServiceClient()` usage is independently responsible for its own `company_id`/ownership check. This is a large, distributed attack surface for tenant-isolation bugs, and nothing in the stack (RLS, middleware, a shared guard) currently backstops a mistake at any one of these 180 sites.
-3. **No CI gate between push and production deploy.** `main` → Vercel auto-deploy means a broken build, a regressed auth check, or an accidental RLS-bypassing query can reach `app.agencyviz.io` without any automated check running first.
+3. **CI gate now exists, but coverage is still thin.** A GitHub Actions CI pipeline runs before `main` → Vercel auto-deploy, but with only 4 test files, a regressed auth check or an accidental RLS-bypassing query can still reach `app.agencyviz.io` without being caught by an automated test — CI currently backstops build/compile failures far more than logic regressions.
 4. **Three-way naming skew in the Campaigns system** (DB `review_*` / TS `Feedback*` / URL `/campaigns`) is a maintainability risk more than a security one, but it raises the chance of a future contributor misreading intent (e.g. patching the wrong layer, or missing that `Feedback*` identifiers are load-bearing) — documented as a known, accepted trade-off in the project's own CLAUDE.md rather than something to "fix."
 5. **MCP route auth path (`getAuth`) is separate from the standard `getAuthContext` path used elsewhere.** Two parallel auth implementations across the codebase (plus `companyIdOverride` for super-admin) increase the chance the two drift out of sync over time.
 

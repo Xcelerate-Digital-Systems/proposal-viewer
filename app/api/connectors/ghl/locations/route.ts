@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/api-auth';
+import { authRateLimit } from '@/lib/rate-limit';
 import { createServiceClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +16,8 @@ export async function GET(req: NextRequest) {
   try {
     const auth = await getAuthContext(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const limited = await authRateLimit(auth.companyId, 'connectors/ghl/locations');
+    if (limited) return limited;
 
     const supabase = createServiceClient();
     const { data: connections } = await supabase
