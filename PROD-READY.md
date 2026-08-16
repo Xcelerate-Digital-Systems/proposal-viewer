@@ -146,9 +146,7 @@ HEAD at audit start: `6432ed9`
 - [x] **M-4 SitemapView `handleDeleteSection` — no confirmation** — `components/admin/feedback/sitemap/SitemapView.tsx:330-342` ⟶ **CLOSED** — `useConfirm()` dialog added with destructive styling; message shows child count when children will be reparented
   - Detected by: Stage 4 code health scan
 
-- [ ] **M-5 Duplicated board drawer components** — `components/admin/funnels/board/NoteSideDrawer.tsx` vs `components/admin/feedback/board/NoteSideDrawer.tsx` (118 lines each); `ShapeSideDrawer.tsx` (260/273 lines)
-  - What: Near line-for-line duplicates differing only in type names. Bug fixes will diverge.
-  - Fix: Extract shared `BoardNoteSideDrawer<T>` and `BoardShapeSideDrawer<T>` generics. **Gated by Dimension 3** — add boundary tests first.
+- [x] **M-5 Duplicated board drawer components** — `components/admin/funnels/board/NoteSideDrawer.tsx` vs `components/admin/feedback/board/NoteSideDrawer.tsx` (118 lines each); `ShapeSideDrawer.tsx` (260/273 lines) ⟶ **CLOSED** — extracted generic `NoteSideDrawer<T>` and `ShapeSideDrawer<T>` to `components/admin/shared/board/`; 4 old files deleted, both consumers updated
   - Detected by: Stage 4 code health scan
 
 - [ ] **M-6 DesignTab.tsx has 10 useEffect hooks** — `components/admin/shared/design-tab/DesignTab.tsx`
@@ -172,8 +170,7 @@ HEAD at audit start: `6432ed9`
   - `isValidWebhookUrl()` validates hostname at check time but doesn't pin the resolved IP for the subsequent fetch. DNS rebinding could theoretically redirect to internal hosts. Low severity: response content is not returned to the caller (only link/title extraction).
   - Detected by: Stage 3 security scan
 
-- [ ] **L-5 `ProjectDetailsSection` duplication** — `components/admin/proposals/quote-builder/sections/ProjectDetailsSection.tsx` vs `components/admin/quotes/sections/ProjectDetailsSection.tsx`
-  - 99 vs 130 lines. Related to Quote Builder naming skew (documented in CLAUDE.md). Low divergence risk since both are display-only.
+- [x] **L-5 `ProjectDetailsSection` duplication** — `components/admin/proposals/quote-builder/sections/ProjectDetailsSection.tsx` vs `components/admin/quotes/sections/ProjectDetailsSection.tsx` ⟶ **CLOSED** — `proposals/quote-builder` version was dead code (zero imports); deleted
   - Detected by: Stage 4 code health scan
 
 ## Documents written
@@ -194,6 +191,8 @@ HEAD at audit start: `6432ed9`
 | M-3 | ARCHITECTURE.md stale numbers | Refreshed: 16.3.1, ~1038 files, 181 routes, CI noted | `docs/ARCHITECTURE.md` updated |
 | M-4 | SitemapView delete — no confirmation | `useConfirm()` with destructive dialog | `SitemapView.tsx` imports `useConfirm`, wraps `handleDeleteSection` |
 | L-3 | Duplicate icon library (@phosphor-icons) | All 16 files migrated to Lucide; package removed | 0 `@phosphor-icons/react` imports; package absent from `package.json` |
+| M-5 | Duplicated board drawer components | Generic `NoteSideDrawer<T>` + `ShapeSideDrawer<T>` in `shared/board/` | 4 old files deleted, 2 consumers import shared versions, build passes |
+| L-5 | ProjectDetailsSection duplication | Dead file deleted (0 imports) | `proposals/quote-builder/sections/ProjectDetailsSection.tsx` removed |
 
 Migration file: `lib/prod-ready-fixes-2026-08-16-migration.sql`
 

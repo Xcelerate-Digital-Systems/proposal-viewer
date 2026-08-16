@@ -1,20 +1,30 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Trash2 } from 'lucide-react';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
-import type { FeedbackBoardShape, FeedbackWaitUnit } from '@/lib/supabase';
+import type { FeedbackWaitUnit } from '@/lib/supabase';
 import { FUNNEL_COLOR_PRESETS } from '@/lib/types/funnel';
 import {
-  parseWaitContent, serializeWaitContent,
   parseDecisionContent, serializeDecisionContent,
+  parseWaitContent, serializeWaitContent,
   parseActionContent, serializeActionContent,
-} from './nodes/ShapeNode';
+} from '@/components/admin/feedback/board/nodes/ShapeNode';
 
-interface Props {
-  shape: FeedbackBoardShape;
-  onUpdate: (patch: Partial<FeedbackBoardShape>) => void;
+export interface BoardShape {
+  id: string;
+  shape_type: string;
+  content: string | null;
+  color: string;
+  stroke_width: number;
+  dashed: boolean;
+  font_size: number | null;
+}
+
+interface Props<T extends BoardShape> {
+  shape: T;
+  onUpdate: (patch: Partial<T>) => void;
   onDelete: () => void;
   onClose: () => void;
 }
@@ -25,9 +35,16 @@ const SHAPE_TYPE_LABELS: Record<string, string> = {
   call: 'Call', meeting: 'Meeting', automation: 'Automation', goal: 'Goal',
   button_click: 'Button Click', form_submit: 'Form Submit', video_play: 'Video Play',
   scroll_depth: 'Scroll Depth', purchase: 'Purchase', add_to_cart: 'Add to Cart',
-  subscribe: 'Subscribe', custom_event: 'Custom Event',
+  subscribe: 'Subscribe', custom_event: 'Custom Event', page_view: 'Page View',
+  time_on_page: 'Time on Page', exit_intent: 'Exit Intent', refund: 'Refund',
+  download: 'Download', share: 'Share', login: 'Login',
   sms_notification: 'SMS Notification', email_notification: 'Email Notification',
-  ghl_notification: 'HighLevel Notification', google_sheet: 'Google Sheet',
+  ghl_notification: 'HighLevel Notification', google_sheet: 'Google Sheet', webhook: 'Webhook',
+  form_completed: 'Form Completed', schedule_meeting: 'Schedule Meeting', deal_won: 'Deal Won',
+  ghl_appointment: 'GHL Appointment', ghl_order: 'GHL Order',
+  ghl_opportunity: 'GHL Opportunity', ghl_opportunity_won: 'GHL Opportunity Won',
+  on_site_visit: 'On-Site Visit', send_quote: 'Send Quote',
+  send_google_review: 'Send Google Review', add_to_referral_program: 'Add to Referral Program',
 };
 
 const STROKE_WIDTHS = [1, 2, 3, 4, 6];
@@ -38,7 +55,7 @@ const WAIT_UNITS: { value: string; label: string }[] = [
   { value: 'weeks', label: 'Weeks' },
 ];
 
-function getEditableLabel(shape: FeedbackBoardShape): string {
+function getEditableLabel(shape: BoardShape): string {
   if (shape.shape_type === 'decision') return parseDecisionContent(shape.content).question;
   if (shape.shape_type === 'wait') return parseWaitContent(shape.content).label ?? '';
   if (shape.shape_type === 'text' || shape.shape_type === 'rectangle' || shape.shape_type === 'ellipse') {
@@ -47,7 +64,7 @@ function getEditableLabel(shape: FeedbackBoardShape): string {
   return parseActionContent(shape.content).label ?? '';
 }
 
-function setEditableLabel(shape: FeedbackBoardShape, next: string): string | null {
+function setEditableLabel(shape: BoardShape, next: string): string | null {
   const trimmed = next.trim();
   if (shape.shape_type === 'decision') {
     const cur = parseDecisionContent(shape.content);
@@ -63,14 +80,14 @@ function setEditableLabel(shape: FeedbackBoardShape, next: string): string | nul
   return serializeActionContent({ label: trimmed || null });
 }
 
-export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: Props) {
+export default function ShapeSideDrawer<T extends BoardShape>({ shape, onUpdate, onDelete, onClose }: Props<T>) {
   const confirm = useConfirm();
   const [content, setContent] = useState(() => getEditableLabel(shape));
   useEffect(() => { setContent(getEditableLabel(shape)); }, [shape.id, shape.content]);
 
   const commitContent = () => {
     const next = setEditableLabel(shape, content);
-    if (next !== (shape.content || null)) onUpdate({ content: next });
+    if (next !== (shape.content || null)) onUpdate({ content: next } as Partial<T>);
   };
 
   const typeLabel = SHAPE_TYPE_LABELS[shape.shape_type] || 'Shape';
@@ -107,14 +124,14 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
-        <Field label={isLabelLike ? 'Label' : 'Content'}>
+        <Field label={shape.shape_type === 'decision' ? 'Question' : isLabelLike ? 'Label' : 'Content'}>
           {isLabelLike ? (
             <input
               value={content}
               onChange={(e) => setContent(e.target.value)}
               onBlur={commitContent}
               onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-              placeholder={typeLabel}
+              placeholder={shape.shape_type === 'decision' ? 'Decision?' : typeLabel}
               className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20"
             />
           ) : (
@@ -138,7 +155,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
                 <button
                   key={hex}
                   type="button"
-                  onClick={() => onUpdate({ color: hex })}
+                  onClick={() => onUpdate({ color: hex } as Partial<T>)}
                   className={`w-6 h-6 rounded-lg border transition-transform ${active ? 'border-ink scale-110' : 'border-edge'}`}
                   style={{ backgroundColor: hex }}
                   title={hex}
@@ -148,7 +165,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
             <input
               type="color"
               value={shape.color || '#2B2B2B'}
-              onChange={(e) => onUpdate({ color: e.target.value })}
+              onChange={(e) => onUpdate({ color: e.target.value } as Partial<T>)}
               className="w-6 h-6 rounded-lg border border-edge cursor-pointer"
               title="Custom color"
             />
@@ -166,14 +183,14 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
                 value={waitData.duration}
                 onChange={(e) => {
                   const n = Math.max(1, Math.min(9999, Number(e.target.value) || 1));
-                  onUpdate({ content: serializeWaitContent({ ...waitData, duration: n }) });
+                  onUpdate({ content: serializeWaitContent({ ...waitData, duration: n }) } as Partial<T>);
                 }}
                 className="w-20 px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20"
               />
               <select
                 value={waitData.unit}
                 onChange={(e) => {
-                  onUpdate({ content: serializeWaitContent({ ...waitData, unit: e.target.value as FeedbackWaitUnit }) });
+                  onUpdate({ content: serializeWaitContent({ ...waitData, unit: e.target.value as FeedbackWaitUnit }) } as Partial<T>);
                 }}
                 className="flex-1 px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20 bg-white"
               >
@@ -195,7 +212,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
                 <button
                   key={w}
                   type="button"
-                  onClick={() => onUpdate({ stroke_width: w })}
+                  onClick={() => onUpdate({ stroke_width: w } as Partial<T>)}
                   className={`h-8 px-2.5 rounded-lg border text-detail flex items-center justify-center transition-colors ${
                     active ? 'border-teal bg-teal/10 text-teal' : 'border-edge text-ink/70 hover:bg-surface'
                   }`}
@@ -207,7 +224,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
             })}
             <button
               type="button"
-              onClick={() => onUpdate({ dashed: !shape.dashed })}
+              onClick={() => onUpdate({ dashed: !shape.dashed } as Partial<T>)}
               className={`ml-auto h-8 px-2.5 rounded-lg border text-detail flex items-center gap-1 transition-colors ${
                 shape.dashed ? 'border-teal bg-teal/10 text-teal' : 'border-edge text-ink/70 hover:bg-surface'
               }`}
@@ -227,7 +244,7 @@ export default function ShapeSideDrawer({ shape, onUpdate, onDelete, onClose }: 
               value={shape.font_size ?? 14}
               onChange={(e) => {
                 const n = Number(e.target.value);
-                onUpdate({ font_size: Number.isFinite(n) ? n : null });
+                onUpdate({ font_size: Number.isFinite(n) ? n : null } as Partial<T>);
               }}
               className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20"
             />

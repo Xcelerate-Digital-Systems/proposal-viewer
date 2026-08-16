@@ -4,23 +4,29 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Trash2 } from 'lucide-react';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
-import type { FeedbackBoardNote } from '@/lib/supabase';
-import { NOTE_COLORS } from './nodes/StickyNoteNode';
+import { NOTE_COLORS } from '@/components/admin/feedback/board/nodes/StickyNoteNode';
 
-interface Props {
-  note: FeedbackBoardNote;
-  onUpdate: (patch: Partial<FeedbackBoardNote>) => void;
+export interface BoardNote {
+  id: string;
+  content: string;
+  color: string;
+  font_size: number | null;
+}
+
+interface Props<T extends BoardNote> {
+  note: T;
+  onUpdate: (patch: Partial<T>) => void;
   onDelete: () => void;
   onClose: () => void;
 }
 
-export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Props) {
+export default function NoteSideDrawer<T extends BoardNote>({ note, onUpdate, onDelete, onClose }: Props<T>) {
   const confirm = useConfirm();
   const [content, setContent] = useState(note.content || '');
   useEffect(() => { setContent(note.content || ''); }, [note.id]);
 
   const commitContent = () => {
-    if ((content || '') !== (note.content || '')) onUpdate({ content });
+    if ((content || '') !== (note.content || '')) onUpdate({ content } as Partial<T>);
   };
 
   return (
@@ -68,7 +74,7 @@ export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Pr
                 <button
                   key={c.value}
                   type="button"
-                  onClick={() => onUpdate({ color: c.value })}
+                  onClick={() => onUpdate({ color: c.value } as Partial<T>)}
                   className={`w-7 h-7 rounded-lg border transition-transform ${active ? 'border-ink scale-110' : 'border-edge'}`}
                   style={{ backgroundColor: c.value }}
                   title={c.label}
@@ -86,7 +92,7 @@ export default function NoteSideDrawer({ note, onUpdate, onDelete, onClose }: Pr
             value={note.font_size ?? 16}
             onChange={(e) => {
               const n = Number(e.target.value);
-              onUpdate({ font_size: Number.isFinite(n) ? n : null });
+              onUpdate({ font_size: Number.isFinite(n) ? n : null } as Partial<T>);
             }}
             className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20"
           />
