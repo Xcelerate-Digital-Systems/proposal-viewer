@@ -67,6 +67,7 @@ export default function AccessTokenPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<WizardStep>('landing');
+  const [loaderDone, setLoaderDone] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -93,16 +94,43 @@ export default function AccessTokenPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  if (loading) {
-    const fallbackBranding = {
-      accent_color: '#017C87',
-      bg_primary: '#01434A',
-      bg_secondary: '#141414',
-      sidebar_text_color: '#ffffff',
-    };
+  // Dismiss loader once data has loaded and ViewerLoader's min display time has passed
+  useEffect(() => {
+    if (!loading && data && !loaderDone) {
+      const timer = setTimeout(() => setLoaderDone(true), 1400);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, data, loaderDone]);
+
+  // Build branding for the loader — use real agency branding once data arrives, fallback before
+  const loaderBranding = data?.agency
+    ? {
+        name: data.agency.name,
+        accent_color: data.agency.accent_color || '#017C87',
+        bg_primary: data.agency.bg_primary || '#01434A',
+        bg_secondary: data.agency.bg_secondary || '#141414',
+        sidebar_text_color: '#ffffff',
+        logo_url: data.agency.logo_url,
+        font_heading: data.agency.font_heading,
+        font_body: data.agency.font_body,
+      }
+    : {
+        accent_color: '#0f0f0f',
+        bg_primary: '#0f0f0f',
+        bg_secondary: '#0f0f0f',
+        sidebar_text_color: '#ffffff',
+      };
+
+  const bgColor = loaderBranding.bg_secondary || loaderBranding.bg_primary || '#0f0f0f';
+
+  if (!loaderDone) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#141414' }}>
-        <ViewerLoader branding={fallbackBranding as never} loading={true} label="Loading…" />
+      <div className="min-h-screen" style={{ backgroundColor: bgColor }}>
+        <ViewerLoader
+          branding={loaderBranding as never}
+          loading={loading}
+          label="Loading…"
+        />
       </div>
     );
   }
