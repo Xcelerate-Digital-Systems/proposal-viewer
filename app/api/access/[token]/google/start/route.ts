@@ -30,7 +30,8 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid platform parameter' }, { status: 400 });
   }
 
-  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const isAds = platform === 'google_ads';
+  const clientId = (isAds ? process.env.GOOGLE_ADS_CLIENT_ID : null) ?? process.env.GOOGLE_CLIENT_ID;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '');
   if (!clientId || !appUrl) {
     return NextResponse.json({ error: 'Google connector is not configured' }, { status: 500 });

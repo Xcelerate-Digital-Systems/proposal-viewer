@@ -35,10 +35,15 @@ export async function GET(req: NextRequest) {
   }
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
-  if (!appUrl || !clientId || !clientSecret) {
+  // We need to peek at the state to determine the platform before we can pick creds,
+  // but we also need creds to proceed. Resolve both client ID sets upfront.
+  const defaultClientId = process.env.GOOGLE_CLIENT_ID;
+  const defaultClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const adsClientId = process.env.GOOGLE_ADS_CLIENT_ID;
+  const adsClientSecret = process.env.GOOGLE_ADS_CLIENT_SECRET;
+
+  if (!appUrl || !defaultClientId || !defaultClientSecret) {
     return NextResponse.json({ error: 'Google connector not configured' }, { status: 500 });
   }
 
@@ -88,6 +93,9 @@ export async function GET(req: NextRequest) {
     .eq('state_hash', stateHash);
 
   const platform = stateRow.platform as AccessPlatform;
+  const isAds = platform === 'google_ads';
+  const clientId = (isAds && adsClientId) ? adsClientId : defaultClientId;
+  const clientSecret = (isAds && adsClientSecret) ? adsClientSecret : defaultClientSecret;
   const redirectUri = `${appUrl}/api/auth/google/callback`;
 
   // Exchange code for tokens
