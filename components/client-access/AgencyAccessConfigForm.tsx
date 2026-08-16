@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Save, Link2, Unlink, CheckCircle2 } from 'lucide-react';
+import { Save, Link2, Unlink, CheckCircle2, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { authFetch } from '@/lib/auth-fetch';
+import { useSearchParams } from 'next/navigation';
 
 interface ConfigData {
   meta_business_id: string | null;
@@ -17,7 +18,13 @@ interface ConfigData {
   wordpress_admin_email: string;
 }
 
+interface MetaBusiness {
+  id: string;
+  name: string;
+}
+
 export default function AgencyAccessConfigForm() {
+  const searchParams = useSearchParams();
   const [config, setConfig] = useState<ConfigData>({
     meta_business_id: null,
     meta_business_name: null,
@@ -35,6 +42,23 @@ export default function AgencyAccessConfigForm() {
   const [error, setError] = useState<string | null>(null);
   const [connectingMeta, setConnectingMeta] = useState(false);
   const [connectingGoogle, setConnectingGoogle] = useState(false);
+  const [bmPickerOpen, setBmPickerOpen] = useState(false);
+  const [availableBusinesses, setAvailableBusinesses] = useState<MetaBusiness[]>([]);
+  const [selectingBm, setSelectingBm] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (searchParams.get('meta_pick_bm') === '1') {
+      const bmParam = searchParams.get('meta_businesses') || '';
+      const parsed = bmParam.split('|').filter(Boolean).map((entry) => {
+        const colonIdx = entry.indexOf(':');
+        return { id: entry.slice(0, colonIdx), name: entry.slice(colonIdx + 1) };
+      }).filter((b) => b.id && b.name);
+      if (parsed.length > 0) {
+        setAvailableBusinesses(parsed);
+        setBmPickerOpen(true);
+      }
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     authFetch('/api/agency-access-config')
@@ -55,6 +79,35 @@ export default function AgencyAccessConfigForm() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const handleSelectBm = async (bm: MetaBusiness) => {
+    setSelectingBm(bm.id);
+    try {
+      const res = await authFetch('/api/agency-access-config/meta/select-bm', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ meta_business_id: bm.id, meta_business_name: bm.name }),
+      });
+      if (!res.ok) {
+        setError('Failed to select Business Manager');
+        return;
+      }
+      setConfig((prev) => ({
+        ...prev,
+        meta_business_id: bm.id,
+        meta_business_name: bm.name,
+      }));
+      setBmPickerOpen(false);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('meta_pick_bm');
+      url.searchParams.delete('meta_businesses');
+      window.history.replaceState({}, '', url.toString());
+    } catch {
+      setError('Failed to select Business Manager');
+    } finally {
+      setSelectingBm(null);
+    }
+  };
 
   const handleConnectMeta = async () => {
     setConnectingMeta(true);
@@ -286,6 +339,48 @@ export default function AgencyAccessConfigForm() {
       </div>
 
       {error && <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">{error}</p>}
+
+      {bmPickerOpen && availableBusinesses.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-surface border border-edge rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-9 h-9 rounded-lg bg-[#1877F2]/10 flex items-center justify-center">
+                <Building2 size={18} className="text-[#1877F2]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-ink">Select Business Manager</h3>
+                <p className="text-xs text-muted mt-0.5">Multiple Business Managers found. Choose the one to use for client access requests.</p>
+              </div>
+            </div>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {availableBusinesses.map((bm) => (
+                <button
+                  key={bm.id}
+                  onClick={() => handleSelectBm(bm)}
+                  disabled={selectingBm !== null}
+                  className="w-full text-left px-4 py-3 rounded-xl border border-edge hover:border-teal/40 hover:bg-teal/5 transition-colors disabled:opacity-50"
+                >
+                  <p className="text-sm font-medium text-ink">{bm.name}</p>
+                  <p className="text-xs text-muted mt-0.5">ID: {bm.id}</p>
+                  {selectingBm === bm.id && <p className="text-xs text-teal mt-1">Selecting…</p>}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => {
+                setBmPickerOpen(false);
+                const url = new URL(window.location.href);
+                url.searchParams.delete('meta_pick_bm');
+                url.searchParams.delete('meta_businesses');
+                window.history.replaceState({}, '', url.toString());
+              }}
+              className="mt-4 w-full text-center text-xs text-muted hover:text-ink transition-colors py-2"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

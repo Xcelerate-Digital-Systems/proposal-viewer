@@ -85,9 +85,27 @@ export async function GET(req: NextRequest) {
   }
 
   const businesses = await fetchBusinesses(longLivedToken).catch(() => []);
-  const primaryBm = businesses[0] ?? null;
-
   const encryptedToken = encryptToken(longLivedToken);
+
+  if (businesses.length > 1) {
+    // Multiple BMs — store token + user info but don't pick a BM yet
+    await supabase
+      .from('agency_access_config')
+      .upsert({
+        company_id: stateRow.company_id,
+        meta_business_id: null,
+        meta_business_name: null,
+        meta_user_id: metaUser.id,
+        meta_user_name: metaUser.name ?? null,
+        meta_token_encrypted: encryptedToken,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'company_id' });
+
+    const bmList = businesses.map((b) => `${b.id}:${b.name}`).join('|');
+    return settingsRedirect(appUrl, { meta_pick_bm: '1', meta_businesses: bmList });
+  }
+
+  const primaryBm = businesses[0] ?? null;
 
   await supabase
     .from('agency_access_config')

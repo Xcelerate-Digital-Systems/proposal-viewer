@@ -32,7 +32,8 @@ function ClientAccessContent({
   companyId: string;
   isAgencyAdmin: boolean;
 }) {
-  const [activeTab, setActiveTab] = useState<TabKey>('requests');
+  const initialTab = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tab') === 'settings' ? 'settings' : 'requests';
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
   const [showCreate, setShowCreate] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [universalToken, setUniversalToken] = useState<string | null>(null);
