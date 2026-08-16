@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Save, Link2, Unlink, CheckCircle2, Building2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Save, Link2, Unlink, CheckCircle2, ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { authFetch } from '@/lib/auth-fetch';
-import { useSearchParams } from 'next/navigation';
 
 interface ConfigData {
   meta_business_id: string | null;
   meta_business_name: string | null;
+  meta_user_id: string | null;
   meta_user_name: string | null;
   google_mcc_id: string | null;
   google_mcc_name: string | null;
@@ -24,10 +24,10 @@ interface MetaBusiness {
 }
 
 export default function AgencyAccessConfigForm() {
-  const searchParams = useSearchParams();
   const [config, setConfig] = useState<ConfigData>({
     meta_business_id: null,
     meta_business_name: null,
+    meta_user_id: null,
     meta_user_name: null,
     google_mcc_id: null,
     google_mcc_name: null,
@@ -42,23 +42,11 @@ export default function AgencyAccessConfigForm() {
   const [error, setError] = useState<string | null>(null);
   const [connectingMeta, setConnectingMeta] = useState(false);
   const [connectingGoogle, setConnectingGoogle] = useState(false);
-  const [bmPickerOpen, setBmPickerOpen] = useState(false);
-  const [availableBusinesses, setAvailableBusinesses] = useState<MetaBusiness[]>([]);
-  const [selectingBm, setSelectingBm] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (searchParams.get('meta_pick_bm') === '1') {
-      const bmParam = searchParams.get('meta_businesses') || '';
-      const parsed = bmParam.split('|').filter(Boolean).map((entry) => {
-        const colonIdx = entry.indexOf(':');
-        return { id: entry.slice(0, colonIdx), name: entry.slice(colonIdx + 1) };
-      }).filter((b) => b.id && b.name);
-      if (parsed.length > 0) {
-        setAvailableBusinesses(parsed);
-        setBmPickerOpen(true);
-      }
-    }
-  }, [searchParams]);
+  // BM picker state
+  const [businesses, setBusinesses] = useState<MetaBusiness[]>([]);
+  const [loadingBusinesses, setLoadingBusinesses] = useState(false);
+  const [savingBm, setSavingBm] = useState(false);
 
   useEffect(() => {
     authFetch('/api/agency-access-config')
@@ -67,6 +55,7 @@ export default function AgencyAccessConfigForm() {
         setConfig({
           meta_business_id: data.meta_business_id || null,
           meta_business_name: data.meta_business_name || null,
+          meta_user_id: data.meta_user_id || null,
           meta_user_name: data.meta_user_name || null,
           google_mcc_id: data.google_mcc_id || null,
           google_mcc_name: data.google_mcc_name || null,
@@ -80,8 +69,35 @@ export default function AgencyAccessConfigForm() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleSelectBm = async (bm: MetaBusiness) => {
-    setSelectingBm(bm.id);
+  const metaConnected = !!config.meta_user_id;
+  const googleConnected = !!config.google_analytics_email;
+
+  const fetchBusinesses = useCallback(async () => {
+    setLoadingBusinesses(true);
+    try {
+      const res = await authFetch('/api/agency-access-config/meta/businesses');
+      if (res.ok) {
+        const data = await res.json();
+        setBusinesses(data.businesses || []);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingBusinesses(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (metaConnected) {
+      fetchBusinesses();
+    }
+  }, [metaConnected, fetchBusinesses]);
+
+  const handleSelectBm = async (bmId: string) => {
+    const bm = businesses.find((b) => b.id === bmId);
+    if (!bm) return;
+    setSavingBm(true);
+    setError(null);
     try {
       const res = await authFetch('/api/agency-access-config/meta/select-bm', {
         method: 'PUT',
@@ -89,7 +105,7 @@ export default function AgencyAccessConfigForm() {
         body: JSON.stringify({ meta_business_id: bm.id, meta_business_name: bm.name }),
       });
       if (!res.ok) {
-        setError('Failed to select Business Manager');
+        setError('Failed to save Business Manager selection');
         return;
       }
       setConfig((prev) => ({
@@ -97,15 +113,10 @@ export default function AgencyAccessConfigForm() {
         meta_business_id: bm.id,
         meta_business_name: bm.name,
       }));
-      setBmPickerOpen(false);
-      const url = new URL(window.location.href);
-      url.searchParams.delete('meta_pick_bm');
-      url.searchParams.delete('meta_businesses');
-      window.history.replaceState({}, '', url.toString());
     } catch {
-      setError('Failed to select Business Manager');
+      setError('Failed to save Business Manager selection');
     } finally {
-      setSelectingBm(null);
+      setSavingBm(false);
     }
   };
 
@@ -141,8 +152,10 @@ export default function AgencyAccessConfigForm() {
         ...prev,
         meta_business_id: null,
         meta_business_name: null,
+        meta_user_id: null,
         meta_user_name: null,
       }));
+      setBusinesses([]);
     } catch {
       setError('Failed to disconnect');
     } finally {
@@ -226,9 +239,6 @@ export default function AgencyAccessConfigForm() {
     return <div className="text-sm text-dim py-4">Loading configuration…</div>;
   }
 
-  const metaConnected = !!config.meta_business_id;
-  const googleConnected = !!config.google_analytics_email;
-
   return (
     <div className="space-y-6">
       {/* Meta */}
@@ -244,11 +254,10 @@ export default function AgencyAccessConfigForm() {
               <h4 className="text-sm font-semibold text-ink">Meta Business Manager</h4>
               {metaConnected ? (
                 <p className="text-xs text-muted mt-0.5">
-                  Connected: <span className="text-ink font-medium">{config.meta_business_name || config.meta_business_id}</span>
-                  {config.meta_user_name && <span className="text-dim"> · {config.meta_user_name}</span>}
+                  Connected as <span className="text-ink font-medium">{config.meta_user_name || config.meta_user_id}</span>
                 </p>
               ) : (
-                <p className="text-xs text-muted mt-0.5">Connect your Meta Business Manager to receive client ad account access</p>
+                <p className="text-xs text-muted mt-0.5">Connect your Meta account to receive client ad account access</p>
               )}
             </div>
           </div>
@@ -265,6 +274,43 @@ export default function AgencyAccessConfigForm() {
             </Button>
           )}
         </div>
+
+        {/* BM Dropdown — shown after connecting */}
+        {metaConnected && (
+          <div className="mt-4 pt-4 border-t border-edge">
+            <label className="block text-xs font-medium text-muted mb-1.5">Select Business Manager</label>
+            {loadingBusinesses ? (
+              <div className="flex items-center gap-2 text-xs text-dim py-2">
+                <Loader2 size={14} className="animate-spin" />
+                Loading Business Managers…
+              </div>
+            ) : businesses.length === 0 ? (
+              <p className="text-xs text-dim py-2">No Business Managers found on this account.</p>
+            ) : (
+              <div className="relative">
+                <select
+                  value={config.meta_business_id || ''}
+                  onChange={(e) => handleSelectBm(e.target.value)}
+                  disabled={savingBm}
+                  className="w-full appearance-none px-3 py-2 pr-8 rounded-xl bg-surface border border-edge text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 disabled:opacity-50"
+                >
+                  <option value="">— Select —</option>
+                  {businesses.map((bm) => (
+                    <option key={bm.id} value={bm.id}>
+                      {bm.name} ({bm.id})
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+              </div>
+            )}
+            {config.meta_business_id && (
+              <p className="text-xs text-emerald-600 mt-1.5">
+                Using: <span className="font-medium">{config.meta_business_name}</span>
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Google */}
@@ -339,48 +385,6 @@ export default function AgencyAccessConfigForm() {
       </div>
 
       {error && <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">{error}</p>}
-
-      {bmPickerOpen && availableBusinesses.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-surface border border-edge rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-[#1877F2]/10 flex items-center justify-center">
-                <Building2 size={18} className="text-[#1877F2]" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-ink">Select Business Manager</h3>
-                <p className="text-xs text-muted mt-0.5">Multiple Business Managers found. Choose the one to use for client access requests.</p>
-              </div>
-            </div>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {availableBusinesses.map((bm) => (
-                <button
-                  key={bm.id}
-                  onClick={() => handleSelectBm(bm)}
-                  disabled={selectingBm !== null}
-                  className="w-full text-left px-4 py-3 rounded-xl border border-edge hover:border-teal/40 hover:bg-teal/5 transition-colors disabled:opacity-50"
-                >
-                  <p className="text-sm font-medium text-ink">{bm.name}</p>
-                  <p className="text-xs text-muted mt-0.5">ID: {bm.id}</p>
-                  {selectingBm === bm.id && <p className="text-xs text-teal mt-1">Selecting…</p>}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => {
-                setBmPickerOpen(false);
-                const url = new URL(window.location.href);
-                url.searchParams.delete('meta_pick_bm');
-                url.searchParams.delete('meta_businesses');
-                window.history.replaceState({}, '', url.toString());
-              }}
-              className="mt-4 w-full text-center text-xs text-muted hover:text-ink transition-colors py-2"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
