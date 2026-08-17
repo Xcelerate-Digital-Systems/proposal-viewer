@@ -119,6 +119,20 @@ export async function GET(req: NextRequest) {
   const encryptedRefreshToken = refreshToken ? encryptToken(refreshToken) : null;
   const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
+  // Fetch the signed-in user's email for the "Connected as" panel
+  let googleEmail: string | null = null;
+  try {
+    const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (userRes.ok) {
+      const userInfo = await userRes.json() as { email?: string };
+      googleEmail = userInfo.email ?? null;
+    }
+  } catch {
+    // Non-critical — continue without email
+  }
+
   // Get agency config for email/MCC ID
   const { data: accessRequest } = await supabase
     .from('client_access_requests')
@@ -182,6 +196,8 @@ export async function GET(req: NextRequest) {
       grantStatus = 'failed';
       metadata = { error: msg };
     }
+
+    if (googleEmail) metadata.connected_email = googleEmail;
 
     console.log(`[google-cb] Grant update: platform=${gPlatform}, status=${grantStatus}, account=${accountName}`);
 
