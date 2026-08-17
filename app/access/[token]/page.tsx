@@ -237,15 +237,17 @@ export default function AccessTokenPage() {
     return g && (g.status === 'granted' || g.status === 'self_reported' || g.status === 'request_sent');
   });
 
-  return (
-    <WizardShell agency={agency} fonts={fonts}>
-      {/* Step indicator */}
-      <StepIndicator
-        currentStep={step === 'connect' ? 1 : step === 'grant' ? 2 : 3}
-        steps={['Connect Accounts', 'Grant Access', 'Access Status']}
-        accentColor={accentColor}
-      />
+  const currentStepNum = step === 'connect' ? 1 : step === 'grant' ? 2 : 3;
 
+  return (
+    <WizardShell agency={agency} fonts={fonts} sidebar={
+      <StepSidebar
+        currentStep={currentStepNum}
+        accentColor={accentColor}
+        request={request}
+        grants={grants}
+      />
+    }>
       {step === 'connect' && (
         <ConnectStep
           token={token}
@@ -289,10 +291,11 @@ export default function AccessTokenPage() {
 
 /* ========== Shell ========== */
 
-function WizardShell({ agency, fonts, children }: {
+function WizardShell({ agency, fonts, children, sidebar }: {
   agency: AgencyInfo;
   fonts: string[];
   children: React.ReactNode;
+  sidebar?: React.ReactNode;
 }) {
   const accentColor = agency.accent_color || '#017C87';
   const bgPrimary = agency.bg_primary || '#01434A';
@@ -317,9 +320,22 @@ function WizardShell({ agency, fonts, children }: {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
-        {children}
-      </div>
+      {sidebar ? (
+        <div className="max-w-5xl mx-auto px-4 py-8 sm:py-12">
+          <div className="flex gap-8">
+            <div className="hidden md:block w-[260px] shrink-0">
+              {sidebar}
+            </div>
+            <div className="flex-1 min-w-0">
+              {children}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
+          {children}
+        </div>
+      )}
 
       <div className="pb-6 text-center">
         <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400 mb-2">
@@ -332,39 +348,128 @@ function WizardShell({ agency, fonts, children }: {
   );
 }
 
-/* ========== Step Indicator ========== */
+/* ========== Step Sidebar ========== */
 
-function StepIndicator({ currentStep, steps, accentColor }: {
+function StepSidebar({ currentStep, accentColor, request, grants }: {
   currentStep: number;
-  steps: string[];
   accentColor: string;
+  request: RequestData['request'];
+  grants: Grant[];
 }) {
+  const grantByPlatform = new Map<AccessPlatform, Grant>();
+  for (const g of grants) grantByPlatform.set(g.platform, g);
+
+  const googlePlatforms = request.platforms.filter((p) => p.startsWith('google_'));
+  const hasMetaPlatform = request.platforms.includes('meta');
+  const hasWordpress = request.platforms.includes('wordpress');
+
+  const isGoogleConnected = googlePlatforms.some((p) => {
+    const g = grantByPlatform.get(p);
+    return g && g.status !== 'pending' && g.status !== 'failed';
+  });
+  const isMetaConnected = (() => {
+    const g = grantByPlatform.get('meta');
+    return g && g.status !== 'pending' && g.status !== 'failed';
+  })();
+  const isWordPressConnected = (() => {
+    const g = grantByPlatform.get('wordpress');
+    return g && g.status === 'self_reported';
+  })();
+
+  const steps = [
+    {
+      num: 1,
+      label: 'Connect Accounts',
+      subItems: [
+        ...(googlePlatforms.length > 0 ? [{ label: 'Google', done: isGoogleConnected }] : []),
+        ...(hasMetaPlatform ? [{ label: 'Meta', done: isMetaConnected }] : []),
+        ...(hasWordpress ? [{ label: 'WordPress', done: isWordPressConnected }] : []),
+      ],
+    },
+    {
+      num: 2,
+      label: 'Select Your Assets',
+      subItems: [
+        ...googlePlatforms.map((p) => {
+          const g = grantByPlatform.get(p);
+          const done = g && (g.status === 'granted' || g.status === 'request_sent');
+          return { label: PLATFORM_LABELS[p], done: !!done };
+        }),
+        ...(hasMetaPlatform ? [{
+          label: 'Meta',
+          done: (() => { const g = grantByPlatform.get('meta'); return !!(g && (g.status === 'granted' || g.status === 'request_sent')); })(),
+        }] : []),
+        ...(hasWordpress ? [{
+          label: 'WordPress',
+          done: (() => { const g = grantByPlatform.get('wordpress'); return g?.status === 'self_reported'; })(),
+        }] : []),
+      ],
+    },
+    {
+      num: 3,
+      label: 'Review Access Status',
+      subItems: [],
+    },
+  ];
+
   return (
-    <div className="flex items-center justify-center gap-3 mb-8">
-      {steps.map((label, i) => {
-        const stepNum = i + 1;
-        const isActive = stepNum === currentStep;
-        const isDone = stepNum < currentStep;
-        return (
-          <div key={i} className="flex items-center gap-2">
-            {i > 0 && <div className="w-8 h-px" style={{ backgroundColor: isDone || isActive ? accentColor : '#d1d5db' }} />}
-            <div className="flex items-center gap-2">
-              <div
-                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-                style={{
-                  backgroundColor: isDone || isActive ? accentColor : '#e5e7eb',
-                  color: isDone || isActive ? '#fff' : '#6b7280',
-                }}
-              >
-                {isDone ? <Check size={14} /> : stepNum}
+    <div className="bg-white border border-gray-200 rounded-xl p-5 sticky top-8">
+      <div className="space-y-5">
+        {steps.map((s, i) => {
+          const isActive = s.num === currentStep;
+          const isDone = s.num < currentStep;
+
+          return (
+            <div key={s.num}>
+              {/* Step header */}
+              <div className="flex items-start gap-3">
+                <div
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5"
+                  style={{
+                    backgroundColor: isDone || isActive ? accentColor : '#e5e7eb',
+                    color: isDone || isActive ? '#fff' : '#9ca3af',
+                  }}
+                >
+                  {isDone ? <Check size={14} /> : s.num}
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Step {s.num}</p>
+                  <p className={`text-sm font-semibold ${isActive ? 'text-gray-900' : isDone ? 'text-gray-700' : 'text-gray-400'}`}>
+                    {s.label}
+                  </p>
+                </div>
               </div>
-              <span className={`text-sm font-medium ${isActive ? 'text-gray-900' : 'text-gray-400'}`}>
-                {label}
-              </span>
+
+              {/* Sub-items */}
+              {s.subItems.length > 0 && (
+                <div className="ml-10 mt-2 space-y-1.5">
+                  {s.subItems.map((sub) => (
+                    <div key={sub.label} className="flex items-center gap-2">
+                      {sub.done ? (
+                        <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ backgroundColor: accentColor }}>
+                          <Check size={10} className="text-white" />
+                        </div>
+                      ) : (
+                        <div className="w-4 h-4 rounded-full border-2 border-gray-300" />
+                      )}
+                      <span className={`text-xs ${sub.done ? 'text-gray-700' : 'text-gray-400'}`}>
+                        {sub.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Connector line between steps */}
+              {i < steps.length - 1 && (
+                <div className="ml-[13px] mt-2">
+                  <div className="w-px h-4" style={{ backgroundColor: isDone ? accentColor : '#e5e7eb' }} />
+                </div>
+              )}
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -569,9 +674,9 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Sign in to Your Account</h2>
-      <p className="text-sm text-gray-500 text-center mb-6">
-        To grant access to your accounts, please sign in below with your Google account.
+      <h2 className="text-xl font-bold text-gray-900 mb-2">Connect Your Accounts</h2>
+      <p className="text-sm text-gray-500 mb-6">
+        Sign in with your accounts below to get started.
       </p>
 
       {oauthError && (
@@ -762,6 +867,7 @@ function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onN
   // Build platform cards
   const googlePlatforms = request.platforms.filter((p) => p.startsWith('google_'));
   const hasMetaPlatform = request.platforms.includes('meta');
+  const hasWordpress = request.platforms.includes('wordpress');
   const metaGrant = grantByPlatform.get('meta');
   const metaAssets = platformConfig?.meta;
 
@@ -787,8 +893,8 @@ function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onN
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Grant Partner Access</h2>
-      <p className="text-sm text-gray-500 text-center mb-6">
+      <h2 className="text-xl font-bold text-gray-900 mb-2">Select Your Assets</h2>
+      <p className="text-sm text-gray-500 mb-6">
         Select which accounts to grant your agency partner access to.
       </p>
 
@@ -933,6 +1039,24 @@ function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onN
             )}
           </PlatformConnectCard>
         )}
+
+        {/* WordPress section */}
+        {hasWordpress && (
+          <PlatformConnectCard
+            icon={<WordPressCardIcon />}
+            title="WordPress Access"
+            subtitle="Manual setup required"
+            accentColor={accentColor}
+          >
+            <WordPressInstructions
+              token={token}
+              agencyEmail={agency.wordpress_email}
+              status={grantByPlatform.get('wordpress')?.status ?? 'pending'}
+              accentColor={accentColor}
+              onConfirmed={onRefresh}
+            />
+          </PlatformConnectCard>
+        )}
       </div>
 
       <div className="flex justify-between mt-6">
@@ -966,9 +1090,9 @@ function StatusStep({ request, grants, agency, accentColor, allDone, onBack }: {
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Access Status</h2>
-      <p className="text-sm text-gray-500 text-center mb-6">
-        Review the access status for each platform.
+      <h2 className="text-xl font-bold text-gray-900 mb-2">Review Access Status</h2>
+      <p className="text-sm text-gray-500 mb-6">
+        Review the access status for each platform below.
       </p>
 
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
