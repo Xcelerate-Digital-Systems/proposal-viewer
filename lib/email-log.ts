@@ -18,7 +18,9 @@ export type EmailCategory =
   | 'auth'
   | 'integration_health'
   | 'client_access_invite'
-  | 'client_access_granted';
+  | 'client_access_granted'
+  | 'client_access_completed'
+  | 'client_access_expiry';
 
 export interface SendAndLogOptions {
   from: string;

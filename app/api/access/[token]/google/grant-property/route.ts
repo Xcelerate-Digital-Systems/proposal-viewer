@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 import { decryptToken } from '@/lib/connectors/google/token-crypto';
-import { grantGA4Access, grantGTMAccess, grantGBPAccess, grantGSCAccess } from '@/lib/connectors/google/api-client';
+import { grantGA4Access, grantGTMAccess, grantGBPAccess, grantGSCAccess, grantMerchantCenterAccess } from '@/lib/connectors/google/api-client';
+import { PLATFORM_LABELS } from '@/lib/client-access/types';
+import { notifyAccessCompletion } from '@/lib/client-access/notify-completion';
 
 export async function POST(
   req: NextRequest,
@@ -24,7 +26,7 @@ export async function POST(
     return NextResponse.json({ error: 'platform and selected_id required' }, { status: 400 });
   }
 
-  const SUPPORTED_PLATFORMS = ['google_ga4', 'google_gtm', 'google_gbp', 'google_search_console'];
+  const SUPPORTED_PLATFORMS = ['google_ga4', 'google_gtm', 'google_gbp', 'google_search_console', 'google_merchant_center'];
   if (!SUPPORTED_PLATFORMS.includes(platform)) {
     return NextResponse.json({ error: 'Unsupported platform' }, { status: 400 });
   }
@@ -79,12 +81,17 @@ export async function POST(
     if (!sites?.some((s) => s.id === selectedId)) {
       return NextResponse.json({ error: 'Site not in accessible list' }, { status: 400 });
     }
+  } else if (platform === 'google_merchant_center') {
+    const merchants = meta?.merchant_accounts as Array<{ id: string }> | undefined;
+    if (!merchants?.some((m) => m.id === selectedId)) {
+      return NextResponse.json({ error: 'Account not in accessible list' }, { status: 400 });
+    }
   }
 
   // Get agency config for email
   const { data: agencyConfig } = await supabase
     .from('agency_access_config')
-    .select('google_analytics_email, google_gtm_email, google_gbp_email, google_search_console_email')
+    .select('google_analytics_email, google_gtm_email, google_gbp_email, google_search_console_email, google_merchant_center_email')
     .eq('company_id', request.company_id)
     .single();
 
@@ -93,6 +100,7 @@ export async function POST(
     google_gtm: agencyConfig?.google_gtm_email,
     google_gbp: agencyConfig?.google_gbp_email,
     google_search_console: agencyConfig?.google_search_console_email,
+    google_merchant_center: agencyConfig?.google_merchant_center_email,
   };
   const agencyEmail = emailMap[platform];
 
@@ -101,7 +109,7 @@ export async function POST(
       .from('client_access_grants')
       .update({
         status: 'failed',
-        error_message: `Agency ${platform === 'google_ga4' ? 'GA4' : 'GTM'} email not configured`,
+        error_message: `Agency ${PLATFORM_LABELS[platform as keyof typeof PLATFORM_LABELS] || platform} email not configured`,
         updated_at: new Date().toISOString(),
       })
       .eq('id', grant.id);
@@ -162,6 +170,8 @@ export async function POST(
       await grantGBPAccess({ accessToken: clientAccessToken, accountName: selectedId, agencyEmail });
     } else if (platform === 'google_search_console') {
       await grantGSCAccess({ accessToken: clientAccessToken, siteUrl: selectedId, agencyEmail });
+    } else if (platform === 'google_merchant_center') {
+      await grantMerchantCenterAccess({ accessToken: clientAccessToken, merchantId: selectedId, agencyEmail });
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message.slice(0, 500) : 'unknown';
@@ -208,6 +218,11 @@ export async function POST(
     .from('client_access_requests')
     .update({ status: allDone ? 'complete' : 'partial', updated_at: new Date().toISOString() })
     .eq('id', request.id);
+
+  if (allDone) {
+    notifyAccessCompletion({ requestId: request.id, companyId: request.company_id })
+      .catch((err) => console.error('[grant-property] completion notify error:', err));
+  }
 
   return NextResponse.json({ success: true, status: 'granted' });
 }

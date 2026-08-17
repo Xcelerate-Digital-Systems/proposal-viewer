@@ -2,7 +2,7 @@
 
 import {
   Eye, CheckCircle2, MessageSquare, CheckCheck,
-  Send, XCircle, PenLine, AlertCircle, Package, PartyPopper,
+  Send, XCircle, PenLine, AlertCircle, Package, PartyPopper, UserCheck,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -124,5 +124,16 @@ export const REVIEW_WEBHOOK_EVENTS: WebhookEvent[] = [
     label: 'Markup Completed',
     description: 'When a reviewer finishes and submits their markup',
     icon: PartyPopper,
+  },
+];
+
+/* ─── Client Access webhook events ─────────────────────────── */
+
+export const CLIENT_ACCESS_WEBHOOK_EVENTS: WebhookEvent[] = [
+  {
+    key: 'client_access_completed',
+    label: 'Access Completed',
+    description: 'When a client finishes granting access to all requested platforms',
+    icon: UserCheck,
   },
 ];

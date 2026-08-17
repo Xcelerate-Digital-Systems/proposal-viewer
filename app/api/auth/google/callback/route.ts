@@ -9,10 +9,12 @@ import {
   fetchCustomerDetails,
   fetchGBPAccounts,
   fetchGSCSites,
+  fetchMerchantAccounts,
 } from '@/lib/connectors/google/api-client';
 import { encryptToken } from '@/lib/connectors/google/token-crypto';
 import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 import type { AccessPlatform } from '@/lib/client-access/types';
+import { notifyAccessCompletion } from '@/lib/client-access/notify-completion';
 
 export const dynamic = 'force-dynamic';
 
@@ -157,7 +159,7 @@ export async function GET(req: NextRequest) {
     .from('client_access_grants')
     .select('id, platform, status')
     .eq('request_id', stateRow.access_request_id)
-    .in('platform', ['google_ads', 'google_ga4', 'google_gtm', 'google_gbp', 'google_search_console']);
+    .in('platform', ['google_ads', 'google_ga4', 'google_gtm', 'google_gbp', 'google_search_console', 'google_merchant_center']);
 
   const grantsToProcess = (googleGrants ?? []).filter(
     (g) => g.status === 'pending' || g.status === 'failed' || g.id === stateRow.grant_id,
@@ -200,6 +202,12 @@ export async function GET(req: NextRequest) {
       } else if (gPlatform === 'google_search_console') {
         console.log(`[google-cb] GSC grant starting`);
         const result = await handleGSCGrant(accessToken);
+        grantStatus = result.status;
+        accountName = result.accountName;
+        metadata = result.metadata;
+      } else if (gPlatform === 'google_merchant_center') {
+        console.log(`[google-cb] Merchant Center grant starting`);
+        const result = await handleMerchantCenterGrant(accessToken);
         grantStatus = result.status;
         accountName = result.accountName;
         metadata = result.metadata;
@@ -252,6 +260,11 @@ export async function GET(req: NextRequest) {
       updated_at: new Date().toISOString(),
     })
     .eq('id', stateRow.access_request_id);
+
+  if (allDone) {
+    notifyAccessCompletion({ requestId: stateRow.access_request_id, companyId: accessRequest.company_id })
+      .catch((err) => console.error('[google-cb] completion notify error:', err));
+  }
 
   return accessRedirect(appUrl, token, redirectQuery);
 }
@@ -374,6 +387,25 @@ async function handleGSCGrant(
     metadata: {
       gsc_sites: sites.map((s) => ({ id: s.siteUrl, name: s.siteUrl, permissionLevel: s.permissionLevel })),
       needs_site_selection: true,
+    },
+  };
+}
+
+async function handleMerchantCenterGrant(
+  accessToken: string,
+): Promise<{ status: string; accountName: string | null; metadata: Record<string, unknown> }> {
+  const accounts = await fetchMerchantAccounts(accessToken);
+
+  if (accounts.length === 0) {
+    return { status: 'failed', accountName: null, metadata: { error: 'No Merchant Center accounts found' } };
+  }
+
+  return {
+    status: 'oauth_complete',
+    accountName: null,
+    metadata: {
+      merchant_accounts: accounts.map((a) => ({ id: a.id, name: a.name })),
+      needs_account_selection: true,
     },
   };
 }

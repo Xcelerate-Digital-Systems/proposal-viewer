@@ -27,7 +27,7 @@ async function verifyAgencyAdmin(req: NextRequest) {
   return { member, agencyId: member.company_id as string };
 }
 
-const CONFIG_COLUMNS = 'id, company_id, universal_share_token, default_platforms, platform_config, meta_business_id, meta_business_name, meta_user_id, meta_user_name, google_mcc_id, google_mcc_name, google_analytics_email, google_gtm_email, google_gbp_email, google_search_console_email, google_user_name, wordpress_admin_email, created_at, updated_at';
+const CONFIG_COLUMNS = 'id, company_id, universal_share_token, default_platforms, platform_config, meta_business_id, meta_business_name, meta_user_id, meta_user_name, google_mcc_id, google_mcc_name, google_analytics_email, google_gtm_email, google_gbp_email, google_search_console_email, google_merchant_center_email, google_user_name, wordpress_admin_email, created_at, updated_at';
 
 /* ------------------------------------------------------------------ */
 /*  GET /api/agency-access-config                                      */
@@ -86,6 +86,7 @@ export async function PUT(req: NextRequest) {
   if ('google_gtm_email' in body) allowedFields.google_gtm_email = body.google_gtm_email?.trim() || null;
   if ('google_gbp_email' in body) allowedFields.google_gbp_email = body.google_gbp_email?.trim() || null;
   if ('google_search_console_email' in body) allowedFields.google_search_console_email = body.google_search_console_email?.trim() || null;
+  if ('google_merchant_center_email' in body) allowedFields.google_merchant_center_email = body.google_merchant_center_email?.trim() || null;
   if ('wordpress_admin_email' in body) allowedFields.wordpress_admin_email = body.wordpress_admin_email?.trim() || null;
   if ('default_platforms' in body && Array.isArray(body.default_platforms)) {
     allowedFields.default_platforms = body.default_platforms;

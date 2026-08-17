@@ -5,6 +5,7 @@ export type AccessPlatform =
   | 'google_ads'
   | 'google_gbp'
   | 'google_search_console'
+  | 'google_merchant_center'
   | 'wordpress';
 
 export type AccessRequestStatus =
@@ -73,6 +74,7 @@ export interface AgencyAccessConfig {
   google_gtm_email: string | null;
   google_gbp_email: string | null;
   google_search_console_email: string | null;
+  google_merchant_center_email: string | null;
   google_user_name: string | null;
   wordpress_admin_email: string | null;
   created_at: string;
@@ -97,6 +99,7 @@ export const VALID_PLATFORMS: AccessPlatform[] = [
   'google_ads',
   'google_gbp',
   'google_search_console',
+  'google_merchant_center',
   'wordpress',
 ];
 
@@ -107,5 +110,6 @@ export const PLATFORM_LABELS: Record<AccessPlatform, string> = {
   google_ads: 'Google Ads',
   google_gbp: 'Google Business Profile',
   google_search_console: 'Google Search Console',
+  google_merchant_center: 'Google Merchant Center',
   wordpress: 'WordPress',
 };

@@ -14,6 +14,7 @@ import { registerFunnelTools } from '@/lib/mcp/tools/funnels';
 import { registerWorkspaceTools } from '@/lib/mcp/tools/workspace';
 import { registerDesignTools } from '@/lib/mcp/tools/design';
 import { registerLibraryTools } from '@/lib/mcp/tools/library';
+import { registerClientAccessTools } from '@/lib/mcp/tools/client-access';
 
 const mcpHandler = createMcpHandler(
   (server) => {
@@ -88,6 +89,16 @@ const mcpHandler = createMcpHandler(
 - \`update_funnel_edge\` — edit label, handles, animation, split percent
 - \`delete_funnel_edge\` — remove a connection
 
+### Client Access
+- \`list_access_requests\` — list client access requests (filter by clientId, status)
+- \`get_access_request\` — get a request with all grant details per platform
+- \`create_access_request\` — create a new access link for a client (platforms, optional email invite)
+- \`resend_access_invite\` — resend the invite email for an existing request
+- \`revoke_access_request\` — revoke a link so it can't be used
+- \`delete_access_request\` — permanently delete a request and all grants
+- \`get_access_config\` — read the agency's connected platforms + emails
+- \`update_access_config\` — update agency emails, default platforms
+
 ### Workspace
 - \`get_company\` — company info and branding
 - \`list_team_members\` — team roster
@@ -112,6 +123,7 @@ const mcpHandler = createMcpHandler(
     registerWorkspaceTools(server);
     registerDesignTools(server);
     registerLibraryTools(server);
+    registerClientAccessTools(server);
   },
   {
     capabilities: { tools: {} },

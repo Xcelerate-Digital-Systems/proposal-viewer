@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 import { decryptToken } from '@/lib/connectors/google/token-crypto';
 import { createMccLink, acceptMccLink } from '@/lib/connectors/google/api-client';
+import { notifyAccessCompletion } from '@/lib/client-access/notify-completion';
 
 export async function POST(
   req: NextRequest,
@@ -253,6 +254,11 @@ export async function POST(
     .from('client_access_requests')
     .update({ status: allDone ? 'complete' : 'partial', updated_at: new Date().toISOString() })
     .eq('id', request.id);
+
+  if (allDone) {
+    notifyAccessCompletion({ requestId: request.id, companyId: request.company_id })
+      .catch((err) => console.error('[select-account] completion notify error:', err));
+  }
 
   return NextResponse.json({
     success: true,

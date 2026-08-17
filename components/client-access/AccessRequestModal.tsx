@@ -59,6 +59,9 @@ export default function AccessRequestModal({
     if (googleAssets.google_ads?.enabled) platforms.push('google_ads');
     if (googleAssets.google_analytics?.enabled) platforms.push('google_ga4');
     if (googleAssets.google_tag_manager?.enabled) platforms.push('google_gtm');
+    if (googleAssets.google_business_profile?.enabled) platforms.push('google_gbp');
+    if (googleAssets.google_search_console?.enabled) platforms.push('google_search_console');
+    if (googleAssets.google_merchant_center?.enabled) platforms.push('google_merchant_center');
     if (wordpressEnabled) platforms.push('wordpress');
     return platforms;
   };
@@ -116,7 +119,7 @@ export default function AccessRequestModal({
     if (!recipientEmail.trim()) return;
     setSendingEmail(true);
     try {
-      await authFetch('/api/client-access/send-invite', {
+      const res = await authFetch('/api/client-access/send-invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -126,9 +129,17 @@ export default function AccessRequestModal({
           notes: notes.trim() || null,
         }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Failed to send email');
+        return;
+      }
       setEmailSent(true);
-    } catch { /* link already created */ }
-    finally { setSendingEmail(false); }
+    } catch {
+      setError('Failed to send email');
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   return (

@@ -11,7 +11,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import BusinessDetailsCard from '@/components/admin/company/BusinessDetailsCard';
 import CompanyProfileCard from '@/components/admin/company/CompanyProfileCard';
 import WebhookManager from '@/components/admin/settings/WebhookManager';
-import { WEBHOOK_EVENTS, REVIEW_WEBHOOK_EVENTS } from '@/components/admin/settings/settings-config';
+import { WEBHOOK_EVENTS, REVIEW_WEBHOOK_EVENTS, CLIENT_ACCESS_WEBHOOK_EVENTS } from '@/components/admin/settings/settings-config';
 import ApiKeyManager from '@/components/admin/settings/ApiKeyManager';
 import ConnectedAppsManager from '@/components/admin/settings/ConnectedAppsManager';
 import McpSetupSection from '@/components/admin/settings/McpSetupSection';
@@ -254,6 +254,15 @@ function SettingsContent({ auth }: {
                     <WebhookManager companyId={companyId} events={REVIEW_WEBHOOK_EVENTS} />
                   </DeveloperSection>
                 )}
+
+                {/* Client Access Webhooks */}
+                <DeveloperSection
+                  icon={Webhook}
+                  title="Client Access Webhooks"
+                  description="Receive a notification when a client finishes granting access to all requested platforms."
+                >
+                  <WebhookManager companyId={companyId} events={CLIENT_ACCESS_WEBHOOK_EVENTS} />
+                </DeveloperSection>
 
                 {/* Connected Apps */}
                 <DeveloperSection

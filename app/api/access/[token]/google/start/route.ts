@@ -8,7 +8,7 @@ import type { AccessPlatform } from '@/lib/client-access/types';
 export const dynamic = 'force-dynamic';
 
 const STATE_TTL_SECONDS = 600;
-const GOOGLE_PLATFORMS: AccessPlatform[] = ['google_ga4', 'google_gtm', 'google_ads', 'google_gbp', 'google_search_console'];
+const GOOGLE_PLATFORMS: AccessPlatform[] = ['google_ga4', 'google_gtm', 'google_ads', 'google_gbp', 'google_search_console', 'google_merchant_center'];
 
 export async function GET(
   req: NextRequest,

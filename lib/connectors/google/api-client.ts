@@ -5,6 +5,7 @@ const GTM_BASE = 'https://www.googleapis.com/tagmanager/v2';
 const GOOGLE_ADS_BASE = 'https://googleads.googleapis.com/v25';
 const GBP_BASE = 'https://mybusinessaccountmanagement.googleapis.com/v1';
 const GSC_BASE = 'https://www.googleapis.com/webmasters/v3';
+const MERCHANT_BASE = 'https://merchantapi.googleapis.com/accounts/v1beta';
 
 import type { AccessPlatform } from '@/lib/client-access/types';
 
@@ -24,6 +25,7 @@ const PLATFORM_SCOPES: Record<string, string[]> = {
   google_ads: ['https://www.googleapis.com/auth/adwords'],
   google_gbp: ['https://www.googleapis.com/auth/business.manage'],
   google_search_console: ['https://www.googleapis.com/auth/webmasters'],
+  google_merchant_center: ['https://www.googleapis.com/auth/content'],
 };
 
 export function getScopesForPlatform(platform: AccessPlatform): string[] {
@@ -412,6 +414,54 @@ export async function grantGSCAccess(opts: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ permissionLevel }),
+    },
+  );
+  const text = await res.text();
+  if (!res.ok) {
+    let parsed: unknown;
+    try { parsed = JSON.parse(text); } catch { parsed = text; }
+    throw new GoogleApiError(res.status, parsed);
+  }
+}
+
+// --- Google Merchant Center ---
+
+export interface MerchantAccount {
+  id: string;
+  name: string;
+}
+
+export async function fetchMerchantAccounts(accessToken: string): Promise<MerchantAccount[]> {
+  const json = await googleGet(
+    `${MERCHANT_BASE}/accounts`,
+    accessToken,
+  ) as { accounts?: Array<{ name?: string; accountId?: string; accountName?: string }> };
+
+  return (json.accounts ?? []).map((a) => ({
+    id: a.accountId ?? a.name?.replace('accounts/', '') ?? '',
+    name: a.accountName ?? a.accountId ?? '',
+  })).filter((a) => a.id);
+}
+
+export async function grantMerchantCenterAccess(opts: {
+  accessToken: string;
+  merchantId: string;
+  agencyEmail: string;
+  role?: string;
+}): Promise<void> {
+  const accessRight = opts.role === 'admin' ? 'ADMIN' : 'STANDARD';
+  const res = await fetch(
+    `${MERCHANT_BASE}/accounts/${opts.merchantId}/users`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${opts.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: opts.agencyEmail,
+        accessRights: [accessRight],
+      }),
     },
   );
   const text = await res.text();

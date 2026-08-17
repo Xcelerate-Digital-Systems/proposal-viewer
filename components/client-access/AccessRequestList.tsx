@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Copy, Check, ExternalLink, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import PlatformStatusBadge from './PlatformStatusBadge';
 import { PLATFORM_LABELS, type AccessPlatform, type AccessGrantStatus } from '@/lib/client-access/types';
 import { authFetch } from '@/lib/auth-fetch';
@@ -36,6 +37,7 @@ export default function AccessRequestList({ clientId, refreshKey }: AccessReques
   const [requests, setRequests] = useState<AccessRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   const fetchRequests = useCallback(async () => {
     try {
@@ -66,6 +68,13 @@ export default function AccessRequestList({ clientId, refreshKey }: AccessReques
   };
 
   const deleteRequest = async (id: string) => {
+    const ok = await confirm({
+      title: 'Delete access request?',
+      message: 'This will permanently remove this access request and all associated grant data. This action cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
     const res = await authFetch(`/api/client-access/${id}`, { method: 'DELETE' });
     if (res.ok) {
       setRequests((prev) => prev.filter((r) => r.id !== id));

@@ -1,6 +1,6 @@
 'use client';
 
-import { Facebook, BarChart3, Tag, MonitorPlay, Globe, MapPin, Search } from 'lucide-react';
+import { Facebook, BarChart3, Tag, MonitorPlay, Globe, MapPin, Search, ShoppingCart } from 'lucide-react';
 import type { AccessPlatform, AccessGrantStatus } from '@/lib/client-access/types';
 import { PLATFORM_LABELS } from '@/lib/client-access/types';
 import PlatformStatusBadge from './PlatformStatusBadge';
@@ -12,6 +12,7 @@ const PLATFORM_ICONS: Record<AccessPlatform, typeof Facebook> = {
   google_ads: MonitorPlay,
   google_gbp: MapPin,
   google_search_console: Search,
+  google_merchant_center: ShoppingCart,
   wordpress: Globe,
 };
 
@@ -22,6 +23,7 @@ const PLATFORM_DESCRIPTIONS: Record<AccessPlatform, string> = {
   google_ads: 'Connect your Google Ads account',
   google_gbp: 'Grant access to your Google Business Profile',
   google_search_console: 'Grant access to your Search Console property',
+  google_merchant_center: 'Grant access to your Google Merchant Center account',
   wordpress: 'Add the agency as an admin on your WordPress site',
 };
 

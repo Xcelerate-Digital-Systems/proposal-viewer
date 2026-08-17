@@ -163,7 +163,7 @@ export default function AgencyAccessConfigForm() {
     setSaving(true);
     const fields = platform === 'meta'
       ? { meta_business_id: null, meta_business_name: null }
-      : { google_mcc_id: null, google_mcc_name: null, google_analytics_email: null, google_gtm_email: null, google_gbp_email: null, google_search_console_email: null };
+      : { google_mcc_id: null, google_mcc_name: null, google_analytics_email: null, google_gtm_email: null, google_gbp_email: null, google_search_console_email: null, google_merchant_center_email: null };
     try {
       await authFetch('/api/agency-access-config', {
         method: 'PUT',

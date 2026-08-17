@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
+import { notifyAccessCompletion } from '@/lib/client-access/notify-completion';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,6 +92,18 @@ export async function POST(
       updated_at: new Date().toISOString(),
     })
     .eq('id', request.id);
+
+  if (allDone) {
+    const { data: reqForNotify } = await supabase
+      .from('client_access_requests')
+      .select('company_id')
+      .eq('id', request.id)
+      .single();
+    if (reqForNotify) {
+      notifyAccessCompletion({ requestId: request.id, companyId: reqForNotify.company_id })
+        .catch((err) => console.error('[wp-confirm] completion notify error:', err));
+    }
+  }
 
   return NextResponse.json({ success: true });
 }

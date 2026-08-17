@@ -89,11 +89,12 @@ export default function AccessTokenPage() {
       const googleGtmStatus = searchParams.get('google_gtm');
       const googleGbpStatus = searchParams.get('google_gbp');
       const googleGscStatus = searchParams.get('google_search_console');
+      const googleMcStatus = searchParams.get('google_merchant_center');
       const metaStatus = searchParams.get('meta');
       const reason = searchParams.get('reason');
       // Legacy: old callbacks used ?google= key
       const legacyGoogleStatus = searchParams.get('google');
-      const anyGoogleStatus = googleAdsStatus || googleGa4Status || googleGtmStatus || googleGbpStatus || googleGscStatus || legacyGoogleStatus;
+      const anyGoogleStatus = googleAdsStatus || googleGa4Status || googleGtmStatus || googleGbpStatus || googleGscStatus || googleMcStatus || legacyGoogleStatus;
       const isReturningFromOAuth = !!(anyGoogleStatus || metaStatus);
 
       if (legacyGoogleStatus === 'error' || legacyGoogleStatus === 'denied' ||
@@ -692,7 +693,11 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
     <div>
       <h2 className="text-xl font-bold text-gray-900 mb-2">Sign in to Your Account</h2>
       <p className="text-sm text-gray-500 mb-6">
-        To grant access to your accounts, please sign in below with your Google account.
+        {activePlatform === 'meta'
+          ? 'To grant access to your accounts, please sign in below with your Meta account.'
+          : activePlatform === 'wordpress'
+            ? 'Follow the instructions below to grant WordPress access.'
+            : 'To grant access to your accounts, please sign in below with your Google account.'}
       </p>
 
       {oauthError && (
@@ -873,6 +878,9 @@ function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onN
     } else if (platform === 'google_search_console') {
       const sites = meta?.gsc_sites as Array<{ id: string; name: string }> | undefined;
       name = sites?.find((s) => s.id === selected)?.name || selected;
+    } else if (platform === 'google_merchant_center') {
+      const merchants = meta?.merchant_accounts as Array<{ id: string; name: string }> | undefined;
+      name = merchants?.find((m) => m.id === selected)?.name || selected;
     }
     setGrantingPlatform(platform);
     try {
@@ -953,6 +961,8 @@ function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onN
         items = (meta.gbp_accounts as Array<{ id: string; name: string }>) || [];
       } else if (platform === 'google_search_console' && meta?.needs_site_selection) {
         items = (meta.gsc_sites as Array<{ id: string; name: string }>) || [];
+      } else if (platform === 'google_merchant_center' && meta?.needs_account_selection) {
+        items = (meta.merchant_accounts as Array<{ id: string; name: string }>) || [];
       }
     }
 
