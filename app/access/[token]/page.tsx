@@ -644,7 +644,7 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
   agency: AgencyInfo;
   accentColor: string;
   oauthError: string | null;
-  onRefresh: () => void;
+  onRefresh: () => Promise<void> | void;
   onNext: () => void;
   onDismissError: () => void;
 }) {
@@ -818,7 +818,7 @@ function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onN
   grants: Grant[];
   agency: AgencyInfo;
   accentColor: string;
-  onRefresh: () => void;
+  onRefresh: () => Promise<void> | void;
   onNext: () => void;
   onBack: () => void;
 }) {
@@ -849,7 +849,7 @@ function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onN
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ customer_id: selected, customer_name: account?.name }),
       });
-      if (res.ok) onRefresh();
+      if (res.ok) await onRefresh();
     } catch { /* ignore */ }
     finally { setGrantingPlatform(null); }
   };
@@ -881,7 +881,7 @@ function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onN
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ platform, selected_id: selected, selected_name: name }),
       });
-      if (res.ok) onRefresh();
+      if (res.ok) await onRefresh();
     } catch { /* ignore */ }
     finally { setGrantingPlatform(null); }
   };
