@@ -237,33 +237,34 @@ export async function createMccLink(opts: {
   const devToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
   if (!devToken) throw new Error('GOOGLE_ADS_DEVELOPER_TOKEN not set');
 
-  console.log(`[google-ads] createMccLink: client=${opts.clientCustomerId}, manager=${opts.managerCustomerId}`);
+  // Create a CustomerClientLink from the manager (MCC) side.
+  // The manager invites the client — this is the only way to create the link.
+  // login-customer-id must be the MCC account.
   const res = await fetch(
-    `${GOOGLE_ADS_BASE}/customers/${opts.clientCustomerId}/customerManagerLinks:mutate`,
+    `${GOOGLE_ADS_BASE}/customers/${opts.managerCustomerId}/customerClientLinks:mutate`,
     {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${opts.accessToken}`,
         'developer-token': devToken,
         'Content-Type': 'application/json',
-        'login-customer-id': opts.clientCustomerId,
+        'login-customer-id': opts.managerCustomerId,
       },
       body: JSON.stringify({
-        operations: [
-          {
-            create: {
-              managerCustomer: `customers/${opts.managerCustomerId}`,
-              status: 'PENDING',
-            },
+        operation: {
+          create: {
+            clientCustomer: `customers/${opts.clientCustomerId}`,
+            status: 'PENDING',
           },
-        ],
+        },
       }),
     },
   );
 
-  const json = await res.json();
-  console.log(`[google-ads] createMccLink response: status=${res.status}, body=${JSON.stringify(json).slice(0, 500)}`);
+  const text = await res.text();
+  let json: Record<string, unknown>;
+  try { json = JSON.parse(text); } catch { throw new Error(`createMccLink non-JSON: ${text.slice(0, 300)}`); }
   if (!res.ok) throw new GoogleApiError(res.status, json);
-  const results = json.results ?? json.mutateOperationResponses ?? [];
-  return results[0]?.resourceName ?? results[0]?.customerManagerLinkResult?.resourceName ?? '';
+  const result = json.result as Record<string, string> | undefined;
+  return result?.resourceName ?? '';
 }

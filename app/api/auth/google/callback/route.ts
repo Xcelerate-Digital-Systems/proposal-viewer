@@ -10,7 +10,7 @@ import {
   fetchAccessibleCustomers,
   createMccLink,
 } from '@/lib/connectors/google/api-client';
-import { encryptToken } from '@/lib/connectors/google/token-crypto';
+import { encryptToken, decryptToken } from '@/lib/connectors/google/token-crypto';
 import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 import type { AccessPlatform } from '@/lib/client-access/types';
 
@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
 
   const { data: agencyConfig } = await supabase
     .from('agency_access_config')
-    .select('google_mcc_id, google_analytics_email, google_gtm_email')
+    .select('google_mcc_id, google_analytics_email, google_gtm_email, google_refresh_token_encrypted')
     .eq('company_id', accessRequest.company_id)
     .single();
 
@@ -157,7 +157,7 @@ export async function GET(req: NextRequest) {
       metadata = result.metadata;
     } else if (platform === 'google_ads') {
       console.log(`[google-cb] Google Ads grant starting, mccId=${agencyConfig?.google_mcc_id ?? 'NONE'}`);
-      const result = await handleGoogleAdsGrant(accessToken, agencyConfig?.google_mcc_id);
+      const result = await handleGoogleAdsGrant(accessToken, agencyConfig);
       grantStatus = result.status;
       accountName = result.accountName;
       metadata = result.metadata;
@@ -295,10 +295,13 @@ async function handleGTMGrant(
 }
 
 async function handleGoogleAdsGrant(
-  accessToken: string,
-  mccId: string | null | undefined,
+  clientAccessToken: string,
+  agencyConfig: { google_mcc_id?: string | null; google_refresh_token_encrypted?: string | null } | null,
 ): Promise<{ status: string; accountName: string | null; metadata: Record<string, unknown> }> {
-  const customerResources = await fetchAccessibleCustomers(accessToken);
+  const mccId = agencyConfig?.google_mcc_id;
+
+  // List the client's accessible accounts using their token
+  const customerResources = await fetchAccessibleCustomers(clientAccessToken);
   const customerIds = customerResources.map((r) => r.replace('customers/', ''));
 
   if (customerIds.length === 0) {
@@ -313,11 +316,49 @@ async function handleGoogleAdsGrant(
     };
   }
 
+  // Get the agency's MCC access token to create the link from the manager side
+  const encryptedRefresh = agencyConfig?.google_refresh_token_encrypted;
+  if (!encryptedRefresh) {
+    return {
+      status: 'oauth_complete',
+      accountName: customerIds.join(', '),
+      metadata: { customer_ids: customerIds, error: 'Agency Google account not connected' },
+    };
+  }
+
+  const agencyClientId = process.env.GOOGLE_ADS_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
+  const agencyClientSecret = process.env.GOOGLE_ADS_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET;
+  if (!agencyClientId || !agencyClientSecret) {
+    return { status: 'failed', accountName: customerIds.join(', '), metadata: { error: 'Google OAuth not configured' } };
+  }
+
+  let agencyAccessToken: string;
+  try {
+    const refreshToken = decryptToken(encryptedRefresh);
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: agencyClientId,
+        client_secret: agencyClientSecret,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+      }),
+    });
+    const json = await res.json() as Record<string, unknown>;
+    if (!res.ok) {
+      return { status: 'failed', accountName: customerIds.join(', '), metadata: { error: 'Failed to refresh agency token' } };
+    }
+    agencyAccessToken = json.access_token as string;
+  } catch (e) {
+    return { status: 'failed', accountName: customerIds.join(', '), metadata: { error: `Agency token refresh: ${(e as Error).message}` } };
+  }
+
   let linkedCount = 0;
   const linkErrors: string[] = [];
   for (const customerId of customerIds) {
     try {
-      await createMccLink({ accessToken, clientCustomerId: customerId, managerCustomerId: mccId });
+      await createMccLink({ accessToken: agencyAccessToken, clientCustomerId: customerId, managerCustomerId: mccId });
       linkedCount++;
     } catch (e) {
       const errMsg = e instanceof Error ? e.message.slice(0, 300) : String(e);
