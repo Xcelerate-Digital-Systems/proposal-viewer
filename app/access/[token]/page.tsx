@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Shield, Check, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import GoogleFontLoader from '@/components/viewer/GoogleFontLoader';
 import ViewerLoader from '@/components/viewer/ViewerLoader';
@@ -61,6 +61,7 @@ type WizardStep = 'landing' | 'register' | 'connect' | 'status';
 export default function AccessTokenPage() {
   const params = useParams<{ token: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const token = params.token;
 
   const [data, setData] = useState<AccessData | null>(null);
@@ -68,6 +69,7 @@ export default function AccessTokenPage() {
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<WizardStep>('landing');
   const [loaderDone, setLoaderDone] = useState(false);
+  const [oauthError, setOauthError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -79,11 +81,34 @@ export default function AccessTokenPage() {
       }
       const json = await res.json();
       setData(json);
+
+      // Check if returning from an OAuth callback
+      const googleStatus = searchParams.get('google');
+      const metaStatus = searchParams.get('meta');
+      const reason = searchParams.get('reason');
+      const isReturningFromOAuth = !!(googleStatus || metaStatus);
+
+      if (googleStatus === 'error' || googleStatus === 'denied') {
+        const knownReasons: Record<string, string> = {
+          denied: 'Google sign-in was cancelled.',
+          exchange_failed: 'Failed to connect with Google. Please try again.',
+          missing_code: 'Google sign-in did not complete. Please try again.',
+          state_expired: 'Session expired. Please try again.',
+        };
+        setOauthError(knownReasons[reason || ''] || reason || 'Google connection failed. Please try again.');
+      } else if (metaStatus === 'error' || metaStatus === 'denied') {
+        const knownReasons: Record<string, string> = {
+          denied: 'Meta sign-in was cancelled.',
+          exchange_failed: 'Failed to connect with Meta. Please try again.',
+        };
+        setOauthError(knownReasons[reason || ''] || reason || 'Meta connection failed. Please try again.');
+      }
+
       if (json.type === 'request') {
-        const hasSuccessfulGrant = json.grants?.some((g: Grant) =>
-          g.status === 'granted' || g.status === 'self_reported' || g.status === 'request_sent' || g.status === 'oauth_complete'
+        const hasAttemptedGrant = json.grants?.some((g: Grant) =>
+          g.status !== 'pending'
         );
-        setStep(hasSuccessfulGrant ? 'connect' : 'landing');
+        setStep(hasAttemptedGrant || isReturningFromOAuth ? 'connect' : 'landing');
       } else {
         setStep('landing');
       }
@@ -213,8 +238,10 @@ export default function AccessTokenPage() {
           grants={grants}
           agency={agency}
           accentColor={accentColor}
+          oauthError={oauthError}
           onRefresh={fetchData}
           onNext={() => setStep('status')}
+          onDismissError={() => setOauthError(null)}
         />
       )}
 
@@ -474,14 +501,16 @@ function RegisterStep({ token, defaultPlatforms, accentColor, onRegistered, onBa
 
 /* ========== Connect Step ========== */
 
-function ConnectStep({ token, request, grants, agency, accentColor, onRefresh, onNext }: {
+function ConnectStep({ token, request, grants, agency, accentColor, oauthError, onRefresh, onNext, onDismissError }: {
   token: string;
   request: RequestData['request'];
   grants: Grant[];
   agency: AgencyInfo;
   accentColor: string;
+  oauthError: string | null;
   onRefresh: () => void;
   onNext: () => void;
+  onDismissError: () => void;
 }) {
   const grantByPlatform = new Map<AccessPlatform, Grant>();
   for (const g of grants) grantByPlatform.set(g.platform, g);
@@ -506,6 +535,13 @@ function ConnectStep({ token, request, grants, agency, accentColor, onRefresh, o
       <p className="text-sm text-gray-500 text-center mb-6">
         Sign in to grant <strong>{agency.name}</strong> access to your accounts.
       </p>
+
+      {oauthError && (
+        <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 flex items-start gap-3">
+          <span className="text-red-600 text-sm flex-1">{oauthError}</span>
+          <button onClick={onDismissError} className="text-red-400 hover:text-red-600 text-sm font-medium shrink-0">✕</button>
+        </div>
+      )}
 
       <div className="space-y-4">
         {/* Google Card */}
