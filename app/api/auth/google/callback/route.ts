@@ -219,7 +219,7 @@ export async function GET(req: NextRequest) {
 
 async function handleGA4Grant(
   accessToken: string,
-  agencyEmail: string | null | undefined,
+  _agencyEmail: string | null | undefined,
 ): Promise<{ status: string; accountName: string | null; metadata: Record<string, unknown> }> {
   const summaries = await fetchGA4AccountSummaries(accessToken);
   const properties = summaries.flatMap(
@@ -230,36 +230,20 @@ async function handleGA4Grant(
     return { status: 'failed', accountName: null, metadata: { error: 'No GA4 properties found' } };
   }
 
-  if (!agencyEmail) {
-    return {
-      status: 'oauth_complete',
-      accountName: properties.map((p) => p.displayName).join(', '),
-      metadata: { properties: properties.map((p) => ({ id: p.property, name: p.displayName })), needs_agency_email: true },
-    };
-  }
-
-  let grantedCount = 0;
-  const names: string[] = [];
-  for (const prop of properties) {
-    try {
-      await grantGA4Access({ accessToken, propertyId: prop.property, agencyEmail });
-      grantedCount++;
-      names.push(prop.displayName);
-    } catch (e) {
-      console.error(`[GA4] grant failed for ${prop.property}:`, e);
-    }
-  }
-
+  // Return properties for client to select on the Grant Access step
   return {
-    status: grantedCount > 0 ? 'granted' : 'failed',
-    accountName: names.join(', ') || null,
-    metadata: { properties_granted: grantedCount, total_properties: properties.length },
+    status: 'oauth_complete',
+    accountName: null,
+    metadata: {
+      ga4_properties: properties.map((p) => ({ id: p.property, name: p.displayName, account: p.accountName })),
+      needs_property_selection: true,
+    },
   };
 }
 
 async function handleGTMGrant(
   accessToken: string,
-  agencyEmail: string | null | undefined,
+  _agencyEmail: string | null | undefined,
 ): Promise<{ status: string; accountName: string | null; metadata: Record<string, unknown> }> {
   const accounts = await fetchGTMAccounts(accessToken);
 
@@ -267,30 +251,14 @@ async function handleGTMGrant(
     return { status: 'failed', accountName: null, metadata: { error: 'No GTM accounts found' } };
   }
 
-  if (!agencyEmail) {
-    return {
-      status: 'oauth_complete',
-      accountName: accounts.map((a) => a.name).join(', '),
-      metadata: { accounts: accounts.map((a) => ({ id: a.accountId, name: a.name })), needs_agency_email: true },
-    };
-  }
-
-  let grantedCount = 0;
-  const names: string[] = [];
-  for (const account of accounts) {
-    try {
-      await grantGTMAccess({ accessToken, accountPath: account.path, agencyEmail });
-      grantedCount++;
-      names.push(account.name);
-    } catch (e) {
-      console.error(`[GTM] grant failed for ${account.accountId}:`, e);
-    }
-  }
-
+  // Return accounts for client to select on the Grant Access step
   return {
-    status: grantedCount > 0 ? 'granted' : 'failed',
-    accountName: names.join(', ') || null,
-    metadata: { accounts_granted: grantedCount, total_accounts: accounts.length },
+    status: 'oauth_complete',
+    accountName: null,
+    metadata: {
+      gtm_accounts: accounts.map((a) => ({ id: a.accountId, name: a.name, path: a.path })),
+      needs_account_selection: true,
+    },
   };
 }
 

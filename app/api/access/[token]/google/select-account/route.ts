@@ -111,13 +111,37 @@ export async function POST(
     return NextResponse.json({ error: `Token refresh failed: ${(e as Error).message}` }, { status: 502 });
   }
 
-  // Decrypt the client's stored access token for auto-accepting
+  // Refresh the client's access token for auto-accepting
   let clientAccessToken: string | null = null;
-  if (grant.oauth_token_encrypted) {
+  if (grant.oauth_refresh_token_encrypted) {
+    try {
+      const clientRefresh = decryptToken(grant.oauth_refresh_token_encrypted as string);
+      const clientRes = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: agencyClientId,
+          client_secret: agencyClientSecret,
+          refresh_token: clientRefresh,
+          grant_type: 'refresh_token',
+        }),
+      });
+      const clientJson = await clientRes.json() as Record<string, unknown>;
+      if (clientRes.ok) {
+        clientAccessToken = clientJson.access_token as string;
+        console.log('[select-account] Client token refreshed successfully');
+      } else {
+        console.warn('[select-account] Client token refresh failed:', JSON.stringify(clientJson).slice(0, 200));
+      }
+    } catch (e) {
+      console.warn('[select-account] Could not refresh client token:', (e as Error).message);
+    }
+  } else if (grant.oauth_token_encrypted) {
     try {
       clientAccessToken = decryptToken(grant.oauth_token_encrypted as string);
+      console.log('[select-account] Using stored client access token (no refresh token available)');
     } catch {
-      console.warn('[select-account] Could not decrypt client token, will skip auto-accept');
+      console.warn('[select-account] Could not decrypt client token');
     }
   }
 
@@ -130,23 +154,31 @@ export async function POST(
     const name = customerNames[customerId] || customerId;
     try {
       // 1. Manager creates PENDING link
+      console.log(`[select-account] Creating MCC link: manager=${agencyConfig.google_mcc_id} -> client=${customerId}`);
       await createMccLink({
         accessToken: agencyAccessToken,
         clientCustomerId: customerId,
         managerCustomerId: agencyConfig.google_mcc_id,
       });
+      console.log(`[select-account] MCC link created for ${customerId}`);
 
       // 2. Auto-accept using client's token
       if (clientAccessToken) {
+        // Brief delay to allow the link to propagate
+        await new Promise((resolve) => setTimeout(resolve, 1500));
         try {
+          console.log(`[select-account] Auto-accepting link for ${customerId}...`);
           await acceptMccLink({
             clientAccessToken,
             clientCustomerId: customerId,
             managerCustomerId: agencyConfig.google_mcc_id,
           });
+          console.log(`[select-account] Auto-accept succeeded for ${customerId}`);
         } catch (e) {
-          console.warn(`[select-account] Auto-accept failed for ${customerId}, link remains PENDING:`, (e as Error).message);
+          console.warn(`[select-account] Auto-accept failed for ${customerId}:`, (e as Error).message);
         }
+      } else {
+        console.warn(`[select-account] No client token available, skipping auto-accept for ${customerId}`);
       }
 
       linked.push(customerId);

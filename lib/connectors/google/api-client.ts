@@ -301,10 +301,14 @@ export async function acceptMccLink(opts: {
   let searchJson: Record<string, unknown>;
   try { searchJson = JSON.parse(searchText); } catch { throw new Error(`acceptMccLink search non-JSON: ${searchText.slice(0, 300)}`); }
 
-  const results = searchJson.results as Array<{ customerManagerLink?: { resourceName?: string } }> | undefined;
+  const results = searchJson.results as Array<{ customerManagerLink?: { resourceName?: string; status?: string } }> | undefined;
+  console.log(`[acceptMccLink] Search returned ${results?.length ?? 0} results for manager=${opts.managerCustomerId} on client=${opts.clientCustomerId}`);
+  if (results?.length) {
+    console.log(`[acceptMccLink] First result:`, JSON.stringify(results[0]));
+  }
   const linkResourceName = results?.[0]?.customerManagerLink?.resourceName;
   if (!linkResourceName) {
-    throw new Error('No pending manager link found to accept');
+    throw new Error(`No pending manager link found to accept (${results?.length ?? 0} results returned)`);
   }
 
   // Accept the link by updating status to ACTIVE
