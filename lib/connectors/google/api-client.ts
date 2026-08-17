@@ -178,7 +178,7 @@ export async function fetchCustomerDetails(
   const devToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
   if (!devToken) throw new Error('GOOGLE_ADS_DEVELOPER_TOKEN not set');
 
-  const res = await fetch(`${GOOGLE_ADS_BASE}/customers/${customerId}:searchStream`, {
+  const res = await fetch(`${GOOGLE_ADS_BASE}/customers/${customerId}/googleAds:search`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -191,10 +191,14 @@ export async function fetchCustomerDetails(
     }),
   });
 
-  const json = await res.json();
+  const text = await res.text();
   if (!res.ok) return null;
 
-  const row = json[0]?.results?.[0]?.customer;
+  let json: Record<string, unknown>;
+  try { json = JSON.parse(text); } catch { return null; }
+
+  const results = json.results as Array<{ customer?: { id?: string | number; descriptiveName?: string; manager?: boolean } }> | undefined;
+  const row = results?.[0]?.customer;
   if (!row) return null;
   return {
     resourceName: `customers/${row.id}`,

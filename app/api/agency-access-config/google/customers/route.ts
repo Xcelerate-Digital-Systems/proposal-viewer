@@ -6,78 +6,91 @@ import { decryptToken } from '@/lib/connectors/google/token-crypto';
 import { fetchAccessibleCustomers, fetchCustomerDetails } from '@/lib/connectors/google/api-client';
 
 export async function GET(req: NextRequest) {
-  const auth = await getAuthContext(req);
-  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const { member, companyId } = auth;
-  if (member.role !== 'owner' && member.role !== 'admin' && !member.is_super_admin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
-
-  const limited = await authRateLimit(companyId, 'agency-access-config');
-  if (limited) return limited;
-
-  const supabase = createServiceClient();
-  const { data: config } = await supabase
-    .from('agency_access_config')
-    .select('google_refresh_token_encrypted')
-    .eq('company_id', companyId)
-    .maybeSingle();
-
-  if (!config?.google_refresh_token_encrypted) {
-    return NextResponse.json({ error: 'Google not connected' }, { status: 404 });
-  }
-
-  let refreshToken: string;
   try {
-    refreshToken = decryptToken(config.google_refresh_token_encrypted);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : 'unknown';
-    return NextResponse.json({ error: 'Failed to decrypt token', detail: msg }, { status: 500 });
-  }
+    const auth = await getAuthContext(req);
+    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  if (!clientId || !clientSecret) {
-    return NextResponse.json({ error: 'Google not configured', detail: `CLIENT_ID=${!!clientId}, CLIENT_SECRET=${!!clientSecret}` }, { status: 500 });
-  }
+    const { member, companyId } = auth;
+    if (member.role !== 'owner' && member.role !== 'admin' && !member.is_super_admin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
-  const devToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
-  if (!devToken) {
-    return NextResponse.json({ error: 'GOOGLE_ADS_DEVELOPER_TOKEN not set' }, { status: 500 });
-  }
+    const limited = await authRateLimit(companyId, 'agency-access-config');
+    if (limited) return limited;
 
-  let accessToken: string;
-  try {
-    const res = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
-      }),
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error_description || json.error || 'refresh failed');
-    accessToken = json.access_token;
-  } catch (e) {
-    const msg = e instanceof Error ? e.message.slice(0, 200) : 'unknown';
-    return NextResponse.json({ error: 'Failed to refresh Google token', detail: msg }, { status: 502 });
-  }
+    const supabase = createServiceClient();
+    const { data: config } = await supabase
+      .from('agency_access_config')
+      .select('google_refresh_token_encrypted')
+      .eq('company_id', companyId)
+      .maybeSingle();
 
-  try {
-    const resourceNames = await fetchAccessibleCustomers(accessToken);
+    if (!config?.google_refresh_token_encrypted) {
+      return NextResponse.json({ error: 'Google not connected', step: 'check_token' }, { status: 404 });
+    }
+
+    let refreshToken: string;
+    try {
+      refreshToken = decryptToken(config.google_refresh_token_encrypted);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'unknown';
+      return NextResponse.json({ error: 'Failed to decrypt token', step: 'decrypt', detail: msg }, { status: 500 });
+    }
+
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      return NextResponse.json({ error: 'Google not configured', step: 'env_check', detail: `CLIENT_ID=${!!clientId}, CLIENT_SECRET=${!!clientSecret}` }, { status: 500 });
+    }
+
+    const devToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
+    if (!devToken) {
+      return NextResponse.json({ error: 'GOOGLE_ADS_DEVELOPER_TOKEN not set', step: 'env_check' }, { status: 500 });
+    }
+
+    let accessToken: string;
+    try {
+      const res = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          refresh_token: refreshToken,
+          grant_type: 'refresh_token',
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error_description || json.error || 'refresh failed');
+      accessToken = json.access_token;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message.slice(0, 200) : 'unknown';
+      return NextResponse.json({ error: 'Failed to refresh Google token', step: 'token_refresh', detail: msg }, { status: 502 });
+    }
+
+    let resourceNames: string[];
+    try {
+      resourceNames = await fetchAccessibleCustomers(accessToken);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message.slice(0, 500) : 'unknown';
+      return NextResponse.json({ error: 'Failed to list accessible customers', step: 'list_customers', detail: msg }, { status: 502 });
+    }
+
     const customerIds = resourceNames.map((r) => r.replace('customers/', ''));
 
+    const detailResults: Array<{ id: string; error?: string }> = [];
     const details = await Promise.all(
-      customerIds.map((id) =>
-        fetchCustomerDetails(accessToken, id).catch((err) => {
-          console.error(`[google/customers] fetchCustomerDetails(${id}) failed:`, err instanceof Error ? err.message : err);
+      customerIds.map(async (id) => {
+        try {
+          const d = await fetchCustomerDetails(accessToken, id);
+          detailResults.push({ id, error: d ? undefined : 'null_response' });
+          return d;
+        } catch (err) {
+          const msg = err instanceof Error ? err.message.slice(0, 200) : 'unknown';
+          detailResults.push({ id, error: msg });
           return null;
-        }),
-      ),
+        }
+      }),
     );
 
     const mccAccounts = details
@@ -90,11 +103,13 @@ export async function GET(req: NextRequest) {
         accessibleCount: customerIds.length,
         customerIds,
         details: details.map((d) => d ? { id: d.id, manager: d.manager, name: d.descriptiveName } : null),
+        detailErrors: detailResults.filter((r) => r.error),
         mccCount: mccAccounts.length,
       },
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message.slice(0, 500) : 'unknown';
-    return NextResponse.json({ error: 'Failed to fetch Google Ads accounts', detail: msg }, { status: 502 });
+    const stack = e instanceof Error ? e.stack?.slice(0, 300) : undefined;
+    return NextResponse.json({ error: 'Unhandled exception', step: 'top_level', detail: msg, stack }, { status: 500 });
   }
 }
