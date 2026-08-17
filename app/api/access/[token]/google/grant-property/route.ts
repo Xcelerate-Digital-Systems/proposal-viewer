@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 import { decryptToken } from '@/lib/connectors/google/token-crypto';
-import { grantGA4Access, grantGTMAccess } from '@/lib/connectors/google/api-client';
+import { grantGA4Access, grantGTMAccess, grantGBPAccess, grantGSCAccess } from '@/lib/connectors/google/api-client';
 
 export async function POST(
   req: NextRequest,
@@ -24,7 +24,8 @@ export async function POST(
     return NextResponse.json({ error: 'platform and selected_id required' }, { status: 400 });
   }
 
-  if (platform !== 'google_ga4' && platform !== 'google_gtm') {
+  const SUPPORTED_PLATFORMS = ['google_ga4', 'google_gtm', 'google_gbp', 'google_search_console'];
+  if (!SUPPORTED_PLATFORMS.includes(platform)) {
     return NextResponse.json({ error: 'Unsupported platform' }, { status: 400 });
   }
 
@@ -63,23 +64,37 @@ export async function POST(
     if (!properties?.some((p) => p.id === selectedId)) {
       return NextResponse.json({ error: 'Property not in accessible list' }, { status: 400 });
     }
-  } else {
+  } else if (platform === 'google_gtm') {
     const accounts = meta?.gtm_accounts as Array<{ id: string }> | undefined;
     if (!accounts?.some((a) => a.id === selectedId)) {
       return NextResponse.json({ error: 'Account not in accessible list' }, { status: 400 });
+    }
+  } else if (platform === 'google_gbp') {
+    const accounts = meta?.gbp_accounts as Array<{ id: string }> | undefined;
+    if (!accounts?.some((a) => a.id === selectedId)) {
+      return NextResponse.json({ error: 'Account not in accessible list' }, { status: 400 });
+    }
+  } else if (platform === 'google_search_console') {
+    const sites = meta?.gsc_sites as Array<{ id: string }> | undefined;
+    if (!sites?.some((s) => s.id === selectedId)) {
+      return NextResponse.json({ error: 'Site not in accessible list' }, { status: 400 });
     }
   }
 
   // Get agency config for email
   const { data: agencyConfig } = await supabase
     .from('agency_access_config')
-    .select('google_analytics_email, google_gtm_email')
+    .select('google_analytics_email, google_gtm_email, google_gbp_email, google_search_console_email')
     .eq('company_id', request.company_id)
     .single();
 
-  const agencyEmail = platform === 'google_ga4'
-    ? agencyConfig?.google_analytics_email
-    : agencyConfig?.google_gtm_email;
+  const emailMap: Record<string, string | null | undefined> = {
+    google_ga4: agencyConfig?.google_analytics_email,
+    google_gtm: agencyConfig?.google_gtm_email,
+    google_gbp: agencyConfig?.google_gbp_email,
+    google_search_console: agencyConfig?.google_search_console_email,
+  };
+  const agencyEmail = emailMap[platform];
 
   if (!agencyEmail) {
     await supabase
@@ -136,13 +151,17 @@ export async function POST(
   try {
     if (platform === 'google_ga4') {
       await grantGA4Access({ accessToken: clientAccessToken, propertyId: selectedId, agencyEmail });
-    } else {
+    } else if (platform === 'google_gtm') {
       const gtmAccounts = meta?.gtm_accounts as Array<{ id: string; path: string }> | undefined;
       const accountPath = gtmAccounts?.find((a) => a.id === selectedId)?.path;
       if (!accountPath) {
         return NextResponse.json({ error: 'Account path not found' }, { status: 400 });
       }
       await grantGTMAccess({ accessToken: clientAccessToken, accountPath, agencyEmail });
+    } else if (platform === 'google_gbp') {
+      await grantGBPAccess({ accessToken: clientAccessToken, accountName: selectedId, agencyEmail });
+    } else if (platform === 'google_search_console') {
+      await grantGSCAccess({ accessToken: clientAccessToken, siteUrl: selectedId, agencyEmail });
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message.slice(0, 500) : 'unknown';

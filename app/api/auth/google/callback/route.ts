@@ -7,6 +7,8 @@ import {
   fetchGTMAccounts,
   fetchAccessibleCustomers,
   fetchCustomerDetails,
+  fetchGBPAccounts,
+  fetchGSCSites,
 } from '@/lib/connectors/google/api-client';
 import { encryptToken } from '@/lib/connectors/google/token-crypto';
 import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
@@ -155,7 +157,7 @@ export async function GET(req: NextRequest) {
     .from('client_access_grants')
     .select('id, platform, status')
     .eq('request_id', stateRow.access_request_id)
-    .in('platform', ['google_ads', 'google_ga4', 'google_gtm']);
+    .in('platform', ['google_ads', 'google_ga4', 'google_gtm', 'google_gbp', 'google_search_console']);
 
   const grantsToProcess = (googleGrants ?? []).filter(
     (g) => g.status === 'pending' || g.status === 'failed' || g.id === stateRow.grant_id,
@@ -186,6 +188,18 @@ export async function GET(req: NextRequest) {
       } else if (gPlatform === 'google_ads') {
         console.log(`[google-cb] Google Ads grant starting, mccId=${agencyConfig?.google_mcc_id ?? 'NONE'}`);
         const result = await handleGoogleAdsGrant(accessToken, agencyConfig);
+        grantStatus = result.status;
+        accountName = result.accountName;
+        metadata = result.metadata;
+      } else if (gPlatform === 'google_gbp') {
+        console.log(`[google-cb] GBP grant starting`);
+        const result = await handleGBPGrant(accessToken);
+        grantStatus = result.status;
+        accountName = result.accountName;
+        metadata = result.metadata;
+      } else if (gPlatform === 'google_search_console') {
+        console.log(`[google-cb] GSC grant starting`);
+        const result = await handleGSCGrant(accessToken);
         grantStatus = result.status;
         accountName = result.accountName;
         metadata = result.metadata;
@@ -323,5 +337,43 @@ async function handleGoogleAdsGrant(
     status: 'oauth_complete',
     accountName: null,
     metadata: { customer_accounts: adAccounts, needs_account_selection: true },
+  };
+}
+
+async function handleGBPGrant(
+  accessToken: string,
+): Promise<{ status: string; accountName: string | null; metadata: Record<string, unknown> }> {
+  const accounts = await fetchGBPAccounts(accessToken);
+
+  if (accounts.length === 0) {
+    return { status: 'failed', accountName: null, metadata: { error: 'No Google Business Profile accounts found' } };
+  }
+
+  return {
+    status: 'oauth_complete',
+    accountName: null,
+    metadata: {
+      gbp_accounts: accounts.map((a) => ({ id: a.name, name: a.accountName, type: a.type })),
+      needs_account_selection: true,
+    },
+  };
+}
+
+async function handleGSCGrant(
+  accessToken: string,
+): Promise<{ status: string; accountName: string | null; metadata: Record<string, unknown> }> {
+  const sites = await fetchGSCSites(accessToken);
+
+  if (sites.length === 0) {
+    return { status: 'failed', accountName: null, metadata: { error: 'No Search Console sites found' } };
+  }
+
+  return {
+    status: 'oauth_complete',
+    accountName: null,
+    metadata: {
+      gsc_sites: sites.map((s) => ({ id: s.siteUrl, name: s.siteUrl, permissionLevel: s.permissionLevel })),
+      needs_site_selection: true,
+    },
   };
 }

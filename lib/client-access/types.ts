@@ -3,6 +3,8 @@ export type AccessPlatform =
   | 'google_ga4'
   | 'google_gtm'
   | 'google_ads'
+  | 'google_gbp'
+  | 'google_search_console'
   | 'wordpress';
 
 export type AccessRequestStatus =
@@ -69,6 +71,8 @@ export interface AgencyAccessConfig {
   google_mcc_name: string | null;
   google_analytics_email: string | null;
   google_gtm_email: string | null;
+  google_gbp_email: string | null;
+  google_search_console_email: string | null;
   google_user_name: string | null;
   wordpress_admin_email: string | null;
   created_at: string;
@@ -91,6 +95,8 @@ export const VALID_PLATFORMS: AccessPlatform[] = [
   'google_ga4',
   'google_gtm',
   'google_ads',
+  'google_gbp',
+  'google_search_console',
   'wordpress',
 ];
 
@@ -99,5 +105,7 @@ export const PLATFORM_LABELS: Record<AccessPlatform, string> = {
   google_ga4: 'Google Analytics 4',
   google_gtm: 'Google Tag Manager',
   google_ads: 'Google Ads',
+  google_gbp: 'Google Business Profile',
+  google_search_console: 'Google Search Console',
   wordpress: 'WordPress',
 };

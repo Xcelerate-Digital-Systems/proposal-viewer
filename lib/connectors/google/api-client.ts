@@ -3,6 +3,8 @@ const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GA4_ADMIN_BASE = 'https://analyticsadmin.googleapis.com/v1beta';
 const GTM_BASE = 'https://www.googleapis.com/tagmanager/v2';
 const GOOGLE_ADS_BASE = 'https://googleads.googleapis.com/v25';
+const GBP_BASE = 'https://mybusinessaccountmanagement.googleapis.com/v1';
+const GSC_BASE = 'https://www.googleapis.com/webmasters/v3';
 
 import type { AccessPlatform } from '@/lib/client-access/types';
 
@@ -20,6 +22,8 @@ const PLATFORM_SCOPES: Record<string, string[]> = {
   google_ga4: ['https://www.googleapis.com/auth/analytics.manage.users'],
   google_gtm: ['https://www.googleapis.com/auth/tagmanager.manage.users'],
   google_ads: ['https://www.googleapis.com/auth/adwords'],
+  google_gbp: ['https://www.googleapis.com/auth/business.manage'],
+  google_search_console: ['https://www.googleapis.com/auth/webmasters'],
 };
 
 export function getScopesForPlatform(platform: AccessPlatform): string[] {
@@ -339,5 +343,81 @@ export async function acceptMccLink(opts: {
     let parsed: unknown;
     try { parsed = JSON.parse(mutateText); } catch { parsed = mutateText.slice(0, 300); }
     throw new GoogleApiError(mutateRes.status, parsed);
+  }
+}
+
+// --- Google Business Profile ---
+
+export interface GBPAccount {
+  name: string;
+  accountName: string;
+  type: string;
+}
+
+export async function fetchGBPAccounts(accessToken: string): Promise<GBPAccount[]> {
+  const json = await googleGet(
+    `${GBP_BASE}/accounts`,
+    accessToken,
+  ) as { accounts?: GBPAccount[] };
+  return json.accounts ?? [];
+}
+
+export async function grantGBPAccess(opts: {
+  accessToken: string;
+  accountName: string;
+  agencyEmail: string;
+  role?: string;
+}): Promise<void> {
+  await googlePost(
+    `${GBP_BASE}/${opts.accountName}/invitations`,
+    opts.accessToken,
+    {
+      targetAccount: `accounts/${opts.agencyEmail}`,
+      role: opts.role === 'owner' ? 'OWNER' : 'MANAGER',
+    },
+  );
+}
+
+// --- Google Search Console ---
+
+export interface GSCSite {
+  siteUrl: string;
+  permissionLevel: string;
+}
+
+export async function fetchGSCSites(accessToken: string): Promise<GSCSite[]> {
+  const json = await googleGet(
+    `${GSC_BASE}/sites`,
+    accessToken,
+  ) as { siteEntry?: GSCSite[] };
+  return json.siteEntry ?? [];
+}
+
+export async function grantGSCAccess(opts: {
+  accessToken: string;
+  siteUrl: string;
+  agencyEmail: string;
+  role?: string;
+}): Promise<void> {
+  const encodedSiteUrl = encodeURIComponent(opts.siteUrl);
+  const encodedEmail = encodeURIComponent(opts.agencyEmail);
+  const permissionLevel = opts.role === 'full' ? 'siteFullUser' : 'siteRestrictedUser';
+
+  const res = await fetch(
+    `${GSC_BASE}/sites/${encodedSiteUrl}/siteUsers/${encodedEmail}`,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${opts.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ permissionLevel }),
+    },
+  );
+  const text = await res.text();
+  if (!res.ok) {
+    let parsed: unknown;
+    try { parsed = JSON.parse(text); } catch { parsed = text; }
+    throw new GoogleApiError(res.status, parsed);
   }
 }

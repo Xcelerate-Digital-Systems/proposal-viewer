@@ -87,15 +87,18 @@ export default function AccessTokenPage() {
       const googleAdsStatus = searchParams.get('google_ads');
       const googleGa4Status = searchParams.get('google_ga4');
       const googleGtmStatus = searchParams.get('google_gtm');
+      const googleGbpStatus = searchParams.get('google_gbp');
+      const googleGscStatus = searchParams.get('google_search_console');
       const metaStatus = searchParams.get('meta');
       const reason = searchParams.get('reason');
       // Legacy: old callbacks used ?google= key
       const legacyGoogleStatus = searchParams.get('google');
-      const anyGoogleStatus = googleAdsStatus || googleGa4Status || googleGtmStatus || legacyGoogleStatus;
+      const anyGoogleStatus = googleAdsStatus || googleGa4Status || googleGtmStatus || googleGbpStatus || googleGscStatus || legacyGoogleStatus;
       const isReturningFromOAuth = !!(anyGoogleStatus || metaStatus);
 
       if (legacyGoogleStatus === 'error' || legacyGoogleStatus === 'denied' ||
-          googleAdsStatus === 'error' || googleGa4Status === 'error' || googleGtmStatus === 'error') {
+          googleAdsStatus === 'error' || googleGa4Status === 'error' || googleGtmStatus === 'error' ||
+          googleGbpStatus === 'error' || googleGscStatus === 'error') {
         const knownReasons: Record<string, string> = {
           denied: 'Google sign-in was cancelled.',
           exchange_failed: 'Failed to connect with Google. Please try again.',
@@ -851,8 +854,8 @@ function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onN
     finally { setGrantingPlatform(null); }
   };
 
-  // GA4 / GTM grant handler
-  const handleGrantProperty = async (platform: 'google_ga4' | 'google_gtm') => {
+  // GA4 / GTM / GBP / GSC grant handler
+  const handleGrantProperty = async (platform: AccessPlatform) => {
     const selected = selections[platform];
     if (!selected) return;
     const grant = grantByPlatform.get(platform);
@@ -861,9 +864,15 @@ function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onN
     if (platform === 'google_ga4') {
       const props = meta?.ga4_properties as Array<{ id: string; name: string }> | undefined;
       name = props?.find((p) => p.id === selected)?.name || selected;
-    } else {
+    } else if (platform === 'google_gtm') {
       const accts = meta?.gtm_accounts as Array<{ id: string; name: string }> | undefined;
       name = accts?.find((a) => a.id === selected)?.name || selected;
+    } else if (platform === 'google_gbp') {
+      const accts = meta?.gbp_accounts as Array<{ id: string; name: string }> | undefined;
+      name = accts?.find((a) => a.id === selected)?.name || selected;
+    } else if (platform === 'google_search_console') {
+      const sites = meta?.gsc_sites as Array<{ id: string; name: string }> | undefined;
+      name = sites?.find((s) => s.id === selected)?.name || selected;
     }
     setGrantingPlatform(platform);
     try {
@@ -940,12 +949,16 @@ function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onN
         items = (meta.ga4_properties as Array<{ id: string; name: string }>) || [];
       } else if (platform === 'google_gtm' && meta?.needs_account_selection) {
         items = (meta.gtm_accounts as Array<{ id: string; name: string }>) || [];
+      } else if (platform === 'google_gbp' && meta?.needs_account_selection) {
+        items = (meta.gbp_accounts as Array<{ id: string; name: string }>) || [];
+      } else if (platform === 'google_search_console' && meta?.needs_site_selection) {
+        items = (meta.gsc_sites as Array<{ id: string; name: string }>) || [];
       }
     }
 
     const handleGrant = () => {
       if (platform === 'google_ads') handleGrantAds();
-      else handleGrantProperty(platform as 'google_ga4' | 'google_gtm');
+      else handleGrantProperty(platform);
     };
 
     if (isGranted) {
