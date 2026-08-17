@@ -388,7 +388,7 @@ function StepSidebar({ currentStep, accentColor, request, grants }: {
     },
     {
       num: 2,
-      label: 'Select Your Assets',
+      label: 'Grant Access',
       subItems: [
         ...googlePlatforms.map((p) => {
           const g = grantByPlatform.get(p);
@@ -407,7 +407,7 @@ function StepSidebar({ currentStep, accentColor, request, grants }: {
     },
     {
       num: 3,
-      label: 'Review Access Status',
+      label: 'Access Status',
       subItems: [],
     },
   ];
@@ -672,11 +672,24 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
     return g && g.status !== 'pending' && g.status !== 'failed';
   })();
 
+  // Determine which platform to show — one at a time, in order: Google → Meta → WordPress
+  const wordPressConnected = (() => {
+    const g = grantByPlatform.get('wordpress');
+    return g?.status === 'self_reported';
+  })();
+
+  const activePlatform: 'google' | 'meta' | 'wordpress' | null = (() => {
+    if (hasGooglePlatforms && !googleSignedIn) return 'google';
+    if (hasMetaPlatform && !metaSignedIn) return 'meta';
+    if (hasWordpress && !wordPressConnected) return 'wordpress';
+    return null;
+  })();
+
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 mb-2">Connect Your Accounts</h2>
+      <h2 className="text-xl font-bold text-gray-900 mb-2">Sign in to Your Account</h2>
       <p className="text-sm text-gray-500 mb-6">
-        Sign in with your accounts below to get started.
+        To grant access to your accounts, please sign in below with your Google account.
       </p>
 
       {oauthError && (
@@ -687,24 +700,24 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
       )}
 
       <div className="space-y-4">
-        {/* Google Card */}
-        {hasGooglePlatforms && (
+        {/* Google Card — show when Google is the active platform OR already signed in */}
+        {hasGooglePlatforms && (activePlatform === 'google' || googleSignedIn) && (
           <PlatformConnectCard
             icon={<GoogleCardIcon />}
             title="Google Assets"
             subtitle="Requested assets and permissions"
             accentColor={accentColor}
           >
-            <div className="border border-gray-100 rounded-lg divide-y divide-gray-100 mb-4 text-sm">
+            <div className="divide-y divide-gray-100 mb-4 text-sm">
               {request.platforms.filter((p) => p.startsWith('google_')).map((p) => {
                 const configKey = GOOGLE_PLATFORM_TO_CONFIG_KEY[p] || p;
                 const assetDef = GOOGLE_ASSETS.find((a) => a.key === configKey);
                 const roleName = googleAssets?.[configKey as keyof NonNullable<typeof googleAssets>]?.role;
                 const roleLabel = assetDef?.roles.find((r) => r.value === roleName)?.label || roleName || '';
                 return (
-                  <div key={p} className="flex items-center justify-between px-4 py-2.5">
+                  <div key={p} className="flex items-center justify-between px-4 py-3">
                     <span className="text-gray-700">{PLATFORM_LABELS[p]}</span>
-                    {roleLabel && <span className="text-gray-500 text-xs">{roleLabel}</span>}
+                    {roleLabel && <span className="text-gray-900 font-medium text-sm">{roleLabel}</span>}
                   </div>
                 );
               })}
@@ -725,23 +738,23 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
           </PlatformConnectCard>
         )}
 
-        {/* Meta Card */}
-        {hasMetaPlatform && (
+        {/* Meta Card — show when Meta is the active platform OR already signed in */}
+        {hasMetaPlatform && (activePlatform === 'meta' || metaSignedIn) && (
           <PlatformConnectCard
             icon={<MetaCardIcon />}
             title="Meta Assets"
             subtitle="Requested assets and permissions"
             accentColor={accentColor}
           >
-            <div className="border border-gray-100 rounded-lg divide-y divide-gray-100 mb-4 text-sm">
+            <div className="divide-y divide-gray-100 mb-4 text-sm">
               {META_ASSETS.filter((a) => metaAssets?.[a.key as keyof NonNullable<typeof metaAssets>]?.enabled).map((asset) => {
                 const assetKey = asset.key as keyof NonNullable<typeof metaAssets>;
                 const roleName = metaAssets?.[assetKey]?.role;
                 const roleLabel = asset.roles.find((r) => r.value === roleName)?.label || roleName || '';
                 return (
-                  <div key={asset.key} className="flex items-center justify-between px-4 py-2.5">
+                  <div key={asset.key} className="flex items-center justify-between px-4 py-3">
                     <span className="text-gray-700">{asset.label}</span>
-                    {roleLabel && <span className="text-gray-500 text-xs">{roleLabel}</span>}
+                    {roleLabel && <span className="text-gray-900 font-medium text-sm">{roleLabel}</span>}
                   </div>
                 );
               })}
@@ -762,8 +775,8 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
           </PlatformConnectCard>
         )}
 
-        {/* WordPress Card */}
-        {hasWordpress && (
+        {/* WordPress Card — show when WordPress is the active platform OR already confirmed */}
+        {hasWordpress && (activePlatform === 'wordpress' || wordPressConnected) && (
           <PlatformConnectCard
             icon={<WordPressCardIcon />}
             title="WordPress Access"
@@ -781,13 +794,13 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
         )}
       </div>
 
-      <div className="flex justify-end mt-6">
+      <div className="flex justify-center gap-3 mt-8">
         <button
           onClick={onNext}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          className="px-8 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
           style={{ backgroundColor: accentColor }}
         >
-          Next <ArrowRight size={14} />
+          Next
         </button>
       </div>
     </div>
@@ -893,7 +906,7 @@ function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onN
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 mb-2">Select Your Assets</h2>
+      <h2 className="text-xl font-bold text-gray-900 mb-2">Grant Partner Access</h2>
       <p className="text-sm text-gray-500 mb-6">
         Select which accounts to grant your agency partner access to.
       </p>
@@ -1071,16 +1084,16 @@ function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onN
         )}
       </div>
 
-      <div className="flex justify-between mt-6">
-        <button onClick={onBack} className="flex items-center gap-1 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">
-          <ArrowLeft size={14} /> Back
+      <div className="flex justify-center gap-3 mt-8">
+        <button onClick={onBack} className="px-6 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">
+          Back
         </button>
         <button
           onClick={onNext}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          className="px-8 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
           style={{ backgroundColor: accentColor }}
         >
-          Next <ArrowRight size={14} />
+          Next
         </button>
       </div>
     </div>
@@ -1102,7 +1115,7 @@ function StatusStep({ request, grants, agency, accentColor, allDone, onBack }: {
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 mb-2">Review Access Status</h2>
+      <h2 className="text-xl font-bold text-gray-900 mb-2">Access Status</h2>
       <p className="text-sm text-gray-500 mb-6">
         Review the access status for each platform below.
       </p>
@@ -1142,9 +1155,9 @@ function StatusStep({ request, grants, agency, accentColor, allDone, onBack }: {
         </div>
       )}
 
-      <div className="flex justify-between mt-6">
-        <button onClick={onBack} className="flex items-center gap-1 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">
-          <ArrowLeft size={14} /> Back
+      <div className="flex justify-center mt-8">
+        <button onClick={onBack} className="px-6 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">
+          Back
         </button>
       </div>
     </div>
