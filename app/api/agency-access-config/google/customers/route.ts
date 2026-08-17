@@ -18,6 +18,9 @@ export async function GET(req: NextRequest) {
     const limited = await authRateLimit(companyId, 'agency-access-config');
     if (limited) return limited;
 
+    // Diagnostic: check which step we reach
+    const diag: Record<string, unknown> = { step: 'start', companyId };
+
     const supabase = createServiceClient();
     const { data: config } = await supabase
       .from('agency_access_config')
@@ -25,27 +28,33 @@ export async function GET(req: NextRequest) {
       .eq('company_id', companyId)
       .maybeSingle();
 
+    diag.hasToken = !!config?.google_refresh_token_encrypted;
     if (!config?.google_refresh_token_encrypted) {
-      return NextResponse.json({ error: 'Google not connected', step: 'check_token' }, { status: 404 });
+      return NextResponse.json({ error: 'Google not connected', ...diag }, { status: 404 });
     }
 
     let refreshToken: string;
     try {
       refreshToken = decryptToken(config.google_refresh_token_encrypted);
+      diag.step = 'decrypted';
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'unknown';
-      return NextResponse.json({ error: 'Failed to decrypt token', step: 'decrypt', detail: msg }, { status: 500 });
+      diag.step = 'decrypt_failed';
+      diag.detail = e instanceof Error ? e.message : 'unknown';
+      return NextResponse.json({ error: 'Failed to decrypt token', ...diag }, { status: 500 });
     }
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    if (!clientId || !clientSecret) {
-      return NextResponse.json({ error: 'Google not configured', step: 'env_check', detail: `CLIENT_ID=${!!clientId}, CLIENT_SECRET=${!!clientSecret}` }, { status: 500 });
-    }
-
     const devToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
+    diag.envCheck = { clientId: !!clientId, clientSecret: !!clientSecret, devToken: !!devToken };
+
+    if (!clientId || !clientSecret) {
+      diag.step = 'missing_google_creds';
+      return NextResponse.json({ error: 'Google not configured', ...diag }, { status: 500 });
+    }
     if (!devToken) {
-      return NextResponse.json({ error: 'GOOGLE_ADS_DEVELOPER_TOKEN not set', step: 'env_check' }, { status: 500 });
+      diag.step = 'missing_dev_token';
+      return NextResponse.json({ error: 'GOOGLE_ADS_DEVELOPER_TOKEN not set', ...diag }, { status: 500 });
     }
 
     let accessToken: string;
@@ -60,34 +69,39 @@ export async function GET(req: NextRequest) {
           grant_type: 'refresh_token',
         }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error_description || json.error || 'refresh failed');
-      accessToken = json.access_token;
+      const json = await res.json() as Record<string, unknown>;
+      if (!res.ok) {
+        diag.step = 'refresh_rejected';
+        diag.refreshStatus = res.status;
+        diag.refreshError = json;
+        return NextResponse.json({ error: 'Token refresh rejected by Google', ...diag }, { status: 502 });
+      }
+      accessToken = json.access_token as string;
+      diag.step = 'refreshed';
     } catch (e) {
-      const msg = e instanceof Error ? e.message.slice(0, 200) : 'unknown';
-      return NextResponse.json({ error: 'Failed to refresh Google token', step: 'token_refresh', detail: msg }, { status: 502 });
+      diag.step = 'refresh_exception';
+      diag.detail = e instanceof Error ? e.message.slice(0, 200) : 'unknown';
+      return NextResponse.json({ error: 'Failed to refresh Google token', ...diag }, { status: 502 });
     }
 
     let resourceNames: string[];
     try {
       resourceNames = await fetchAccessibleCustomers(accessToken);
+      diag.step = 'listed_customers';
+      diag.accessibleCount = resourceNames.length;
     } catch (e) {
-      const msg = e instanceof Error ? e.message.slice(0, 500) : 'unknown';
-      return NextResponse.json({ error: 'Failed to list accessible customers', step: 'list_customers', detail: msg }, { status: 502 });
+      diag.step = 'list_failed';
+      diag.detail = e instanceof Error ? e.message.slice(0, 500) : 'unknown';
+      return NextResponse.json({ error: 'Failed to list accessible customers', ...diag }, { status: 502 });
     }
 
     const customerIds = resourceNames.map((r) => r.replace('customers/', ''));
+    diag.customerIds = customerIds;
 
-    // Fetch details for each customer to identify MCC (manager) accounts
-    // Use a 8s timeout per call to stay within Vercel function limits
     const details = await Promise.all(
       customerIds.map(async (id) => {
         try {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 8000);
-          const d = await fetchCustomerDetails(accessToken, id);
-          clearTimeout(timeout);
-          return d;
+          return await fetchCustomerDetails(accessToken, id);
         } catch {
           return null;
         }
@@ -98,16 +112,11 @@ export async function GET(req: NextRequest) {
       .filter((d): d is NonNullable<typeof d> => d !== null && d.manager === true)
       .map((d) => ({ id: d.id, name: d.descriptiveName }));
 
-    return NextResponse.json({
-      customers: mccAccounts,
-      _debug: {
-        step: 'success',
-        accessibleCount: customerIds.length,
-        customerIds,
-        details: details.map((d) => d ? { id: d.id, manager: d.manager, name: d.descriptiveName } : null),
-        mccCount: mccAccounts.length,
-      },
-    });
+    diag.step = 'complete';
+    diag.allDetails = details.map((d) => d ? { id: d.id, manager: d.manager, name: d.descriptiveName } : null);
+    diag.mccCount = mccAccounts.length;
+
+    return NextResponse.json({ customers: mccAccounts, _diag: diag });
   } catch (e) {
     const msg = e instanceof Error ? e.message.slice(0, 500) : 'unknown';
     const stack = e instanceof Error ? e.stack?.slice(0, 300) : undefined;
