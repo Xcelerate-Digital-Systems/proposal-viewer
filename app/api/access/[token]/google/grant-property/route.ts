@@ -178,15 +178,18 @@ export async function POST(
     return NextResponse.json({ error: msg }, { status: 502 });
   }
 
+  // GBP sends an invitation (needs agency to accept), others grant directly
+  const finalStatus = platform === 'google_gbp' ? 'request_sent' : 'granted';
+
   // Update grant status
   await supabase
     .from('client_access_grants')
     .update({
-      status: 'granted',
+      status: finalStatus,
       platform_account_name: selectedName || selectedId,
       error_message: null,
       metadata: { ...meta, selected_id: selectedId },
-      granted_at: new Date().toISOString(),
+      granted_at: finalStatus === 'granted' ? new Date().toISOString() : null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', grant.id);
