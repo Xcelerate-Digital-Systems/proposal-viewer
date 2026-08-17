@@ -2,7 +2,7 @@ const GOOGLE_OAUTH_BASE = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GA4_ADMIN_BASE = 'https://analyticsadmin.googleapis.com/v1beta';
 const GTM_BASE = 'https://www.googleapis.com/tagmanager/v2';
-const GOOGLE_ADS_BASE = 'https://googleads.googleapis.com/v18';
+const GOOGLE_ADS_BASE = 'https://googleads.googleapis.com/v19';
 
 import type { AccessPlatform } from '@/lib/client-access/types';
 
