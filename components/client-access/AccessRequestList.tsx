@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Copy, Check, ExternalLink, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Copy, Check, ExternalLink, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import PlatformStatusBadge from './PlatformStatusBadge';
 import { PLATFORM_LABELS, type AccessPlatform, type AccessGrantStatus } from '@/lib/client-access/types';
@@ -36,7 +36,6 @@ export default function AccessRequestList({ clientId, refreshKey }: AccessReques
   const [requests, setRequests] = useState<AccessRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [showInactive, setShowInactive] = useState(false);
 
   const fetchRequests = useCallback(async () => {
     try {
@@ -66,12 +65,10 @@ export default function AccessRequestList({ clientId, refreshKey }: AccessReques
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const revokeRequest = async (id: string) => {
+  const deleteRequest = async (id: string) => {
     const res = await authFetch(`/api/client-access/${id}`, { method: 'DELETE' });
     if (res.ok) {
-      setRequests((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, status: 'revoked' } : r)),
-      );
+      setRequests((prev) => prev.filter((r) => r.id !== id));
     }
   };
 
@@ -79,35 +76,19 @@ export default function AccessRequestList({ clientId, refreshKey }: AccessReques
     return <div className="text-sm text-dim py-4">Loading access requests…</div>;
   }
 
-  const now = new Date();
-  const isInactive = (r: AccessRequest) => {
-    const expired = r.expires_at && new Date(r.expires_at) < now;
-    return expired || r.status === 'revoked';
-  };
-
-  const activeRequests = requests.filter((r) => !isInactive(r));
-  const inactiveCount = requests.length - activeRequests.length;
-  const visibleRequests = showInactive ? requests : activeRequests;
-
   if (requests.length === 0) {
     return <div className="text-sm text-dim py-4">No access requests yet.</div>;
   }
 
   return (
     <div className="space-y-3">
-      {visibleRequests.length === 0 && !showInactive && (
-        <div className="text-sm text-dim py-4">No active requests.</div>
-      )}
-
-      {visibleRequests.map((request) => {
-        const expired = request.expires_at && new Date(request.expires_at) < now;
-        const revoked = request.status === 'revoked';
-        const inactive = expired || revoked;
+      {requests.map((request) => {
+        const isExpired = request.expires_at && new Date(request.expires_at) < new Date();
 
         return (
           <div
             key={request.id}
-            className={`rounded-xl border border-edge p-4 transition-colors ${inactive ? 'opacity-50' : 'bg-surface'}`}
+            className={`rounded-xl border border-edge p-4 transition-colors ${isExpired ? 'opacity-50' : 'bg-surface'}`}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -115,10 +96,7 @@ export default function AccessRequestList({ clientId, refreshKey }: AccessReques
                   <span className="text-sm font-medium text-ink truncate">
                     {request.client_name || request.client_email || 'Unnamed'}
                   </span>
-                  {revoked && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-100">Revoked</span>
-                  )}
-                  {expired && !revoked && (
+                  {isExpired && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-50 text-yellow-700 border border-yellow-100">Expired</span>
                   )}
                 </div>
@@ -128,7 +106,7 @@ export default function AccessRequestList({ clientId, refreshKey }: AccessReques
               </div>
 
               <div className="flex items-center gap-1">
-                {!inactive && (
+                {!isExpired && (
                   <>
                     <Button
                       variant="ghost"
@@ -146,16 +124,16 @@ export default function AccessRequestList({ clientId, refreshKey }: AccessReques
                       onClick={() => window.open(`/access/${request.share_token}`, '_blank')}
                       leftIcon={ExternalLink}
                     />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      iconOnly
-                      aria-label="Revoke"
-                      onClick={() => revokeRequest(request.id)}
-                      leftIcon={Trash2}
-                    />
                   </>
                 )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconOnly
+                  aria-label="Delete"
+                  onClick={() => deleteRequest(request.id)}
+                  leftIcon={Trash2}
+                />
               </div>
             </div>
 
@@ -173,16 +151,6 @@ export default function AccessRequestList({ clientId, refreshKey }: AccessReques
           </div>
         );
       })}
-
-      {inactiveCount > 0 && (
-        <button
-          onClick={() => setShowInactive(!showInactive)}
-          className="flex items-center gap-1.5 text-xs text-muted hover:text-ink transition-colors pt-1"
-        >
-          {showInactive ? <EyeOff size={13} /> : <Eye size={13} />}
-          {showInactive ? 'Hide' : 'Show'} {inactiveCount} inactive {inactiveCount === 1 ? 'request' : 'requests'}
-        </button>
-      )}
     </div>
   );
 }

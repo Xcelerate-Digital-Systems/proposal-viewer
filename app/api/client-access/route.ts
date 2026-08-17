@@ -50,6 +50,7 @@ export async function GET(req: NextRequest) {
     .from('client_access_requests')
     .select('id, company_id, client_id, share_token, platforms, platform_config, status, expires_at, created_by, client_name, client_email, notes, created_at, updated_at')
     .eq('company_id', verified.agencyId)
+    .neq('status', 'revoked')
     .order('created_at', { ascending: false });
 
   if (clientId) {

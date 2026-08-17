@@ -166,13 +166,15 @@ export async function DELETE(
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  if (existing.status === 'revoked') {
-    return NextResponse.json({ error: 'Already revoked' }, { status: 400 });
-  }
+  // Delete grants first (FK), then the request
+  await supabase
+    .from('client_access_grants')
+    .delete()
+    .eq('request_id', id);
 
   const { error } = await supabase
     .from('client_access_requests')
-    .update({ status: 'revoked', updated_at: new Date().toISOString() })
+    .delete()
     .eq('id', id)
     .eq('company_id', verified.agencyId);
 
