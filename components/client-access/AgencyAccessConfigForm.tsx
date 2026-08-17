@@ -50,7 +50,6 @@ export default function AgencyAccessConfigForm() {
   const [mccAccounts, setMccAccounts] = useState<GoogleMccAccount[]>([]);
   const [loadingMcc, setLoadingMcc] = useState(false);
   const [savingMcc, setSavingMcc] = useState(false);
-  const [mccDebug, setMccDebug] = useState<string | null>(null);
 
   const [expandedPlatform, setExpandedPlatform] = useState<string | null>(null);
 
@@ -94,34 +93,14 @@ export default function AgencyAccessConfigForm() {
 
   const fetchMccAccounts = useCallback(async () => {
     setLoadingMcc(true);
-    setMccDebug(null);
-    const steps = ['auth_only', 'db_only', 'decrypt_only', 'env_only', 'refresh_only', 'list_only', 'all'];
-    const results: string[] = [];
-    for (const step of steps) {
-      try {
-        const url = step === 'all'
-          ? '/api/agency-access-config/google/customers'
-          : `/api/agency-access-config/google/customers?step=${step}`;
-        const res = await authFetch(url);
-        const text = await res.text();
-        results.push(`${step}: ${res.status} → ${text.slice(0, 200)}`);
-        if (step === 'all' && res.ok) {
-          try {
-            const data = JSON.parse(text);
-            setMccAccounts(data.customers || []);
-          } catch { /* parse fail */ }
-        }
-        if (!res.ok && res.status >= 500) {
-          results.push(`⛔ FAILED at step: ${step}`);
-          break;
-        }
-      } catch (e) {
-        results.push(`${step}: EXCEPTION → ${(e as Error).message}`);
-        break;
+    try {
+      const res = await authFetch('/api/agency-access-config/google/customers');
+      if (res.ok) {
+        const data = await res.json();
+        setMccAccounts(data.customers || []);
       }
-    }
-    setMccDebug(results.join('\n'));
-    setLoadingMcc(false);
+    } catch { /* ignore */ }
+    finally { setLoadingMcc(false); }
   }, []);
 
   useEffect(() => {
@@ -262,9 +241,6 @@ export default function AgencyAccessConfigForm() {
                 </select>
                 <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
               </div>
-            )}
-            {mccDebug && (
-              <pre className="mt-2 p-2 bg-black/80 text-green-400 text-[10px] leading-tight rounded overflow-auto max-h-48 whitespace-pre-wrap">{mccDebug}</pre>
             )}
           </div>
         )}
