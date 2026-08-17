@@ -31,14 +31,20 @@ export async function GET(req: NextRequest) {
   let refreshToken: string;
   try {
     refreshToken = decryptToken(config.google_refresh_token_encrypted);
-  } catch {
-    return NextResponse.json({ error: 'Failed to decrypt token' }, { status: 500 });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'unknown';
+    return NextResponse.json({ error: 'Failed to decrypt token', detail: msg }, { status: 500 });
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
-    return NextResponse.json({ error: 'Google not configured' }, { status: 500 });
+    return NextResponse.json({ error: 'Google not configured', detail: `CLIENT_ID=${!!clientId}, CLIENT_SECRET=${!!clientSecret}` }, { status: 500 });
+  }
+
+  const devToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
+  if (!devToken) {
+    return NextResponse.json({ error: 'GOOGLE_ADS_DEVELOPER_TOKEN not set' }, { status: 500 });
   }
 
   let accessToken: string;
@@ -57,15 +63,13 @@ export async function GET(req: NextRequest) {
     if (!res.ok) throw new Error(json.error_description || json.error || 'refresh failed');
     accessToken = json.access_token;
   } catch (e) {
-    const msg = e instanceof Error ? e.message.slice(0, 80) : 'unknown';
-    console.error('[agency-access-config/google/customers] refresh failed:', msg);
-    return NextResponse.json({ error: 'Failed to refresh Google token' }, { status: 502 });
+    const msg = e instanceof Error ? e.message.slice(0, 200) : 'unknown';
+    return NextResponse.json({ error: 'Failed to refresh Google token', detail: msg }, { status: 502 });
   }
 
   try {
     const resourceNames = await fetchAccessibleCustomers(accessToken);
     const customerIds = resourceNames.map((r) => r.replace('customers/', ''));
-    console.log(`[google/customers] accessible customers: ${customerIds.length}`, customerIds);
 
     const details = await Promise.all(
       customerIds.map((id) =>
@@ -76,17 +80,21 @@ export async function GET(req: NextRequest) {
       ),
     );
 
-    console.log('[google/customers] details:', details.map((d) => d ? `${d.id} manager=${d.manager} "${d.descriptiveName}"` : 'null'));
-
     const mccAccounts = details
       .filter((d): d is NonNullable<typeof d> => d !== null && d.manager === true)
       .map((d) => ({ id: d.id, name: d.descriptiveName }));
 
-    console.log(`[google/customers] MCC accounts found: ${mccAccounts.length}`);
-    return NextResponse.json({ customers: mccAccounts });
+    return NextResponse.json({
+      customers: mccAccounts,
+      _debug: {
+        accessibleCount: customerIds.length,
+        customerIds,
+        details: details.map((d) => d ? { id: d.id, manager: d.manager, name: d.descriptiveName } : null),
+        mccCount: mccAccounts.length,
+      },
+    });
   } catch (e) {
-    const msg = e instanceof Error ? e.message.slice(0, 80) : 'unknown';
-    console.error('[agency-access-config/google/customers]', msg);
-    return NextResponse.json({ error: 'Failed to fetch Google Ads accounts' }, { status: 502 });
+    const msg = e instanceof Error ? e.message.slice(0, 500) : 'unknown';
+    return NextResponse.json({ error: 'Failed to fetch Google Ads accounts', detail: msg }, { status: 502 });
   }
 }
