@@ -78,16 +78,17 @@ export async function GET(req: NextRequest) {
 
     const customerIds = resourceNames.map((r) => r.replace('customers/', ''));
 
-    const detailResults: Array<{ id: string; error?: string }> = [];
+    // Fetch details for each customer to identify MCC (manager) accounts
+    // Use a 8s timeout per call to stay within Vercel function limits
     const details = await Promise.all(
       customerIds.map(async (id) => {
         try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 8000);
           const d = await fetchCustomerDetails(accessToken, id);
-          detailResults.push({ id, error: d ? undefined : 'null_response' });
+          clearTimeout(timeout);
           return d;
-        } catch (err) {
-          const msg = err instanceof Error ? err.message.slice(0, 200) : 'unknown';
-          detailResults.push({ id, error: msg });
+        } catch {
           return null;
         }
       }),
@@ -100,10 +101,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       customers: mccAccounts,
       _debug: {
+        step: 'success',
         accessibleCount: customerIds.length,
         customerIds,
         details: details.map((d) => d ? { id: d.id, manager: d.manager, name: d.descriptiveName } : null),
-        detailErrors: detailResults.filter((r) => r.error),
         mccCount: mccAccounts.length,
       },
     });
