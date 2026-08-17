@@ -169,20 +169,27 @@ export async function POST(
       });
       console.log(`[select-account] MCC link created for ${customerId}`);
 
-      // 2. Auto-accept using client's token
+      // 2. Auto-accept using client's token (retry with increasing delays)
       if (clientAccessToken) {
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        try {
-          console.log(`[select-account] Auto-accepting link for ${customerId}...`);
-          await acceptMccLink({
-            clientAccessToken,
-            clientCustomerId: customerId,
-            managerCustomerId: agencyConfig.google_mcc_id,
-          });
-          console.log(`[select-account] Auto-accept succeeded for ${customerId}`);
-          autoAccepted = true;
-        } catch (e) {
-          console.warn(`[select-account] Auto-accept failed for ${customerId}:`, (e as Error).message);
+        const delays = [3000, 5000, 7000];
+        for (let attempt = 0; attempt < delays.length; attempt++) {
+          await new Promise((resolve) => setTimeout(resolve, delays[attempt]));
+          try {
+            console.log(`[select-account] Auto-accept attempt ${attempt + 1} for ${customerId}...`);
+            await acceptMccLink({
+              clientAccessToken,
+              clientCustomerId: customerId,
+              managerCustomerId: agencyConfig.google_mcc_id,
+            });
+            console.log(`[select-account] Auto-accept succeeded for ${customerId} on attempt ${attempt + 1}`);
+            autoAccepted = true;
+            break;
+          } catch (e) {
+            console.warn(`[select-account] Auto-accept attempt ${attempt + 1} failed for ${customerId}:`, (e as Error).message);
+            if (attempt === delays.length - 1) {
+              console.warn(`[select-account] All auto-accept attempts exhausted for ${customerId}`);
+            }
+          }
         }
       } else {
         console.warn(`[select-account] No client token available, skipping auto-accept for ${customerId}`);

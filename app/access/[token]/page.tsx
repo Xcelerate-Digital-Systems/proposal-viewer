@@ -83,13 +83,19 @@ export default function AccessTokenPage() {
       const json = await res.json();
       setData(json);
 
-      // Check if returning from an OAuth callback
-      const googleStatus = searchParams.get('google');
+      // Check if returning from an OAuth callback (redirect params are per-platform now)
+      const googleAdsStatus = searchParams.get('google_ads');
+      const googleGa4Status = searchParams.get('google_ga4');
+      const googleGtmStatus = searchParams.get('google_gtm');
       const metaStatus = searchParams.get('meta');
       const reason = searchParams.get('reason');
-      const isReturningFromOAuth = !!(googleStatus || metaStatus);
+      // Legacy: old callbacks used ?google= key
+      const legacyGoogleStatus = searchParams.get('google');
+      const anyGoogleStatus = googleAdsStatus || googleGa4Status || googleGtmStatus || legacyGoogleStatus;
+      const isReturningFromOAuth = !!(anyGoogleStatus || metaStatus);
 
-      if (googleStatus === 'error' || googleStatus === 'denied') {
+      if (legacyGoogleStatus === 'error' || legacyGoogleStatus === 'denied' ||
+          googleAdsStatus === 'error' || googleGa4Status === 'error' || googleGtmStatus === 'error') {
         const knownReasons: Record<string, string> = {
           denied: 'Google sign-in was cancelled.',
           exchange_failed: 'Failed to connect with Google. Please try again.',
@@ -106,18 +112,15 @@ export default function AccessTokenPage() {
       }
 
       if (json.type === 'request') {
+        const hasOAuthComplete = json.grants?.some((g: Grant) => g.status === 'oauth_complete');
         const hasAttemptedGrant = json.grants?.some((g: Grant) =>
           g.status !== 'pending'
         );
-        const needsAccountSelection = json.grants?.some((g: Grant) => {
-          if (g.status !== 'oauth_complete') return false;
-          const meta = g.metadata as Record<string, unknown>;
-          return meta?.needs_account_selection || meta?.needs_property_selection;
-        });
-        if (needsAccountSelection) {
+        // Go straight to grant step if any platform has completed OAuth and needs selection
+        if (hasOAuthComplete || (isReturningFromOAuth && hasAttemptedGrant)) {
           setStep('grant');
-        } else if (hasAttemptedGrant || isReturningFromOAuth) {
-          setStep('connect');
+        } else if (hasAttemptedGrant) {
+          setStep('grant');
         } else {
           setStep('landing');
         }
@@ -756,102 +759,180 @@ function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onN
     finally { setGrantingPlatform(null); }
   };
 
-  // Build platform cards for each Google platform
+  // Build platform cards
   const googlePlatforms = request.platforms.filter((p) => p.startsWith('google_'));
+  const hasMetaPlatform = request.platforms.includes('meta');
+  const metaGrant = grantByPlatform.get('meta');
+  const metaAssets = platformConfig?.meta;
+
+  const handleConnectGoogle = () => {
+    const firstGoogle = googlePlatforms.find((p) => {
+      const g = grantByPlatform.get(p);
+      return !g || g.status === 'pending' || g.status === 'failed';
+    }) || googlePlatforms[0];
+    window.location.href = `/api/access/${token}/google/start?platform=${firstGoogle}`;
+  };
+
+  const handleConnectMeta = () => {
+    window.location.href = `/api/access/${token}/meta/start?platform=meta`;
+  };
+
+  // Google is signed in if any google grant has tokens
+  const googleSignedIn = googlePlatforms.some((p) => {
+    const g = grantByPlatform.get(p);
+    return g && g.status !== 'pending' && g.status !== 'failed';
+  });
+
+  const metaSignedIn = metaGrant && metaGrant.status !== 'pending' && metaGrant.status !== 'failed';
 
   return (
     <div>
       <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Grant Partner Access</h2>
       <p className="text-sm text-gray-500 text-center mb-6">
-        Grant your agency partner access to manage the assets in your account.
+        Select which accounts to grant your agency partner access to.
       </p>
 
       <div className="space-y-4">
-        {googlePlatforms.map((platform) => {
-          const grant = grantByPlatform.get(platform);
-          const configKey = GOOGLE_PLATFORM_TO_CONFIG_KEY[platform] || platform;
-          const assetDef = GOOGLE_ASSETS.find((a) => a.key === configKey);
-          const roleName = googleAssets?.[configKey as keyof NonNullable<typeof googleAssets>]?.role;
-          const roleLabel = assetDef?.roles.find((r) => r.value === roleName)?.label || roleName || '';
-          const meta = grant?.metadata as Record<string, unknown> | undefined;
-          const isGranted = grant && (grant.status === 'granted' || grant.status === 'request_sent');
-          const isOAuthComplete = grant?.status === 'oauth_complete';
-          const isGranting = grantingPlatform === platform;
+        {/* Google section — one card with all google platforms inside */}
+        {googlePlatforms.length > 0 && (
+          <PlatformConnectCard
+            icon={<GoogleCardIcon />}
+            title="Google Assets"
+            subtitle={googleSignedIn ? 'Select the accounts to grant access to' : 'Sign in to continue'}
+            accentColor={accentColor}
+          >
+            {!googleSignedIn ? (
+              <button
+                onClick={handleConnectGoogle}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Sign in with Google
+              </button>
+            ) : (
+              <div className="space-y-4">
+                {googlePlatforms.map((platform) => {
+                  const grant = grantByPlatform.get(platform);
+                  const configKey = GOOGLE_PLATFORM_TO_CONFIG_KEY[platform] || platform;
+                  const assetDef = GOOGLE_ASSETS.find((a) => a.key === configKey);
+                  const roleName = googleAssets?.[configKey as keyof NonNullable<typeof googleAssets>]?.role;
+                  const roleLabel = assetDef?.roles.find((r) => r.value === roleName)?.label || roleName || '';
+                  const meta = grant?.metadata as Record<string, unknown> | undefined;
+                  const isGranted = grant && (grant.status === 'granted' || grant.status === 'request_sent');
+                  const isOAuthComplete = grant?.status === 'oauth_complete';
+                  const isGranting = grantingPlatform === platform;
 
-          // Get the selectable items based on platform
-          let items: Array<{ id: string; name: string }> = [];
-          if (isOAuthComplete) {
-            if (platform === 'google_ads' && meta?.needs_account_selection) {
-              items = (meta.customer_accounts as Array<{ id: string; name: string }>) || [];
-            } else if (platform === 'google_ga4' && meta?.needs_property_selection) {
-              items = (meta.ga4_properties as Array<{ id: string; name: string }>) || [];
-            } else if (platform === 'google_gtm' && meta?.needs_account_selection) {
-              items = (meta.gtm_accounts as Array<{ id: string; name: string }>) || [];
-            }
-          }
+                  let items: Array<{ id: string; name: string }> = [];
+                  if (isOAuthComplete) {
+                    if (platform === 'google_ads' && meta?.needs_account_selection) {
+                      items = (meta.customer_accounts as Array<{ id: string; name: string }>) || [];
+                    } else if (platform === 'google_ga4' && meta?.needs_property_selection) {
+                      items = (meta.ga4_properties as Array<{ id: string; name: string }>) || [];
+                    } else if (platform === 'google_gtm' && meta?.needs_account_selection) {
+                      items = (meta.gtm_accounts as Array<{ id: string; name: string }>) || [];
+                    }
+                  }
 
-          const handleGrant = () => {
-            if (platform === 'google_ads') handleGrantAds();
-            else handleGrantProperty(platform as 'google_ga4' | 'google_gtm');
-          };
+                  const handleGrant = () => {
+                    if (platform === 'google_ads') handleGrantAds();
+                    else handleGrantProperty(platform as 'google_ga4' | 'google_gtm');
+                  };
 
-          return (
-            <PlatformConnectCard
-              key={platform}
-              icon={<GoogleCardIcon />}
-              title="Google Assets"
-              subtitle=""
-              accentColor={accentColor}
-            >
-              {isGranted ? (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-700">{PLATFORM_LABELS[platform]}</span>
-                    <div className="flex items-center gap-2">
-                      {roleLabel && <span className="text-gray-500 text-xs">{roleLabel}</span>}
-                      <PlatformStatusBadge status={grant!.status} />
+                  return (
+                    <div key={platform} className="border border-gray-100 rounded-lg p-4">
+                      {isGranted ? (
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-sm text-gray-700">{PLATFORM_LABELS[platform]}</span>
+                            {grant!.platform_account_name && (
+                              <p className="text-xs text-gray-500 mt-0.5">{grant!.platform_account_name}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {roleLabel && <span className="text-gray-500 text-xs">{roleLabel}</span>}
+                            <PlatformStatusBadge status={grant!.status} />
+                          </div>
+                        </div>
+                      ) : items.length > 0 ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="text-gray-700 font-medium">{PLATFORM_LABELS[platform]}</span>
+                            {roleLabel && <span className="text-xs text-gray-400 px-2 py-0.5 bg-gray-100 rounded">{roleLabel}</span>}
+                          </div>
+                          <select
+                            value={selections[platform] || ''}
+                            onChange={(e) => setSelection(platform, e.target.value)}
+                            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+                          >
+                            <option value="">Select your account</option>
+                            {items.map((a) => (
+                              <option key={a.id} value={a.id}>{a.name}{platform === 'google_ads' ? ` (${a.id})` : ''}</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={handleGrant}
+                            disabled={!selections[platform] || isGranting}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-50"
+                            style={{ backgroundColor: accentColor }}
+                          >
+                            {isGranting ? 'Granting access…' : 'Grant Access'}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-700">{PLATFORM_LABELS[platform]}</span>
+                          <span className="text-xs text-gray-400">
+                            {grant?.status === 'failed' ? 'Failed — try again' : 'Processing…'}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  {grant!.platform_account_name && (
-                    <p className="text-xs text-gray-500">{grant!.platform_account_name}</p>
-                  )}
+                  );
+                })}
+              </div>
+            )}
+          </PlatformConnectCard>
+        )}
+
+        {/* Meta section */}
+        {hasMetaPlatform && (
+          <PlatformConnectCard
+            icon={<MetaCardIcon />}
+            title="Meta Assets"
+            subtitle={metaSignedIn ? 'Access granted' : 'Sign in to grant access'}
+            accentColor={accentColor}
+          >
+            {!metaSignedIn ? (
+              <div className="space-y-3">
+                <div className="border border-gray-100 rounded-lg divide-y divide-gray-100 text-sm">
+                  {META_ASSETS.filter((a) => metaAssets?.[a.key as keyof NonNullable<typeof metaAssets>]?.enabled).map((asset) => {
+                    const assetKey = asset.key as keyof NonNullable<typeof metaAssets>;
+                    const roleName = metaAssets?.[assetKey]?.role;
+                    const roleLabel = asset.roles.find((r) => r.value === roleName)?.label || roleName || '';
+                    return (
+                      <div key={asset.key} className="flex items-center justify-between px-4 py-2.5">
+                        <span className="text-gray-700">{asset.label}</span>
+                        {roleLabel && <span className="text-gray-500 text-xs">{roleLabel}</span>}
+                      </div>
+                    );
+                  })}
                 </div>
-              ) : items.length > 0 ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-gray-700">{PLATFORM_LABELS[platform]}</span>
-                    {roleLabel && <span className="text-xs text-gray-400 px-2 py-0.5 bg-gray-100 rounded">{roleLabel}</span>}
-                  </div>
-                  <select
-                    value={selections[platform] || ''}
-                    onChange={(e) => setSelection(platform, e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
-                  >
-                    <option value="">Select your account</option>
-                    {items.map((a) => (
-                      <option key={a.id} value={a.id}>{a.name}{platform === 'google_ads' ? ` (${a.id})` : ''}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={handleGrant}
-                    disabled={!selections[platform] || isGranting}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-50"
-                    style={{ backgroundColor: accentColor }}
-                  >
-                    {isGranting ? 'Granting access…' : 'Grant Access'}
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between text-sm py-1">
-                  <span className="text-gray-700">{PLATFORM_LABELS[platform]}</span>
-                  <span className="text-xs text-gray-400">
-                    {grant?.status === 'failed' ? 'Failed — sign in again' : 'Pending sign-in'}
-                  </span>
-                </div>
-              )}
-            </PlatformConnectCard>
-          );
-        })}
+                <button
+                  onClick={handleConnectMeta}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1877F2] rounded-lg text-sm font-medium text-white hover:bg-[#166FE5] transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                  Sign in with Meta
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-700">Ad Account</span>
+                <PlatformStatusBadge status={metaGrant!.status} />
+              </div>
+            )}
+          </PlatformConnectCard>
+        )}
       </div>
 
       <div className="flex justify-between mt-6">

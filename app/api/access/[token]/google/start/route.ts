@@ -30,8 +30,7 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid platform parameter' }, { status: 400 });
   }
 
-  const isAds = platform === 'google_ads';
-  const clientId = (isAds ? process.env.GOOGLE_ADS_CLIENT_ID : null) ?? process.env.GOOGLE_CLIENT_ID;
+  const clientId = process.env.GOOGLE_ADS_CLIENT_ID ?? process.env.GOOGLE_CLIENT_ID;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '');
   if (!clientId || !appUrl) {
     return NextResponse.json({ error: 'Google connector is not configured' }, { status: 500 });
@@ -41,7 +40,7 @@ export async function GET(
 
   const { data: request } = await supabase
     .from('client_access_requests')
-    .select('id, company_id, status, expires_at')
+    .select('id, company_id, status, expires_at, platforms')
     .eq('share_token', token)
     .single();
 
@@ -92,14 +91,21 @@ export async function GET(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
+  // Combine scopes for ALL Google platforms in this request so one sign-in covers everything
+  const requestedPlatforms = (request.platforms as string[]) || [];
+  const allGooglePlatforms = requestedPlatforms.filter((p) => p.startsWith('google_')) as AccessPlatform[];
+  const combinedScopes = new Set<string>();
+  for (const gp of allGooglePlatforms) {
+    for (const s of getScopesForPlatform(gp)) combinedScopes.add(s);
+  }
+
   const redirectUri = `${appUrl}/api/auth/google/callback`;
-  const scopes = getScopesForPlatform(platform);
 
   const authorizeUrl = buildGoogleAuthorizeUrl({
     clientId,
     redirectUri,
     state,
-    scopes,
+    scopes: Array.from(combinedScopes),
   });
 
   return NextResponse.redirect(authorizeUrl);

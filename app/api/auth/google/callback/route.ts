@@ -4,9 +4,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 import {
   exchangeGoogleCode,
   fetchGA4AccountSummaries,
-  grantGA4Access,
   fetchGTMAccounts,
-  grantGTMAccess,
   fetchAccessibleCustomers,
   fetchCustomerDetails,
 } from '@/lib/connectors/google/api-client';
@@ -138,56 +136,74 @@ export async function GET(req: NextRequest) {
     .eq('company_id', accessRequest.company_id)
     .single();
 
-  let grantStatus: string = 'oauth_complete';
-  let accountName: string | null = null;
-  let metadata: Record<string, unknown> = {};
-
-  try {
-    if (platform === 'google_ga4') {
-      console.log(`[google-cb] GA4 grant starting, agencyEmail=${agencyConfig?.google_analytics_email ?? 'NONE'}`);
-      const result = await handleGA4Grant(accessToken, agencyConfig?.google_analytics_email);
-      grantStatus = result.status;
-      accountName = result.accountName;
-      metadata = result.metadata;
-    } else if (platform === 'google_gtm') {
-      console.log(`[google-cb] GTM grant starting, agencyEmail=${agencyConfig?.google_gtm_email ?? 'NONE'}`);
-      const result = await handleGTMGrant(accessToken, agencyConfig?.google_gtm_email);
-      grantStatus = result.status;
-      accountName = result.accountName;
-      metadata = result.metadata;
-    } else if (platform === 'google_ads') {
-      console.log(`[google-cb] Google Ads grant starting, mccId=${agencyConfig?.google_mcc_id ?? 'NONE'}`);
-      const result = await handleGoogleAdsGrant(accessToken, agencyConfig);
-      grantStatus = result.status;
-      accountName = result.accountName;
-      metadata = result.metadata;
-      console.log(`[google-cb] Google Ads grant result: status=${result.status}, accounts=${result.accountName}, meta=${JSON.stringify(result.metadata)}`);
-    }
-  } catch (e) {
-    const msg = e instanceof Error ? e.message.slice(0, 500) : 'unknown';
-    const stack = e instanceof Error ? e.stack?.slice(0, 300) : '';
-    console.error(`[google-cb] ${platform} grant FAILED:`, msg);
-    if (stack) console.error(`[google-cb] stack:`, stack);
-    grantStatus = 'failed';
-    metadata = { error: msg };
-  }
-
-  console.log(`[google-cb] Final grant update: platform=${platform}, status=${grantStatus}, account=${accountName}`);
-
-  await supabase
+  // Process ALL Google grants for this request (one sign-in covers all Google platforms)
+  const { data: googleGrants } = await supabase
     .from('client_access_grants')
-    .update({
-      status: grantStatus,
-      oauth_token_encrypted: encryptedAccessToken,
-      oauth_refresh_token_encrypted: encryptedRefreshToken,
-      token_expires_at: tokenExpiresAt,
-      platform_account_name: accountName,
-      error_message: grantStatus === 'failed' ? (metadata.error as string) ?? 'Grant failed' : null,
-      metadata,
-      granted_at: grantStatus === 'granted' ? new Date().toISOString() : null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', stateRow.grant_id);
+    .select('id, platform, status')
+    .eq('request_id', stateRow.access_request_id)
+    .in('platform', ['google_ads', 'google_ga4', 'google_gtm']);
+
+  const grantsToProcess = (googleGrants ?? []).filter(
+    (g) => g.status === 'pending' || g.status === 'failed' || g.id === stateRow.grant_id,
+  );
+
+  const redirectQuery: Record<string, string> = {};
+  let primaryStatus = 'oauth_complete';
+
+  for (const grantRow of grantsToProcess) {
+    const gPlatform = grantRow.platform as string;
+    let grantStatus = 'oauth_complete';
+    let accountName: string | null = null;
+    let metadata: Record<string, unknown> = {};
+
+    try {
+      if (gPlatform === 'google_ga4') {
+        console.log(`[google-cb] GA4 grant starting, agencyEmail=${agencyConfig?.google_analytics_email ?? 'NONE'}`);
+        const result = await handleGA4Grant(accessToken, agencyConfig?.google_analytics_email);
+        grantStatus = result.status;
+        accountName = result.accountName;
+        metadata = result.metadata;
+      } else if (gPlatform === 'google_gtm') {
+        console.log(`[google-cb] GTM grant starting, agencyEmail=${agencyConfig?.google_gtm_email ?? 'NONE'}`);
+        const result = await handleGTMGrant(accessToken, agencyConfig?.google_gtm_email);
+        grantStatus = result.status;
+        accountName = result.accountName;
+        metadata = result.metadata;
+      } else if (gPlatform === 'google_ads') {
+        console.log(`[google-cb] Google Ads grant starting, mccId=${agencyConfig?.google_mcc_id ?? 'NONE'}`);
+        const result = await handleGoogleAdsGrant(accessToken, agencyConfig);
+        grantStatus = result.status;
+        accountName = result.accountName;
+        metadata = result.metadata;
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message.slice(0, 500) : 'unknown';
+      console.error(`[google-cb] ${gPlatform} grant FAILED:`, msg);
+      grantStatus = 'failed';
+      metadata = { error: msg };
+    }
+
+    console.log(`[google-cb] Grant update: platform=${gPlatform}, status=${grantStatus}, account=${accountName}`);
+
+    await supabase
+      .from('client_access_grants')
+      .update({
+        status: grantStatus,
+        oauth_token_encrypted: encryptedAccessToken,
+        oauth_refresh_token_encrypted: encryptedRefreshToken,
+        token_expires_at: tokenExpiresAt,
+        platform_account_name: accountName,
+        error_message: grantStatus === 'failed' ? (metadata.error as string) ?? 'Grant failed' : null,
+        metadata,
+        granted_at: grantStatus === 'granted' ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', grantRow.id);
+
+    if (grantRow.id === stateRow.grant_id) primaryStatus = grantStatus;
+    const qs = grantStatus === 'granted' ? 'connected' : grantStatus === 'request_sent' ? 'pending' : 'oauth_complete';
+    redirectQuery[gPlatform] = qs;
+  }
 
   // Update request status
   const { data: allGrants } = await supabase
@@ -207,11 +223,6 @@ export async function GET(req: NextRequest) {
     })
     .eq('id', stateRow.access_request_id);
 
-  const queryStatus = grantStatus === 'granted' ? 'connected' : grantStatus === 'request_sent' ? 'pending' : 'error';
-  const redirectQuery: Record<string, string> = { [platform]: queryStatus };
-  if (queryStatus === 'error' && metadata.error) {
-    redirectQuery.reason = String(metadata.error).slice(0, 200);
-  }
   return accessRedirect(appUrl, token, redirectQuery);
 }
 
