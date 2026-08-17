@@ -32,6 +32,7 @@ export default function AccessRequestModal({
   const [notes, setNotes] = useState('');
   const [expiresInDays, setExpiresInDays] = useState(30);
   const [platformConfig, setPlatformConfig] = useState<PlatformConfig>(defaultPlatformConfig());
+  const [wordpressEnabled, setWordpressEnabled] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +59,7 @@ export default function AccessRequestModal({
     if (googleAssets.google_ads?.enabled) platforms.push('google_ads');
     if (googleAssets.google_analytics?.enabled) platforms.push('google_ga4');
     if (googleAssets.google_tag_manager?.enabled) platforms.push('google_gtm');
+    if (wordpressEnabled) platforms.push('wordpress');
     return platforms;
   };
 
@@ -195,6 +197,31 @@ export default function AccessRequestModal({
               values={platformConfig.meta as Record<string, { enabled: boolean; role: string | null }>}
               onChange={(key, field, val) => updateAsset('meta', key, field, val)}
             />
+
+            {/* WordPress */}
+            <div className="border border-edge rounded-xl overflow-hidden">
+              <div className="flex items-center gap-2.5 px-4 py-3 bg-surface-hover/30 border-b border-edge">
+                <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#21759B"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zM3.433 12c0-1.198.258-2.335.714-3.363L8.07 20.238A8.576 8.576 0 0 1 3.433 12zm8.567 8.567c-.874 0-1.716-.138-2.508-.391l2.662-7.737 2.727 7.473c.018.044.04.084.063.123a8.534 8.534 0 0 1-2.944.532z"/></svg>
+                </div>
+                <h4 className="text-sm font-semibold text-ink">WordPress</h4>
+              </div>
+              <div className="p-3">
+                <div className="flex items-center gap-3">
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={wordpressEnabled}
+                      onChange={(e) => setWordpressEnabled(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:bg-teal transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
+                  </label>
+                  <span className="text-sm text-ink flex-1">WordPress Admin Access</span>
+                  <span className="text-xs text-dim">Manual setup</span>
+                </div>
+              </div>
+            </div>
 
             {/* Options row */}
             <div className="grid grid-cols-2 gap-3">
