@@ -91,6 +91,8 @@ export async function GET(req: NextRequest) {
     company_id: stateRow.company_id,
     google_analytics_email: userInfo.email || null,
     google_gtm_email: userInfo.email || null,
+    google_gbp_email: userInfo.email || null,
+    google_search_console_email: userInfo.email || null,
     google_user_name: userInfo.name ?? null,
     updated_at: new Date().toISOString(),
   };
