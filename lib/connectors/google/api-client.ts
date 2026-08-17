@@ -212,16 +212,20 @@ export async function fetchAccessibleCustomers(accessToken: string): Promise<str
   const devToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
   if (!devToken) throw new Error('GOOGLE_ADS_DEVELOPER_TOKEN not set');
 
-  console.log(`[google-ads] listAccessibleCustomers: devToken=${devToken.slice(0, 4)}...${devToken.slice(-4)}`);
   const res = await fetch(`${GOOGLE_ADS_BASE}/customers:listAccessibleCustomers`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'developer-token': devToken,
     },
   });
-  const json = await res.json();
-  console.log(`[google-ads] listAccessibleCustomers response: status=${res.status}, body=${JSON.stringify(json).slice(0, 500)}`);
-  if (!res.ok) throw new GoogleApiError(res.status, json);
+  const text = await res.text();
+  if (!res.ok) {
+    let parsed: unknown;
+    try { parsed = JSON.parse(text); } catch { parsed = text.slice(0, 500); }
+    throw new GoogleApiError(res.status, parsed);
+  }
+  let json: Record<string, unknown>;
+  try { json = JSON.parse(text); } catch { throw new Error(`listAccessibleCustomers returned non-JSON: ${text.slice(0, 300)}`); }
   return (json.resourceNames ?? []) as string[];
 }
 

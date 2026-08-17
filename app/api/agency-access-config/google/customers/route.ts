@@ -96,7 +96,13 @@ export async function GET(req: NextRequest) {
     try {
       resourceNames = await fetchAccessibleCustomers(accessToken);
     } catch (e) {
-      return NextResponse.json({ error: 'list_failed', detail: (e as Error).message?.slice(0, 500) }, { status: 502 });
+      const err = e as Error & { status?: number; googleError?: unknown };
+      return NextResponse.json({
+        error: 'list_failed',
+        detail: err.message?.slice(0, 800),
+        status: err.status,
+        googleError: typeof err.googleError === 'string' ? err.googleError.slice(0, 500) : err.googleError,
+      }, { status: 502 });
     }
 
     if (step === 'list_only') {
