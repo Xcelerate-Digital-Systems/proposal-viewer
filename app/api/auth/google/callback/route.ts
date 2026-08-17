@@ -8,9 +8,9 @@ import {
   fetchGTMAccounts,
   grantGTMAccess,
   fetchAccessibleCustomers,
-  createMccLink,
+  fetchCustomerDetails,
 } from '@/lib/connectors/google/api-client';
-import { encryptToken, decryptToken } from '@/lib/connectors/google/token-crypto';
+import { encryptToken } from '@/lib/connectors/google/token-crypto';
 import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 import type { AccessPlatform } from '@/lib/client-access/types';
 
@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
 
   const { data: agencyConfig } = await supabase
     .from('agency_access_config')
-    .select('google_mcc_id, google_analytics_email, google_gtm_email, google_refresh_token_encrypted')
+    .select('google_mcc_id, google_analytics_email, google_gtm_email')
     .eq('company_id', accessRequest.company_id)
     .single();
 
@@ -296,11 +296,11 @@ async function handleGTMGrant(
 
 async function handleGoogleAdsGrant(
   clientAccessToken: string,
-  agencyConfig: { google_mcc_id?: string | null; google_refresh_token_encrypted?: string | null } | null,
+  _agencyConfig: { google_mcc_id?: string | null; google_refresh_token_encrypted?: string | null } | null,
 ): Promise<{ status: string; accountName: string | null; metadata: Record<string, unknown> }> {
-  const mccId = agencyConfig?.google_mcc_id;
-
-  // List the client's accessible accounts using their token
+  // After OAuth, list the client's accounts and return them for selection.
+  // The actual MCC link is created later when the client picks an account
+  // via /api/access/[token]/google/select-account.
   const customerResources = await fetchAccessibleCustomers(clientAccessToken);
   const customerIds = customerResources.map((r) => r.replace('customers/', ''));
 
@@ -308,72 +308,25 @@ async function handleGoogleAdsGrant(
     return { status: 'failed', accountName: null, metadata: { error: 'No Google Ads accounts found' } };
   }
 
-  if (!mccId) {
-    return {
-      status: 'oauth_complete',
-      accountName: customerIds.join(', '),
-      metadata: { customer_ids: customerIds, needs_mcc_id: true },
-    };
-  }
-
-  // Get the agency's MCC access token to create the link from the manager side
-  const encryptedRefresh = agencyConfig?.google_refresh_token_encrypted;
-  if (!encryptedRefresh) {
-    return {
-      status: 'oauth_complete',
-      accountName: customerIds.join(', '),
-      metadata: { customer_ids: customerIds, error: 'Agency Google account not connected' },
-    };
-  }
-
-  const agencyClientId = process.env.GOOGLE_ADS_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
-  const agencyClientSecret = process.env.GOOGLE_ADS_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET;
-  if (!agencyClientId || !agencyClientSecret) {
-    return { status: 'failed', accountName: customerIds.join(', '), metadata: { error: 'Google OAuth not configured' } };
-  }
-
-  let agencyAccessToken: string;
-  try {
-    const refreshToken = decryptToken(encryptedRefresh);
-    const res = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: agencyClientId,
-        client_secret: agencyClientSecret,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
-      }),
-    });
-    const json = await res.json() as Record<string, unknown>;
-    if (!res.ok) {
-      return { status: 'failed', accountName: customerIds.join(', '), metadata: { error: 'Failed to refresh agency token' } };
+  // Fetch details (name, manager flag) for each account
+  const accounts: Array<{ id: string; name: string; manager: boolean }> = [];
+  for (const id of customerIds) {
+    const detail = await fetchCustomerDetails(clientAccessToken, id);
+    if (detail) {
+      accounts.push({ id: detail.id, name: detail.descriptiveName, manager: detail.manager });
     }
-    agencyAccessToken = json.access_token as string;
-  } catch (e) {
-    return { status: 'failed', accountName: customerIds.join(', '), metadata: { error: `Agency token refresh: ${(e as Error).message}` } };
   }
 
-  let linkedCount = 0;
-  const linkErrors: string[] = [];
-  for (const customerId of customerIds) {
-    try {
-      await createMccLink({ accessToken: agencyAccessToken, clientCustomerId: customerId, managerCustomerId: mccId });
-      linkedCount++;
-    } catch (e) {
-      const errMsg = e instanceof Error ? e.message.slice(0, 300) : String(e);
-      console.error(`[google-ads] MCC link failed for ${customerId}:`, errMsg);
-      linkErrors.push(`${customerId}: ${errMsg}`);
-    }
+  // Filter to non-manager accounts (regular ad accounts the client would grant access to)
+  const adAccounts = accounts.filter((a) => !a.manager);
+
+  if (adAccounts.length === 0) {
+    return { status: 'failed', accountName: null, metadata: { error: 'No Google Ads accounts found (only MCC accounts detected)' } };
   }
 
   return {
-    status: linkedCount > 0 ? 'request_sent' : 'failed',
-    accountName: customerIds.join(', '),
-    metadata: {
-      links_sent: linkedCount,
-      total_customers: customerIds.length,
-      ...(linkErrors.length > 0 ? { link_errors: linkErrors, error: linkErrors[0] } : {}),
-    },
+    status: 'oauth_complete',
+    accountName: null,
+    metadata: { customer_accounts: adAccounts, needs_account_selection: true },
   };
 }

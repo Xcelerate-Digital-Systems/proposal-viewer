@@ -18,6 +18,7 @@ interface Grant {
   status: AccessGrantStatus;
   platform_account_name: string | null;
   error_message: string | null;
+  metadata: Record<string, unknown> | null;
 }
 
 interface AgencyInfo {
@@ -512,6 +513,9 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
   onNext: () => void;
   onDismissError: () => void;
 }) {
+  const [selectedAccount, setSelectedAccount] = useState('');
+  const [granting, setGranting] = useState(false);
+
   const grantByPlatform = new Map<AccessPlatform, Grant>();
   for (const g of grants) grantByPlatform.set(g.platform, g);
 
@@ -519,6 +523,25 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
     if (platform === 'wordpress') return;
     const platformRoute = platform === 'meta' ? 'meta' : 'google';
     window.location.href = `/api/access/${token}/${platformRoute}/start?platform=${platform}`;
+  };
+
+  const handleGrantAccount = async () => {
+    if (!selectedAccount) return;
+    const adsGrant = grantByPlatform.get('google_ads');
+    const accounts = (adsGrant?.metadata as Record<string, unknown>)?.customer_accounts as Array<{ id: string; name: string }> | undefined;
+    const account = accounts?.find((a) => a.id === selectedAccount);
+    setGranting(true);
+    try {
+      const res = await fetch(`/api/access/${token}/google/select-account`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer_id: selectedAccount, customer_name: account?.name }),
+      });
+      if (res.ok) {
+        onRefresh();
+      }
+    } catch { /* ignore */ }
+    finally { setGranting(false); }
   };
 
   const platformConfig = request.platform_config;
@@ -572,7 +595,14 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
             </div>
             {(() => {
               const googleGrants = request.platforms.filter((p) => p.startsWith('google_')).map((p) => grantByPlatform.get(p));
-              const allConnected = googleGrants.every((g) => g && g.status !== 'pending' && g.status !== 'failed');
+              const allConnected = googleGrants.every((g) => g && (g.status === 'granted' || g.status === 'request_sent'));
+              const adsGrant = grantByPlatform.get('google_ads');
+              const needsAccountSelection = adsGrant?.status === 'oauth_complete'
+                && (adsGrant.metadata as Record<string, unknown>)?.needs_account_selection;
+              const customerAccounts = needsAccountSelection
+                ? ((adsGrant!.metadata as Record<string, unknown>).customer_accounts as Array<{ id: string; name: string }>) || []
+                : [];
+
               if (allConnected) {
                 return (
                   <div className="flex items-center gap-2 text-emerald-600 text-sm font-medium py-2">
@@ -580,6 +610,34 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
                   </div>
                 );
               }
+
+              if (needsAccountSelection) {
+                return (
+                  <div className="space-y-3">
+                    <div>
+                      <select
+                        value={selectedAccount}
+                        onChange={(e) => setSelectedAccount(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      >
+                        <option value="">Select your account</option>
+                        {customerAccounts.map((a) => (
+                          <option key={a.id} value={a.id}>{a.name} ({a.id})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      onClick={handleGrantAccount}
+                      disabled={!selectedAccount || granting}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-50"
+                      style={{ backgroundColor: accentColor }}
+                    >
+                      {granting ? 'Granting access…' : 'Grant Access'}
+                    </button>
+                  </div>
+                );
+              }
+
               return (
                 <button
                   onClick={() => handleConnect(request.platforms.find((p) => p.startsWith('google_'))!)}

@@ -237,9 +237,6 @@ export async function createMccLink(opts: {
   const devToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
   if (!devToken) throw new Error('GOOGLE_ADS_DEVELOPER_TOKEN not set');
 
-  // Create a CustomerClientLink from the manager (MCC) side.
-  // The manager invites the client — this is the only way to create the link.
-  // login-customer-id must be the MCC account.
   const res = await fetch(
     `${GOOGLE_ADS_BASE}/customers/${opts.managerCustomerId}/customerClientLinks:mutate`,
     {
@@ -267,4 +264,76 @@ export async function createMccLink(opts: {
   if (!res.ok) throw new GoogleApiError(res.status, json);
   const result = json.result as Record<string, string> | undefined;
   return result?.resourceName ?? '';
+}
+
+export async function acceptMccLink(opts: {
+  clientAccessToken: string;
+  clientCustomerId: string;
+  managerCustomerId: string;
+}): Promise<void> {
+  const devToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
+  if (!devToken) throw new Error('GOOGLE_ADS_DEVELOPER_TOKEN not set');
+
+  // Find the pending CustomerManagerLink on the client account
+  const searchRes = await fetch(
+    `${GOOGLE_ADS_BASE}/customers/${opts.clientCustomerId}/googleAds:search`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${opts.clientAccessToken}`,
+        'developer-token': devToken,
+        'Content-Type': 'application/json',
+        'login-customer-id': opts.clientCustomerId,
+      },
+      body: JSON.stringify({
+        query: `SELECT customer_manager_link.resource_name, customer_manager_link.manager_customer, customer_manager_link.status FROM customer_manager_link WHERE customer_manager_link.manager_customer = 'customers/${opts.managerCustomerId}' AND customer_manager_link.status = 'PENDING'`,
+      }),
+    },
+  );
+
+  const searchText = await searchRes.text();
+  if (!searchRes.ok) {
+    let parsed: unknown;
+    try { parsed = JSON.parse(searchText); } catch { parsed = searchText.slice(0, 300); }
+    throw new GoogleApiError(searchRes.status, parsed);
+  }
+
+  let searchJson: Record<string, unknown>;
+  try { searchJson = JSON.parse(searchText); } catch { throw new Error(`acceptMccLink search non-JSON: ${searchText.slice(0, 300)}`); }
+
+  const results = searchJson.results as Array<{ customerManagerLink?: { resourceName?: string } }> | undefined;
+  const linkResourceName = results?.[0]?.customerManagerLink?.resourceName;
+  if (!linkResourceName) {
+    throw new Error('No pending manager link found to accept');
+  }
+
+  // Accept the link by updating status to ACTIVE
+  const mutateRes = await fetch(
+    `${GOOGLE_ADS_BASE}/customers/${opts.clientCustomerId}/customerManagerLinks:mutate`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${opts.clientAccessToken}`,
+        'developer-token': devToken,
+        'Content-Type': 'application/json',
+        'login-customer-id': opts.clientCustomerId,
+      },
+      body: JSON.stringify({
+        operations: [{
+          update: {
+            resourceName: linkResourceName,
+            status: 'ACTIVE',
+          },
+          updateMask: 'status',
+        }],
+      }),
+    },
+  );
+
+  const mutateText = await mutateRes.text();
+  if (!mutateRes.ok) {
+    let parsed: unknown;
+    try { parsed = JSON.parse(mutateText); } catch { parsed = mutateText.slice(0, 300); }
+    throw new GoogleApiError(mutateRes.status, parsed);
+  }
 }

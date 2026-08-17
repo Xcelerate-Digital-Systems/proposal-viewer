@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 import { rateLimit, ipFromRequest, rateLimitHeaders } from '@/lib/rate-limit';
 
 const REQUEST_COLUMNS = 'id, company_id, client_id, share_token, platforms, platform_config, status, expires_at, client_name, client_email, notes, created_at';
-const GRANT_COLUMNS = 'id, request_id, platform, status, platform_account_name, error_message, granted_at';
+const GRANT_COLUMNS = 'id, request_id, platform, status, platform_account_name, error_message, granted_at, metadata';
 
 async function getAgencyBranding(supabase: ReturnType<typeof createServiceClient>, companyId: string) {
   const { data: company } = await supabase
