@@ -57,7 +57,7 @@ interface UniversalData {
 }
 
 type AccessData = RequestData | UniversalData;
-type WizardStep = 'landing' | 'register' | 'connect' | 'status';
+type WizardStep = 'landing' | 'register' | 'connect' | 'grant' | 'status';
 
 export default function AccessTokenPage() {
   const params = useParams<{ token: string }>();
@@ -109,7 +109,16 @@ export default function AccessTokenPage() {
         const hasAttemptedGrant = json.grants?.some((g: Grant) =>
           g.status !== 'pending'
         );
-        setStep(hasAttemptedGrant || isReturningFromOAuth ? 'connect' : 'landing');
+        const needsAccountSelection = json.grants?.some((g: Grant) =>
+          g.status === 'oauth_complete' && (g.metadata as Record<string, unknown>)?.needs_account_selection
+        );
+        if (needsAccountSelection) {
+          setStep('grant');
+        } else if (hasAttemptedGrant || isReturningFromOAuth) {
+          setStep('connect');
+        } else {
+          setStep('landing');
+        }
       } else {
         setStep('landing');
       }
@@ -227,8 +236,8 @@ export default function AccessTokenPage() {
     <WizardShell agency={agency} fonts={fonts}>
       {/* Step indicator */}
       <StepIndicator
-        currentStep={step === 'connect' ? 1 : 2}
-        steps={['Connect Accounts', 'Review Status']}
+        currentStep={step === 'connect' ? 1 : step === 'grant' ? 2 : 3}
+        steps={['Connect Accounts', 'Grant Access', 'Access Status']}
         accentColor={accentColor}
       />
 
@@ -241,8 +250,21 @@ export default function AccessTokenPage() {
           accentColor={accentColor}
           oauthError={oauthError}
           onRefresh={fetchData}
-          onNext={() => setStep('status')}
+          onNext={() => setStep('grant')}
           onDismissError={() => setOauthError(null)}
+        />
+      )}
+
+      {step === 'grant' && (
+        <GrantStep
+          token={token}
+          request={request}
+          grants={grants}
+          agency={agency}
+          accentColor={accentColor}
+          onRefresh={fetchData}
+          onNext={() => setStep('status')}
+          onBack={() => setStep('connect')}
         />
       )}
 
@@ -253,7 +275,7 @@ export default function AccessTokenPage() {
           agency={agency}
           accentColor={accentColor}
           allDone={allDone}
-          onBack={() => setStep('connect')}
+          onBack={() => setStep('grant')}
         />
       )}
     </WizardShell>
@@ -380,9 +402,9 @@ function LandingStep({ agencyName, agencyLogoUrl, accentColor, bgPrimary, client
 
       <div className="grid sm:grid-cols-3 gap-4 mb-10">
         {[
-          { num: 1, title: 'Connect Your Accounts', desc: 'Sign in with your Google or Meta account to get started.' },
-          { num: 2, title: 'Grant Access', desc: `Approve the specific permissions ${agencyName} needs to manage your accounts.` },
-          { num: 3, title: 'Review Status', desc: 'Confirm everything is connected and you\'re all set.' },
+          { num: 1, title: 'Connect Your Accounts', desc: 'Sign in with your Social account to get started.' },
+          { num: 2, title: 'Select Your Assets', desc: `Choose the specific assets you'd like to grant access to ${agencyName}.` },
+          { num: 3, title: 'Review Access Status', desc: `Check the granted access status to ensure ${agencyName} has access to the selected assets.` },
         ].map((item) => (
           <div key={item.num} className="bg-white border border-gray-200 rounded-xl p-5 text-left">
             <div
@@ -513,9 +535,6 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
   onNext: () => void;
   onDismissError: () => void;
 }) {
-  const [selectedAccount, setSelectedAccount] = useState('');
-  const [granting, setGranting] = useState(false);
-
   const grantByPlatform = new Map<AccessPlatform, Grant>();
   for (const g of grants) grantByPlatform.set(g.platform, g);
 
@@ -523,25 +542,6 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
     if (platform === 'wordpress') return;
     const platformRoute = platform === 'meta' ? 'meta' : 'google';
     window.location.href = `/api/access/${token}/${platformRoute}/start?platform=${platform}`;
-  };
-
-  const handleGrantAccount = async () => {
-    if (!selectedAccount) return;
-    const adsGrant = grantByPlatform.get('google_ads');
-    const accounts = (adsGrant?.metadata as Record<string, unknown>)?.customer_accounts as Array<{ id: string; name: string }> | undefined;
-    const account = accounts?.find((a) => a.id === selectedAccount);
-    setGranting(true);
-    try {
-      const res = await fetch(`/api/access/${token}/google/select-account`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customer_id: selectedAccount, customer_name: account?.name }),
-      });
-      if (res.ok) {
-        onRefresh();
-      }
-    } catch { /* ignore */ }
-    finally { setGranting(false); }
   };
 
   const platformConfig = request.platform_config;
@@ -552,11 +552,21 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
   const hasGooglePlatforms = request.platforms.some((p) => p.startsWith('google_'));
   const hasWordpress = request.platforms.includes('wordpress');
 
+  // Google is "signed in" if any google grant is not pending
+  const googleSignedIn = request.platforms
+    .filter((p) => p.startsWith('google_'))
+    .some((p) => { const g = grantByPlatform.get(p); return g && g.status !== 'pending' && g.status !== 'failed'; });
+
+  const metaSignedIn = (() => {
+    const g = grantByPlatform.get('meta');
+    return g && g.status !== 'pending' && g.status !== 'failed';
+  })();
+
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Connect Your Accounts</h2>
+      <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Sign in to Your Account</h2>
       <p className="text-sm text-gray-500 text-center mb-6">
-        Sign in to grant <strong>{agency.name}</strong> access to your accounts.
+        To grant access to your accounts, please sign in below with your Google account.
       </p>
 
       {oauthError && (
@@ -577,7 +587,6 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
           >
             <div className="border border-gray-100 rounded-lg divide-y divide-gray-100 mb-4 text-sm">
               {request.platforms.filter((p) => p.startsWith('google_')).map((p) => {
-                const grant = grantByPlatform.get(p);
                 const googleKey = p as keyof NonNullable<typeof googleAssets>;
                 const assetDef = GOOGLE_ASSETS.find((a) => a.key === googleKey);
                 const roleName = googleAssets?.[googleKey]?.role;
@@ -585,69 +594,24 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
                 return (
                   <div key={p} className="flex items-center justify-between px-4 py-2.5">
                     <span className="text-gray-700">{PLATFORM_LABELS[p]}</span>
-                    <div className="flex items-center gap-2">
-                      {roleLabel && <span className="text-gray-500 text-xs">{roleLabel}</span>}
-                      {grant && grant.status !== 'pending' && <PlatformStatusBadge status={grant.status} />}
-                    </div>
+                    {roleLabel && <span className="text-gray-500 text-xs">{roleLabel}</span>}
                   </div>
                 );
               })}
             </div>
-            {(() => {
-              const googleGrants = request.platforms.filter((p) => p.startsWith('google_')).map((p) => grantByPlatform.get(p));
-              const allConnected = googleGrants.every((g) => g && (g.status === 'granted' || g.status === 'request_sent'));
-              const adsGrant = grantByPlatform.get('google_ads');
-              const needsAccountSelection = adsGrant?.status === 'oauth_complete'
-                && (adsGrant.metadata as Record<string, unknown>)?.needs_account_selection;
-              const customerAccounts = needsAccountSelection
-                ? ((adsGrant!.metadata as Record<string, unknown>).customer_accounts as Array<{ id: string; name: string }>) || []
-                : [];
-
-              if (allConnected) {
-                return (
-                  <div className="flex items-center gap-2 text-emerald-600 text-sm font-medium py-2">
-                    <Check size={16} /> Connected
-                  </div>
-                );
-              }
-
-              if (needsAccountSelection) {
-                return (
-                  <div className="space-y-3">
-                    <div>
-                      <select
-                        value={selectedAccount}
-                        onChange={(e) => setSelectedAccount(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
-                      >
-                        <option value="">Select your account</option>
-                        {customerAccounts.map((a) => (
-                          <option key={a.id} value={a.id}>{a.name} ({a.id})</option>
-                        ))}
-                      </select>
-                    </div>
-                    <button
-                      onClick={handleGrantAccount}
-                      disabled={!selectedAccount || granting}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-50"
-                      style={{ backgroundColor: accentColor }}
-                    >
-                      {granting ? 'Granting access…' : 'Grant Access'}
-                    </button>
-                  </div>
-                );
-              }
-
-              return (
-                <button
-                  onClick={() => handleConnect(request.platforms.find((p) => p.startsWith('google_'))!)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                  Sign in with Google
-                </button>
-              );
-            })()}
+            {googleSignedIn ? (
+              <div className="flex items-center gap-2 text-emerald-600 text-sm font-medium py-2">
+                <Check size={16} /> Signed in
+              </div>
+            ) : (
+              <button
+                onClick={() => handleConnect(request.platforms.find((p) => p.startsWith('google_'))!)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Sign in with Google
+              </button>
+            )}
           </PlatformConnectCard>
         )}
 
@@ -672,28 +636,19 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
                 );
               })}
             </div>
-            {(() => {
-              const metaGrant = grantByPlatform.get('meta');
-              if (metaGrant && metaGrant.status !== 'pending' && metaGrant.status !== 'failed') {
-                return (
-                  <div className="flex items-center gap-2 text-sm font-medium py-2">
-                    <PlatformStatusBadge status={metaGrant.status} />
-                    {metaGrant.status === 'request_sent' && (
-                      <span className="text-xs text-yellow-600">Check Meta Business Suite to approve</span>
-                    )}
-                  </div>
-                );
-              }
-              return (
-                <button
-                  onClick={() => handleConnect('meta')}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1877F2] rounded-lg text-sm font-medium text-white hover:bg-[#166FE5] transition-colors"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                  Sign in with Meta
-                </button>
-              );
-            })()}
+            {metaSignedIn ? (
+              <div className="flex items-center gap-2 text-emerald-600 text-sm font-medium py-2">
+                <Check size={16} /> Signed in
+              </div>
+            ) : (
+              <button
+                onClick={() => handleConnect('meta')}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1877F2] rounded-lg text-sm font-medium text-white hover:bg-[#166FE5] transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                Sign in with Meta
+              </button>
+            )}
           </PlatformConnectCard>
         )}
 
@@ -717,6 +672,164 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
       </div>
 
       <div className="flex justify-end mt-6">
+        <button
+          onClick={onNext}
+          className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          style={{ backgroundColor: accentColor }}
+        >
+          Next <ArrowRight size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ========== Grant Step (Account Selection) ========== */
+
+function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onNext, onBack }: {
+  token: string;
+  request: RequestData['request'];
+  grants: Grant[];
+  agency: AgencyInfo;
+  accentColor: string;
+  onRefresh: () => void;
+  onNext: () => void;
+  onBack: () => void;
+}) {
+  const [selectedAccount, setSelectedAccount] = useState('');
+  const [granting, setGranting] = useState(false);
+
+  const grantByPlatform = new Map<AccessPlatform, Grant>();
+  for (const g of grants) grantByPlatform.set(g.platform, g);
+
+  const platformConfig = request.platform_config;
+  const googleAssets = platformConfig?.google;
+
+  // Find platforms that need account selection
+  const adsGrant = grantByPlatform.get('google_ads');
+  const needsAdsSelection = adsGrant?.status === 'oauth_complete'
+    && (adsGrant.metadata as Record<string, unknown>)?.needs_account_selection;
+  const customerAccounts = needsAdsSelection
+    ? ((adsGrant!.metadata as Record<string, unknown>).customer_accounts as Array<{ id: string; name: string }>) || []
+    : [];
+
+  const adsAlreadyGranted = adsGrant && (adsGrant.status === 'granted' || adsGrant.status === 'request_sent');
+
+  const handleGrantAccount = async () => {
+    if (!selectedAccount) return;
+    const account = customerAccounts.find((a) => a.id === selectedAccount);
+    setGranting(true);
+    try {
+      const res = await fetch(`/api/access/${token}/google/select-account`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer_id: selectedAccount, customer_name: account?.name }),
+      });
+      if (res.ok) {
+        onRefresh();
+      }
+    } catch { /* ignore */ }
+    finally { setGranting(false); }
+  };
+
+  // Get role label for Google Ads
+  const googleKey = 'google_ads' as keyof NonNullable<typeof googleAssets>;
+  const assetDef = GOOGLE_ASSETS.find((a) => a.key === googleKey);
+  const roleName = googleAssets?.[googleKey]?.role;
+  const roleLabel = assetDef?.roles.find((r) => r.value === roleName)?.label || roleName || '';
+
+  return (
+    <div>
+      <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Grant Partner Access</h2>
+      <p className="text-sm text-gray-500 text-center mb-6">
+        Grant your agency a partner access to manage the assets in your account.
+      </p>
+
+      {/* Google Ads account selection */}
+      {request.platforms.includes('google_ads') && (
+        <PlatformConnectCard
+          icon={<GoogleCardIcon />}
+          title="Google Assets"
+          subtitle=""
+          accentColor={accentColor}
+        >
+          {adsAlreadyGranted ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-700">Google Ads</span>
+                <div className="flex items-center gap-2">
+                  {roleLabel && <span className="text-gray-500 text-xs">{roleLabel}</span>}
+                  <PlatformStatusBadge status={adsGrant!.status} />
+                </div>
+              </div>
+              {adsGrant!.platform_account_name && (
+                <p className="text-xs text-gray-500">{adsGrant!.platform_account_name}</p>
+              )}
+            </div>
+          ) : needsAdsSelection ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-700">Google Ads</span>
+                {roleLabel && <span className="text-xs text-gray-400 px-2 py-0.5 bg-gray-100 rounded">{roleLabel}</span>}
+              </div>
+              <select
+                value={selectedAccount}
+                onChange={(e) => setSelectedAccount(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">Select your account</option>
+                {customerAccounts.map((a) => (
+                  <option key={a.id} value={a.id}>{a.name} ({a.id})</option>
+                ))}
+              </select>
+              <button
+                onClick={handleGrantAccount}
+                disabled={!selectedAccount || granting}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-50"
+                style={{ backgroundColor: accentColor }}
+              >
+                {granting ? 'Granting access…' : 'Grant Access'}
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+              <Loader2 size={14} className="animate-spin" />
+              <span>Sign in with Google first to select your account</span>
+            </div>
+          )}
+        </PlatformConnectCard>
+      )}
+
+      {/* GA4 / GTM — auto-granted on sign-in, show status */}
+      {request.platforms.filter((p) => p.startsWith('google_') && p !== 'google_ads').map((p) => {
+        const grant = grantByPlatform.get(p);
+        const gKey = p as keyof NonNullable<typeof googleAssets>;
+        const gAssetDef = GOOGLE_ASSETS.find((a) => a.key === gKey);
+        const gRoleName = googleAssets?.[gKey]?.role;
+        const gRoleLabel = gAssetDef?.roles.find((r) => r.value === gRoleName)?.label || gRoleName || '';
+        const isConnected = grant && (grant.status === 'granted' || grant.status === 'request_sent' || grant.status === 'oauth_complete');
+        return (
+          <div key={p} className="bg-white border border-gray-200 rounded-xl p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <GoogleCardIcon />
+                <span className="text-sm font-medium text-gray-900">{PLATFORM_LABELS[p]}</span>
+                {gRoleLabel && <span className="text-xs text-gray-400 px-2 py-0.5 bg-gray-100 rounded">{gRoleLabel}</span>}
+              </div>
+              {isConnected ? (
+                <PlatformStatusBadge status={grant!.status} />
+              ) : (
+                <span className="text-xs text-gray-400">Pending sign-in</span>
+              )}
+            </div>
+          </div>
+        );
+      })}
+
+      <div className="flex justify-between mt-6">
+        <button onClick={onBack} className="flex items-center gap-1 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">
+          <ArrowLeft size={14} /> Back
+        </button>
         <button
           onClick={onNext}
           className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
