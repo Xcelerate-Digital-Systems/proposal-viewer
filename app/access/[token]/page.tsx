@@ -10,7 +10,7 @@ import WordPressInstructions from '@/components/client-access/WordPressInstructi
 import type { AccessPlatform, AccessGrantStatus } from '@/lib/client-access/types';
 import { PLATFORM_LABELS, VALID_PLATFORMS } from '@/lib/client-access/types';
 import type { PlatformConfig } from '@/lib/client-access/platform-config';
-import { META_ASSETS, GOOGLE_ASSETS } from '@/lib/client-access/platform-config';
+import { META_ASSETS, GOOGLE_ASSETS, GOOGLE_PLATFORM_TO_CONFIG_KEY } from '@/lib/client-access/platform-config';
 
 interface Grant {
   id: string;
@@ -589,9 +589,9 @@ function ConnectStep({ token, request, grants, agency, accentColor, oauthError, 
           >
             <div className="border border-gray-100 rounded-lg divide-y divide-gray-100 mb-4 text-sm">
               {request.platforms.filter((p) => p.startsWith('google_')).map((p) => {
-                const googleKey = p as keyof NonNullable<typeof googleAssets>;
-                const assetDef = GOOGLE_ASSETS.find((a) => a.key === googleKey);
-                const roleName = googleAssets?.[googleKey]?.role;
+                const configKey = GOOGLE_PLATFORM_TO_CONFIG_KEY[p] || p;
+                const assetDef = GOOGLE_ASSETS.find((a) => a.key === configKey);
+                const roleName = googleAssets?.[configKey as keyof NonNullable<typeof googleAssets>]?.role;
                 const roleLabel = assetDef?.roles.find((r) => r.value === roleName)?.label || roleName || '';
                 return (
                   <div key={p} className="flex items-center justify-between px-4 py-2.5">
@@ -769,9 +769,9 @@ function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onN
       <div className="space-y-4">
         {googlePlatforms.map((platform) => {
           const grant = grantByPlatform.get(platform);
-          const gKey = platform as keyof NonNullable<typeof googleAssets>;
-          const assetDef = GOOGLE_ASSETS.find((a) => a.key === gKey);
-          const roleName = googleAssets?.[gKey]?.role;
+          const configKey = GOOGLE_PLATFORM_TO_CONFIG_KEY[platform] || platform;
+          const assetDef = GOOGLE_ASSETS.find((a) => a.key === configKey);
+          const roleName = googleAssets?.[configKey as keyof NonNullable<typeof googleAssets>]?.role;
           const roleLabel = assetDef?.roles.find((r) => r.value === roleName)?.label || roleName || '';
           const meta = grant?.metadata as Record<string, unknown> | undefined;
           const isGranted = grant && (grant.status === 'granted' || grant.status === 'request_sent');

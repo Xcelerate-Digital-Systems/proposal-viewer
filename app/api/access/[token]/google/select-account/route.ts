@@ -82,11 +82,16 @@ export async function POST(
     return NextResponse.json({ error: 'Agency MCC not configured' }, { status: 500 });
   }
 
-  const agencyClientId = process.env.GOOGLE_ADS_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
-  const agencyClientSecret = process.env.GOOGLE_ADS_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET;
+  // Agency MCC token was issued under GOOGLE_CLIENT_ID (via agency-access-config OAuth)
+  const agencyClientId = process.env.GOOGLE_CLIENT_ID;
+  const agencyClientSecret = process.env.GOOGLE_CLIENT_SECRET;
   if (!agencyClientId || !agencyClientSecret) {
     return NextResponse.json({ error: 'Google OAuth not configured' }, { status: 500 });
   }
+
+  // Client token was issued under GOOGLE_ADS_CLIENT_ID if set (via auth/google/callback for google_ads)
+  const clientOAuthId = process.env.GOOGLE_ADS_CLIENT_ID || agencyClientId;
+  const clientOAuthSecret = process.env.GOOGLE_ADS_CLIENT_SECRET || agencyClientSecret;
 
   // Refresh the agency's MCC access token
   let agencyAccessToken: string;
@@ -104,6 +109,7 @@ export async function POST(
     });
     const json = await res.json() as Record<string, unknown>;
     if (!res.ok) {
+      console.error('[select-account] Agency token refresh failed:', JSON.stringify(json).slice(0, 200));
       return NextResponse.json({ error: 'Failed to refresh agency token' }, { status: 502 });
     }
     agencyAccessToken = json.access_token as string;
@@ -120,8 +126,8 @@ export async function POST(
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
-          client_id: agencyClientId,
-          client_secret: agencyClientSecret,
+          client_id: clientOAuthId,
+          client_secret: clientOAuthSecret,
           refresh_token: clientRefresh,
           grant_type: 'refresh_token',
         }),
@@ -149,6 +155,7 @@ export async function POST(
   const linked: string[] = [];
   const names: string[] = [];
   const errors: string[] = [];
+  let autoAccepted = false;
 
   for (const customerId of customerIds) {
     const name = customerNames[customerId] || customerId;
@@ -164,7 +171,6 @@ export async function POST(
 
       // 2. Auto-accept using client's token
       if (clientAccessToken) {
-        // Brief delay to allow the link to propagate
         await new Promise((resolve) => setTimeout(resolve, 1500));
         try {
           console.log(`[select-account] Auto-accepting link for ${customerId}...`);
@@ -174,6 +180,7 @@ export async function POST(
             managerCustomerId: agencyConfig.google_mcc_id,
           });
           console.log(`[select-account] Auto-accept succeeded for ${customerId}`);
+          autoAccepted = true;
         } catch (e) {
           console.warn(`[select-account] Auto-accept failed for ${customerId}:`, (e as Error).message);
         }
@@ -202,19 +209,25 @@ export async function POST(
     return NextResponse.json({ error: errors.join('; ') }, { status: 502 });
   }
 
-  // Update grant status
+  // Only mark as 'granted' if auto-accept succeeded; otherwise 'request_sent'
+  const finalStatus = autoAccepted ? 'granted' : 'request_sent';
+  const errorMsg = !autoAccepted
+    ? 'Link created but needs manual acceptance in Google Ads'
+    : errors.length > 0 ? `Partial: ${errors.join('; ')}` : null;
+
   await supabase
     .from('client_access_grants')
     .update({
-      status: 'granted',
+      status: finalStatus,
       platform_account_name: names.join(', '),
-      error_message: errors.length > 0 ? `Partial: ${errors.join('; ')}` : null,
+      error_message: errorMsg,
       metadata: {
         ...((grant.metadata as Record<string, unknown>) || {}),
         selected_customer_ids: linked,
+        auto_accepted: autoAccepted,
         link_errors: errors.length > 0 ? errors : undefined,
       },
-      granted_at: new Date().toISOString(),
+      granted_at: autoAccepted ? new Date().toISOString() : null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', grant.id);
@@ -236,7 +249,8 @@ export async function POST(
 
   return NextResponse.json({
     success: true,
-    status: 'granted',
+    status: finalStatus,
+    auto_accepted: autoAccepted,
     linked: linked.length,
     errors: errors.length > 0 ? errors : undefined,
   });

@@ -117,6 +117,16 @@ export const GOOGLE_ASSETS: AssetDefinition[] = [
   },
 ];
 
+// AccessPlatform → PlatformConfig.google key (naming skew between DB/types and config)
+export const GOOGLE_PLATFORM_TO_CONFIG_KEY: Record<string, keyof PlatformConfig['google']> = {
+  google_ads: 'google_ads',
+  google_ga4: 'google_analytics',
+  google_gtm: 'google_tag_manager',
+  google_business_profile: 'google_business_profile',
+  google_search_console: 'google_search_console',
+  google_merchant_center: 'google_merchant_center',
+};
+
 export function defaultPlatformConfig(): PlatformConfig {
   return {
     meta: {
