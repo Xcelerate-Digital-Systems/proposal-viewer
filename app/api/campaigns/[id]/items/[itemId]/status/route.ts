@@ -117,23 +117,27 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     if (assigneeUniverse.size > 0) {
       gateInfo = { applied: true, assignees: assigneeUniverse.size, approvers: 0 };
 
-      const { data: priorApprovers } = await supabase
+      const { data: priorDecisions } = await supabase
         .from('review_item_decisions')
-        .select('reviewer_email')
+        .select('reviewer_email, decision')
         .eq('review_item_id', params.itemId)
-        .eq('stage', currentStage)
-        .eq('decision', 'approved');
+        .eq('stage', currentStage);
 
-      const approverSet = new Set<string>(
-        (priorApprovers ?? [])
-          .map((r) => (r as { reviewer_email: string | null }).reviewer_email?.trim().toLowerCase())
-          .filter((e): e is string => !!e),
-      );
+      const approverSet = new Set<string>();
+      const rejectorSet = new Set<string>();
+      for (const r of (priorDecisions ?? []) as { reviewer_email: string | null; decision: string }[]) {
+        const e = r.reviewer_email?.trim().toLowerCase();
+        if (!e) continue;
+        if (r.decision === 'approved') approverSet.add(e);
+        else if (r.decision === 'changes_requested') rejectorSet.add(e);
+      }
       if (assigneeUniverse.has(reviewerEmail)) approverSet.add(reviewerEmail);
+      rejectorSet.delete(reviewerEmail);
 
       gateInfo.approvers = approverSet.size;
 
-      let allApproved = true;
+      const hasRejections = Array.from(assigneeUniverse).some((a) => rejectorSet.has(a));
+      let allApproved = !hasRejections;
       assigneeUniverse.forEach((a) => {
         if (!approverSet.has(a)) allApproved = false;
       });
@@ -161,8 +165,13 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     .from('review_items')
     .update({ status: effectiveTargetStatus, updated_at: new Date().toISOString() })
     .eq('id', params.itemId)
+    .eq('status', currentStage)
     .select('id, status')
-    .single();
+    .maybeSingle();
+
+  if (!updated && !error) {
+    return NextResponse.json({ error: 'Status changed by another request' }, { status: 409 });
+  }
 
   if (error) return NextResponse.json({ error: 'Failed to update status' }, { status: 500 });
 

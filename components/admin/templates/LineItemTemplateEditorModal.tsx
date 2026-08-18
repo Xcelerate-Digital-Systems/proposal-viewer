@@ -51,6 +51,13 @@ export default function LineItemTemplateEditorModal({ open, onClose, template, o
 
   useEffect(() => {
     if (!open) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
     if (template) {
       setName(template.name);
       setDescription(template.description ?? '');

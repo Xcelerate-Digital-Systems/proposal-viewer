@@ -536,6 +536,8 @@ export function registerProposalTools(server: McpServer) {
     companyId: z.string().optional().describe('Super admin only: target a different company'),
   }, async (args, extra) => {
     const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
+    const limitCheck = await checkResourceLimit(auth.companyId, 'proposals');
+    if (!limitCheck.allowed) return txt(`Plan limit reached: ${limitCheck.reason || 'proposals'}`);
     const sb = createServiceClient();
     const { data: src } = await sb.from('proposals').select('*').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
     if (!src) return txt('Proposal not found');

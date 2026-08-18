@@ -236,7 +236,7 @@ export function buildStatusEmail(params: {
      <div style="color:#6b7280;font-size:15px;line-height:1.6;">${body}</div>
      <div style="margin-top:28px;">
        ${ctaButton(reviewUrl, 'View feedback', branding.accentColor)}
-       <a href="${escapeHtml(dashboardUrl)}/reviews" style="display:inline-block;margin-left:8px;background:#f9fafb;color:#6b7280;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;border:1px solid #e5e7eb;">Dashboard</a>
+       <a href="${escapeHtml(dashboardUrl)}/campaigns" style="display:inline-block;margin-left:8px;background:#f9fafb;color:#6b7280;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;border:1px solid #e5e7eb;">Dashboard</a>
      </div>`,
     `You're receiving this because you're assigned to this project. Manage assignments in the project's Settings tab.`,
   );

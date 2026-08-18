@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { authRateLimit, rateLimit, ipFromRequest } from '@/lib/rate-limit';
+import { GUEST_VISIBLE_STAGES } from '@/lib/feedback/visibility';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -58,11 +59,14 @@ async function authoriseReactionAccess(req: NextRequest, commentId: string) {
   if (comment.review_item_id) {
     const { data: item } = await supabase
       .from('review_items')
-      .select('id, review_project_id')
+      .select('id, review_project_id, status')
       .eq('id', comment.review_item_id)
       .single();
     if (!item) {
       return { error: NextResponse.json({ error: 'Review item not found' }, { status: 404 }) };
+    }
+    if (!GUEST_VISIBLE_STAGES.includes(item.status)) {
+      return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
     }
     projectId = item.review_project_id;
   } else {

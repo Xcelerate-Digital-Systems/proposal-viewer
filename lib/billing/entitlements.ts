@@ -95,7 +95,7 @@ export async function getEntitlements(companyId: string): Promise<Entitlements> 
     plan = await getDefaultPlan();
   }
 
-  const signupSource = (company?.signup_source as string | undefined) ?? 'invite';
+  const signupSource = company ? (company.signup_source as string | undefined) ?? 'unknown' : 'unknown';
   const isGrandfathered = !subscription && signupSource === 'invite';
 
   const { isActive, inactiveReason } = resolveActiveState(subscription, isGrandfathered);

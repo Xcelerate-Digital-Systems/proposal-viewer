@@ -120,7 +120,7 @@ export default function AdminSidebar({
 
   const activeSection = getActiveSection(pathname, visibleSections);
   const inSwipeSection = pathname.startsWith('/ads/swipe');
-  const inFeedbackBoard = /^\/feedback\/[^/]+\/board/.test(pathname);
+  const inFeedbackBoard = /^\/campaigns\/[^/]+\/board/.test(pathname);
   const inEditor = !!detectEditorRoute(pathname);
 
   const isTopLevel =

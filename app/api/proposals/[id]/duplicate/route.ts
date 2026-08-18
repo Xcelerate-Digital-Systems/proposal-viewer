@@ -10,6 +10,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 import { getAuthContext } from '@/lib/api-auth';
 import { randomUUID } from 'crypto';
 import { authRateLimit } from '@/lib/rate-limit';
+import { checkResourceLimit, buildLimitErrorBody } from '@/lib/billing/entitlements';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +42,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     const limited = await authRateLimit(auth.companyId, 'proposals/duplicate');
     if (limited) return limited;
 
+    const limitCheck = await checkResourceLimit(auth.companyId, 'proposals');
+    if (!limitCheck.allowed) {
+      return NextResponse.json(buildLimitErrorBody(limitCheck, 'proposals'), { status: 402 });
+    }
 
     const supabase = createServiceClient();
 

@@ -70,14 +70,16 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
     let base64Data = image;
     let mimeType = 'image/png';
 
+    const ALLOWED_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
+
     if (image.startsWith('data:')) {
-      const match = image.match(/^data:(image\/\w+);base64,(.+)$/);
-      if (match) {
+      const match = image.match(/^data:(image\/[a-z]+);base64,(.+)$/);
+      if (match && ALLOWED_MIME_TYPES.has(match[1])) {
         mimeType = match[1];
         base64Data = match[2];
       } else {
         return NextResponse.json(
-          { error: 'Invalid image format' },
+          { error: 'Invalid image format. Allowed: png, jpeg, webp, gif' },
           { status: 400, headers: CORS_HEADERS }
         );
       }

@@ -126,7 +126,7 @@ export function useViewerPage(token: string) {
   // Tab title
   useEffect(() => {
     if (proposal) document.title = proposal.title;
-    return () => { document.title = 'AgencyViz'; };
+    return () => { document.title = proposal?.title || 'Proposal'; };
   }, [proposal]);
 
   /* ── Composite download ────────────────────────────────────────────────── */

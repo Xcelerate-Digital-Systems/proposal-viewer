@@ -41,7 +41,7 @@ const BEFORE = [
 ];
 
 const AFTER = [
-  'Visual funnel on an infinite canvas with smart alignment',
+  'Visual funnel on an infinite canvas with snap alignment',
   'Projected revenue, cost, profit, and ROAS calculated live',
   'Duplicate as what-if scenarios and compare strategies',
   'Client sees the full strategy and forecast in the browser',
@@ -69,7 +69,7 @@ const WORKFLOW_TABS = [
 ];
 
 const FEATURES = [
-  { icon: Workflow, title: 'Visual funnel builder', desc: 'Drag-and-drop on an infinite canvas with smart alignment guides.' },
+  { icon: Workflow, title: 'Visual funnel builder', desc: 'Drag-and-drop on an infinite canvas with snap alignment guides.' },
   { icon: Layers, title: '60+ node types', desc: 'Traffic sources, pages, offers, decisions, automations, and sticky notes.' },
   { icon: Calculator, title: 'Forecast engine', desc: 'Projected revenue, cost, profit, and ROAS from per-step metrics.' },
   { icon: Eye, title: 'Numbers Layer', desc: 'Toggle the forecast overlay on and off for clean presentations.' },

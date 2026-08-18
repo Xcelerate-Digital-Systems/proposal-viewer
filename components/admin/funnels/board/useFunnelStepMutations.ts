@@ -111,7 +111,14 @@ export function useFunnelStepMutations(deps: Deps) {
     setBoardEdges((prev: any[]) => prev.filter((e: any) => e.source_step_id !== id && e.target_step_id !== id));
     setSelectedStepId((prev) => (prev === id ? null : prev));
     markSaving();
-    await supabase.from('funnel_steps').delete().eq('id', id);
+    const { error: delErr } = await supabase.from('funnel_steps').delete().eq('id', id);
+    if (delErr) {
+      if (before) setSteps((prev) => [...prev, before]);
+      if (incidentEdges.length > 0) setBoardEdges((prev: any[]) => [...prev, ...incidentEdges]);
+      markDone(false);
+      toast?.error('Failed to delete step');
+      return;
+    }
     markDone(true);
 
     if (before) {
