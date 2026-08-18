@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
-import { useReactFlow, type Node } from '@xyflow/react';
+import { useReactFlow, type Node, type Edge, type Connection } from '@xyflow/react';
 import type { ContextTarget } from '@/components/admin/shared/CanvasContextMenu';
 import { PALETTE_DRAG_MIME } from './NodePalette';
 import { useFunnelBoardContextOrThrow } from './FunnelBoardContext';
@@ -9,6 +9,8 @@ import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { ALIGNMENT_TOLERANCE, visualCentre } from './funnel-board-config';
 import type { FunnelStepType, FunnelShapeType } from '@/lib/supabase';
 import type { PaletteItem } from '@/lib/types/funnel';
+
+const DROP_CONNECT_DISTANCE = 80;
 
 /**
  * Encapsulates all board-interaction callbacks:
@@ -21,6 +23,11 @@ import type { PaletteItem } from '@/lib/types/funnel';
 export function useFunnelBoardInteractions(
   containerRef: React.RefObject<HTMLDivElement | null>,
   viewportCentre: () => { x: number; y: number },
+  autoConnect?: {
+    onConnect: (connection: Connection) => void;
+    edges: Edge[];
+    isValidConnection: (connection: Edge | Connection) => boolean;
+  },
 ) {
   const ctx = useFunnelBoardContextOrThrow();
   const rf = useReactFlow();
@@ -30,6 +37,7 @@ export function useFunnelBoardInteractions(
   const [guides, setGuides] = useState<{ horizontals: number[]; verticals: number[] }>(
     { horizontals: [], verticals: [] }
   );
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const rafRef = useRef<number>(0);
 
   /* ─── Add helpers (used by click-to-add palette + right-click + Cmd+D) ─── */
@@ -119,7 +127,38 @@ export function useFunnelBoardInteractions(
     });
   }, [confirm]);
 
-  /* ─── Smart alignment guides while dragging ─── */
+  /* ─── Smart alignment guides + drop-target detection while dragging ─── */
+
+  const findDropTarget = useCallback((draggedNode: Node): Node | null => {
+    if (!autoConnect) return null;
+    const others = rf.getNodes().filter(
+      (n) => n.id !== draggedNode.id && !n.selected && n.id.startsWith('step-')
+    );
+    const drag = visualCentre(draggedNode);
+    let bestTarget: Node | null = null;
+    let bestDist = Infinity;
+    for (const o of others) {
+      const oc = visualCentre(o);
+      const dx = Math.abs(oc.cx - drag.cx);
+      const dy = drag.cy - oc.cy;
+      if (dy > 0 && dy < DROP_CONNECT_DISTANCE * 3 && dx < DROP_CONNECT_DISTANCE) {
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestTarget = o;
+        }
+      }
+    }
+    if (!bestTarget) return null;
+    const connection: Connection = {
+      source: bestTarget.id,
+      target: draggedNode.id,
+      sourceHandle: 'bottom',
+      targetHandle: 'top',
+    };
+    if (!autoConnect.isValidConnection(connection)) return null;
+    return bestTarget;
+  }, [rf, autoConnect]);
 
   const onNodeDrag = useCallback((_e: React.MouseEvent, node: Node) => {
     cancelAnimationFrame(rafRef.current);
@@ -147,12 +186,28 @@ export function useFunnelBoardInteractions(
         horizontals: bestH !== null ? [bestH] : [],
         verticals: bestV !== null ? [bestV] : [],
       });
-    });
-  }, [rf]);
 
-  const onNodeDragStop = useCallback(() => {
+      if (node.id.startsWith('step-')) {
+        const target = findDropTarget(node);
+        setDropTargetId(target?.id ?? null);
+      }
+    });
+  }, [rf, findDropTarget]);
+
+  const onNodeDragStop = useCallback((_e: React.MouseEvent, node: Node) => {
     setGuides({ horizontals: [], verticals: [] });
-  }, []);
+    setDropTargetId(null);
+
+    if (!autoConnect || !node.id.startsWith('step-')) return;
+    const target = findDropTarget(node);
+    if (!target) return;
+    autoConnect.onConnect({
+      source: target.id,
+      target: node.id,
+      sourceHandle: 'bottom',
+      targetHandle: 'top',
+    });
+  }, [autoConnect, findDropTarget]);
 
   /* ─── Click → open the matching side drawer ─── */
 
@@ -179,8 +234,9 @@ export function useFunnelBoardInteractions(
     onPaneContextMenu,
     // Bulk delete
     onBeforeDelete,
-    // Alignment guides
+    // Alignment guides + drop target
     guides,
+    dropTargetId,
     onNodeDrag,
     onNodeDragStop,
     // Node click

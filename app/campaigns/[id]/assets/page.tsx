@@ -167,12 +167,6 @@ function ItemsContent({
 
   const handleOpenViewer = (itemId: string, extraParams?: string) => {
     const item = items.find((i) => i.id === itemId);
-
-    if (item?.type === 'webpage' && item.url && !extraParams) {
-      window.open(item.url, '_blank');
-      return;
-    }
-
     const type = typeFilter || item?.type;
     const params = new URLSearchParams();
     if (type) params.set('type', type);

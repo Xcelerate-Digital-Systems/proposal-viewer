@@ -13,7 +13,7 @@ function buildCsp(): string {
     `font-src 'self' https://fonts.gstatic.com https://cdn.fontshare.com data:`,
     `img-src 'self' blob: data: https: http: https://${supabaseHost} https://*.supabase.co`,
     `connect-src 'self' ${supabaseUrl} wss://${supabaseHost} ${posthogHost} https://api.stripe.com https://api.resend.com https://*.ingest.sentry.io`,
-    `frame-src 'self' https://js.stripe.com`,
+    `frame-src 'self' https://js.stripe.com https:`,
     `object-src 'none'`,
     `base-uri 'self'`,
     `form-action 'self'`,

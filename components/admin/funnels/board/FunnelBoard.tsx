@@ -72,7 +72,11 @@ function FunnelBoardInner() {
       : { x: 200, y: 200 };
   }, [rf]);
 
-  const interactions = useFunnelBoardInteractions(containerRef, viewportCentre);
+  const interactions = useFunnelBoardInteractions(containerRef, viewportCentre, {
+    onConnect: board.onConnect,
+    edges: board.edges,
+    isValidConnection,
+  });
   const clipboard = useFunnelBoardClipboard(viewportCentre);
 
   const minimapNodeColor = useCallback((node: Node) => {

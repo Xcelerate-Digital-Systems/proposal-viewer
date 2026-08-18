@@ -116,13 +116,8 @@ function KanbanContent({
   }, [fetchProject, fetchItems, fetchCommentCounts, fetchCustomDomain]);
 
   const handleOpen = useCallback((itemId: string) => {
-    const item = items.find((i) => i.id === itemId);
-    if (item?.type === 'webpage' && item.url) {
-      window.open(item.url, '_blank');
-      return;
-    }
     router.push(`/campaigns/${projectId}/assets/${itemId}`);
-  }, [items, projectId, router]);
+  }, [projectId, router]);
 
   const hasWebpages = useMemo(() => items.some((i) => i.type === 'webpage'), [items]);
 

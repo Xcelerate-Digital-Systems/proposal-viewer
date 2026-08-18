@@ -50,10 +50,6 @@ function BoardContent({ projectId }: { projectId: string }) {
 
   const handleOpenViewer = (itemId: string) => {
     const item = items.find((i) => i.id === itemId);
-    if (item?.type === 'webpage' && item.url) {
-      window.open(item.url, '_blank');
-      return;
-    }
     const typeParam = item ? `?type=${item.type}` : '';
     router.push(`/campaigns/${projectId}/assets/${itemId}${typeParam}`);
   };
