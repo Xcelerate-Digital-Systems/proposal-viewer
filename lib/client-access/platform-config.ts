@@ -59,6 +59,7 @@ export const META_ASSETS: AssetDefinition[] = [
     label: 'Dataset (Pixel)',
     roles: [
       { value: 'analyst', label: 'Analyst' },
+      { value: 'manage', label: 'Manage' },
       { value: 'admin', label: 'Admin' },
     ],
   },

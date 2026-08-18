@@ -213,6 +213,8 @@ export async function POST(req: NextRequest) {
 
   if (grantError) {
     console.error('[api/client-access] POST grants:', grantError.message);
+    await supabase.from('client_access_requests').delete().eq('id', request.id);
+    return NextResponse.json({ error: 'Failed to create access grants' }, { status: 500 });
   }
 
   return NextResponse.json(

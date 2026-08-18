@@ -937,45 +937,77 @@ function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onN
     return g && g.status === 'oauth_complete';
   }) || null;
 
-  // Render a single Google platform's grant UI
+  // Get items list for a platform from grant metadata
+  const getItemsForPlatform = (platform: AccessPlatform): Array<{ id: string; name: string }> => {
+    const grant = grantByPlatform.get(platform);
+    const meta = grant?.metadata as Record<string, unknown> | undefined;
+    if (grant?.status !== 'oauth_complete' || !meta) return [];
+    if (platform === 'google_ads' && meta.needs_account_selection) return (meta.customer_accounts as Array<{ id: string; name: string }>) || [];
+    if (platform === 'google_ga4' && meta.needs_property_selection) return (meta.ga4_properties as Array<{ id: string; name: string }>) || [];
+    if (platform === 'google_gtm' && meta.needs_account_selection) return (meta.gtm_accounts as Array<{ id: string; name: string }>) || [];
+    if (platform === 'google_gbp' && meta.needs_account_selection) return (meta.gbp_accounts as Array<{ id: string; name: string }>) || [];
+    if (platform === 'google_search_console' && meta.needs_site_selection) return (meta.gsc_sites as Array<{ id: string; name: string }>) || [];
+    if (platform === 'google_merchant_center' && meta.needs_account_selection) return (meta.merchant_accounts as Array<{ id: string; name: string }>) || [];
+    return [];
+  };
+
+  // Chip multi-select state: selected items per platform
+  const [chipSelections, setChipSelections] = useState<Record<string, string[]>>({});
+  const [chipDropdownOpen, setChipDropdownOpen] = useState<string | null>(null);
+
+  const toggleChip = (platform: string, itemId: string) => {
+    setChipSelections((prev) => {
+      const current = prev[platform] || [];
+      if (current.includes(itemId)) {
+        const next = current.filter((id) => id !== itemId);
+        setSelections((s) => ({ ...s, [platform]: next[0] || '' }));
+        return { ...prev, [platform]: next };
+      }
+      if (current.length === 0) setSelections((s) => ({ ...s, [platform]: itemId }));
+      return { ...prev, [platform]: [...current, itemId] };
+    });
+  };
+
+  const removeChip = (platform: string, itemId: string) => {
+    setChipSelections((prev) => {
+      const next = (prev[platform] || []).filter((id) => id !== itemId);
+      setSelections((s) => ({ ...s, [platform]: next[0] || '' }));
+      return { ...prev, [platform]: next };
+    });
+  };
+
+  const clearChips = (platform: string) => {
+    setChipSelections((prev) => ({ ...prev, [platform]: [] }));
+    setSelections((s) => ({ ...s, [platform]: '' }));
+  };
+
+  // Render a single Google platform's grant UI — chip-based multi-select
   const renderGooglePlatformGrant = (platform: AccessPlatform) => {
     const grant = grantByPlatform.get(platform);
     const configKey = GOOGLE_PLATFORM_TO_CONFIG_KEY[platform] || platform;
     const assetDef = GOOGLE_ASSETS.find((a) => a.key === configKey);
     const roleName = googleAssets?.[configKey as keyof NonNullable<typeof googleAssets>]?.role;
     const roleLabel = assetDef?.roles.find((r) => r.value === roleName)?.label || roleName || '';
-    const meta = grant?.metadata as Record<string, unknown> | undefined;
     const isGranted = grant && (grant.status === 'granted' || grant.status === 'request_sent');
-    const isOAuthComplete = grant?.status === 'oauth_complete';
     const isGranting = grantingPlatform === platform;
-
-    let items: Array<{ id: string; name: string }> = [];
-    if (isOAuthComplete) {
-      if (platform === 'google_ads' && meta?.needs_account_selection) {
-        items = (meta.customer_accounts as Array<{ id: string; name: string }>) || [];
-      } else if (platform === 'google_ga4' && meta?.needs_property_selection) {
-        items = (meta.ga4_properties as Array<{ id: string; name: string }>) || [];
-      } else if (platform === 'google_gtm' && meta?.needs_account_selection) {
-        items = (meta.gtm_accounts as Array<{ id: string; name: string }>) || [];
-      } else if (platform === 'google_gbp' && meta?.needs_account_selection) {
-        items = (meta.gbp_accounts as Array<{ id: string; name: string }>) || [];
-      } else if (platform === 'google_search_console' && meta?.needs_site_selection) {
-        items = (meta.gsc_sites as Array<{ id: string; name: string }>) || [];
-      } else if (platform === 'google_merchant_center' && meta?.needs_account_selection) {
-        items = (meta.merchant_accounts as Array<{ id: string; name: string }>) || [];
-      }
-    }
+    const items = getItemsForPlatform(platform);
+    const selectedIds = chipSelections[platform] || [];
 
     const handleGrant = () => {
-      if (platform === 'google_ads') handleGrantAds();
-      else handleGrantProperty(platform);
+      if (selectedIds.length === 0) return;
+      const firstId = selectedIds[0];
+      setSelections((prev) => ({ ...prev, [platform]: firstId }));
+      setTimeout(() => {
+        if (platform === 'google_ads') handleGrantAds();
+        else handleGrantProperty(platform);
+      }, 0);
     };
 
     if (isGranted) {
       return (
-        <div className="flex items-center justify-between py-1">
+        <div className="flex items-center justify-between py-2">
           <div>
-            <span className="text-sm text-gray-700">{PLATFORM_LABELS[platform]}</span>
+            <span className="text-sm font-medium text-gray-700">{PLATFORM_LABELS[platform]}</span>
             {grant!.platform_account_name && (
               <p className="text-xs text-gray-500 mt-0.5">{grant!.platform_account_name}</p>
             )}
@@ -987,23 +1019,129 @@ function GrantStep({ token, request, grants, agency, accentColor, onRefresh, onN
 
     if (items.length > 0) {
       return (
-        <div className="space-y-3">
-          <p className="text-sm text-gray-700">
+        <div>
+          {/* Platform + role subtitle */}
+          <p className="text-sm text-gray-700 mb-3">
             {PLATFORM_LABELS[platform]}{roleLabel ? ` (${roleLabel})` : ''}
           </p>
-          <select
-            value={selections[platform] || ''}
-            onChange={(e) => setSelection(platform, e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
-          >
-            <option value="">Select your account</option>
-            {items.map((a) => (
-              <option key={a.id} value={a.id}>{a.name}{platform === 'google_ads' ? ` (${a.id})` : ''}</option>
-            ))}
-          </select>
+
+          {/* Chip multi-select */}
+          <div className="relative mb-3">
+            <div
+              onClick={() => setChipDropdownOpen(chipDropdownOpen === platform ? null : platform)}
+              className="min-h-[44px] px-3 py-2 border border-gray-200 rounded-lg bg-white cursor-pointer flex items-center flex-wrap gap-1.5"
+            >
+              {selectedIds.length === 0 ? (
+                <span className="text-sm text-gray-400">Select accounts…</span>
+              ) : (
+                selectedIds.map((id) => {
+                  const item = items.find((i) => i.id === id);
+                  if (!item) return null;
+                  const chipLabel = `${item.name} (${id})`;
+                  return (
+                    <span
+                      key={id}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium"
+                    >
+                      {chipLabel}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeChip(platform, id); }}
+                        className="text-gray-400 hover:text-gray-600 ml-0.5"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                })
+              )}
+              <div className="ml-auto flex items-center gap-1 shrink-0 pl-2">
+                {selectedIds.length > 0 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); clearChips(platform); }}
+                    className="text-gray-400 hover:text-gray-600 text-sm"
+                  >
+                    ×
+                  </button>
+                )}
+                <svg width="12" height="12" viewBox="0 0 12 12" className="text-gray-400">
+                  <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
+
+            {/* Dropdown */}
+            {chipDropdownOpen === platform && (
+              <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto">
+                {items.map((item) => {
+                  const isSelected = selectedIds.includes(item.id);
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => toggleChip(platform, item.id)}
+                      className={`w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 ${isSelected ? 'bg-gray-50' : ''}`}
+                    >
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
+                        {isSelected && (
+                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                            <path d="M2 5L4 7L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </div>
+                      <span className="text-gray-700">{item.name} ({item.id})</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Validation warnings for selected items */}
+          {selectedIds.length > 0 && (
+            <div className="space-y-2 mb-4">
+              {selectedIds.map((id) => {
+                const item = items.find((i) => i.id === id);
+                if (!item) return null;
+                const meta = grant?.metadata as Record<string, unknown> | undefined;
+                const existingAccess = (meta?.existing_access as string[]) || [];
+                const noRights = (meta?.no_grant_rights as string[]) || [];
+                const hasExisting = existingAccess.includes(id);
+                const hasNoRights = noRights.includes(id);
+
+                if (hasExisting) {
+                  return (
+                    <div key={id} className="flex items-start gap-3 px-4 py-3 bg-orange-50 rounded-lg">
+                      <div className="w-5 h-5 rounded-full bg-orange-400 flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="text-white text-xs font-bold">!</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{item.name}</p>
+                        <p className="text-sm text-gray-600">Your agency already has access to this account.</p>
+                      </div>
+                    </div>
+                  );
+                }
+                if (hasNoRights) {
+                  return (
+                    <div key={id} className="flex items-start gap-3 px-4 py-3 bg-orange-50 rounded-lg">
+                      <div className="w-5 h-5 rounded-full bg-orange-400 flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="text-white text-xs font-bold">!</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{item.name}</p>
+                        <p className="text-sm text-gray-600">You don&apos;t have access rights to grant access to this account.</p>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })}
+            </div>
+          )}
+
+          {/* Grant button */}
           <button
             onClick={handleGrant}
-            disabled={!selections[platform] || isGranting}
+            disabled={selectedIds.length === 0 || isGranting}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-50"
             style={{ backgroundColor: accentColor }}
           >

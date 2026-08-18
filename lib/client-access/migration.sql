@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS client_access_grants (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   request_id uuid NOT NULL REFERENCES client_access_requests(id) ON DELETE CASCADE,
   platform text NOT NULL
-    CHECK (platform IN ('meta', 'google_ga4', 'google_gtm', 'google_ads', 'wordpress')),
+    CHECK (platform IN ('meta', 'google_ga4', 'google_gtm', 'google_ads', 'google_gbp', 'google_search_console', 'google_merchant_center', 'wordpress')),
   status text NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending', 'oauth_complete', 'request_sent', 'granted', 'failed', 'self_reported')),
   oauth_token_encrypted text,

@@ -7,12 +7,13 @@ import {
 import { Button } from '@/components/ui/Button';
 import PageHeader from '@/components/ui/PageHeader';
 import AdminLayout from '@/components/admin/AdminLayout';
-import AccessRequestModal from '@/components/client-access/AccessRequestModal';
+import AccessRequestWizard from '@/components/client-access/AccessRequestWizard';
 import AccessRequestList from '@/components/client-access/AccessRequestList';
 import AgencyAccessConfigForm from '@/components/client-access/AgencyAccessConfigForm';
 import { authFetch } from '@/lib/auth-fetch';
 
 type TabKey = 'requests' | 'settings';
+type ViewMode = 'list' | 'create';
 
 export default function ClientAccessPage() {
   return (
@@ -34,7 +35,7 @@ function ClientAccessContent({
 }) {
   const initialTab = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tab') === 'settings' ? 'settings' : 'requests';
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
-  const [showCreate, setShowCreate] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [refreshKey, setRefreshKey] = useState(0);
   const [universalToken, setUniversalToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -73,6 +74,21 @@ function ClientAccessContent({
     { key: 'requests', label: 'Access Requests', icon: KeyRound },
     { key: 'settings', label: 'Settings', icon: Settings2 },
   ];
+
+  // Show wizard when creating
+  if (viewMode === 'create') {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        <AccessRequestWizard
+          onBack={() => setViewMode('list')}
+          onCreated={() => {
+            setViewMode('list');
+            setRefreshKey((k) => k + 1);
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-8">
@@ -144,7 +160,7 @@ function ClientAccessContent({
         })}
         {activeTab === 'requests' && (
           <div className="ml-auto pb-2">
-            <Button size="sm" leftIcon={Plus} onClick={() => setShowCreate(true)}>
+            <Button size="sm" leftIcon={Plus} onClick={() => setViewMode('create')}>
               New Request
             </Button>
           </div>
@@ -167,16 +183,6 @@ function ClientAccessContent({
           </div>
         )}
       </div>
-
-      {showCreate && (
-        <AccessRequestModal
-          onClose={() => setShowCreate(false)}
-          onCreated={() => {
-            setShowCreate(false);
-            setRefreshKey((k) => k + 1);
-          }}
-        />
-      )}
     </div>
   );
 }
