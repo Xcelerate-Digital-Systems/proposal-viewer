@@ -330,7 +330,7 @@ export function registerProposalTools(server: McpServer) {
     return json({ id: result.page.id, position: result.page.position, type: result.page.type, title: result.page.title });
   });
 
-  server.tool('upload_proposal_file', 'Upload a file to the proposals storage bucket, either from a public URL or as base64 content (max ~3MB base64 — MCP request bodies are size-limited). Returns the filePath to use with add_proposal_page or update_proposal_page. Supports PDF, PNG, JPG, SVG, WEBP.', {
+  server.tool('upload_proposal_file', 'Upload a file to the proposals storage bucket, either from a public URL or as base64 content (max ~3MB base64 — MCP request bodies are size-limited). Returns the filePath to use with add_proposal_page or update_proposal_page. Supports PDF, PNG, JPG, SVG, WEBP. Re-uploading the same fileName overwrites in place (upsert: true) — every page pointing at that filePath sees the new version. For local files larger than ~3MB, prefer create_proposal_upload_url + a direct PUT instead.', {
     proposalId: z.string().describe('Proposal ID — used to namespace the storage path'),
     url: z.string().optional().describe('Public URL to fetch the file from (provide url OR base64, not both)'),
     base64: z.string().optional().describe('Base64-encoded file content (no data: prefix). Requires contentType. Max ~3MB decoded.'),
@@ -440,6 +440,143 @@ export function registerProposalTools(server: McpServer) {
     if (uploadErr) return txt(`Upload failed: ${uploadErr.message}`);
 
     return json({ filePath, contentType: mimeBase, sizeBytes: buf.byteLength });
+  });
+
+  // ── Signed upload flow ──────────────────────────────────────────────
+  // Preferred path for local files: call create_proposal_upload_url, PUT
+  // the file to the returned URL, then call confirm_proposal_upload to
+  // validate content before using the filePath with add_proposal_page.
+
+  const UPLOAD_ALLOWED_TYPES: Record<string, string> = {
+    'application/pdf': '.pdf',
+    'image/png': '.png',
+    'image/jpeg': '.jpg',
+    'image/svg+xml': '.svg',
+    'image/webp': '.webp',
+  };
+
+  const UPLOAD_EXT_TO_MIME: Record<string, string> = Object.fromEntries(
+    Object.entries(UPLOAD_ALLOWED_TYPES).map(([mime, ext]) => [ext.slice(1), mime]),
+  );
+
+  function matchesMagicBytes(buf: Buffer, mime: string): boolean {
+    switch (mime) {
+      case 'application/pdf': return buf.subarray(0, 5).toString('latin1') === '%PDF-';
+      case 'image/png':       return buf.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+      case 'image/jpeg':      return buf.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]));
+      case 'image/webp':      return buf.subarray(0, 4).toString('latin1') === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WEBP';
+      case 'image/svg+xml':   return buf.subarray(0, 512).toString('utf8').trimStart().startsWith('<');
+      default: return false;
+    }
+  }
+
+  server.tool('create_proposal_upload_url', 'Get a signed upload URL for putting a file directly into the proposals storage bucket. Returns a URL + token valid for ~120s. After uploading via PUT, call confirm_proposal_upload to validate the file before using it with add_proposal_page. Re-uploading the same fileName overwrites in place — every page pointing at that filePath sees the new version automatically.\n\nUsage: curl -X PUT -H "Content-Type: <contentType>" --data-binary @file "<uploadUrl>"', {
+    proposalId: z.string().describe('Proposal ID — used to namespace the storage path'),
+    fileName: z.string().describe('File name (e.g. "slide-1.pdf"). Basename only — no path separators.'),
+    contentType: z.string().describe('MIME type: application/pdf, image/png, image/jpeg, image/svg+xml, image/webp'),
+    upsert: z.boolean().optional().describe('Overwrite if file exists (default: true)'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async (args, extra) => {
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
+    const sb = createServiceClient();
+
+    const { data: p } = await sb.from('proposals').select('id').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
+    if (!p) return txt('Proposal not found');
+
+    const mimeBase = args.contentType.split(';')[0].trim().toLowerCase();
+    if (!UPLOAD_ALLOWED_TYPES[mimeBase]) {
+      return txt(`Unsupported contentType. Allowed: ${Object.keys(UPLOAD_ALLOWED_TYPES).join(', ')}`);
+    }
+
+    const baseName = args.fileName.replace(/\\/g, '/').split('/').pop() || '';
+    if (!baseName || baseName.startsWith('.')) return txt('Invalid fileName.');
+    const safeName = baseName.replace(/[^a-zA-Z0-9._-]/g, '_');
+
+    const ext = safeName.includes('.') ? safeName.split('.').pop()!.toLowerCase() : '';
+    const expectedExt = UPLOAD_ALLOWED_TYPES[mimeBase].slice(1);
+    if (ext && ext !== expectedExt && !(ext === 'jpeg' && expectedExt === 'jpg')) {
+      return txt(`Extension .${ext} doesn't match contentType ${mimeBase} (expected .${expectedExt}).`);
+    }
+
+    const sanitizedId = args.proposalId.replace(/[^a-zA-Z0-9._-]/g, '');
+    const filePath = `proposals/${sanitizedId}/${safeName}`;
+
+    const upsert = args.upsert !== false;
+
+    const { data, error } = await sb.storage
+      .from('proposals')
+      .createSignedUploadUrl(filePath, { upsert });
+
+    if (error) return txt(`Failed to create upload URL: ${error.message}`);
+
+    return json({
+      uploadUrl: data.signedUrl,
+      token: data.token,
+      filePath,
+      contentType: mimeBase,
+      expiresIn: 120,
+      instructions: `PUT the file: curl -X PUT -H "Content-Type: ${mimeBase}" --data-binary @<file> "${data.signedUrl}"`,
+    });
+  });
+
+  server.tool('confirm_proposal_upload', 'Validate a file uploaded via create_proposal_upload_url. Checks that the file exists, its magic bytes match the declared content type, and it is within the size limit (10MB). Returns the validated filePath ready for add_proposal_page. Deletes the object and returns an error if validation fails.', {
+    proposalId: z.string().describe('Proposal ID'),
+    filePath: z.string().describe('The filePath returned by create_proposal_upload_url'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async (args, extra) => {
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
+    const sb = createServiceClient();
+
+    const { data: p } = await sb.from('proposals').select('id').eq('id', args.proposalId).eq('company_id', auth.companyId).single();
+    if (!p) return txt('Proposal not found');
+
+    const sanitizedId = args.proposalId.replace(/[^a-zA-Z0-9._-]/g, '');
+    if (args.filePath.includes('..') || !args.filePath.startsWith(`proposals/${sanitizedId}/`)) {
+      return txt(`filePath must start with "proposals/${sanitizedId}/".`);
+    }
+
+    const { data: fileData, error: dlErr } = await sb.storage
+      .from('proposals')
+      .download(args.filePath);
+
+    if (dlErr || !fileData) {
+      return txt(`File not found at ${args.filePath}. Upload it first via the signed URL.`);
+    }
+
+    const bytes = await fileData.arrayBuffer();
+    const buf = Buffer.from(bytes);
+
+    if (buf.byteLength === 0) {
+      await sb.storage.from('proposals').remove([args.filePath]);
+      return txt('Uploaded file is empty — deleted.');
+    }
+
+    const MAX_SIZE = 10 * 1024 * 1024;
+    if (buf.byteLength > MAX_SIZE) {
+      await sb.storage.from('proposals').remove([args.filePath]);
+      return txt(`File too large (${(buf.byteLength / 1024 / 1024).toFixed(1)}MB, max 10MB) — deleted.`);
+    }
+
+    const fileName = args.filePath.split('/').pop() || '';
+    const ext = fileName.includes('.') ? fileName.split('.').pop()!.toLowerCase() : '';
+    const mimeBase = UPLOAD_EXT_TO_MIME[ext] || UPLOAD_EXT_TO_MIME[ext === 'jpeg' ? 'jpg' : ext];
+
+    if (!mimeBase) {
+      await sb.storage.from('proposals').remove([args.filePath]);
+      return txt(`Unrecognised extension .${ext}. Allowed: ${Object.values(UPLOAD_ALLOWED_TYPES).join(', ')} — deleted.`);
+    }
+
+    if (!matchesMagicBytes(buf, mimeBase)) {
+      await sb.storage.from('proposals').remove([args.filePath]);
+      return txt(`File content does not match expected type ${mimeBase} — deleted.`);
+    }
+
+    return json({
+      filePath: args.filePath,
+      contentType: mimeBase,
+      sizeBytes: buf.byteLength,
+      valid: true,
+    });
   });
 
   server.tool('update_proposal_page', 'Update a page\'s title, content, file, or display settings. For PDF pages, pass filePath to replace the file.', {
