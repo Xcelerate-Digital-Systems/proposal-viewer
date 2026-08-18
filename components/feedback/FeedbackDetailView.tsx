@@ -387,7 +387,7 @@ export default function FeedbackDetailView({
               onRemoveTask={isAdmin ? onRemoveTask : undefined}
               currentMemberId={isAdmin ? currentMemberId : undefined}
               onOpenTaskDetail={isAdmin ? onOpenTaskDetail : undefined}
-              className="w-[360px] shrink-0 bg-warm flex flex-col overflow-hidden"
+              className="w-[360px] shrink-0 bg-warm flex flex-col overflow-hidden min-h-0"
               commentPlaceholder={(() => {
                 if (selectedItem?.type !== 'google_search_ad') return undefined;
                 const asset = parseGoogleAdAssetView(currentMockupView);

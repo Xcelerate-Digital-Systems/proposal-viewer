@@ -66,8 +66,13 @@ function SitemapContent({ projectId, companyId, userId }: {
   }, [fetchData]);
 
   const handleNavigateToItem = useCallback((itemId: string) => {
+    const item = items.find((i) => i.id === itemId);
+    if (item?.type === 'webpage' && item.url) {
+      window.open(item.url, '_blank');
+      return;
+    }
     router.push(`/campaigns/${projectId}/assets/${itemId}?type=webpage`);
-  }, [projectId, router]);
+  }, [items, projectId, router]);
 
   if (loading || !project) {
     return (

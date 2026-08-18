@@ -146,6 +146,21 @@ function buildNodesAndEdges(
   return { nodes, edges };
 }
 
+function getDescendantIds(items: FeedbackItem[], ancestorId: string): Set<string> {
+  const descendants = new Set<string>();
+  const queue = [ancestorId];
+  while (queue.length > 0) {
+    const current = queue.pop()!;
+    for (const item of items) {
+      if (item.parent_item_id === current && !descendants.has(item.id)) {
+        descendants.add(item.id);
+        queue.push(item.id);
+      }
+    }
+  }
+  return descendants;
+}
+
 function calculateDropZones(
   nodes: Node[],
   items: FeedbackItem[],
@@ -219,15 +234,17 @@ function calculateDropZones(
     });
   });
 
+  const descendantIds = getDescendantIds(items, draggingId);
   const sectionTargets: SectionTarget[] = [];
   for (const n of nodes) {
-    if (n.id === draggingId || n.type !== 'sitemapSection') continue;
+    if (n.id === draggingId || descendantIds.has(n.id)) continue;
+    if (n.type !== 'sitemapSection' && n.type !== 'sitemapPage') continue;
     sectionTargets.push({
       id: n.id,
       x: n.position.x,
       y: n.position.y,
-      w: (n as { width?: number }).width ?? SECTION_W,
-      h: (n as { height?: number }).height ?? SECTION_H,
+      w: (n as { width?: number }).width ?? (n.type === 'sitemapSection' ? SECTION_W : NODE_W),
+      h: (n as { height?: number }).height ?? (n.type === 'sitemapSection' ? SECTION_H : NODE_H),
     });
   }
 
