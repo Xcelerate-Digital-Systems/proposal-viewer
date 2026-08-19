@@ -35,8 +35,6 @@ export default function TemplateDesignPage() {
         initialFontHeadingSize={(template as { font_heading_size?: string | null }).font_heading_size ?? null}
         initialFontBodyFamily={template.font_body_family ?? null}
         initialFontBodyWeight={template.font_body_weight ?? null}
-        initialFontButtonFamily={template.font_button_family ?? null}
-        initialFontButtonWeight={template.font_button_weight ?? null}
         initialTitleFontTransform={(template as { title_font_transform?: string | null }).title_font_transform ?? null}
         initialFontHeadingTransform={(template as { font_heading_transform?: string | null }).font_heading_transform ?? null}
         initialFontBodyTransform={(template as { font_body_transform?: string | null }).font_body_transform ?? null}
@@ -50,14 +48,6 @@ export default function TemplateDesignPage() {
         initialPricingPaymentSchedulePriceColor={template.pricing_payment_schedule_price_color ?? null}
         initialPricingAccentBarColor={(template as { pricing_accent_bar_color?: string | null }).pricing_accent_bar_color ?? null}
         initialPricingDotColor={(template as { pricing_dot_color?: string | null }).pricing_dot_color ?? null}
-        initialDecisionBgColor={template.decision_action_bg_color ?? null}
-        initialDecisionTextColor={template.decision_action_text_color ?? null}
-        initialDecisionHeadingColor={template.decision_action_heading_color ?? null}
-        initialDecisionAcceptButtonColor={template.decision_action_accent_color ?? null}
-        initialDecisionDeclineButtonColor={template.decision_decline_button_color ?? null}
-        initialDecisionRevisionButtonColor={template.decision_revision_button_color ?? null}
-        initialDecisionCheckboxColor={template.decision_checkbox_color ?? null}
-        coverEntity={template}
       />
     </div>
   );

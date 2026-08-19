@@ -269,7 +269,7 @@ export default function AdminSidebar({
         {showClients && renderNavLink({ href: '/clients', label: 'Clients', icon: UserSquare2 })}
         {isSuperAdmin && renderNavLink({ href: '/accounts', label: 'Accounts', icon: Shield })}
         {STANDALONE_ITEMS.filter((item) =>
-          accountType === 'client' ? item.href === '/settings' : true
+          accountType === 'client' ? item.href === '/settings' || item.href === '/company' : true
         ).map((item) => renderNavLink(item))}
       </div>
     </div>

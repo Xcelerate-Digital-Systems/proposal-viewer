@@ -1,13 +1,6 @@
 // components/admin/shared/design-tab/ViewerStyleSection.tsx
-// Design tab restructured into named groups matching the new spec:
-//   1. Globals     — orientation, page-number badge, background image
-//   2. Cover Page  — placeholder; cover design still lives on the Cover tab
-//                    until Phase 1.5 of the design-tab consolidation lands
-//   3. Text Page   — title font, text-page colours
-//   4. Packages    — placeholder; per-package styling still on the Packages tab
-//   5. Quote Pages — note; quote pages inherit from text-page styling
-//
-// DesignTab.tsx still owns all state — this component is pure presentation.
+// Design tab — pure presentation. Groups: Globals, Pricing Page, Package Page.
+// Cover design lives on the Cover tab. DesignTab.tsx owns all state.
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -18,13 +11,11 @@ import {
 } from 'lucide-react';
 import Slider from '@/components/ui/Slider';
 import type { FontLiveOverrides } from '@/components/admin/builder-sections/DesignPreviews';
-import type { CoverEditorEntity } from '@/components/admin/shared/cover-editor/CoverEditorTypes';
 import {
   EntityType, PageOrientation, TextPageDefaults, SaveStatus,
 } from './DesignTabTypes';
 import { GroupHeading, tipTapToPlainText } from './design-helpers';
 import GlobalsGroup from './GlobalsGroup';
-import CoverGroup from './CoverGroup';
 import PricingGroup from './PricingGroup';
 import PackageGroup from './PackageGroup';
 
@@ -69,10 +60,6 @@ interface ViewerStyleSectionProps {
   setFontBodyFamily: (v: string | null) => void;
   fontBodyWeight: string | null;
   setFontBodyWeight: (v: string | null) => void;
-  fontButtonFamily: string | null;
-  setFontButtonFamily: (v: string | null) => void;
-  fontButtonWeight: string | null;
-  setFontButtonWeight: (v: string | null) => void;
   fontHeadingSize: string;
   setFontHeadingSize: (v: string) => void;
   fontBodySize: string;
@@ -121,25 +108,6 @@ interface ViewerStyleSectionProps {
   /** Entity title — surfaced in the Globals live preview so the user sees
    *  their actual title in the chosen font instead of "Sample page title". */
   entityTitle?: string;
-  /* ── Decision-page colours (proposals + templates) ──────── */
-  decisionBgColor: string | null;
-  setDecisionBgColor: (v: string | null) => void;
-  decisionTextColor: string | null;
-  setDecisionTextColor: (v: string | null) => void;
-  decisionHeadingColor: string | null;
-  setDecisionHeadingColor: (v: string | null) => void;
-  decisionAcceptButtonColor: string | null;
-  setDecisionAcceptButtonColor: (v: string | null) => void;
-  decisionDeclineButtonColor: string | null;
-  setDecisionDeclineButtonColor: (v: string | null) => void;
-  decisionRevisionButtonColor: string | null;
-  setDecisionRevisionButtonColor: (v: string | null) => void;
-  decisionCheckboxColor: string | null;
-  setDecisionCheckboxColor: (v: string | null) => void;
-  /* ── Cover design panel — rendered when caller passes the
-        cover entity. Documents/quotes don't pass it. ──── */
-  coverEntity?: CoverEditorEntity;
-  onCoverSave?: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -175,10 +143,6 @@ export default function ViewerStyleSection({
   setFontBodyFamily,
   fontBodyWeight,
   setFontBodyWeight,
-  fontButtonFamily,
-  setFontButtonFamily,
-  fontButtonWeight,
-  setFontButtonWeight,
   fontHeadingSize,
   setFontHeadingSize,
   fontBodySize,
@@ -219,22 +183,6 @@ export default function ViewerStyleSection({
   onTpResetToCompany,
   entityId,
   entityTitle,
-  decisionBgColor,
-  setDecisionBgColor,
-  decisionTextColor,
-  setDecisionTextColor,
-  decisionHeadingColor,
-  setDecisionHeadingColor,
-  decisionAcceptButtonColor,
-  setDecisionAcceptButtonColor,
-  decisionDeclineButtonColor,
-  setDecisionDeclineButtonColor,
-  decisionRevisionButtonColor,
-  setDecisionRevisionButtonColor,
-  decisionCheckboxColor,
-  setDecisionCheckboxColor,
-  coverEntity,
-  onCoverSave,
 }: ViewerStyleSectionProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -248,8 +196,8 @@ export default function ViewerStyleSection({
     font_body: fontBodyFamily,
     font_body_weight: fontBodyWeight,
     font_body_size: fontBodySize || null,
-    font_button: fontButtonFamily,
-    font_button_weight: fontButtonWeight,
+    font_button: null,
+    font_button_weight: null,
     title_font_transform: titleFontTransform,
     font_heading_transform: fontHeadingTransform,
     font_body_transform: fontBodyTransform,
@@ -283,7 +231,6 @@ export default function ViewerStyleSection({
     return () => { cancelled = true; };
   }, [entityId, type]);
 
-  const basePath = type === 'template' ? `/templates/${entityId}` : `/proposals/${entityId}`;
   const entityKey = type === 'template' ? 'template_id' as const : 'proposal_id' as const;
 
   /* ── Reusable Background Image block (passed to GlobalsGroup) ── */
@@ -416,10 +363,6 @@ export default function ViewerStyleSection({
           setFontBodySize={setFontBodySize}
           fontBodyTransform={fontBodyTransform}
           setFontBodyTransform={setFontBodyTransform}
-          fontButtonFamily={fontButtonFamily}
-          setFontButtonFamily={setFontButtonFamily}
-          fontButtonWeight={fontButtonWeight}
-          setFontButtonWeight={setFontButtonWeight}
           tpBgColor={tpBgColor}
           setTpBgColor={setTpBgColor}
           tpTextColor={tpTextColor}
@@ -435,28 +378,6 @@ export default function ViewerStyleSection({
           backgroundImageBlock={backgroundImageBlock}
           entityTitle={entityTitle}
           bodySnippet={bodySnippet}
-        />
-      )}
-
-      {/* ============================================================
-          2. COVER PAGE
-          ============================================================ */}
-      <GroupHeading title="Cover Page" hint="Logo, avatar and titles live in the Cover tab" open={openGroups.has('Cover Page')} onToggle={() => toggleGroup('Cover Page')} />
-
-      {openGroups.has('Cover Page') && (
-        <CoverGroup
-          type={type}
-          basePath={basePath}
-          coverEntity={coverEntity}
-          onCoverSave={onCoverSave}
-          liveTitleFontFamily={titleFontFamily}
-          liveTitleFontWeight={titleFontWeight}
-          liveFontHeadingFamily={fontHeadingFamily}
-          liveFontHeadingWeight={fontHeadingWeight}
-          liveFontBodyFamily={fontBodyFamily}
-          liveFontBodyWeight={fontBodyWeight}
-          liveFontButtonFamily={fontButtonFamily}
-          liveFontButtonWeight={fontButtonWeight}
         />
       )}
 

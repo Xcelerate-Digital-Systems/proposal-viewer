@@ -22,7 +22,7 @@ export default function ProposalDetailsPage() {
             description: proposal.description,
           }}
           onSave={refetch}
-          hiddenFields={['site_address', 'estimated_start_date', 'estimated_duration']}
+          hiddenFields={['title', 'site_address', 'estimated_start_date', 'estimated_duration']}
         />
         <PostAcceptSection
           entityId={proposal.id}

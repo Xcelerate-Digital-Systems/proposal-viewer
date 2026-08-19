@@ -50,9 +50,13 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
   const effectiveHideColors = hideColors || contentOnly;
   const effectiveHideImage = !!contentOnly;
   const cfg = configs[type];
-  const displayTitle = entity.title || entity.name || 'Untitled';
+  const titleKey = type === 'template' ? 'name' : 'title';
+  const titleLabel = type === 'template' ? 'Template Name' : type === 'document' ? 'Document Title' : 'Proposal Title';
+  const titlePlaceholder = type === 'template' ? 'e.g. Standard Proposal Template' : type === 'document' ? 'e.g. Capabilities Statement' : 'e.g. Website Redesign Proposal';
 
   /* ── Content state ─────────────────────────────────────────── */
+  const [entityTitle, setEntityTitle] = useState(entity.title || entity.name || '');
+  const displayTitle = entityTitle || 'Untitled';
   const [coverEnabled, setCoverEnabled] = useState(entity.cover_enabled);
   const [subtitle, setSubtitle] = useState(entity.cover_subtitle || '');
   const [buttonText, setButtonText] = useState(entity.cover_button_text || cfg.defaultButtonText);
@@ -266,9 +270,12 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload: Record<string, any> = {
+      [titleKey]: entityTitle.trim() || null,
       cover_enabled: coverEnabled,
       cover_subtitle: subtitle || null,
       cover_button_text: buttonText || cfg.defaultButtonText,
+      font_button_family: buttonFont,
+      font_button_weight: buttonFontWeight,
       cover_date: coverDate.trim() || null,
       cover_show_date: showDate,
     };
@@ -305,8 +312,8 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
     setTimeout(() => setSaveStatus('idle'), 2000);
     onSave?.();
   }, [
-    cfg, entity.id, coverEnabled, imagePath, subtitle, buttonText,
-    colors, coverDate, showDate, preparedByMemberId,
+    cfg, entity.id, titleKey, entityTitle, coverEnabled, imagePath, subtitle, buttonText,
+    buttonFont, buttonFontWeight, colors, coverDate, showDate, preparedByMemberId,
     showPreparedBy, showAvatar, clientLogoPath, showClientLogo,
     clientLogoTintColor, onSave, contentOnly,
   ]);
@@ -328,8 +335,8 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
     scheduleSave(800);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    coverEnabled, subtitle, buttonText, imagePath,
-    colors, coverDate, showDate, preparedByMemberId, showPreparedBy,
+    entityTitle, coverEnabled, subtitle, buttonText, buttonFont, buttonFontWeight,
+    imagePath, colors, coverDate, showDate, preparedByMemberId, showPreparedBy,
     showAvatar, clientLogoPath, showClientLogo, clientLogoTintColor,
   ]);
 
@@ -402,6 +409,10 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
         hideImage={effectiveHideImage}
         companyId={entity.company_id}
         clientName={entity.client_name}
+        entityTitle={entityTitle}
+        setEntityTitle={setEntityTitle}
+        titlePlaceholder={titlePlaceholder}
+        titleLabel={titleLabel}
         coverEnabled={coverEnabled}
         setCoverEnabled={setCoverEnabled}
         subtitle={subtitle}
@@ -428,6 +439,10 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
         onClientLogoRemove={removeClientLogo}
         acceptButtonText={buttonText}
         setAcceptButtonText={setButtonText}
+        buttonFont={buttonFont}
+        setButtonFont={setButtonFont}
+        buttonFontWeight={buttonFontWeight}
+        setButtonFontWeight={setButtonFontWeight}
         imageUrl={imageUrl}
         imagePath={imagePath}
         uploading={uploading}
@@ -454,6 +469,10 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
           hideImage={effectiveHideImage}
           companyId={entity.company_id}
           clientName={entity.client_name}
+          entityTitle={entityTitle}
+          setEntityTitle={setEntityTitle}
+          titlePlaceholder={titlePlaceholder}
+          titleLabel={titleLabel}
           coverEnabled={coverEnabled}
           setCoverEnabled={setCoverEnabled}
           subtitle={subtitle}
@@ -480,6 +499,10 @@ export default function CoverEditor({ type, entity, onSave, hideColors, hideEnab
           onClientLogoRemove={removeClientLogo}
           acceptButtonText={buttonText}
           setAcceptButtonText={setButtonText}
+          buttonFont={buttonFont}
+          setButtonFont={setButtonFont}
+          buttonFontWeight={buttonFontWeight}
+          setButtonFontWeight={setButtonFontWeight}
           imageUrl={imageUrl}
           imagePath={imagePath}
           uploading={uploading}

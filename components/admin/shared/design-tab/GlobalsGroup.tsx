@@ -50,10 +50,6 @@ export interface GlobalsGroupProps {
   setFontBodySize: (v: string) => void;
   fontBodyTransform: string | null;
   setFontBodyTransform: (v: string | null) => void;
-  fontButtonFamily: string | null;
-  setFontButtonFamily: (v: string | null) => void;
-  fontButtonWeight: string | null;
-  setFontButtonWeight: (v: string | null) => void;
   /* Text page colours */
   tpBgColor: string;
   setTpBgColor: (v: string) => void;
@@ -107,10 +103,6 @@ export default function GlobalsGroup({
   setFontBodySize,
   fontBodyTransform,
   setFontBodyTransform,
-  fontButtonFamily,
-  setFontButtonFamily,
-  fontButtonWeight,
-  setFontButtonWeight,
   tpBgColor,
   setTpBgColor,
   tpTextColor,
@@ -221,15 +213,6 @@ export default function GlobalsGroup({
                   value={fontBodySize}
                   onChange={setFontBodySize}
                   placeholder={companyDefaults.font_size || '14'}
-                />
-                <FontSelect
-                  label="Button font"
-                  description="Cover call-to-action button. Leave blank to use the Heading font."
-                  value={fontButtonFamily}
-                  onChange={setFontButtonFamily}
-                  weight={fontButtonWeight}
-                  onWeightChange={setFontButtonWeight}
-                  hideInlinePreview
                 />
               </div>
             </div>

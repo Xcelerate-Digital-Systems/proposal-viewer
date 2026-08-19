@@ -4,6 +4,7 @@
 import { useRef } from 'react';
 import { Trash2, Image, Eye, EyeOff, Palette, User, Calendar, Type, Loader2, Upload } from 'lucide-react';
 import ColorPickerField from '@/components/ui/ColorPickerField';
+import FontSelect from '@/components/admin/shared/FontSelect';
 import CoverColorControls, { CoverColorValues } from '@/components/admin/shared/CoverColorControls';
 import PreparedBySelector from '@/components/admin/shared/PreparedBySelector';
 import Chip from '@/components/ui/Chip';
@@ -62,6 +63,11 @@ interface CoverSettingsPanelProps {
   hideImage?: boolean;
   companyId: string;
   clientName?: string;
+  /* Title / name */
+  entityTitle: string;
+  setEntityTitle: (v: string) => void;
+  titlePlaceholder: string;
+  titleLabel: string;
   /* Enable/disable */
   coverEnabled: boolean;
   setCoverEnabled: (v: boolean) => void;
@@ -96,6 +102,11 @@ interface CoverSettingsPanelProps {
   /* Accept button (proposals only) */
   acceptButtonText: string;
   setAcceptButtonText: (v: string) => void;
+  /* Button font (cover CTA) */
+  buttonFont: string | null;
+  setButtonFont: (v: string | null) => void;
+  buttonFontWeight: string | null;
+  setButtonFontWeight: (v: string | null) => void;
   /* Background image */
   imageUrl: string | null;
   imagePath: string;
@@ -115,6 +126,10 @@ export default function CoverSettingsPanel({
   hideImage,
   companyId,
   clientName,
+  entityTitle,
+  setEntityTitle,
+  titlePlaceholder,
+  titleLabel,
   coverEnabled,
   setCoverEnabled,
   subtitle,
@@ -141,6 +156,10 @@ export default function CoverSettingsPanel({
   onClientLogoRemove,
   acceptButtonText,
   setAcceptButtonText,
+  buttonFont,
+  setButtonFont,
+  buttonFontWeight,
+  setButtonFontWeight,
   imageUrl,
   imagePath,
   uploading,
@@ -169,6 +188,19 @@ export default function CoverSettingsPanel({
           <div className="border-t border-edge" />
         </>
       )}
+
+      {/* ── Title / Name ───────────────────────────────── */}
+      <div className="space-y-2">
+        <SectionHeader icon={<Type size={14} className="text-faint" />} label={titleLabel} />
+        <input
+          type="text"
+          value={entityTitle}
+          onChange={(e) => setEntityTitle(e.target.value)}
+          placeholder={titlePlaceholder}
+          className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
+        />
+      </div>
+      <div className="border-t border-edge" />
 
       {/* ── Subtitle ─────────────────────────────────────── */}
       {cfg.fields.subtitle && (
@@ -364,6 +396,15 @@ export default function CoverSettingsPanel({
               className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
             />
             <p className="text-xs text-faint">Text shown on the cover page CTA button. Leave blank for default.</p>
+            <FontSelect
+              label="Button font"
+              description="Leave blank to use the Heading font."
+              value={buttonFont}
+              onChange={setButtonFont}
+              weight={buttonFontWeight}
+              onWeightChange={setButtonFontWeight}
+              hideInlinePreview
+            />
           </div>
           <div className="border-t border-edge" />
         </>

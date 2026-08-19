@@ -18,6 +18,7 @@ export default function TemplateDetailsPage() {
           description: template.description,
         }}
         onSave={refetch}
+        hiddenFields={['name']}
       />
       <PostAcceptSection
         entityId={template.id}

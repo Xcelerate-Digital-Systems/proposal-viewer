@@ -52,16 +52,16 @@ const PROPOSAL_TABS: TabDef[] = [
   { key: 'pricing',    label: 'Quote',       icon: DollarSign,   path: 'pricing',    group: 'content' },
   { key: 'packages',   label: 'Packages',    icon: Package,      path: 'packages',   group: 'content' },
   { key: 'decision',   label: 'Decision',    icon: CheckCircle2, path: 'decision',   group: 'content' },
-  { key: 'design',     label: 'Design',      icon: Paintbrush,   path: 'design',     group: 'setup' },
   { key: 'details',    label: 'Details',     icon: Settings,     path: 'details',    group: 'setup' },
+  { key: 'design',     label: 'Design',      icon: Paintbrush,   path: 'design',     group: 'setup' },
   { key: 'analytics',  label: 'Analytics',   icon: BarChart3,    path: 'analytics',  group: 'setup' },
 ];
 
 const DOCUMENT_TABS: TabDef[] = [
   { key: 'pages',      label: 'Layout',      icon: Pencil,     path: 'pages',      group: 'content' },
   { key: 'text-pages', label: 'Text Pages',  icon: FileText,   path: 'text-pages', group: 'content' },
-  { key: 'design',     label: 'Design',  icon: Paintbrush, path: 'design',     group: 'setup' },
   { key: 'details',    label: 'Details', icon: Settings,   path: 'details',    group: 'setup' },
+  { key: 'design',     label: 'Design',  icon: Paintbrush, path: 'design',     group: 'setup' },
 ];
 
 const TEMPLATE_TABS: TabDef[] = [
@@ -71,8 +71,8 @@ const TEMPLATE_TABS: TabDef[] = [
   { key: 'pricing',    label: 'Quote',       icon: DollarSign,   path: 'pricing',    group: 'content' },
   { key: 'packages',   label: 'Packages',    icon: Package,      path: 'packages',   group: 'content' },
   { key: 'decision',   label: 'Decision',    icon: CheckCircle2, path: 'decision',   group: 'content' },
-  { key: 'design',     label: 'Design',      icon: Paintbrush,   path: 'design',     group: 'setup' },
   { key: 'details',    label: 'Details',     icon: Settings,     path: 'details',    group: 'setup' },
+  { key: 'design',     label: 'Design',      icon: Paintbrush,   path: 'design',     group: 'setup' },
 ];
 
 const QUOTE_TABS: TabDef[] = [

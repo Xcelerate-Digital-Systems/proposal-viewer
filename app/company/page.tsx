@@ -1,8 +1,7 @@
 // app/company/page.tsx
 'use client';
 
-import { useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRef } from 'react';
 import { Building2, Check, Loader2, ImageIcon, Upload, Trash2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import CustomDomainManager from '@/components/admin/CustomDomainManager';
@@ -22,21 +21,12 @@ import { buildGradientCss, resolveStops } from '@/lib/gradient-stops';
 export default function CompanySettingsPage() {
   return (
     <AdminLayout>
-      {(auth) => <BrandKitGate accountType={auth.accountType} companyId={auth.companyId ?? ''} />}
+      {(auth) => <CompanySettingsContent companyId={auth.companyId ?? ''} accountType={auth.accountType} />}
     </AdminLayout>
   );
 }
 
-function BrandKitGate({ accountType, companyId }: { accountType: 'agency' | 'client'; companyId: string }) {
-  const router = useRouter();
-  useEffect(() => {
-    if (accountType !== 'agency') router.replace('/dashboard');
-  }, [accountType, router]);
-  if (accountType !== 'agency') return null;
-  return <CompanySettingsContent companyId={companyId} />;
-}
-
-function CompanySettingsContent({ companyId }: { companyId: string }) {
+function CompanySettingsContent({ companyId, accountType }: { companyId: string; accountType: 'agency' | 'client' }) {
   const s = useCompanySettings(companyId);
 
   if (s.loading) {
@@ -234,8 +224,10 @@ function CompanySettingsContent({ companyId }: { companyId: string }) {
           acceptTextColor={s.acceptTextColor}
         />
 
-        {/* Custom Domain */}
-        <CustomDomainManager companyId={companyId} isOwner={s.isOwner} />
+        {/* Custom Domain — agency only */}
+        {accountType === 'agency' && (
+          <CustomDomainManager companyId={companyId} isOwner={s.isOwner} />
+        )}
 
         {!s.isOwner && (
           <div className="bg-surface border border-edge rounded-[14px] p-4 text-center">
