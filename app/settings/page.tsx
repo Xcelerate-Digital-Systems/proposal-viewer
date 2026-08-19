@@ -91,7 +91,7 @@ function SettingsContent({ auth }: {
   }, [searchParams]);
 
   const isAdminOrOwner = teamMember?.role === 'owner' || teamMember?.role === 'admin';
-  const canSeeDeveloper = isSuperAdmin || isAdminOrOwner;
+  const canSeeDeveloper = (isSuperAdmin || isAdminOrOwner) && accountType === 'agency';
   const canSeeBilling = isAdminOrOwner && accountType === 'agency';
 
   return (

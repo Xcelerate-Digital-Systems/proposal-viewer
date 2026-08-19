@@ -18,7 +18,7 @@ export const frequencyLabel = (f: string) =>
   FREQUENCY_OPTIONS.find((o) => o.value === f)?.label ?? f;
 
 // Teal shades used across all sub-components
-export const TEAL = '#017C87';
+export const TEAL = 'var(--color-brand, #017C87)';
 export const TEAL_BORDER = 'border-teal/30';
 export const TEAL_BG = 'bg-teal/[0.02]';
 export const TEAL_TEXT = 'text-teal';

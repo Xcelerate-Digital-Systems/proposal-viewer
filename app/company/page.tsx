@@ -1,7 +1,8 @@
 // app/company/page.tsx
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Building2, Check, Loader2, ImageIcon, Upload, Trash2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import CustomDomainManager from '@/components/admin/CustomDomainManager';
@@ -21,9 +22,18 @@ import { buildGradientCss, resolveStops } from '@/lib/gradient-stops';
 export default function CompanySettingsPage() {
   return (
     <AdminLayout>
-      {(auth) => <CompanySettingsContent companyId={auth.companyId ?? ''} />}
+      {(auth) => <BrandKitGate accountType={auth.accountType} companyId={auth.companyId ?? ''} />}
     </AdminLayout>
   );
+}
+
+function BrandKitGate({ accountType, companyId }: { accountType: 'agency' | 'client'; companyId: string }) {
+  const router = useRouter();
+  useEffect(() => {
+    if (accountType !== 'agency') router.replace('/dashboard');
+  }, [accountType, router]);
+  if (accountType !== 'agency') return null;
+  return <CompanySettingsContent companyId={companyId} />;
 }
 
 function CompanySettingsContent({ companyId }: { companyId: string }) {

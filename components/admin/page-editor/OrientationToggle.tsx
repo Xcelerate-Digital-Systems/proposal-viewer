@@ -20,7 +20,7 @@ export default function OrientationToggle({ value, onChange, variant = 'default'
   const [open, setOpen] = useState(false);
 
   const isTeal = variant === 'teal';
-  const baseColor = isTeal ? '#017C87' : '#6b7280';
+  const baseColor = isTeal ? 'var(--color-brand, #017C87)' : '#6b7280';
 
   const options: { key: Orientation; label: string; icon: React.ReactNode }[] = [
     {

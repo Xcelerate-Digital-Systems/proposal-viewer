@@ -13,7 +13,7 @@ export default function Toggle({
   enabled,
   onChange,
   size = 'md',
-  activeColor = '#017C87',
+  activeColor,
   disabled = false,
 }: ToggleProps) {
   const isSm = size === 'sm';
@@ -36,11 +36,9 @@ export default function Toggle({
       style={{
         width: trackW,
         height: trackH,
-        backgroundColor: enabled ? activeColor : '#CBD5E1',
+        backgroundColor: enabled ? (activeColor || 'var(--color-brand, #017C87)') : '#CBD5E1',
         opacity: disabled ? 0.5 : 1,
         cursor: disabled ? 'not-allowed' : 'pointer',
-        // @ts-expect-error CSS custom property
-        '--tw-ring-color': activeColor + '40',
       }}
     >
       <span

@@ -50,18 +50,18 @@ module.exports = {
           green: '#D1F0C8',
         },
         teal: {
-          DEFAULT: '#017C87',
-          hover: '#016670',
-          tint: '#E6F5F3',
+          DEFAULT: 'var(--color-brand, #017C87)',
+          hover: 'var(--color-brand-hover, #016670)',
+          tint: 'var(--color-brand-tint, #E6F5F3)',
         },
         // Semantic brand tokens — prefer these in new code.
-        // `teal.*` above is kept as an alias for the ~thousands of existing
-        // usages; new components should use the semantic names below so we
-        // can re-skin the brand in one place later.
+        // `teal.*` and `primary.*` both resolve to CSS custom properties
+        // so client accounts can re-skin the accent in one place via
+        // --color-brand, --color-brand-hover, --color-brand-tint.
         primary: {
-          DEFAULT: '#017C87',  // saturated teal — CTAs, links, focus rings, active states on light surfaces
-          hover: '#016670',
-          tint: '#E6F5F3',     // pale wash — selected-row bg, hover bg on light
+          DEFAULT: 'var(--color-brand, #017C87)',
+          hover: 'var(--color-brand-hover, #016670)',
+          tint: 'var(--color-brand-tint, #E6F5F3)',
         },
         // Dark-surface palette — the cluster the sidebar lives in. Use for
         // any dark-on-teal UI chrome (sidebar, dark modals, toolbars).

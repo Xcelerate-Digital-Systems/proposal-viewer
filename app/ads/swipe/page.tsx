@@ -10,9 +10,18 @@ import { useSwipeFileContext } from '@/components/admin/ads/swipe/SwipeFileConte
 export default function SwipeFileIndexPage() {
   return (
     <AdminLayout>
-      {() => <SwipeFileIndexContent />}
+      {(auth) => <AgencyGate accountType={auth.accountType} />}
     </AdminLayout>
   );
+}
+
+function AgencyGate({ accountType }: { accountType: 'agency' | 'client' }) {
+  const router = useRouter();
+  useEffect(() => {
+    if (accountType !== 'agency') router.replace('/dashboard');
+  }, [accountType, router]);
+  if (accountType !== 'agency') return null;
+  return <SwipeFileIndexContent />;
 }
 
 function SwipeFileIndexContent() {

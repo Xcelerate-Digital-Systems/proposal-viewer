@@ -29,20 +29,22 @@ const TYPE_CONFIG = {
 } as const;
 
 const QUICK_LINKS = [
-  { label: 'Dashboard',       href: '/dashboard',                 icon: LayoutDashboard },
-  { label: 'Proposals',       href: '/proposals',                 icon: FileText },
-  { label: 'Quotes',          href: '/quotes',                    icon: ReceiptText },
-  { label: 'Documents',       href: '/documents',                 icon: Files },
-  { label: 'Templates',       href: '/templates',                 icon: LayoutTemplate },
-  { label: 'Campaigns',       href: '/campaigns',                 icon: MessageSquareText },
-  { label: 'Funnels',         href: '/funnels',                   icon: Workflow },
-  { label: 'Swipe Vault',     href: '/ads/swipe',                 icon: Bookmark },
-  { label: 'Looker Studio',   href: '/integrations/looker-studio', icon: Plug },
-  { label: 'Brand Kit',       href: '/company',                   icon: Palette },
-  { label: 'Settings',        href: '/settings',                  icon: Settings },
+  { label: 'Dashboard',       href: '/dashboard',                 icon: LayoutDashboard, agencyOnly: false },
+  { label: 'Proposals',       href: '/proposals',                 icon: FileText,        agencyOnly: false },
+  { label: 'Quotes',          href: '/quotes',                    icon: ReceiptText,     agencyOnly: false },
+  { label: 'Documents',       href: '/documents',                 icon: Files,           agencyOnly: false },
+  { label: 'Templates',       href: '/templates',                 icon: LayoutTemplate,  agencyOnly: false },
+  { label: 'Campaigns',       href: '/campaigns',                 icon: MessageSquareText, agencyOnly: true },
+  { label: 'Funnels',         href: '/funnels',                   icon: Workflow,        agencyOnly: true },
+  { label: 'Swipe Vault',     href: '/ads/swipe',                 icon: Bookmark,        agencyOnly: true },
+  { label: 'Looker Studio',   href: '/integrations/looker-studio', icon: Plug,           agencyOnly: true },
+  { label: 'Brand Kit',       href: '/company',                   icon: Palette,         agencyOnly: true },
+  { label: 'Settings',        href: '/settings',                  icon: Settings,        agencyOnly: false },
 ];
 
-export default function CommandPalette() {
+const AGENCY_ONLY_SEARCH_TYPES = new Set(['campaign', 'funnel', 'client']);
+
+export default function CommandPalette({ accountType = 'agency' }: { accountType?: 'agency' | 'client' }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -80,16 +82,19 @@ export default function CommandPalette() {
     if (allItems.length > 0) return;
     setLoading(true);
     try {
+      const empty = { data: [] };
       const [proposals, documents, templates, campaignsRes, funnelsRes, clients] = await Promise.all([
-        authFetch('/api/proposals').then((r) => r.json()).catch(() => ({ data: [] })),
-        authFetch('/api/documents').then((r) => r.json()).catch(() => ({ data: [] })),
-        authFetch('/api/templates').then((r) => r.json()).catch(() => ({ data: [] })),
-        supabase.from('review_projects').select('id, title, client_name').order('created_at', { ascending: false }).limit(100),
-        supabase.from('funnels').select('id, title, name').order('created_at', { ascending: false }).limit(100),
-        authFetch('/api/clients').then((r) => r.json()).catch(() => ({ data: [] })),
+        authFetch('/api/proposals').then((r) => r.json()).catch(() => empty),
+        authFetch('/api/documents').then((r) => r.json()).catch(() => empty),
+        authFetch('/api/templates').then((r) => r.json()).catch(() => empty),
+        isClient ? { data: [] } : supabase.from('review_projects').select('id, title, client_name').order('created_at', { ascending: false }).limit(100),
+        isClient ? { data: [] } : supabase.from('funnels').select('id, title, name').order('created_at', { ascending: false }).limit(100),
+        isClient ? empty : authFetch('/api/clients').then((r) => r.json()).catch(() => empty),
       ]);
-      const campaigns = { projects: campaignsRes.data || [] };
-      const funnels = { data: funnelsRes.data || [] };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const campaigns = { projects: ((campaignsRes as any).data || []) as any[] };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const funnels = { data: ((funnelsRes as any).data || []) as any[] };
 
       const items: SearchResult[] = [];
 
@@ -166,9 +171,13 @@ export default function CommandPalette() {
     setSelectedIndex(0);
   }, [query, allItems]);
 
-  const filteredQuickLinks = query.trim()
-    ? QUICK_LINKS.filter((l) => l.label.toLowerCase().includes(query.toLowerCase()))
+  const isClient = accountType === 'client';
+  const visibleQuickLinks = isClient
+    ? QUICK_LINKS.filter((l) => !l.agencyOnly)
     : QUICK_LINKS;
+  const filteredQuickLinks = query.trim()
+    ? visibleQuickLinks.filter((l) => l.label.toLowerCase().includes(query.toLowerCase()))
+    : visibleQuickLinks;
 
   const navigate = (href: string) => {
     setOpen(false);

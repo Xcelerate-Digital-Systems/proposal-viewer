@@ -108,7 +108,7 @@ export async function getAuthContext(req: NextRequest) {
 
   if (!members || members.length === 0) return null;
 
-  const defaultMember = members[0];
+  let baseMember = members[0];
   const requestedMembershipId = req.nextUrl.searchParams.get('membership_id');
   const requestedCompanyId = req.nextUrl.searchParams.get('company_id');
 
@@ -116,19 +116,28 @@ export async function getAuthContext(req: NextRequest) {
   // belong to. The role/permissions come from THAT membership, not from the
   // user's default home company. This is how the workspace switcher tells
   // the server which workspace to act inside of.
+  //
+  // When both membership_id and company_id are present AND point to different
+  // companies, the caller is an agency admin "viewing as" a client company.
+  // In that case we don't return early — we update baseMember and let the
+  // override logic (paths 3+4) handle the cross-company resolution.
   if (requestedMembershipId) {
     const picked = members.find((m) => m.id === requestedMembershipId);
     if (picked) {
-      const { data: company } = await supabase
-        .from('companies')
-        .select('account_type')
-        .eq('id', picked.company_id)
-        .single();
-      return {
-        member: picked,
-        companyId: picked.company_id as string,
-        accountType: (company?.account_type ?? 'agency') as 'agency' | 'client',
-      };
+      baseMember = picked;
+      const hasOverride = requestedCompanyId && requestedCompanyId !== picked.company_id;
+      if (!hasOverride) {
+        const { data: company } = await supabase
+          .from('companies')
+          .select('account_type')
+          .eq('id', picked.company_id)
+          .single();
+        return {
+          member: picked,
+          companyId: picked.company_id as string,
+          accountType: (company?.account_type ?? 'agency') as 'agency' | 'client',
+        };
+      }
     }
     // Unknown membership id — fall through; don't 403 because the caller may
     // have stale localStorage from a deleted membership.
@@ -149,7 +158,7 @@ export async function getAuthContext(req: NextRequest) {
       // in downstream handlers (e.g. effectiveRole in GET /api/company)
       // see is_super_admin=true even when the matched row is a secondary
       // membership in another company.
-      const member = defaultMember.is_super_admin && !matchingMembership.is_super_admin
+      const member = baseMember.is_super_admin && !matchingMembership.is_super_admin
         ? { ...matchingMembership, is_super_admin: true }
         : matchingMembership;
       return {
@@ -163,8 +172,8 @@ export async function getAuthContext(req: NextRequest) {
   // (3 + 4) ?company_id= override — super admin or agency admin viewing a
   // company they are NOT a real member of. Member object stays as the user's
   // default (so role is preserved for permission checks).
-  if (requestedCompanyId && requestedCompanyId !== defaultMember.company_id) {
-    if (defaultMember.is_super_admin) {
+  if (requestedCompanyId && requestedCompanyId !== baseMember.company_id) {
+    if (baseMember.is_super_admin) {
       const { data: targetCompany } = await supabase
         .from('companies')
         .select('account_type')
@@ -180,13 +189,13 @@ export async function getAuthContext(req: NextRequest) {
         .eq('company_id', requestedCompanyId)
         .maybeSingle();
       return {
-        member: targetMember ?? { ...defaultMember, _crossCompanyOverride: true },
+        member: targetMember ?? { ...baseMember, _crossCompanyOverride: true },
         companyId: requestedCompanyId,
         accountType: (targetCompany?.account_type ?? 'agency') as 'agency' | 'client',
       };
     }
 
-    const isAgencyAdmin = defaultMember.role === 'owner' || defaultMember.role === 'admin';
+    const isAgencyAdmin = baseMember.role === 'owner' || baseMember.role === 'admin';
     if (isAgencyAdmin) {
       const { data: targetCompany } = await supabase
         .from('companies')
@@ -195,10 +204,10 @@ export async function getAuthContext(req: NextRequest) {
         .single();
       if (
         targetCompany?.account_type === 'client' &&
-        targetCompany?.agency_id === defaultMember.company_id
+        targetCompany?.agency_id === baseMember.company_id
       ) {
         return {
-          member: defaultMember,
+          member: baseMember,
           companyId: requestedCompanyId,
           accountType: 'client' as const,
         };
@@ -212,12 +221,12 @@ export async function getAuthContext(req: NextRequest) {
   const { data: ownCompany } = await supabase
     .from('companies')
     .select('account_type')
-    .eq('id', defaultMember.company_id)
+    .eq('id', baseMember.company_id)
     .single();
 
   return {
-    member: defaultMember,
-    companyId: defaultMember.company_id as string,
+    member: baseMember,
+    companyId: baseMember.company_id as string,
     accountType: (ownCompany?.account_type ?? 'agency') as 'agency' | 'client',
   };
 }

@@ -25,15 +25,18 @@ export interface SidebarBranding {
 export function useCompanyBranding(
   companyId: string | null,
   accountType: 'agency' | 'client',
-): SidebarBranding | null {
+): { branding: SidebarBranding | null; loading: boolean } {
   const [raw, setRaw] = useState<Omit<SidebarBranding, 'palette'> | null>(null);
+  const [loading, setLoading] = useState(accountType === 'client' && !!companyId);
 
   useEffect(() => {
     if (!companyId || accountType !== 'client') {
       setRaw(null);
+      setLoading(false);
       return;
     }
 
+    setLoading(true);
     let cancelled = false;
 
     (async () => {
@@ -45,10 +48,17 @@ export function useCompanyBranding(
 
       if (cancelled) return;
       const agencyId = clientCompany?.agency_id;
-      if (!agencyId) return;
+      if (!agencyId) {
+        setLoading(false);
+        return;
+      }
 
       const res = await fetch(`/api/company/branding?company_id=${agencyId}`);
-      if (cancelled || !res.ok) return;
+      if (cancelled) return;
+      if (!res.ok) {
+        setLoading(false);
+        return;
+      }
       const data = await res.json();
       if (cancelled) return;
 
@@ -62,6 +72,7 @@ export function useCompanyBranding(
         sidebarInactiveTextColor: data.sidebar_inactive_text_color || null,
         companyName: data.name || '',
       });
+      setLoading(false);
     })();
 
     return () => { cancelled = true; };
@@ -75,5 +86,5 @@ export function useCompanyBranding(
     };
   }, [raw]);
 
-  return branding;
+  return { branding, loading };
 }

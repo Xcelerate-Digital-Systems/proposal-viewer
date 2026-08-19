@@ -7,7 +7,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   AlertTriangle, CheckCircle2, Copy, Check, Settings, ShieldAlert,
   Loader2, Trash2, Eye, EyeOff,
@@ -19,6 +19,12 @@ import { supabase } from '@/lib/supabase';
 import { authFetch } from '@/lib/auth-fetch';
 import Image from 'next/image';
 import Link from 'next/link';
+
+function AgencyOnlyRedirect() {
+  const router = useRouter();
+  useEffect(() => { router.replace('/dashboard'); }, [router]);
+  return null;
+}
 
 const META_DEPLOYMENT_ID = process.env.NEXT_PUBLIC_LOOKER_DEPLOYMENT_ID_META || '';
 const GHL_DEPLOYMENT_ID = process.env.NEXT_PUBLIC_LOOKER_DEPLOYMENT_ID_GHL || '';
@@ -507,7 +513,7 @@ export default function LookerStudioPage() {
 
   return (
     <AdminLayout>
-      {() => (
+      {(auth) => auth.accountType !== 'agency' ? <AgencyOnlyRedirect /> : (
         <div className="flex flex-col h-full">
           <PageHeader
             title="Looker Studio"

@@ -1,7 +1,7 @@
 // components/admin/AdminLayout.tsx
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import AuthGuard from '@/components/auth/AuthGuard';
 import AdminSidebar from '@/components/admin/AdminSidebar';
@@ -19,6 +19,8 @@ import SupportWidget from '@/components/support/SupportWidget';
 import { supabase } from '@/lib/supabase';
 import { setBrandingColors } from '@/components/ui/ColorPickerField';
 import { useCompanyBranding } from '@/hooks/useCompanyBranding';
+import AppLoader from '@/components/ui/AppLoader';
+import { hexToOklch, oklchToHex, setLightnessAndChroma } from '@/lib/branding/color-math';
 import { EditorSidebarProvider } from '@/components/admin/sidebar/EditorSidebarContext';
 
 function BrandPaletteLoader({ companyId }: { companyId: string }) {
@@ -84,10 +86,35 @@ function AdminLayoutInner({
   funnelBoardId: string | null;
   children: (auth: ReturnType<typeof useAuth>) => React.ReactNode;
 }) {
-  const sidebarBranding = useCompanyBranding(
+  const { branding: sidebarBranding, loading: brandingLoading } = useCompanyBranding(
     auth.companyId ?? null,
     auth.accountType,
   );
+
+  // Inject brand accent as CSS custom properties so Tailwind's primary/teal
+  // tokens (which reference --color-brand*) pick up the agency's colors
+  // throughout the client workspace — buttons, links, focus rings, etc.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (sidebarBranding) {
+      const accent = sidebarBranding.accentColor;
+      const lch = hexToOklch(accent);
+      const hover = oklchToHex({ ...lch, L: Math.max(0, lch.L - 0.08) });
+      const tint = setLightnessAndChroma(accent, 0.95, Math.min(0.03, lch.C * 0.2));
+      root.style.setProperty('--color-brand', accent);
+      root.style.setProperty('--color-brand-hover', hover);
+      root.style.setProperty('--color-brand-tint', tint);
+    }
+    return () => {
+      root.style.removeProperty('--color-brand');
+      root.style.removeProperty('--color-brand-hover');
+      root.style.removeProperty('--color-brand-tint');
+    };
+  }, [sidebarBranding]);
+
+  if (brandingLoading) {
+    return <AppLoader />;
+  }
 
   const content = (
     <EditorSidebarProvider>
@@ -180,7 +207,7 @@ function AdminLayoutInner({
     <TourProvider>
       {guarded}
       {/* <SetupChecklist /> — tours disabled, revisit later */}
-      <CommandPalette />
+      <CommandPalette accountType={auth.accountType} />
     </TourProvider>
   );
 }

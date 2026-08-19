@@ -9,7 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { supabase, PageNameEntry } from '@/lib/supabase';
 import type { PageUrlEntry } from '@/hooks/useProposal';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
 
 interface PdfPreviewPanelProps {
   filePath: string;
