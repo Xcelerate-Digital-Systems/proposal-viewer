@@ -2,11 +2,12 @@
 'use client';
 
 import { useRef } from 'react';
-import { Trash2, Image, Eye, EyeOff, Palette, User, Calendar, Type, Loader2, Upload } from 'lucide-react';
+import { Trash2, Image, Eye, EyeOff, Palette, User, CircleUser, Calendar, Type, Loader2, Upload, MousePointerClick } from 'lucide-react';
 import ColorPickerField from '@/components/ui/ColorPickerField';
 import FontSelect from '@/components/admin/shared/FontSelect';
 import CoverColorControls, { CoverColorValues } from '@/components/admin/shared/CoverColorControls';
 import PreparedBySelector from '@/components/admin/shared/PreparedBySelector';
+import SectionCard from '@/components/admin/proposals/quote-builder/SectionCard';
 import Chip from '@/components/ui/Chip';
 import { EntityType, EntityConfig } from './CoverEditorTypes';
 
@@ -36,30 +37,13 @@ function ToggleRow({
   );
 }
 
-/* ── Section header ──────────────────────────────────────────────── */
-
-function SectionHeader({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <div className="flex items-center gap-2 pt-1">
-      {icon}
-      <span className="text-xs font-semibold text-dim uppercase tracking-wider">{label}</span>
-    </div>
-  );
-}
-
 /* ── Props ────────────────────────────────────────────────────────── */
 
 interface CoverSettingsPanelProps {
   type: EntityType;
   cfg: EntityConfig;
-  /** Hide the Cover Colors section (used on the Quote cover tab where colours
-   *  live on the Settings tab instead, and on the new content-only Cover tab
-   *  where colours live on the Design tab). */
   hideColors?: boolean;
-  /** Hide the Cover Enabled toggle (quote covers always show). */
   hideEnableToggle?: boolean;
-  /** Hide the Background Image section. Used on the content-only Cover tab
-   *  where the background image moves to the Design tab. */
   hideImage?: boolean;
   companyId: string;
   clientName?: string;
@@ -92,8 +76,6 @@ interface CoverSettingsPanelProps {
   setShowClientLogo: (v: boolean) => void;
   clientLogoUrl: string | null;
   clientLogoPath: string;
-  /** When set, the logo is rendered as a flat silhouette in this colour (CSS mask).
-   *  Null leaves the logo in its original colours. */
   clientLogoTintColor: string | null;
   setClientLogoTintColor: (v: string | null) => void;
   uploadingClientLogo: boolean;
@@ -172,129 +154,131 @@ export default function CoverSettingsPanel({
   const clientLogoFileRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* ── Enable/disable toggle ────────────────────────── */}
       {!hideEnableToggle && (
-        <>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {coverEnabled ? <Eye size={16} className="text-teal" /> : <EyeOff size={16} className="text-faint" />}
-              <span className="text-sm text-ink font-medium">Cover Page</span>
-            </div>
-            <Chip enabled={coverEnabled} onClick={() => setCoverEnabled(!coverEnabled)}>
-              {coverEnabled ? 'Visible' : 'Hidden'}
-            </Chip>
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            {coverEnabled ? <Eye size={16} className="text-teal" /> : <EyeOff size={16} className="text-faint" />}
+            <span className="text-sm text-ink font-medium">Cover Page</span>
           </div>
-          <div className="border-t border-edge" />
-        </>
+          <Chip enabled={coverEnabled} onClick={() => setCoverEnabled(!coverEnabled)}>
+            {coverEnabled ? 'Visible' : 'Hidden'}
+          </Chip>
+        </div>
       )}
 
-      {/* ── Title / Name ───────────────────────────────── */}
-      <div className="space-y-2">
-        <SectionHeader icon={<Type size={14} className="text-faint" />} label={titleLabel} />
-        <input
-          type="text"
-          value={entityTitle}
-          onChange={(e) => setEntityTitle(e.target.value)}
-          placeholder={titlePlaceholder}
-          className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
-        />
-      </div>
-      <div className="border-t border-edge" />
-
-      {/* ── Subtitle ─────────────────────────────────────── */}
-      {cfg.fields.subtitle && (
-        <>
-          <div className="space-y-2">
-            <SectionHeader icon={<Type size={14} className="text-faint" />} label={cfg.labels.subtitle} />
+      {/* ── Content card ─────────────────────────────────── */}
+      <SectionCard
+        title="Content"
+        description="Title, subtitle and details shown on the cover page."
+        icon={<Type size={14} className="text-faint" />}
+      >
+        <div className="space-y-4">
+          {/* Title / Name */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-dim">{titleLabel}</label>
             <input
               type="text"
-              value={subtitle}
-              onChange={(e) => setSubtitle(e.target.value)}
-              placeholder={subtitlePlaceholder}
+              value={entityTitle}
+              onChange={(e) => setEntityTitle(e.target.value)}
+              placeholder={titlePlaceholder}
               className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
             />
-            {cfg.labels.subtitleHint && (
-              <p className="text-xs text-faint">{cfg.labels.subtitleHint}</p>
-            )}
-            {type === 'proposal' && clientName && !cfg.labels.subtitleHint && (
-              <p className="text-xs text-faint">Leave blank for &quot;Prepared for {clientName}&quot;</p>
-            )}
           </div>
-          <div className="border-t border-edge" />
-        </>
-      )}
 
-      {/* ── Prepared By ──────────────────────────────────── */}
-      {cfg.fields.preparedBy && (
-        <>
-          <div className="space-y-3">
-            <SectionHeader icon={<User size={14} className="text-faint" />} label="Prepared By" />
-            <PreparedBySelector
-              companyId={companyId}
-              selectedMemberId={preparedByMemberId}
-              onSelect={(id) => setPreparedByMemberId(id)}
-            />
-            <p className="text-xs text-faint">
-              {type === 'template'
-                ? 'Default author for proposals created from this template.'
-                : 'Select who prepared this proposal. Their name and photo come from their profile.'}
-            </p>
-            <ToggleRow
-              icon={<User size={14} className="text-faint" />}
-              label="Show prepared by"
-              enabled={showPreparedBy}
-              onToggle={() => setShowPreparedBy(!showPreparedBy)}
-            />
-            {cfg.fields.avatar && (
-              <ToggleRow
-                icon={<User size={14} className="text-faint" />}
-                label="Show avatar"
-                enabled={showAvatar}
-                onToggle={() => setShowAvatar(!showAvatar)}
+          {/* Subtitle */}
+          {cfg.fields.subtitle && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-dim">{cfg.labels.subtitle}</label>
+              <input
+                type="text"
+                value={subtitle}
+                onChange={(e) => setSubtitle(e.target.value)}
+                placeholder={subtitlePlaceholder}
+                className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
               />
+              {cfg.labels.subtitleHint && (
+                <p className="text-xs text-faint">{cfg.labels.subtitleHint}</p>
+              )}
+              {type === 'proposal' && clientName && !cfg.labels.subtitleHint && (
+                <p className="text-xs text-faint">Leave blank for &quot;Prepared for {clientName}&quot;</p>
+              )}
+            </div>
+          )}
+
+          {/* Prepared By */}
+          {cfg.fields.preparedBy && (
+            <>
+              <div className="border-t border-edge" />
+              <div className="space-y-3">
+                <label className="text-xs font-medium text-dim">Prepared By</label>
+                <PreparedBySelector
+                  companyId={companyId}
+                  selectedMemberId={preparedByMemberId}
+                  onSelect={(id) => setPreparedByMemberId(id)}
+                />
+                <p className="text-xs text-faint">
+                  {type === 'template'
+                    ? 'Default author for proposals created from this template.'
+                    : 'Select who prepared this proposal. Their name and photo come from their profile.'}
+                </p>
+                <ToggleRow
+                  icon={<User size={14} className="text-faint" />}
+                  label="Show prepared by"
+                  enabled={showPreparedBy}
+                  onToggle={() => setShowPreparedBy(!showPreparedBy)}
+                />
+                {cfg.fields.avatar && (
+                  <ToggleRow
+                    icon={<CircleUser size={14} className="text-faint" />}
+                    label="Show avatar"
+                    enabled={showAvatar}
+                    onToggle={() => setShowAvatar(!showAvatar)}
+                  />
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Date */}
+          <div className="border-t border-edge" />
+          <div className="space-y-3">
+            <ToggleRow
+              icon={<Calendar size={14} className="text-faint" />}
+              label="Show date"
+              enabled={showDate}
+              onToggle={() => setShowDate(!showDate)}
+            />
+            {showDate && (
+              <div>
+                <input
+                  type="text"
+                  value={coverDate}
+                  onChange={(e) => setCoverDate(e.target.value)}
+                  placeholder="e.g. Feb 2026"
+                  className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
+                />
+                <p className="text-xs text-faint mt-1">Free-text date shown on the cover page</p>
+              </div>
             )}
           </div>
-          <div className="border-t border-edge" />
-        </>
-      )}
+        </div>
+      </SectionCard>
 
-      {/* ── Date ─────────────────────────────────────────── */}
-      <div className="space-y-3">
-        <SectionHeader icon={<Calendar size={14} className="text-faint" />} label="Date" />
-        <ToggleRow
-          icon={<Calendar size={14} className="text-faint" />}
-          label="Show date"
-          enabled={showDate}
-          onToggle={() => setShowDate(!showDate)}
-        />
-        {showDate && (
-          <div>
-            <input
-              type="text"
-              value={coverDate}
-              onChange={(e) => setCoverDate(e.target.value)}
-              placeholder="e.g. Feb 2026"
-              className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
-            />
-            <p className="text-xs text-faint mt-1">Free-text date shown on the cover page</p>
-          </div>
-        )}
-      </div>
-
-      <div className="border-t border-edge" />
-
-      {/* ── Client Logo ────────────────────────────────── */}
+      {/* ── Client Logo card ─────────────────────────────── */}
       {cfg.fields.clientLogo && (
-        <>
+        <SectionCard
+          title="Client Logo"
+          description="Upload your client's logo for the cover page."
+          icon={<Image size={14} className="text-faint" />}
+          action={
+            <Chip enabled={showClientLogo} onClick={() => setShowClientLogo(!showClientLogo)}>
+              {showClientLogo ? 'Visible' : 'Hidden'}
+            </Chip>
+          }
+        >
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <SectionHeader icon={<Image size={14} className="text-faint" />} label="Client Logo" />
-              <Chip enabled={showClientLogo} onClick={() => setShowClientLogo(!showClientLogo)}>
-                {showClientLogo ? 'Visible' : 'Hidden'}
-              </Chip>
-            </div>
-
             <input
               ref={clientLogoFileRef}
               type="file"
@@ -379,23 +363,28 @@ export default function CoverSettingsPanel({
               </div>
             )}
           </div>
-          <div className="border-t border-edge" />
-        </>
+        </SectionCard>
       )}
 
-      {/* ── Cover Button Text (proposals only) ──────────── */}
+      {/* ── Button card ──────────────────────────────────── */}
       {cfg.fields.acceptButtonText && (
-        <>
-          <div className="space-y-2">
-            <SectionHeader icon={<Type size={14} className="text-faint" />} label="Cover Button Text" />
-            <input
-              type="text"
-              value={acceptButtonText}
-              onChange={(e) => setAcceptButtonText(e.target.value)}
-              placeholder="START READING PROPOSAL"
-              className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
-            />
-            <p className="text-xs text-faint">Text shown on the cover page CTA button. Leave blank for default.</p>
+        <SectionCard
+          title="Cover Button"
+          description="The call-to-action button on the cover page."
+          icon={<MousePointerClick size={14} className="text-faint" />}
+        >
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-dim">Button Text</label>
+              <input
+                type="text"
+                value={acceptButtonText}
+                onChange={(e) => setAcceptButtonText(e.target.value)}
+                placeholder="START READING PROPOSAL"
+                className="w-full px-3 py-2.5 rounded-lg border border-edge-strong bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal/40 placeholder:text-faint"
+              />
+              <p className="text-xs text-faint">Text shown on the cover page CTA button. Leave blank for default.</p>
+            </div>
             <FontSelect
               label="Button font"
               description="Leave blank to use the Heading font."
@@ -406,59 +395,62 @@ export default function CoverSettingsPanel({
               hideInlinePreview
             />
           </div>
-          <div className="border-t border-edge" />
-        </>
+        </SectionCard>
       )}
 
-      {/* ── Background Image ─────────────────────────────── */}
+      {/* ── Background Image card ────────────────────────── */}
       {!hideImage && (
-      <div className="space-y-3">
-        <SectionHeader icon={<Image size={14} className="text-faint" />} label="Background Image" />
-        {imageUrl ? (
-          <div className="flex items-center gap-3 p-2 rounded-lg bg-surface border border-edge">
-            <img src={imageUrl} alt="" className="h-10 w-14 object-cover rounded" />
-            <span className="text-xs text-dim flex-1 truncate">{imagePath.split('/').pop()}</span>
-            <button onClick={onImageRemove} className="p-1.5 text-faint hover:text-red-500 transition-colors">
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => fileRef.current?.click()}
-            disabled={uploading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-edge-strong text-sm text-faint hover:border-teal/30 hover:text-teal transition-colors disabled:opacity-50"
-          >
-            <Image size={16} />
-            {uploading ? 'Uploading...' : 'Upload background image'}
-          </button>
-        )}
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/svg+xml"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) onImageUpload(f);
-            e.target.value = '';
-          }}
-        />
-      </div>
-      )}
-
-      {!hideColors && (
-        <>
-          <div className="border-t border-edge" />
-
-          {/* ── Cover Colors ─────────────────────────────────── */}
+        <SectionCard
+          title="Background Image"
+          description="Set a background image for the cover page."
+          icon={<Image size={14} className="text-faint" />}
+        >
           <div className="space-y-3">
-            <SectionHeader icon={<Palette size={14} className="text-faint" />} label="Cover Colors" />
-            <CoverColorControls
-              {...colors}
-              onChange={onColorsChange}
+            {imageUrl ? (
+              <div className="flex items-center gap-3 p-2 rounded-lg bg-surface border border-edge">
+                <img src={imageUrl} alt="" className="h-10 w-14 object-cover rounded" />
+                <span className="text-xs text-dim flex-1 truncate">{imagePath.split('/').pop()}</span>
+                <button onClick={onImageRemove} className="p-1.5 text-faint hover:text-red-500 transition-colors">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-edge-strong text-sm text-faint hover:border-teal/30 hover:text-teal transition-colors disabled:opacity-50"
+              >
+                <Image size={16} />
+                {uploading ? 'Uploading...' : 'Upload background image'}
+              </button>
+            )}
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onImageUpload(f);
+                e.target.value = '';
+              }}
             />
           </div>
-        </>
+        </SectionCard>
+      )}
+
+      {/* ── Cover Colors card ────────────────────────────── */}
+      {!hideColors && (
+        <SectionCard
+          title="Cover Colors"
+          description="Background, text and button colours for the cover page."
+          icon={<Palette size={14} className="text-faint" />}
+        >
+          <CoverColorControls
+            {...colors}
+            onChange={onColorsChange}
+          />
+        </SectionCard>
       )}
     </div>
   );

@@ -44,7 +44,7 @@ export const configs: Record<EntityType, EntityConfig> = {
     table: 'proposal_templates',
     defaultButtonText: 'START READING PROPOSAL',
     coverPrefix: 'template-',
-    fields: { subtitle: true, preparedBy: true, acceptButtonText: false, clientLogo: true, avatar: true },
+    fields: { subtitle: true, preparedBy: true, acceptButtonText: true, clientLogo: true, avatar: true },
     labels: {
       subtitle: 'Default Subtitle',
       subtitleHint: 'This will be the default subtitle when creating proposals from this template. Can be overridden per proposal.',
