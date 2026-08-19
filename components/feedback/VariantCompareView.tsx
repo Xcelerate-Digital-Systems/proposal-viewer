@@ -144,6 +144,7 @@ export default function VariantCompareView({
                 dark={dark}
                 formatCreatives={formatCreatives}
                 carouselCards={carouselCards}
+                activeFormat={carouselCards && carouselCards.length >= 2 ? 'carousel' : undefined}
               />
             </div>
           </button>

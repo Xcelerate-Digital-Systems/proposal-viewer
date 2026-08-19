@@ -583,6 +583,8 @@ export default function ItemContentView({
                 variantDecisionSummaries={variantDecisionSummaries}
                 onVariantDecision={onVariantDecision}
                 formatCreatives={multiFormat}
+                carouselCards={carouselCards}
+                activeFormat={carouselActiveFormat}
               />
             </div>
           );

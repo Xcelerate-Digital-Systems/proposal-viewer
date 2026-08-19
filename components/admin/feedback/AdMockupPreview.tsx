@@ -95,7 +95,8 @@ export default function AdMockupPreview({
 }: AdMockupPreviewProps) {
   const [activePlatform, setActivePlatform] = useState<AdPlatform>(platform);
   useEffect(() => { setActivePlatform(platform); }, [platform]);
-  const [internalFormat, setInternalFormat] = useState<AdCreativeFormat>(activeFormatProp ?? 'square');
+  const defaultFormat: AdCreativeFormat = activeFormatProp ?? (carouselCards && carouselCards.length >= 2 ? 'carousel' : 'square');
+  const [internalFormat, setInternalFormat] = useState<AdCreativeFormat>(defaultFormat);
   useEffect(() => { if (activeFormatProp) setInternalFormat(activeFormatProp); }, [activeFormatProp]);
 
   const handlePlatformChange = (p: AdPlatform) => {
@@ -132,7 +133,7 @@ export default function AdMockupPreview({
   const brand = accentColor || '#017C87';
 
   return (
-    <div className="flex flex-col items-center gap-3 w-full max-w-[500px] mx-auto">
+    <div className={`flex flex-col items-center gap-3 w-full mx-auto ${isCarousel ? 'max-w-[600px]' : 'max-w-[500px]'}`}>
       {showSidebar && (
         <div className="flex flex-col items-center gap-2 w-full mb-4">
           <div className="flex items-center gap-2">
@@ -239,26 +240,16 @@ export default function AdMockupPreview({
       </div>
 
       {isCarousel ? (
-        currentPlatform === 'facebook_feed' ? (
-          <FacebookCarouselAd
-            cards={carouselCards!}
-            primaryText={effectivePrimaryText}
-            ctaText={ctaText}
-            pageName={pageName}
-            pageImageUrl={pageImageUrl}
-            dark={dark}
-          />
-        ) : (
-          <InstagramCarouselAd
-            cards={carouselCards!}
-            primaryText={effectivePrimaryText}
-            headline={effectiveHeadline}
-            ctaText={ctaText}
-            pageName={pageName}
-            pageImageUrl={pageImageUrl}
-            dark={dark}
-          />
-        )
+        <CarouselWithExternalNav
+          cards={carouselCards!}
+          platform={currentPlatform}
+          primaryText={effectivePrimaryText}
+          headline={effectiveHeadline}
+          ctaText={ctaText}
+          pageName={pageName}
+          pageImageUrl={pageImageUrl}
+          dark={dark}
+        />
       ) : (
         <>
           {currentPlatform === 'facebook_feed' && (
@@ -553,38 +544,139 @@ function FacebookFeedAd({
 /*  Facebook Carousel Ad                                               */
 /* ================================================================== */
 
-function FacebookCarouselAd({
-  cards, primaryText, ctaText, pageName, pageImageUrl, dark,
+function CarouselWithExternalNav({
+  cards, platform, primaryText, headline, ctaText, pageName, pageImageUrl, dark,
 }: {
-  cards: CarouselCard[]; primaryText: string; ctaText: string;
-  pageName: string; pageImageUrl?: string; dark?: boolean;
+  cards: CarouselCard[]; platform: AdPlatform; primaryText: string; headline: string;
+  ctaText: string; pageName: string; pageImageUrl?: string; dark?: boolean;
 }) {
-  const bg = dark ? '#242526' : '#ffffff';
-  const text = dark ? '#e4e6eb' : '#050505';
-  const textSecondary = dark ? '#b0b3b8' : '#65676b';
-  const borderColor = dark ? '#3e4042' : '#e4e6e9';
-  const cardBg = dark ? '#3a3b3c' : '#f0f2f5';
-
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
 
-  const scrollTo = (idx: number) => {
+  const scrollTo = useCallback((idx: number) => {
     const clamped = Math.max(0, Math.min(idx, cards.length - 1));
     setActiveIdx(clamped);
     const el = scrollRef.current;
     if (!el) return;
     const cardWidth = el.firstElementChild?.getBoundingClientRect().width ?? 0;
     el.scrollTo({ left: clamped * cardWidth, behavior: 'smooth' });
-  };
+  }, [cards.length]);
 
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el || !el.firstElementChild) return;
     const cardWidth = el.firstElementChild.getBoundingClientRect().width;
     if (cardWidth === 0) return;
-    const idx = Math.round(el.scrollLeft / cardWidth);
-    setActiveIdx(idx);
-  };
+    setActiveIdx(Math.round(el.scrollLeft / cardWidth));
+  }, []);
+
+  const arrowColor = dark ? 'rgba(255,255,255,0.85)' : '#374151';
+  const arrowBg = dark ? 'rgba(255,255,255,0.12)' : '#f3f4f6';
+  const arrowBgHover = dark ? 'rgba(255,255,255,0.18)' : '#e5e7eb';
+  const counterColor = dark ? 'rgba(255,255,255,0.55)' : '#6b7280';
+
+  return (
+    <div className="flex items-center gap-3 w-full">
+      {/* External left arrow */}
+      <button
+        type="button"
+        data-no-pin
+        disabled={activeIdx <= 0}
+        onClick={(e) => { e.stopPropagation(); scrollTo(activeIdx - 1); }}
+        className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+        style={{ backgroundColor: arrowBg, color: arrowColor }}
+        onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = arrowBgHover; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = arrowBg; }}
+        aria-label="Previous card"
+      >
+        <ChevronLeft size={20} />
+      </button>
+
+      {/* Carousel frame */}
+      <div className="flex-1 min-w-0 flex flex-col items-center">
+        {platform === 'facebook_feed' ? (
+          <FacebookCarouselAd
+            cards={cards}
+            primaryText={primaryText}
+            ctaText={ctaText}
+            pageName={pageName}
+            pageImageUrl={pageImageUrl}
+            dark={dark}
+            scrollRef={scrollRef}
+            activeIdx={activeIdx}
+            onScroll={handleScroll}
+          />
+        ) : (
+          <InstagramCarouselAd
+            cards={cards}
+            primaryText={primaryText}
+            headline={headline}
+            ctaText={ctaText}
+            pageName={pageName}
+            pageImageUrl={pageImageUrl}
+            dark={dark}
+            scrollRef={scrollRef}
+            activeIdx={activeIdx}
+            onScroll={handleScroll}
+          />
+        )}
+
+        {/* Card counter below frame */}
+        <div className="flex items-center gap-1.5 mt-2">
+          <span className="text-xs tabular-nums font-medium" style={{ color: counterColor }}>
+            {activeIdx + 1} / {cards.length}
+          </span>
+          <div className="flex items-center gap-1">
+            {cards.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                data-no-pin
+                onClick={(e) => { e.stopPropagation(); scrollTo(i); }}
+                className="w-1.5 h-1.5 rounded-full transition-colors"
+                style={{ backgroundColor: i === activeIdx ? (dark ? '#e4e6eb' : '#050505') : (dark ? '#3e4042' : '#d1d5db') }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* External right arrow */}
+      <button
+        type="button"
+        data-no-pin
+        disabled={activeIdx >= cards.length - 1}
+        onClick={(e) => { e.stopPropagation(); scrollTo(activeIdx + 1); }}
+        className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+        style={{ backgroundColor: arrowBg, color: arrowColor }}
+        onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = arrowBgHover; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = arrowBg; }}
+        aria-label="Next card"
+      >
+        <ChevronRight size={20} />
+      </button>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/*  Facebook Carousel Ad                                               */
+/* ================================================================== */
+
+function FacebookCarouselAd({
+  cards, primaryText, ctaText, pageName, pageImageUrl, dark,
+  scrollRef, activeIdx, onScroll,
+}: {
+  cards: CarouselCard[]; primaryText: string; ctaText: string;
+  pageName: string; pageImageUrl?: string; dark?: boolean;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  activeIdx: number; onScroll: () => void;
+}) {
+  const bg = dark ? '#242526' : '#ffffff';
+  const text = dark ? '#e4e6eb' : '#050505';
+  const textSecondary = dark ? '#b0b3b8' : '#65676b';
+  const borderColor = dark ? '#3e4042' : '#e4e6e9';
+  const cardBg = dark ? '#3a3b3c' : '#f0f2f5';
 
   return (
     <div className="w-full max-w-[500px] rounded-lg overflow-hidden shadow-sm"
@@ -621,83 +713,48 @@ function FacebookCarouselAd({
       )}
 
       {/* Carousel cards */}
-      <div className="relative">
-        <div
-          ref={scrollRef}
-          onScroll={handleScroll}
-          className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-          {cards.map((card, i) => (
-            <div key={card.id} className="w-full shrink-0 snap-start">
-              <div data-creative className="w-full aspect-square bg-surface overflow-hidden">
-                <img
-                  src={card.image_url}
-                  alt={card.headline || `Card ${i + 1}`}
-                  crossOrigin="anonymous"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="flex items-center justify-between px-4 py-3" style={{ backgroundColor: cardBg }}>
-                <div className="flex-1 min-w-0 mr-3">
-                  {card.headline && (
-                    <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: text }}>
-                      {card.headline}
-                    </p>
-                  )}
-                  {card.description && (
-                    <p className="text-xs leading-tight truncate mt-0.5" style={{ color: textSecondary }}>
-                      {card.description}
-                    </p>
-                  )}
-                  {card.destination_url && (
-                    <p className="text-xs truncate mt-0.5" style={{ color: textSecondary }}>
-                      {card.destination_url.replace(/^https?:\/\//, '').split('/')[0]}
-                    </p>
-                  )}
-                </div>
-                <button
-                  className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold"
-                  style={{ backgroundColor: dark ? '#4e4f50' : '#e4e6e9', color: text }}
-                >
-                  {ctaText || 'Learn More'}
-                </button>
-              </div>
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {cards.map((card, i) => (
+          <div key={card.id} className="w-full shrink-0 snap-start">
+            <div data-creative className="w-full aspect-square bg-surface overflow-hidden">
+              <img
+                src={card.image_url}
+                alt={card.headline || `Card ${i + 1}`}
+                crossOrigin="anonymous"
+                className="w-full h-full object-cover"
+              />
             </div>
-          ))}
-        </div>
-
-        {/* Navigation arrows */}
-        {activeIdx > 0 && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); scrollTo(activeIdx - 1); }}
-            className="absolute left-2 top-[calc(50%-28px)] -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-white transition-colors"
-          >
-            <ChevronLeft size={18} className="text-gray-700" />
-          </button>
-        )}
-        {activeIdx < cards.length - 1 && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); scrollTo(activeIdx + 1); }}
-            className="absolute right-2 top-[calc(50%-28px)] -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-white transition-colors"
-          >
-            <ChevronRight size={18} className="text-gray-700" />
-          </button>
-        )}
-      </div>
-
-      {/* Dot indicators */}
-      <div className="flex items-center justify-center gap-1 py-2">
-        {cards.map((_, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={(e) => { e.stopPropagation(); scrollTo(i); }}
-            className="w-1.5 h-1.5 rounded-full transition-colors"
-            style={{ backgroundColor: i === activeIdx ? (dark ? '#e4e6eb' : '#050505') : (dark ? '#3e4042' : '#d1d5db') }}
-          />
+            <div className="flex items-center justify-between px-4 py-3" style={{ backgroundColor: cardBg }}>
+              <div className="flex-1 min-w-0 mr-3">
+                {card.headline && (
+                  <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: text }}>
+                    {card.headline}
+                  </p>
+                )}
+                {card.description && (
+                  <p className="text-xs leading-tight truncate mt-0.5" style={{ color: textSecondary }}>
+                    {card.description}
+                  </p>
+                )}
+                {card.destination_url && (
+                  <p className="text-xs truncate mt-0.5" style={{ color: textSecondary }}>
+                    {card.destination_url.replace(/^https?:\/\//, '').split('/')[0]}
+                  </p>
+                )}
+              </div>
+              <button
+                className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                style={{ backgroundColor: dark ? '#4e4f50' : '#e4e6e9', color: text }}
+              >
+                {ctaText || 'Learn More'}
+              </button>
+            </div>
+          </div>
         ))}
       </div>
 
@@ -841,35 +898,17 @@ function InstagramFeedAd({
 
 function InstagramCarouselAd({
   cards, primaryText, headline, ctaText, pageName, pageImageUrl, dark,
+  scrollRef, activeIdx, onScroll,
 }: {
   cards: CarouselCard[]; primaryText: string; headline: string; ctaText: string;
   pageName: string; pageImageUrl?: string; dark?: boolean;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  activeIdx: number; onScroll: () => void;
 }) {
   const bg = dark ? '#000000' : '#ffffff';
   const text = dark ? '#f5f5f5' : '#262626';
   const textSecondary = dark ? '#a8a8a8' : '#8e8e8e';
   const borderColor = dark ? '#363636' : '#dbdbdb';
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeIdx, setActiveIdx] = useState(0);
-
-  const scrollTo = (idx: number) => {
-    const clamped = Math.max(0, Math.min(idx, cards.length - 1));
-    setActiveIdx(clamped);
-    const el = scrollRef.current;
-    if (!el) return;
-    const cardWidth = el.firstElementChild?.getBoundingClientRect().width ?? 0;
-    el.scrollTo({ left: clamped * cardWidth, behavior: 'smooth' });
-  };
-
-  const handleScroll = () => {
-    const el = scrollRef.current;
-    if (!el || !el.firstElementChild) return;
-    const cardWidth = el.firstElementChild.getBoundingClientRect().width;
-    if (cardWidth === 0) return;
-    const idx = Math.round(el.scrollLeft / cardWidth);
-    setActiveIdx(idx);
-  };
 
   return (
     <div className="w-full max-w-[468px] overflow-hidden"
@@ -899,46 +938,24 @@ function InstagramCarouselAd({
       </div>
 
       {/* Carousel cards */}
-      <div className="relative">
-        <div
-          ref={scrollRef}
-          onScroll={handleScroll}
-          className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-          {cards.map((card, i) => (
-            <div key={card.id} className="w-full shrink-0 snap-start">
-              <div data-creative className="w-full aspect-square overflow-hidden">
-                <img
-                  src={card.image_url}
-                  alt={card.headline || `Card ${i + 1}`}
-                  crossOrigin="anonymous"
-                  className="w-full h-full object-cover"
-                />
-              </div>
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {cards.map((card, i) => (
+          <div key={card.id} className="w-full shrink-0 snap-start">
+            <div data-creative className="w-full aspect-square overflow-hidden">
+              <img
+                src={card.image_url}
+                alt={card.headline || `Card ${i + 1}`}
+                crossOrigin="anonymous"
+                className="w-full h-full object-cover"
+              />
             </div>
-          ))}
-        </div>
-
-        {/* Navigation arrows */}
-        {activeIdx > 0 && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); scrollTo(activeIdx - 1); }}
-            className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-white transition-colors"
-          >
-            <ChevronLeft size={16} className="text-gray-700" />
-          </button>
-        )}
-        {activeIdx < cards.length - 1 && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); scrollTo(activeIdx + 1); }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-white transition-colors"
-          >
-            <ChevronRight size={16} className="text-gray-700" />
-          </button>
-        )}
+          </div>
+        ))}
       </div>
 
       {/* CTA banner with card headline */}
