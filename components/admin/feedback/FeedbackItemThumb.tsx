@@ -1,7 +1,8 @@
 'use client';
 
-import { Eye, Globe, Mail, Smartphone, Figma } from 'lucide-react';
+import { Eye, Globe, Mail, Smartphone, Figma, Play, LayoutGrid } from 'lucide-react';
 import type { FeedbackItem } from '@/lib/supabase';
+import { hasCarousel, getAdCreatives } from '@/lib/types/feedback';
 
 interface Props {
   item: FeedbackItem;
@@ -15,6 +16,9 @@ interface Props {
  */
 export default function FeedbackItemThumb({ item }: Props) {
   const thumbnailUrl = item.ad_creative_url || item.image_url;
+  const isCarousel = item.type === 'ad' && hasCarousel(item);
+  const creatives = item.type === 'ad' ? getAdCreatives(item) : [];
+  const hasVideo = creatives.some((c) => c.format === 'video_square' || c.format === 'video_vertical');
 
   return (
     <>
@@ -100,7 +104,22 @@ export default function FeedbackItemThumb({ item }: Props) {
           </div>
         </div>
       ) : thumbnailUrl ? (
-        <img src={thumbnailUrl} alt={item.title} loading="lazy" className="w-full h-full object-cover" />
+        <div className="relative w-full h-full">
+          <img src={thumbnailUrl} alt={item.title} loading="lazy" className="w-full h-full object-cover" />
+          {/* Carousel indicator */}
+          {isCarousel && (
+            <span className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full bg-black/60 text-white text-2xs font-medium">
+              <LayoutGrid size={10} />
+              {item.carousel_cards!.length} cards
+            </span>
+          )}
+          {/* Video indicator */}
+          {hasVideo && (
+            <span className="absolute bottom-2 right-2 flex items-center justify-center w-8 h-8 rounded-full bg-black/60">
+              <Play size={14} className="text-white ml-0.5" fill="white" />
+            </span>
+          )}
+        </div>
       ) : item.type === 'figma' ? (
         <div className="text-center">
           <div className="w-12 h-12 rounded-2xl bg-[#a259ff]/10 flex items-center justify-center mx-auto">
@@ -119,7 +138,11 @@ export default function FeedbackItemThumb({ item }: Props) {
 
       {/* Type badge overlay */}
       <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-2xs font-medium text-dim capitalize shadow-sm">
-        {item.type === 'ad' ? 'Meta Ad' : item.type === 'webpage' ? 'Web Page' : item.type === 'figma' ? 'Figma' : item.type}
+        {item.type === 'ad'
+          ? isCarousel ? 'Carousel Ad' : hasVideo ? 'Video Ad' : 'Meta Ad'
+          : item.type === 'webpage' ? 'Web Page'
+          : item.type === 'figma' ? 'Figma'
+          : item.type}
       </span>
 
       {/* Version badge */}
@@ -131,4 +154,3 @@ export default function FeedbackItemThumb({ item }: Props) {
     </>
   );
 }
-

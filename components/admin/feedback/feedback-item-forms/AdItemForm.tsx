@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { X, Upload, ChevronLeft, Plus, GripVertical, Link, Trash2 } from 'lucide-react';
+import { X, Upload, ChevronLeft, Plus, GripVertical, Link, Trash2, ImageIcon, Film, LayoutGrid } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import AdMockupPreview, { type AdPlatform } from '@/components/admin/feedback/AdMockupPreview';
 import { Button } from '@/components/ui/Button';
@@ -12,9 +12,22 @@ import { useAdFormVariations } from './ad-form/useAdFormVariations';
 import { AdVariationPanel } from './ad-form/AdVariationPanel';
 import { AdCtaDropdown } from './ad-form/AdCtaDropdown';
 
-const FORMAT_LABELS: Record<AdCreativeFormat, string> = { square: 'Square (1:1)', vertical: 'Vertical (9:16)', carousel: 'Carousel' };
-const FORMAT_ASPECT: Record<AdCreativeFormat, string> = { square: 'aspect-square', vertical: 'aspect-[9/16]', carousel: 'aspect-square' };
-const FORMATS: AdCreativeFormat[] = ['square', 'vertical', 'carousel'];
+/* ------------------------------------------------------------------ */
+/*  Top-level ad format: Single Image / Carousel / Video               */
+/* ------------------------------------------------------------------ */
+type AdFormatMode = 'image' | 'carousel' | 'video';
+
+const FORMAT_MODE_META: { key: AdFormatMode; label: string; icon: typeof ImageIcon }[] = [
+  { key: 'image', label: 'Single Image', icon: ImageIcon },
+  { key: 'carousel', label: 'Carousel', icon: LayoutGrid },
+  { key: 'video', label: 'Video', icon: Film },
+];
+
+/* Sub-format for image & video: square / vertical */
+type AspectRatio = 'square' | 'vertical';
+const ASPECT_LABELS: Record<AspectRatio, string> = { square: 'Square (1:1)', vertical: 'Vertical (9:16)' };
+const ASPECT_CSS: Record<AspectRatio, string> = { square: 'aspect-square', vertical: 'aspect-[9/16]' };
+const ASPECTS: AspectRatio[] = ['square', 'vertical'];
 
 type CarouselCardDraft = {
   id: string;
@@ -38,16 +51,38 @@ function newCarouselCard(): CarouselCardDraft {
 
 export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPreviewChange, reviewProjectId, companyId, uploadAsset }: AdItemFormProps) {
   const toast = useToast();
+
+  /* ---- state: top-level format ---- */
+  const [formatMode, setFormatMode] = useState<AdFormatMode>('image');
+
+  /* ---- state: image uploads (square / vertical) ---- */
   const squareInputRef = useRef<HTMLInputElement>(null);
   const verticalInputRef = useRef<HTMLInputElement>(null);
-  const carouselInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
-  const [title, setTitle] = useState('');
+  const [activeAspect, setActiveAspect] = useState<AspectRatio>('square');
   const [squareFile, setSquareFile] = useState<File | null>(null);
   const [squarePreview, setSquarePreview] = useState<string | null>(null);
   const [verticalFile, setVerticalFile] = useState<File | null>(null);
   const [verticalPreview, setVerticalPreview] = useState<string | null>(null);
+
+  /* ---- state: video uploads (square / vertical) ---- */
+  const videoSquareInputRef = useRef<HTMLInputElement>(null);
+  const videoVerticalInputRef = useRef<HTMLInputElement>(null);
+  const [videoAspect, setVideoAspect] = useState<AspectRatio>('square');
+  const [videoSquareFile, setVideoSquareFile] = useState<File | null>(null);
+  const [videoSquarePreview, setVideoSquarePreview] = useState<string | null>(null);
+  const [videoVerticalFile, setVideoVerticalFile] = useState<File | null>(null);
+  const [videoVerticalPreview, setVideoVerticalPreview] = useState<string | null>(null);
+  // Thumbnail image for the video (used as ad_creative_url / list card)
+  const videoThumbInputRef = useRef<HTMLInputElement>(null);
+  const [videoThumbFile, setVideoThumbFile] = useState<File | null>(null);
+  const [videoThumbPreview, setVideoThumbPreview] = useState<string | null>(null);
+
+  /* ---- state: carousel ---- */
+  const carouselInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
   const [carouselCards, setCarouselCards] = useState<CarouselCardDraft[]>([newCarouselCard(), newCarouselCard()]);
-  const [activeFormat, setActiveFormat] = useState<AdCreativeFormat>('square');
+
+  /* ---- state: shared ---- */
+  const [title, setTitle] = useState('');
   const [adCta, setAdCta] = useState('Learn More');
   const [adPlatform, setAdPlatform] = useState<AdPlatform>('facebook_feed');
 
@@ -60,7 +95,11 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
     toggleVariation, patchVariation, addNewVariation, removeVariation,
   } = useAdFormVariations(reviewProjectId, companyId);
 
-  const handleFileChange = (format: AdCreativeFormat) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  /* ================================================================== */
+  /*  File handlers                                                      */
+  /* ================================================================== */
+
+  const handleImageFileChange = (aspect: AspectRatio) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (!selected) return;
     if (!selected.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
@@ -68,8 +107,31 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
     const reader = new FileReader();
     reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
-      if (format === 'square') { setSquareFile(selected); setSquarePreview(dataUrl); }
-      else if (format === 'vertical') { setVerticalFile(selected); setVerticalPreview(dataUrl); }
+      if (aspect === 'square') { setSquareFile(selected); setSquarePreview(dataUrl); }
+      else { setVerticalFile(selected); setVerticalPreview(dataUrl); }
+    };
+    reader.readAsDataURL(selected);
+  };
+
+  const handleVideoFileChange = (aspect: AspectRatio) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0];
+    if (!selected) return;
+    if (!selected.type.startsWith('video/')) { toast.error('Please select a video file'); return; }
+    if (selected.size > 256 * 1024 * 1024) { toast.error('Video must be under 256MB'); return; }
+    const url = URL.createObjectURL(selected);
+    if (aspect === 'square') { setVideoSquareFile(selected); setVideoSquarePreview(url); }
+    else { setVideoVerticalFile(selected); setVideoVerticalPreview(url); }
+  };
+
+  const handleVideoThumbChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0];
+    if (!selected) return;
+    if (!selected.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
+    if (selected.size > 10 * 1024 * 1024) { toast.error('Image must be under 10MB'); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setVideoThumbFile(selected);
+      setVideoThumbPreview(ev.target?.result as string);
     };
     reader.readAsDataURL(selected);
   };
@@ -87,13 +149,23 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
     reader.readAsDataURL(selected);
   };
 
-  const clearFile = (format: AdCreativeFormat) => {
-    if (format === 'square') {
+  const clearImageFile = (aspect: AspectRatio) => {
+    if (aspect === 'square') {
       setSquareFile(null); setSquarePreview(null);
       if (squareInputRef.current) squareInputRef.current.value = '';
-    } else if (format === 'vertical') {
+    } else {
       setVerticalFile(null); setVerticalPreview(null);
       if (verticalInputRef.current) verticalInputRef.current.value = '';
+    }
+  };
+
+  const clearVideoFile = (aspect: AspectRatio) => {
+    if (aspect === 'square') {
+      setVideoSquareFile(null); setVideoSquarePreview(null);
+      if (videoSquareInputRef.current) videoSquareInputRef.current.value = '';
+    } else {
+      setVideoVerticalFile(null); setVideoVerticalPreview(null);
+      if (videoVerticalInputRef.current) videoVerticalInputRef.current.value = '';
     }
   };
 
@@ -110,19 +182,22 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
     setCarouselCards((prev) => [...prev, newCarouselCard()]);
   };
 
+  /* ================================================================== */
+  /*  Validation                                                         */
+  /* ================================================================== */
+
   const isCarouselValid = carouselCards.length >= 2 && carouselCards.every((c) => c.file !== null);
+  const hasValidCreative = formatMode === 'image' ? !!squareFile
+    : formatMode === 'carousel' ? isCarouselValid
+    : !!(videoSquareFile && videoThumbFile);
+
+  /* ================================================================== */
+  /*  Submit                                                             */
+  /* ================================================================== */
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const isCarousel = activeFormat === 'carousel';
-
-    if (!isCarousel && !squareFile) return;
-    if (isCarousel && !isCarouselValid) {
-      toast.error('Upload images for all carousel cards (minimum 2)');
-      return;
-    }
-    if (!title.trim()) return;
+    if (!hasValidCreative || !title.trim()) return;
 
     const selected = variations.filter((v) => v.selected);
     if (selected.length === 0) {
@@ -154,8 +229,18 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
     }));
     const first = previewVariants[0] ?? { headline: '', primary_text: '' };
 
-    if (isCarousel) {
-      // Upload all carousel card images
+    const basePayload = {
+      title: title.trim(),
+      type: 'ad' as const,
+      ad_headline: first.headline || null,
+      ad_copy: first.primary_text || null,
+      ad_cta: adCta.trim() || 'Learn More',
+      ad_platform: adPlatform,
+      meta_ad_variants: previewVariants.length > 0 ? previewVariants : null,
+      _ad_variation_data: { existing_variation_ids: existingIds, new_variations: newVariants },
+    };
+
+    if (formatMode === 'carousel') {
       const uploadedCards: CarouselCard[] = [];
       for (const card of carouselCards) {
         if (!card.file || !uploadAsset) continue;
@@ -170,24 +255,26 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
           filename: card.file.name,
         });
       }
+      await onSubmit({ ...basePayload, _carousel_cards: uploadedCards }, carouselCards[0].file!);
+    } else if (formatMode === 'video') {
+      // Upload video files + thumbnail
+      const videoCreatives: { format: AdCreativeFormat; url: string; filename?: string }[] = [];
 
-      // Use the first card image as the main creative
+      if (videoSquareFile && uploadAsset) {
+        const url = await uploadAsset(videoSquareFile);
+        if (url) videoCreatives.push({ format: 'video_square', url, filename: videoSquareFile.name });
+      }
+      if (videoVerticalFile && uploadAsset) {
+        const url = await uploadAsset(videoVerticalFile);
+        if (url) videoCreatives.push({ format: 'video_vertical', url, filename: videoVerticalFile.name });
+      }
+
       await onSubmit(
-        {
-          title: title.trim(),
-          type: 'ad',
-          ad_headline: first.headline || null,
-          ad_copy: first.primary_text || null,
-          ad_cta: adCta.trim() || 'Learn More',
-          ad_platform: adPlatform,
-          meta_ad_variants: previewVariants.length > 0 ? previewVariants : null,
-          _ad_variation_data: { existing_variation_ids: existingIds, new_variations: newVariants },
-          _carousel_cards: uploadedCards,
-        },
-        carouselCards[0].file!,
+        { ...basePayload, _ad_extra_creatives: videoCreatives.length > 0 ? videoCreatives : undefined },
+        videoThumbFile!,
       );
     } else {
-      // Pre-upload vertical creative if provided
+      // Single image
       let verticalCreatives: { format: AdCreativeFormat; url: string; filename?: string }[] = [];
       if (verticalFile && uploadAsset) {
         const verticalUrl = await uploadAsset(verticalFile);
@@ -195,39 +282,26 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
           verticalCreatives = [{ format: 'vertical', url: verticalUrl, filename: verticalFile.name }];
         }
       }
-
       await onSubmit(
-        {
-          title: title.trim(),
-          type: 'ad',
-          ad_headline: first.headline || null,
-          ad_copy: first.primary_text || null,
-          ad_cta: adCta.trim() || 'Learn More',
-          ad_platform: adPlatform,
-          meta_ad_variants: previewVariants.length > 0 ? previewVariants : null,
-          _ad_variation_data: { existing_variation_ids: existingIds, new_variations: newVariants },
-          _ad_extra_creatives: verticalCreatives.length > 0 ? verticalCreatives : undefined,
-        },
+        { ...basePayload, _ad_extra_creatives: verticalCreatives.length > 0 ? verticalCreatives : undefined },
         squareFile!,
       );
     }
   };
 
+  /* ================================================================== */
+  /*  Preview data                                                       */
+  /* ================================================================== */
+
   const mockupVariants: MetaAdVariant[] = selectedVariations.map((v) => ({
     id: v.id, label: v.label.trim() || null, headline: v.headline.trim(), primary_text: v.primary_text.trim(),
   }));
 
-  const currentPreview = activeFormat === 'carousel' ? carouselCards[0]?.preview : (activeFormat === 'square' ? squarePreview : verticalPreview);
-  const currentFile = activeFormat === 'square' ? squareFile : verticalFile;
-  const currentInputRef = activeFormat === 'square' ? squareInputRef : verticalInputRef;
-
-  // Build preview creatives for the mockup
   const previewCreatives: AdCreative[] = [];
   if (squarePreview) previewCreatives.push({ id: 'sq', url: squarePreview, format: 'square' });
   if (verticalPreview) previewCreatives.push({ id: 'vt', url: verticalPreview, format: 'vertical' });
   if (isCarouselValid) previewCreatives.push({ id: 'car', url: carouselCards[0].preview!, format: 'carousel' });
 
-  // Build carousel preview cards
   const carouselPreviewCards: CarouselCard[] = carouselCards
     .filter((c) => c.preview)
     .map((c) => ({
@@ -238,18 +312,100 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
       destination_url: c.destination_url,
     }));
 
-  const hasAnyCreative = squareFile || isCarouselValid;
+  const currentMockupPreview = formatMode === 'carousel'
+    ? carouselCards[0]?.preview
+    : formatMode === 'video'
+      ? videoThumbPreview
+      : (activeAspect === 'square' ? squarePreview : verticalPreview);
+
+  const activeCreativeFormat: AdCreativeFormat | undefined = formatMode === 'carousel' ? 'carousel' : undefined;
+
   const formatCountLabel = [
     squareFile ? '1:1' : null,
     verticalFile ? '9:16' : null,
     isCarouselValid ? 'carousel' : null,
+    videoSquareFile ? 'video 1:1' : null,
+    videoVerticalFile ? 'video 9:16' : null,
   ].filter(Boolean);
+
+  /* ================================================================== */
+  /*  Render helpers                                                     */
+  /* ================================================================== */
+
+  const renderAspectTabs = (active: AspectRatio, onSelect: (a: AspectRatio) => void, hasSquare: boolean, hasVertical: boolean) => (
+    <div className="flex rounded-lg overflow-hidden border border-edge-strong mb-3">
+      {ASPECTS.map((a) => {
+        const isActive = active === a;
+        const hasFile = a === 'square' ? hasSquare : hasVertical;
+        return (
+          <button
+            key={a}
+            type="button"
+            onClick={() => onSelect(a)}
+            className="flex-1 px-3 py-1.5 text-xs font-medium transition-colors relative"
+            style={{
+              backgroundColor: isActive ? '#017C87' : 'transparent',
+              color: isActive ? '#fff' : '#6b7280',
+            }}
+          >
+            {ASPECT_LABELS[a]}
+            {hasFile && !isActive && (
+              <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const renderUploadArea = (
+    preview: string | null,
+    file: File | null,
+    inputRef: React.RefObject<HTMLInputElement | null>,
+    aspect: AspectRatio,
+    onClear: () => void,
+    accept: string,
+    label: string,
+    hint: string,
+    optionalNote?: string,
+    isVideo?: boolean,
+  ) => {
+    if (preview) {
+      return (
+        <div className="rounded-2xl border border-edge-strong bg-white overflow-hidden">
+          {isVideo ? (
+            <video src={preview} className={`w-full ${ASPECT_CSS[aspect]} object-cover`} controls muted />
+          ) : (
+            <img src={preview} alt="Preview" loading="lazy" className={`w-full ${ASPECT_CSS[aspect]} object-cover`} />
+          )}
+          <div className="flex items-center justify-between px-3 py-2 bg-surface border-t border-edge">
+            <p className="text-detail text-faint truncate">{file?.name || 'File loaded'}</p>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button type="button" onClick={() => inputRef.current?.click()} className="text-detail font-semibold text-teal hover:text-teal-hover">Replace</button>
+              <button type="button" onClick={onClear} className="p-1 rounded-full text-faint hover:text-red-500 transition-colors" title="Remove"><X size={12} /></button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        className={`w-full ${ASPECT_CSS[aspect]} border-2 border-dashed border-edge-strong rounded-2xl flex flex-col items-center justify-center hover:border-teal hover:bg-teal/5 transition-colors`}
+      >
+        <Upload size={24} className="text-faint mb-2" />
+        <p className="text-xs font-medium text-prose">{label}</p>
+        <p className="text-2xs text-faint mt-1">{hint}</p>
+        {optionalNote && <p className="text-2xs text-faint mt-0.5">{optionalNote}</p>}
+      </button>
+    );
+  };
 
   return (
     <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
-      {/* Two-column body */}
       <div className="flex-1 min-h-0 flex">
-        {/* LEFT: Creative + Title + CTA + Live preview */}
+        {/* LEFT COLUMN */}
         <div className="w-[420px] shrink-0 border-r border-edge-strong flex flex-col overflow-y-auto">
           <div className="p-5 space-y-4 flex-1">
             {/* Title */}
@@ -267,85 +423,113 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
               />
             </div>
 
-            {/* Format Tabs */}
+            {/* ============ Format Mode Selector ============ */}
             <div>
               <label className="block text-xs font-medium text-dim uppercase tracking-wider mb-1.5">
-                Creative <span className="text-red-400">*</span>
+                Format <span className="text-red-400">*</span>
               </label>
-              <div className="flex rounded-lg overflow-hidden border border-edge-strong mb-3">
-                {FORMATS.map((fmt) => {
-                  const isActive = activeFormat === fmt;
-                  const hasFile = fmt === 'square' ? !!squareFile : fmt === 'vertical' ? !!verticalFile : isCarouselValid;
+              <div className="flex gap-2 mb-4">
+                {FORMAT_MODE_META.map(({ key, label, icon: Icon }) => {
+                  const isActive = formatMode === key;
                   return (
                     <button
-                      key={fmt}
+                      key={key}
                       type="button"
-                      onClick={() => setActiveFormat(fmt)}
-                      className="flex-1 px-3 py-1.5 text-xs font-medium transition-colors relative"
+                      onClick={() => setFormatMode(key)}
+                      className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition-all"
                       style={{
-                        backgroundColor: isActive ? '#017C87' : 'transparent',
-                        color: isActive ? '#fff' : '#6b7280',
+                        borderColor: isActive ? '#017C87' : '#e5e7eb',
+                        backgroundColor: isActive ? '#017C870A' : 'transparent',
                       }}
                     >
-                      {FORMAT_LABELS[fmt]}
-                      {hasFile && !isActive && (
-                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      )}
+                      <Icon size={20} style={{ color: isActive ? '#017C87' : '#9ca3af' }} />
+                      <span className="text-xs font-medium" style={{ color: isActive ? '#017C87' : '#6b7280' }}>
+                        {label}
+                      </span>
                     </button>
                   );
                 })}
               </div>
+            </div>
 
-              {/* File inputs (hidden) */}
-              <input ref={squareInputRef} type="file" accept="image/*" onChange={handleFileChange('square')} className="hidden" />
-              <input ref={verticalInputRef} type="file" accept="image/*" onChange={handleFileChange('vertical')} className="hidden" />
+            {/* ============ Creative Area ============ */}
+            <div>
+              <label className="block text-xs font-medium text-dim uppercase tracking-wider mb-1.5">
+                Creative <span className="text-red-400">*</span>
+              </label>
 
-              {/* Upload area for square / vertical */}
-              {activeFormat !== 'carousel' && (
+              {/* ---- SINGLE IMAGE ---- */}
+              {formatMode === 'image' && (
                 <>
-                  {currentPreview ? (
-                    <div className="rounded-2xl border border-edge-strong bg-white overflow-hidden">
-                      <img
-                        src={currentPreview}
-                        alt="Preview"
-                        loading="lazy"
-                        className={`w-full ${FORMAT_ASPECT[activeFormat]} object-cover`}
-                      />
-                      <div className="flex items-center justify-between px-3 py-2 bg-surface border-t border-edge">
-                        <p className="text-detail text-faint truncate">{currentFile?.name || 'Creative loaded'}</p>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button type="button" onClick={() => currentInputRef.current?.click()} className="text-detail font-semibold text-teal hover:text-teal-hover">
-                            Replace
-                          </button>
-                          <button type="button" onClick={() => clearFile(activeFormat)} className="p-1 rounded-full text-faint hover:text-red-500 transition-colors" title="Remove">
-                            <X size={12} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => currentInputRef.current?.click()}
-                      className={`w-full ${FORMAT_ASPECT[activeFormat]} border-2 border-dashed border-edge-strong rounded-2xl flex flex-col items-center justify-center hover:border-teal hover:bg-teal/5 transition-colors`}
-                    >
-                      <Upload size={24} className="text-faint mb-2" />
-                      <p className="text-xs font-medium text-prose">
-                        Upload {activeFormat === 'square' ? '1:1' : '9:16'} creative
-                      </p>
-                      <p className="text-2xs text-faint mt-1">
-                        {activeFormat === 'square' ? '1:1 recommended' : '9:16 for Stories & Reels'} · max 10MB
-                      </p>
-                      {activeFormat === 'vertical' && (
-                        <p className="text-2xs text-faint mt-0.5">Optional — square is required</p>
-                      )}
-                    </button>
+                  {renderAspectTabs(activeAspect, setActiveAspect, !!squareFile, !!verticalFile)}
+                  <input ref={squareInputRef} type="file" accept="image/*" onChange={handleImageFileChange('square')} className="hidden" />
+                  <input ref={verticalInputRef} type="file" accept="image/*" onChange={handleImageFileChange('vertical')} className="hidden" />
+                  {renderUploadArea(
+                    activeAspect === 'square' ? squarePreview : verticalPreview,
+                    activeAspect === 'square' ? squareFile : verticalFile,
+                    activeAspect === 'square' ? squareInputRef : verticalInputRef,
+                    activeAspect,
+                    () => clearImageFile(activeAspect),
+                    'image/*',
+                    `Upload ${activeAspect === 'square' ? '1:1' : '9:16'} creative`,
+                    `${activeAspect === 'square' ? '1:1 recommended' : '9:16 for Stories & Reels'} · max 10MB`,
+                    activeAspect === 'vertical' ? 'Optional — square is required' : undefined,
                   )}
                 </>
               )}
 
-              {/* Carousel card builder */}
-              {activeFormat === 'carousel' && (
+              {/* ---- VIDEO ---- */}
+              {formatMode === 'video' && (
+                <>
+                  {renderAspectTabs(videoAspect, setVideoAspect, !!videoSquareFile, !!videoVerticalFile)}
+                  <input ref={videoSquareInputRef} type="file" accept="video/*" onChange={handleVideoFileChange('square')} className="hidden" />
+                  <input ref={videoVerticalInputRef} type="file" accept="video/*" onChange={handleVideoFileChange('vertical')} className="hidden" />
+                  {renderUploadArea(
+                    videoAspect === 'square' ? videoSquarePreview : videoVerticalPreview,
+                    videoAspect === 'square' ? videoSquareFile : videoVerticalFile,
+                    videoAspect === 'square' ? videoSquareInputRef : videoVerticalInputRef,
+                    videoAspect,
+                    () => clearVideoFile(videoAspect),
+                    'video/*',
+                    `Upload ${videoAspect === 'square' ? '1:1' : '9:16'} video`,
+                    `${videoAspect === 'square' ? '1:1 recommended' : '9:16 for Stories & Reels'} · max 256MB`,
+                    videoAspect === 'vertical' ? 'Optional — square is required' : undefined,
+                    true,
+                  )}
+                  {/* Thumbnail */}
+                  <div className="mt-3">
+                    <p className="text-2xs font-medium text-dim uppercase tracking-wider mb-1.5">
+                      Thumbnail Image <span className="text-red-400">*</span>
+                    </p>
+                    <input ref={videoThumbInputRef} type="file" accept="image/*" onChange={handleVideoThumbChange} className="hidden" />
+                    {videoThumbPreview ? (
+                      <div className="rounded-2xl border border-edge-strong bg-white overflow-hidden">
+                        <img src={videoThumbPreview} alt="Thumbnail" loading="lazy" className="w-full aspect-video object-cover" />
+                        <div className="flex items-center justify-between px-3 py-2 bg-surface border-t border-edge">
+                          <p className="text-detail text-faint truncate">{videoThumbFile?.name}</p>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button type="button" onClick={() => videoThumbInputRef.current?.click()} className="text-detail font-semibold text-teal hover:text-teal-hover">Replace</button>
+                            <button type="button" onClick={() => { setVideoThumbFile(null); setVideoThumbPreview(null); if (videoThumbInputRef.current) videoThumbInputRef.current.value = ''; }} className="p-1 rounded-full text-faint hover:text-red-500 transition-colors"><X size={12} /></button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => videoThumbInputRef.current?.click()}
+                        className="w-full aspect-video border-2 border-dashed border-edge-strong rounded-2xl flex flex-col items-center justify-center hover:border-teal hover:bg-teal/5 transition-colors"
+                      >
+                        <Upload size={20} className="text-faint mb-1.5" />
+                        <p className="text-xs font-medium text-prose">Upload thumbnail</p>
+                        <p className="text-2xs text-faint mt-1">Used as preview in feeds · max 10MB</p>
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* ---- CAROUSEL ---- */}
+              {formatMode === 'carousel' && (
                 <div className="space-y-3">
                   <p className="text-2xs text-faint">
                     Add 2–10 cards. Each card gets its own image, headline, description, and link.
@@ -363,7 +547,6 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
                         )}
                       </div>
                       <div className="p-3 space-y-2">
-                        {/* Card image */}
                         <input
                           type="file"
                           accept="image/*"
@@ -392,7 +575,6 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
                             <p className="text-2xs font-medium text-prose">Upload image</p>
                           </button>
                         )}
-                        {/* Card fields */}
                         <input
                           type="text"
                           value={card.headline}
@@ -438,12 +620,12 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
             <AdCtaDropdown value={adCta} onChange={setAdCta} />
 
             {/* Live preview */}
-            {hasAnyCreative && mockupVariants.length > 0 && (
+            {hasValidCreative && mockupVariants.length > 0 && (
               <div className="pt-2">
                 <p className="text-2xs font-semibold uppercase tracking-wider text-dim mb-2">Preview</p>
                 <div className="transform scale-[0.65] origin-top-left" style={{ width: '154%' }}>
                   <AdMockupPreview
-                    creativeUrl={currentPreview || squarePreview || ''}
+                    creativeUrl={currentMockupPreview || squarePreview || ''}
                     ctaText={adCta}
                     platform={adPlatform}
                     pageName="Your Brand"
@@ -453,8 +635,8 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
                     activeVariantId={activeVariation?.id}
                     onVariantChange={(id) => setActiveVariationId(id)}
                     formatCreatives={previewCreatives.length >= 2 ? previewCreatives : undefined}
-                    activeFormat={activeFormat}
-                    carouselCards={activeFormat === 'carousel' && carouselPreviewCards.length >= 2 ? carouselPreviewCards : undefined}
+                    activeFormat={activeCreativeFormat}
+                    carouselCards={formatMode === 'carousel' && carouselPreviewCards.length >= 2 ? carouselPreviewCards : undefined}
                   />
                 </div>
               </div>
@@ -493,7 +675,7 @@ export default function AdItemForm({ onSubmit, onBack, onCancel, uploading, onPr
           <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
             Cancel
           </Button>
-          <Button type="submit" size="sm" loading={uploading} disabled={!hasAnyCreative || !title.trim() || uploading || selectedVariations.length === 0}>
+          <Button type="submit" size="sm" loading={uploading} disabled={!hasValidCreative || !title.trim() || uploading || selectedVariations.length === 0}>
             Add Meta Ad
           </Button>
         </div>

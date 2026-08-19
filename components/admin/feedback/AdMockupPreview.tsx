@@ -116,8 +116,9 @@ export default function AdMockupPreview({
     const match = formatCreatives.find((c) => c.format === currentFormat);
     return match?.url ?? creativeUrl;
   })();
-  const creativeAspect = currentFormat === 'vertical' ? 'aspect-[9/16]' : 'aspect-square';
+  const creativeAspect = (currentFormat === 'vertical' || currentFormat === 'video_vertical') ? 'aspect-[9/16]' : 'aspect-square';
   const isCarousel = currentFormat === 'carousel' && carouselCards && carouselCards.length >= 2;
+  const isVideo = currentFormat === 'video_square' || currentFormat === 'video_vertical';
 
   // Pick the active variant
   const variantList = variants && variants.length > 0
@@ -211,7 +212,12 @@ export default function AdMockupPreview({
             }}
           >
             {formatCreatives!.map((fc) => {
-              const label = fc.format === 'square' ? '1:1' : fc.format === 'vertical' ? '9:16' : 'Carousel';
+              const label = fc.format === 'square' ? '1:1'
+                : fc.format === 'vertical' ? '9:16'
+                : fc.format === 'carousel' ? 'Carousel'
+                : fc.format === 'video_square' ? 'Video 1:1'
+                : fc.format === 'video_vertical' ? 'Video 9:16'
+                : fc.format;
               return (
                 <button
                   key={fc.format}
@@ -266,6 +272,7 @@ export default function AdMockupPreview({
               displayUrl={displayUrl}
               dark={dark}
               creativeAspect={creativeAspect}
+              isVideo={isVideo}
             />
           )}
           {currentPlatform === 'instagram_feed' && (
@@ -278,6 +285,7 @@ export default function AdMockupPreview({
               pageImageUrl={pageImageUrl}
               dark={dark}
               creativeAspect={creativeAspect}
+              isVideo={isVideo}
             />
           )}
         </>
@@ -428,10 +436,10 @@ export function AdMockupPreviewAddVariantButton({ onClick }: { onClick: () => vo
 /* ================================================================== */
 
 function FacebookFeedAd({
-  creativeUrl, headline, primaryText, ctaText, pageName, pageImageUrl, displayUrl, dark, creativeAspect = 'aspect-square',
+  creativeUrl, headline, primaryText, ctaText, pageName, pageImageUrl, displayUrl, dark, creativeAspect = 'aspect-square', isVideo = false,
 }: {
   creativeUrl: string; headline: string; primaryText: string; ctaText: string;
-  pageName: string; pageImageUrl?: string; displayUrl?: string; dark?: boolean; creativeAspect?: string;
+  pageName: string; pageImageUrl?: string; displayUrl?: string; dark?: boolean; creativeAspect?: string; isVideo?: boolean;
 }) {
   const bg = dark ? '#242526' : '#ffffff';
   const text = dark ? '#e4e6eb' : '#050505';
@@ -473,12 +481,23 @@ function FacebookFeedAd({
       )}
 
       <div data-creative className={`w-full ${creativeAspect} bg-surface overflow-hidden`}>
-        <img
-          src={creativeUrl}
-          alt="Ad creative"
-          crossOrigin="anonymous"
-          className="w-full h-full object-cover"
-        />
+        {isVideo ? (
+          <video
+            src={creativeUrl}
+            className="w-full h-full object-cover"
+            controls
+            muted
+            playsInline
+            crossOrigin="anonymous"
+          />
+        ) : (
+          <img
+            src={creativeUrl}
+            alt="Ad creative"
+            crossOrigin="anonymous"
+            className="w-full h-full object-cover"
+          />
+        )}
       </div>
 
       {/* Link preview bar + CTA */}
@@ -710,10 +729,10 @@ function FacebookCarouselAd({
 /* ================================================================== */
 
 function InstagramFeedAd({
-  creativeUrl, headline, primaryText, ctaText, pageName, pageImageUrl, dark, creativeAspect = 'aspect-square',
+  creativeUrl, headline, primaryText, ctaText, pageName, pageImageUrl, dark, creativeAspect = 'aspect-square', isVideo = false,
 }: {
   creativeUrl: string; headline: string; primaryText: string; ctaText: string;
-  pageName: string; pageImageUrl?: string; dark?: boolean; creativeAspect?: string;
+  pageName: string; pageImageUrl?: string; dark?: boolean; creativeAspect?: string; isVideo?: boolean;
 }) {
   const bg = dark ? '#000000' : '#ffffff';
   const text = dark ? '#f5f5f5' : '#262626';
@@ -748,12 +767,23 @@ function InstagramFeedAd({
       </div>
 
       <div data-creative className={`w-full ${creativeAspect} overflow-hidden`}>
-        <img
-          src={creativeUrl}
-          alt="Ad creative"
-          crossOrigin="anonymous"
-          className="w-full h-full object-cover"
-        />
+        {isVideo ? (
+          <video
+            src={creativeUrl}
+            className="w-full h-full object-cover"
+            controls
+            muted
+            playsInline
+            crossOrigin="anonymous"
+          />
+        ) : (
+          <img
+            src={creativeUrl}
+            alt="Ad creative"
+            crossOrigin="anonymous"
+            className="w-full h-full object-cover"
+          />
+        )}
       </div>
 
       {/* CTA banner */}

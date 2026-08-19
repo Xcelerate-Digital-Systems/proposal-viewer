@@ -302,7 +302,7 @@ export function parseMetaAdVariantView(view: FeedbackItemView): { id: string } |
 /*  Multi-format ad creatives                                          */
 /* ================================================================== */
 
-export type AdCreativeFormat = 'square' | 'vertical' | 'carousel';
+export type AdCreativeFormat = 'square' | 'vertical' | 'carousel' | 'video_square' | 'video_vertical';
 
 export type AdCreative = {
   id: string;
