@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ThumbsUp, MessageCircle, Share2, MoreHorizontal, Heart, Bookmark, Send, Globe,
-  ChevronRight, MessageSquare, Plus, Copy, Check, LayoutGrid, AlertTriangle,
+  ChevronRight, ChevronLeft, MessageSquare, Plus, Copy, Check, LayoutGrid, AlertTriangle,
 } from 'lucide-react';
-import type { MetaAdVariant, AdCreative, AdCreativeFormat } from '@/lib/types/feedback';
+import type { MetaAdVariant, AdCreative, AdCreativeFormat, CarouselCard } from '@/lib/types/feedback';
 import type { VariantDecision, VariantDecisionSummary } from '@/hooks/useVariantDecisions';
 
 export type AdPlatform = 'facebook_feed' | 'instagram_feed' | 'instagram_story';
@@ -55,13 +55,15 @@ interface AdMockupPreviewProps {
   variantDecisionSummaries?: Record<string, VariantDecisionSummary>;
   /** Callback when reviewer clicks a variant decision icon. */
   onVariantDecision?: (variantId: string, decision: VariantDecision) => void;
-  /** Multi-format creatives (square + vertical). When present, shows a
+  /** Multi-format creatives (square + vertical + carousel). When present, shows a
    *  format picker and switches the creative image + aspect ratio. */
   formatCreatives?: AdCreative[];
   /** Currently active format. Defaults to 'square'. */
   activeFormat?: AdCreativeFormat;
   /** Callback when format changes. */
   onFormatChange?: (format: AdCreativeFormat) => void;
+  /** Carousel cards for carousel format. */
+  carouselCards?: CarouselCard[];
 }
 
 export default function AdMockupPreview({
@@ -89,6 +91,7 @@ export default function AdMockupPreview({
   formatCreatives,
   activeFormat: activeFormatProp,
   onFormatChange,
+  carouselCards,
 }: AdMockupPreviewProps) {
   const [activePlatform, setActivePlatform] = useState<AdPlatform>(platform);
   useEffect(() => { setActivePlatform(platform); }, [platform]);
@@ -114,10 +117,9 @@ export default function AdMockupPreview({
     return match?.url ?? creativeUrl;
   })();
   const creativeAspect = currentFormat === 'vertical' ? 'aspect-[9/16]' : 'aspect-square';
+  const isCarousel = currentFormat === 'carousel' && carouselCards && carouselCards.length >= 2;
 
-  // Pick the active variant. When no variants are passed, synthesise a
-  // single-row list from the legacy props so the downstream mockup code
-  // only ever reads `effectiveHeadline` / `effectivePrimaryText`.
+  // Pick the active variant
   const variantList = variants && variants.length > 0
     ? variants
     : [{ id: 'inline', headline, primary_text: primaryText }];
@@ -126,20 +128,9 @@ export default function AdMockupPreview({
   const effectivePrimaryText = active.primary_text;
   const showSidebar = variantList.length >= 2;
 
-  // Brand colour for active pills / toggles. Per-project branding is
-  // threaded in via `accentColor`; everything else falls back to the
-  // AgencyViz teal so unbranded projects still look on-brand.
   const brand = accentColor || '#017C87';
 
   return (
-    // max-w-[500px] matches the FB feed mockup card (Instagram is 468px so it
-    // stays comfortably inside). Pinning the whole column to one width means
-    // the variant pill row can't reflow when the comments panel opens — and
-    // therefore the container's total height stays constant between when we
-    // measure the click position (%) and when the pin is rendered. Without
-    // this, opening the panel grew the variant row, pushed the creative down,
-    // and the cached pct% no longer pointed at the image (pin landed in the
-    // copy above it — that's what the reviewer saw as "scrolling to the copy").
     <div className="flex flex-col items-center gap-3 w-full max-w-[500px] mx-auto">
       {showSidebar && (
         <div className="flex flex-col items-center gap-2 w-full mb-4">
@@ -219,52 +210,77 @@ export default function AdMockupPreview({
               backgroundColor: dark ? '#ffffff08' : '#f9fafb',
             }}
           >
-            {([
-              { key: 'square' as AdCreativeFormat, label: '1:1' },
-              { key: 'vertical' as AdCreativeFormat, label: '9:16' },
-            ]).map((f) => (
-              <button
-                key={f.key}
-                onClick={(e) => { e.stopPropagation(); handleFormatChange(f.key); }}
-                className="px-3 py-1.5 text-xs font-medium transition-colors"
-                style={{
-                  backgroundColor: currentFormat === f.key ? brand : 'transparent',
-                  color: currentFormat === f.key
-                    ? '#ffffff'
-                    : (dark ? '#ffffff88' : '#6b7280'),
-                }}
-              >
-                {f.label}
-              </button>
-            ))}
+            {formatCreatives!.map((fc) => {
+              const label = fc.format === 'square' ? '1:1' : fc.format === 'vertical' ? '9:16' : 'Carousel';
+              return (
+                <button
+                  key={fc.format}
+                  onClick={(e) => { e.stopPropagation(); handleFormatChange(fc.format); }}
+                  className="px-3 py-1.5 text-xs font-medium transition-colors"
+                  style={{
+                    backgroundColor: currentFormat === fc.format ? brand : 'transparent',
+                    color: currentFormat === fc.format
+                      ? '#ffffff'
+                      : (dark ? '#ffffff88' : '#6b7280'),
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {currentPlatform === 'facebook_feed' && (
-        <FacebookFeedAd
-          creativeUrl={effectiveCreativeUrl}
-          headline={effectiveHeadline}
-          primaryText={effectivePrimaryText}
-          ctaText={ctaText}
-          pageName={pageName}
-          pageImageUrl={pageImageUrl}
-          displayUrl={displayUrl}
-          dark={dark}
-          creativeAspect={creativeAspect}
-        />
-      )}
-      {currentPlatform === 'instagram_feed' && (
-        <InstagramFeedAd
-          creativeUrl={effectiveCreativeUrl}
-          headline={effectiveHeadline}
-          primaryText={effectivePrimaryText}
-          ctaText={ctaText}
-          pageName={pageName}
-          pageImageUrl={pageImageUrl}
-          dark={dark}
-          creativeAspect={creativeAspect}
-        />
+      {isCarousel ? (
+        currentPlatform === 'facebook_feed' ? (
+          <FacebookCarouselAd
+            cards={carouselCards!}
+            primaryText={effectivePrimaryText}
+            ctaText={ctaText}
+            pageName={pageName}
+            pageImageUrl={pageImageUrl}
+            dark={dark}
+          />
+        ) : (
+          <InstagramCarouselAd
+            cards={carouselCards!}
+            primaryText={effectivePrimaryText}
+            headline={effectiveHeadline}
+            ctaText={ctaText}
+            pageName={pageName}
+            pageImageUrl={pageImageUrl}
+            dark={dark}
+          />
+        )
+      ) : (
+        <>
+          {currentPlatform === 'facebook_feed' && (
+            <FacebookFeedAd
+              creativeUrl={effectiveCreativeUrl}
+              headline={effectiveHeadline}
+              primaryText={effectivePrimaryText}
+              ctaText={ctaText}
+              pageName={pageName}
+              pageImageUrl={pageImageUrl}
+              displayUrl={displayUrl}
+              dark={dark}
+              creativeAspect={creativeAspect}
+            />
+          )}
+          {currentPlatform === 'instagram_feed' && (
+            <InstagramFeedAd
+              creativeUrl={effectiveCreativeUrl}
+              headline={effectiveHeadline}
+              primaryText={effectivePrimaryText}
+              ctaText={ctaText}
+              pageName={pageName}
+              pageImageUrl={pageImageUrl}
+              dark={dark}
+              creativeAspect={creativeAspect}
+            />
+          )}
+        </>
       )}
     </div>
   );
@@ -274,10 +290,6 @@ export default function AdMockupPreview({
 /*  Variant pill row                                                   */
 /* ================================================================== */
 
-/** Horizontal row of variant pills shown above the platform toggle. Active
- *  pill picks up the project's brand colour (per-project accent or
- *  AgencyViz teal); inactive pills are muted. Wraps onto two lines once
- *  there are too many variants to fit. */
 function VariantPillRow({
   variants, activeId, onSelect, commentCounts, brand, dark,
   myDecisions, decisionSummaries, onDecision,
@@ -340,7 +352,6 @@ function VariantPillRow({
                 {commentCount}
               </span>
             )}
-            {/* Per-variant decision indicators */}
             {(() => {
               const myDec = myDecisions?.[v.id];
               const summary = decisionSummaries?.[v.id];
@@ -398,9 +409,7 @@ function VariantPillRow({
   );
 }
 
-/* Inline placeholder for the editor — used to render an "Add variant" link
-   in the editor preview only (not in the read-only viewer). Kept here so
-   the sidebar visual styling stays consistent. */
+/* Inline placeholder for the editor */
 export function AdMockupPreviewAddVariantButton({ onClick }: { onClick: () => void }) {
   return (
     <button
@@ -463,10 +472,6 @@ function FacebookFeedAd({
         </div>
       )}
 
-      {/* Creative image — data-creative tags the click target so a pin
-          placed here gets stamped with the shared `creative` view instead
-          of the active variant; that way creative feedback is visible on
-          every variant (the image doesn't change between them). */}
       <div data-creative className={`w-full ${creativeAspect} bg-surface overflow-hidden`}>
         <img
           src={creativeUrl}
@@ -500,6 +505,181 @@ function FacebookFeedAd({
         >
           {ctaText || 'Learn More'}
         </button>
+      </div>
+
+      {/* Engagement bar */}
+      <div className="px-4 py-1 border-t" style={{ borderColor }}>
+        <div className="flex items-center justify-between py-1">
+          {[
+            { icon: ThumbsUp, label: 'Like' },
+            { icon: MessageCircle, label: 'Comment' },
+            { icon: Share2, label: 'Share' },
+          ].map(({ icon: Icon, label }) => (
+            <button
+              key={label}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-caption font-semibold transition-colors"
+              style={{ color: textSecondary }}
+            >
+              <Icon size={18} />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/*  Facebook Carousel Ad                                               */
+/* ================================================================== */
+
+function FacebookCarouselAd({
+  cards, primaryText, ctaText, pageName, pageImageUrl, dark,
+}: {
+  cards: CarouselCard[]; primaryText: string; ctaText: string;
+  pageName: string; pageImageUrl?: string; dark?: boolean;
+}) {
+  const bg = dark ? '#242526' : '#ffffff';
+  const text = dark ? '#e4e6eb' : '#050505';
+  const textSecondary = dark ? '#b0b3b8' : '#65676b';
+  const borderColor = dark ? '#3e4042' : '#e4e6e9';
+  const cardBg = dark ? '#3a3b3c' : '#f0f2f5';
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  const scrollTo = (idx: number) => {
+    const clamped = Math.max(0, Math.min(idx, cards.length - 1));
+    setActiveIdx(clamped);
+    const el = scrollRef.current;
+    if (!el) return;
+    const cardWidth = el.firstElementChild?.getBoundingClientRect().width ?? 0;
+    el.scrollTo({ left: clamped * cardWidth, behavior: 'smooth' });
+  };
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el || !el.firstElementChild) return;
+    const cardWidth = el.firstElementChild.getBoundingClientRect().width;
+    if (cardWidth === 0) return;
+    const idx = Math.round(el.scrollLeft / cardWidth);
+    setActiveIdx(idx);
+  };
+
+  return (
+    <div className="w-full max-w-[500px] rounded-lg overflow-hidden shadow-sm"
+      style={{ backgroundColor: bg, border: `1px solid ${borderColor}` }}>
+
+      {/* Page header */}
+      <div className="flex items-center gap-2.5 px-4 pt-3 pb-2">
+        <PageAvatar name={pageName} imageUrl={pageImageUrl} size={40} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1">
+            <span className="text-caption font-semibold" style={{ color: text }}>{pageName}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-detail" style={{ color: textSecondary }}>Sponsored</span>
+            <span className="text-detail" style={{ color: textSecondary }}>·</span>
+            <Globe size={10} style={{ color: textSecondary }} />
+          </div>
+        </div>
+        <button className="p-2 rounded-full" style={{ color: textSecondary }}>
+          <MoreHorizontal size={20} />
+        </button>
+      </div>
+
+      {/* Primary text */}
+      {primaryText && (
+        <div className="px-4 pb-2.5 flex items-start gap-1.5 group/copy">
+          <p className="flex-1 min-w-0 text-[15px] leading-[20px] whitespace-pre-wrap" style={{ color: text }}>
+            {primaryText}
+          </p>
+          <span className="opacity-0 group-hover/copy:opacity-100 transition-opacity mt-0.5">
+            <CopyTextButton text={primaryText} dark={dark} />
+          </span>
+        </div>
+      )}
+
+      {/* Carousel cards */}
+      <div className="relative">
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {cards.map((card, i) => (
+            <div key={card.id} className="w-full shrink-0 snap-start">
+              <div data-creative className="w-full aspect-square bg-surface overflow-hidden">
+                <img
+                  src={card.image_url}
+                  alt={card.headline || `Card ${i + 1}`}
+                  crossOrigin="anonymous"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="flex items-center justify-between px-4 py-3" style={{ backgroundColor: cardBg }}>
+                <div className="flex-1 min-w-0 mr-3">
+                  {card.headline && (
+                    <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: text }}>
+                      {card.headline}
+                    </p>
+                  )}
+                  {card.description && (
+                    <p className="text-xs leading-tight truncate mt-0.5" style={{ color: textSecondary }}>
+                      {card.description}
+                    </p>
+                  )}
+                  {card.destination_url && (
+                    <p className="text-xs truncate mt-0.5" style={{ color: textSecondary }}>
+                      {card.destination_url.replace(/^https?:\/\//, '').split('/')[0]}
+                    </p>
+                  )}
+                </div>
+                <button
+                  className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                  style={{ backgroundColor: dark ? '#4e4f50' : '#e4e6e9', color: text }}
+                >
+                  {ctaText || 'Learn More'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Navigation arrows */}
+        {activeIdx > 0 && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); scrollTo(activeIdx - 1); }}
+            className="absolute left-2 top-[calc(50%-28px)] -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-white transition-colors"
+          >
+            <ChevronLeft size={18} className="text-gray-700" />
+          </button>
+        )}
+        {activeIdx < cards.length - 1 && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); scrollTo(activeIdx + 1); }}
+            className="absolute right-2 top-[calc(50%-28px)] -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-white transition-colors"
+          >
+            <ChevronRight size={18} className="text-gray-700" />
+          </button>
+        )}
+      </div>
+
+      {/* Dot indicators */}
+      <div className="flex items-center justify-center gap-1 py-2">
+        {cards.map((_, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={(e) => { e.stopPropagation(); scrollTo(i); }}
+            className="w-1.5 h-1.5 rounded-full transition-colors"
+            style={{ backgroundColor: i === activeIdx ? (dark ? '#e4e6eb' : '#050505') : (dark ? '#3e4042' : '#d1d5db') }}
+          />
+        ))}
       </div>
 
       {/* Engagement bar */}
@@ -567,7 +747,6 @@ function InstagramFeedAd({
         <button style={{ color: text }}><MoreHorizontal size={20} /></button>
       </div>
 
-      {/* Creative image — see FacebookFeedAd for the data-creative rationale. */}
       <div data-creative className={`w-full ${creativeAspect} overflow-hidden`}>
         <img
           src={creativeUrl}
@@ -594,6 +773,182 @@ function InstagramFeedAd({
           <Heart size={24} style={{ color: text }} />
           <MessageCircle size={24} style={{ color: text }} />
           <Send size={24} style={{ color: text }} />
+        </div>
+        <Bookmark size={24} style={{ color: text }} />
+      </div>
+
+      {/* Caption */}
+      <div className="px-4 pb-3">
+        {headline && (
+          <div className="flex items-start gap-1.5 group/ighl">
+            <p className="flex-1 min-w-0 text-caption leading-[18px]" style={{ color: text }}>
+              <span className="font-semibold">{pageName.toLowerCase().replace(/\s+/g, '')}</span>{' '}
+              {headline}
+            </p>
+            <span className="opacity-0 group-hover/ighl:opacity-100 transition-opacity mt-0.5">
+              <CopyTextButton text={headline} dark={dark} />
+            </span>
+          </div>
+        )}
+        {primaryText && primaryText !== headline && (
+          <div className="flex items-start gap-1.5 group/igpt mt-0.5">
+            <p className="flex-1 min-w-0 text-caption leading-[18px] whitespace-pre-wrap" style={{ color: text }}>
+              {primaryText}
+            </p>
+            <span className="opacity-0 group-hover/igpt:opacity-100 transition-opacity mt-0.5">
+              <CopyTextButton text={primaryText} dark={dark} />
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/*  Instagram Carousel Ad                                              */
+/* ================================================================== */
+
+function InstagramCarouselAd({
+  cards, primaryText, headline, ctaText, pageName, pageImageUrl, dark,
+}: {
+  cards: CarouselCard[]; primaryText: string; headline: string; ctaText: string;
+  pageName: string; pageImageUrl?: string; dark?: boolean;
+}) {
+  const bg = dark ? '#000000' : '#ffffff';
+  const text = dark ? '#f5f5f5' : '#262626';
+  const textSecondary = dark ? '#a8a8a8' : '#8e8e8e';
+  const borderColor = dark ? '#363636' : '#dbdbdb';
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  const scrollTo = (idx: number) => {
+    const clamped = Math.max(0, Math.min(idx, cards.length - 1));
+    setActiveIdx(clamped);
+    const el = scrollRef.current;
+    if (!el) return;
+    const cardWidth = el.firstElementChild?.getBoundingClientRect().width ?? 0;
+    el.scrollTo({ left: clamped * cardWidth, behavior: 'smooth' });
+  };
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el || !el.firstElementChild) return;
+    const cardWidth = el.firstElementChild.getBoundingClientRect().width;
+    if (cardWidth === 0) return;
+    const idx = Math.round(el.scrollLeft / cardWidth);
+    setActiveIdx(idx);
+  };
+
+  return (
+    <div className="w-full max-w-[468px] overflow-hidden"
+      style={{ backgroundColor: bg, border: `1px solid ${borderColor}`, borderRadius: 3 }}>
+
+      {/* Header */}
+      <div className="flex items-center gap-2.5 px-3 py-2.5">
+        <div className="w-8 h-8 rounded-full overflow-hidden"
+          style={{
+            background: 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)',
+            padding: 2,
+          }}
+        >
+          <div className="w-full h-full rounded-full overflow-hidden" style={{ backgroundColor: bg }}>
+            <div className="w-full h-full rounded-full overflow-hidden" style={{ margin: 1 }}>
+              <PageAvatar name={pageName} imageUrl={pageImageUrl} size={26} />
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1">
+            <span className="text-caption font-semibold" style={{ color: text }}>{pageName.toLowerCase().replace(/\s+/g, '')}</span>
+          </div>
+          <span className="text-detail" style={{ color: textSecondary }}>Sponsored</span>
+        </div>
+        <button style={{ color: text }}><MoreHorizontal size={20} /></button>
+      </div>
+
+      {/* Carousel cards */}
+      <div className="relative">
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {cards.map((card, i) => (
+            <div key={card.id} className="w-full shrink-0 snap-start">
+              <div data-creative className="w-full aspect-square overflow-hidden">
+                <img
+                  src={card.image_url}
+                  alt={card.headline || `Card ${i + 1}`}
+                  crossOrigin="anonymous"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Navigation arrows */}
+        {activeIdx > 0 && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); scrollTo(activeIdx - 1); }}
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-white transition-colors"
+          >
+            <ChevronLeft size={16} className="text-gray-700" />
+          </button>
+        )}
+        {activeIdx < cards.length - 1 && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); scrollTo(activeIdx + 1); }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-white transition-colors"
+          >
+            <ChevronRight size={16} className="text-gray-700" />
+          </button>
+        )}
+      </div>
+
+      {/* CTA banner with card headline */}
+      {ctaText && (
+        <div className="flex items-center justify-between px-4 py-2.5 border-b"
+          style={{ borderColor, backgroundColor: dark ? '#1a1a1a' : '#fafafa' }}>
+          <div className="flex-1 min-w-0 mr-2">
+            {cards[activeIdx]?.headline && (
+              <p className="text-caption font-semibold truncate" style={{ color: text }}>
+                {cards[activeIdx].headline}
+              </p>
+            )}
+            {cards[activeIdx]?.description && (
+              <p className="text-xs truncate" style={{ color: textSecondary }}>
+                {cards[activeIdx].description}
+              </p>
+            )}
+          </div>
+          <span className="text-caption font-semibold shrink-0" style={{ color: text }}>
+            {ctaText}
+          </span>
+          <ChevronRight size={18} style={{ color: text }} className="shrink-0 ml-1" />
+        </div>
+      )}
+
+      {/* Dot indicators + Action icons */}
+      <div className="flex items-center justify-between px-3 py-2.5">
+        <div className="flex items-center gap-4">
+          <Heart size={24} style={{ color: text }} />
+          <MessageCircle size={24} style={{ color: text }} />
+          <Send size={24} style={{ color: text }} />
+        </div>
+        <div className="flex items-center gap-1">
+          {cards.map((_, i) => (
+            <span
+              key={i}
+              className="w-1.5 h-1.5 rounded-full transition-colors"
+              style={{ backgroundColor: i === activeIdx ? '#3897f0' : (dark ? '#363636' : '#d1d5db') }}
+            />
+          ))}
         </div>
         <Bookmark size={24} style={{ color: text }} />
       </div>

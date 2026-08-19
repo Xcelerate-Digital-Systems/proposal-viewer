@@ -17,6 +17,7 @@ import {
   getCommentView,
   getMetaAdVariants,
   getAdCreatives,
+  hasCarousel,
   metaAdVariantView,
   parseMetaAdVariantView,
 } from '@/lib/types/feedback';
@@ -506,7 +507,10 @@ export default function ItemContentView({
             : undefined;
 
           const adCreatives = getAdCreatives(item);
-          const multiFormat = adCreatives.length >= 2 ? adCreatives : undefined;
+          const itemHasCarousel = hasCarousel(item);
+          const multiFormat = adCreatives.length >= 2 || itemHasCarousel ? adCreatives : undefined;
+          const carouselCards = itemHasCarousel ? item.carousel_cards! : undefined;
+          const carouselActiveFormat = itemHasCarousel && adCreatives.length === 1 && adCreatives[0]?.format === 'carousel' ? 'carousel' as const : undefined;
 
           if (compareMode && hasStoredVariants && variants.length >= 2) {
             return (
@@ -529,6 +533,8 @@ export default function ItemContentView({
                   variantDecisionSummaries={variantDecisionSummaries}
                   onVariantDecision={onVariantDecision}
                   formatCreatives={multiFormat}
+                  carouselCards={carouselCards}
+                  activeFormat={carouselActiveFormat}
                 />
                 <div className="mt-4">
                   <VariantCompareView
@@ -546,6 +552,7 @@ export default function ItemContentView({
                       onViewChange?.(metaAdVariantView(id));
                     }}
                     formatCreatives={multiFormat}
+                    carouselCards={carouselCards}
                   />
                 </div>
               </div>

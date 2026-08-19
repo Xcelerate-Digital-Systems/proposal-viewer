@@ -118,20 +118,36 @@ export function useFeedbackItemSubmit({
           | undefined;
         delete fullPayload._ad_extra_creatives;
 
+        // Extract carousel cards if present
+        const carouselCards = payload._carousel_cards as
+          | { id: string; image_url: string; headline: string; description: string; destination_url: string; filename?: string }[]
+          | undefined;
+        delete fullPayload._carousel_cards;
+
         // Set type-specific URL fields based on the uploaded file
         if (payload.type === 'ad') {
           fullPayload.ad_creative_url = imageUrl;
-          // Build ad_creatives JSONB when extra formats are present
-          const creatives: { id: string; url: string; format: string; filename?: string }[] = [
-            { id: crypto.randomUUID().slice(0, 8), url: imageUrl, format: 'square' },
-          ];
-          if (adExtraCreatives && adExtraCreatives.length > 0) {
-            for (const c of adExtraCreatives) {
-              creatives.push({ id: crypto.randomUUID().slice(0, 8), url: c.url, format: c.format, filename: c.filename });
-            }
-          }
-          if (creatives.length >= 2) {
+
+          if (carouselCards && carouselCards.length >= 2) {
+            // Carousel ad: store cards and add carousel entry to creatives
+            fullPayload.carousel_cards = carouselCards;
+            const creatives: { id: string; url: string; format: string; filename?: string }[] = [
+              { id: crypto.randomUUID().slice(0, 8), url: imageUrl, format: 'carousel' },
+            ];
             fullPayload.ad_creatives = creatives;
+          } else {
+            // Single-image ad: build ad_creatives JSONB when extra formats are present
+            const creatives: { id: string; url: string; format: string; filename?: string }[] = [
+              { id: crypto.randomUUID().slice(0, 8), url: imageUrl, format: 'square' },
+            ];
+            if (adExtraCreatives && adExtraCreatives.length > 0) {
+              for (const c of adExtraCreatives) {
+                creatives.push({ id: crypto.randomUUID().slice(0, 8), url: c.url, format: c.format, filename: c.filename });
+              }
+            }
+            if (creatives.length >= 2) {
+              fullPayload.ad_creatives = creatives;
+            }
           }
         } else if (payload.type === 'google_banner_ad') {
           // Banner image lives inside the google_ad_data jsonb so the type

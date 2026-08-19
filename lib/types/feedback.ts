@@ -302,12 +302,21 @@ export function parseMetaAdVariantView(view: FeedbackItemView): { id: string } |
 /*  Multi-format ad creatives                                          */
 /* ================================================================== */
 
-export type AdCreativeFormat = 'square' | 'vertical';
+export type AdCreativeFormat = 'square' | 'vertical' | 'carousel';
 
 export type AdCreative = {
   id: string;
   url: string;
   format: AdCreativeFormat;
+  filename?: string;
+};
+
+export type CarouselCard = {
+  id: string;
+  image_url: string;
+  headline: string;
+  description: string;
+  destination_url: string;
   filename?: string;
 };
 
@@ -326,6 +335,10 @@ export function getCreativeUrl(item: Pick<FeedbackItem, 'ad_creatives' | 'ad_cre
 
 export function hasMultipleFormats(item: Pick<FeedbackItem, 'ad_creatives'>): boolean {
   return Array.isArray(item.ad_creatives) && item.ad_creatives.length >= 2;
+}
+
+export function hasCarousel(item: Pick<FeedbackItem, 'carousel_cards'>): boolean {
+  return Array.isArray(item.carousel_cards) && item.carousel_cards.length >= 2;
 }
 
 /** Returns the variants array for an ad item, synthesising a single
@@ -424,6 +437,7 @@ export type FeedbackItem = {
    *  are kept in sync with the first variant for legacy consumers. */
   meta_ad_variants: MetaAdVariant[] | null;
   ad_creatives: AdCreative[] | null;
+  carousel_cards: CarouselCard[] | null;
   // Email fields
   email_subject: string | null;
   email_preheader: string | null;
@@ -481,6 +495,7 @@ export type FeedbackItemVersion = {
   ad_platform: string | null;
   meta_ad_variants: MetaAdVariant[] | null;
   ad_creatives: AdCreative[] | null;
+  carousel_cards: CarouselCard[] | null;
   email_subject: string | null;
   email_preheader: string | null;
   email_body: string | null;
