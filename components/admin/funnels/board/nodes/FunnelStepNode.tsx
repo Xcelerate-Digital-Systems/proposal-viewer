@@ -7,10 +7,11 @@ import {
   Megaphone, Search, Mail, Link as LinkIcon, Monitor, BadgeDollarSign, UserPlus,
   CreditCard, Heart, TrendingUp, TrendingDown, Video, Package, GraduationCap,
   Briefcase, Gift, Square, Trash2, ExternalLink, ArrowUpRight, Sparkles, Target, Globe,
-  Smartphone, Phone, MessageSquare, Calendar, Zap, Flag, FileText, Image as ImageIcon,
+  Smartphone, Phone, PhoneOutgoing, MessageSquare, Calendar, Zap, Flag, FileText, Image as ImageIcon,
   Music, Share2, Users, Mic, Star, Newspaper, BookOpen, Cloud, Repeat,
   Timer, Layers, UserCog, Ticket, Wrench, Building2, Hash,
   Bot, MapPin, QrCode, SquareUser, ShoppingBag,
+  BadgeCheck, CheckCircle, Handshake, Rocket, Send, UserX,
   type LucideIcon,
 } from 'lucide-react';
 import type { FunnelStep } from '@/lib/supabase';
@@ -76,6 +77,13 @@ export const LUCIDE: Record<string, LucideIcon> = {
   'external-link': ExternalLink,
   'square-user': SquareUser,
   'qr-code': QrCode,
+  'badge-check': BadgeCheck,
+  'check-circle': CheckCircle,
+  handshake: Handshake,
+  'phone-outgoing': PhoneOutgoing,
+  rocket: Rocket,
+  send: Send,
+  'user-x': UserX,
 };
 
 export const BRAND_SLUGS_SET = new Set([
