@@ -45,6 +45,13 @@ export default function FunnelSettingsMenu({ funnel, onUpdate }: Props) {
       </button>
       {open && (
         <div className="absolute top-full right-0 mt-1 w-[260px] max-h-[400px] overflow-y-auto bg-white border border-edge shadow-xl rounded-lg p-3 z-50 space-y-3">
+          <Section label="Description">
+            <DescriptionInput
+              value={funnel.description}
+              onCommit={(v) => onUpdate({ description: v })}
+            />
+          </Section>
+
           <Section label="Currency">
             <div className="space-y-1">
               {FUNNEL_CURRENCIES.map((c) => (
@@ -116,6 +123,25 @@ function Row({ active, onClick, children }: { active: boolean; onClick: () => vo
       {children}
       {active && <Check size={12} className="text-teal shrink-0" />}
     </button>
+  );
+}
+
+function DescriptionInput({ value, onCommit }: { value: string | null; onCommit: (v: string | null) => void }) {
+  const [local, setLocal] = useState(value ?? '');
+  useEffect(() => { setLocal(value ?? ''); }, [value]);
+  const commit = () => {
+    const next = local.trim() || null;
+    if (next !== (value || null)) onCommit(next);
+  };
+  return (
+    <textarea
+      value={local}
+      onChange={(e) => setLocal(e.target.value)}
+      onBlur={commit}
+      rows={3}
+      placeholder="Add a description for this funnel…"
+      className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-xs outline-none focus:border-teal resize-none"
+    />
   );
 }
 

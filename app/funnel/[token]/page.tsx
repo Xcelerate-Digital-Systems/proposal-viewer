@@ -135,6 +135,7 @@ function PublicFunnelInner({ token }: { token: string }) {
         step,
         readOnly: true,
         onNavigateTab: tabsEnabled ? handleNavigateTab : undefined,
+        tabs: tabsEnabled ? tabs : undefined,
       },
       draggable: false, selectable: false, connectable: false,
     }));

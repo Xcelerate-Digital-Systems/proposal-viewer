@@ -24,7 +24,7 @@ import { visualCentre } from './funnel-board-config';
 export function useFunnelBoard(flowByEdge?: Map<string, number>) {
   const ctx = useFunnelBoardContextOrThrow();
   const {
-    steps, boardNotes, shapes, boardEdges,
+    steps, boardNotes, shapes, boardEdges, tabs,
     updateStep, deleteStep, deleteNote,
     updateNote, updateShape,
     createEdge, updateEdge, deleteEdge,
@@ -51,6 +51,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
         readOnly: false,
         onUpdate: updateStep,
         onDelete: deleteStep,
+        tabs,
       } satisfies FunnelStepNodeData,
     }));
 
@@ -97,7 +98,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
       });
       return [...groupNodes, ...newNodes];
     });
-  }, [steps, boardNotes, shapes, updateStep, deleteStep, updateNote, deleteNote, handleShapeContentUpdate, setNodes]);
+  }, [steps, boardNotes, shapes, tabs, updateStep, deleteStep, updateNote, deleteNote, handleShapeContentUpdate, setNodes]);
 
   /* ── Waypoint handling ──────────────────────────────────────── */
 

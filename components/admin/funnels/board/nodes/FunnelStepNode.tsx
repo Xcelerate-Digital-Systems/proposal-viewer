@@ -17,7 +17,7 @@ import {
   Webhook, ClipboardCheck, CalendarCheck, Trophy, Crown, CircleX,
   type LucideIcon,
 } from 'lucide-react';
-import type { FunnelStep } from '@/lib/supabase';
+import type { FunnelStep, FunnelTab } from '@/lib/supabase';
 import { FUNNEL_STEP_DEFAULTS } from '@/lib/types/funnel';
 import { formatCount } from '@/lib/funnel/forecast';
 import { useFunnelBoardContext } from '../FunnelBoardContext';
@@ -30,6 +30,7 @@ export interface FunnelStepNodeData extends Record<string, unknown> {
   onUpdate?: (id: string, patch: Partial<FunnelStep>) => void;
   onDelete?: (id: string) => void;
   onNavigateTab?: (tabId: string) => void;
+  tabs?: FunnelTab[];
   forecastVisitors?: number;
   forecastConversions?: number;
 }
@@ -167,6 +168,7 @@ const ICON_SIZE = 88;
  *  Search Ads") stay visible. 36px fits two lines of 11px text. */
 const LABEL_OFFSET = 36;
 const METRICS_H = 18;
+const NAV_PILL_H = 26;
 const LABEL_GAP = 8;
 
 // Handles anchored to the 88px circle (matches IconHandles geometry from
@@ -234,7 +236,7 @@ function PageHandles({ readOnly }: { readOnly?: boolean }) {
 
 function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   const {
-    step, readOnly, onUpdate, onDelete, onNavigateTab,
+    step, readOnly, onUpdate, onDelete, onNavigateTab, tabs,
   } = data as FunnelStepNodeData;
   const defaults = FUNNEL_STEP_DEFAULTS[step.step_type] ?? FUNNEL_STEP_DEFAULTS.generic;
   const iconSlug = step.icon || defaults.icon;
@@ -276,17 +278,15 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
     ctx?.selectStep(step.id);
   };
 
+  const linkedTabName = hasLinkedTab ? (tabs?.find((t) => t.id === step.linked_tab_id)?.name ?? null) : null;
+  const showNavPill = hasLinkedTab && (linkedTabName || hasLinkedTab);
+
   const isPage = step.step_type.startsWith('page_');
-  // Bodies sit at the TOP of the frame so vertical edges land directly on
-  // the body edge with no whitespace gap above. Labels sit below the body
-  // with LABEL_GAP padding above only — bottom handle sits just past the
-  // label so the next node's connection feels close.
-  //   - Disc: disc (88) + gap (8) + label (56) = 152
-  //   - Page: page (200) + gap (8) + label (56) = 264
   const metricsRow = hasMetrics ? METRICS_H : 0;
+  const navRow = showNavPill ? NAV_PILL_H : 0;
   const frameH = isPage
-    ? PAGE_MOCKUP_H + LABEL_GAP + LABEL_OFFSET + metricsRow
-    : ICON_SIZE + LABEL_GAP + LABEL_OFFSET + metricsRow;
+    ? PAGE_MOCKUP_H + LABEL_GAP + LABEL_OFFSET + metricsRow + navRow
+    : ICON_SIZE + LABEL_GAP + LABEL_OFFSET + metricsRow + navRow;
 
   const labelEl = (
     <div className="flex items-start max-w-full px-1 w-full justify-center" style={{ height: LABEL_OFFSET }}>
@@ -357,15 +357,6 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
           </button>
         </div>
       )}
-      {readOnly && hasLinkedTab && onNavigateTab && (
-        <div
-          className="absolute inset-0 rounded-lg bg-ink/35 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-          onClick={(e) => { e.stopPropagation(); onNavigateTab(step.linked_tab_id!); }}
-          title="Go to linked tab"
-        >
-          <Layers size={18} />
-        </div>
-      )}
     </div>
   );
 
@@ -417,15 +408,6 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
           </button>
         </div>
       )}
-      {readOnly && hasLinkedTab && onNavigateTab && (
-        <div
-          className="absolute inset-0 rounded-full bg-ink/35 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-          onClick={(e) => { e.stopPropagation(); onNavigateTab(step.linked_tab_id!); }}
-          title="Go to linked tab"
-        >
-          <Layers size={18} />
-        </div>
-      )}
     </div>
   );
 
@@ -448,6 +430,10 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
             <div style={{ height: LABEL_GAP }} aria-hidden />
             {labelEl}
             {hasMetrics && <MetricsBadge visitors={visitors} conversions={conversions} />}
+            {showNavPill && <NavPill label={linkedTabName} onClick={() => {
+              if (readOnly && onNavigateTab) onNavigateTab(step.linked_tab_id!);
+              else { ctx?.switchTab(step.linked_tab_id!); onNavigateTab?.(step.linked_tab_id!); }
+            }} />}
           </>
         ) : (
           <>
@@ -455,10 +441,29 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
             <div style={{ height: LABEL_GAP }} aria-hidden />
             {labelEl}
             {hasMetrics && <MetricsBadge visitors={visitors} conversions={conversions} />}
+            {showNavPill && <NavPill label={linkedTabName} onClick={() => {
+              if (readOnly && onNavigateTab) onNavigateTab(step.linked_tab_id!);
+              else { ctx?.switchTab(step.linked_tab_id!); onNavigateTab?.(step.linked_tab_id!); }
+            }} />}
           </>
         )}
       </div>
     </>
+  );
+}
+
+function NavPill({ label, onClick }: { label: string | null; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className="mt-1 flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal text-white text-2xs font-medium shadow-sm hover:bg-teal-hover transition-colors cursor-pointer"
+      style={{ height: NAV_PILL_H }}
+      title={label ? `Go to ${label}` : 'Go to linked tab'}
+    >
+      <Layers size={11} strokeWidth={2.5} />
+      <span className="truncate max-w-[120px]">{label || 'Linked tab'}</span>
+    </button>
   );
 }
 
