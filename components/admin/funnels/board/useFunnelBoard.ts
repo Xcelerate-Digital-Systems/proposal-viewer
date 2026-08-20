@@ -75,6 +75,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
         shape: shape as unknown as FeedbackBoardShape,
         readOnly: false,
         onUpdateContent: handleShapeContentUpdate,
+        linkedFunnelId: shape.linked_funnel_id,
       } satisfies ShapeNodeData,
     }));
 

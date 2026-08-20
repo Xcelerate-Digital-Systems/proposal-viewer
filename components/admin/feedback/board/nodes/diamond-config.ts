@@ -4,7 +4,7 @@ import {
   ShoppingCart, ShoppingBag, BellRing, Sparkles,
   MessageSquare, Mail, Bell, Sheet,
   Eye, Timer, LogOut, LogIn, Undo2, Download, Share2, Webhook,
-  ClipboardCheck, CalendarCheck, Trophy, Target, Crown, MapPin, Send,
+  ClipboardCheck, CalendarCheck, Trophy, CircleX, Target, Crown, MapPin, Send,
   Star, Gift,
   type LucideIcon,
 } from 'lucide-react';
@@ -60,7 +60,7 @@ export type DiamondType =
   | 'download' | 'share' | 'login'
   | 'sms_notification' | 'email_notification' | 'ghl_notification'
   | 'google_sheet' | 'webhook'
-  | 'form_completed' | 'schedule_meeting' | 'deal_won'
+  | 'form_completed' | 'schedule_meeting' | 'deal_won' | 'deal_lost'
   | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won'
   | 'on_site_visit' | 'send_quote'
   | 'send_google_review' | 'add_to_referral_program';
@@ -105,6 +105,7 @@ export const DIAMOND_CONFIG: Record<DiamondType, DiamondConfig> = {
   form_completed:     { color: '#10B981', Icon: ClipboardCheck, typeLabel: 'Form Completed',      placeholder: 'Form completed' },
   schedule_meeting:   { color: '#3B82F6', Icon: CalendarCheck,  typeLabel: 'Schedule Meeting',    placeholder: 'Schedule meeting' },
   deal_won:           { color: '#EAB308', Icon: Trophy,         typeLabel: 'Deal Won',            placeholder: 'Deal won' },
+  deal_lost:          { color: '#EF4444', Icon: CircleX,        typeLabel: 'Deal Lost',           placeholder: 'Deal lost' },
   // GHL integration actions
   ghl_appointment:    { color: '#F97316', Icon: CalendarDays,   typeLabel: 'GHL Appointment',     placeholder: 'GHL appointment' },
   ghl_order:          { color: '#F97316', Icon: ShoppingBag,    typeLabel: 'GHL Order',           placeholder: 'GHL order' },

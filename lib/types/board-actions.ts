@@ -4,7 +4,7 @@ import {
   ShoppingBag, ShoppingCart, BellRing, Sparkles,
   MessageSquare, Mail, Bell, Sheet,
   Eye, Timer, LogOut, LogIn, Undo2, Download, Share2, Webhook,
-  ClipboardCheck, CalendarCheck, Trophy, Target, Crown, MapPin, Send,
+  ClipboardCheck, CalendarCheck, Trophy, CircleX, Target, Crown, MapPin, Send,
   Star, Gift,
   type LucideIcon,
 } from 'lucide-react';
@@ -22,7 +22,7 @@ export type BoardActionShapeId =
   | 'download' | 'share' | 'login'
   | 'sms_notification' | 'email_notification' | 'ghl_notification'
   | 'google_sheet' | 'webhook'
-  | 'form_completed' | 'schedule_meeting' | 'deal_won'
+  | 'form_completed' | 'schedule_meeting' | 'deal_won' | 'deal_lost'
   | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won'
   | 'on_site_visit' | 'send_quote'
   | 'send_google_review' | 'add_to_referral_program';
@@ -61,7 +61,7 @@ export const BOARD_ACTION_ICONS: Record<string, LucideIcon> = {
 export const BOARD_ACTION_TINTS: Record<BoardActionShapeId, string> = {
   // Conversion
   purchase: '#10B981', add_to_cart: '#F97316', subscribe: '#EC4899', goal: '#EAB308',
-  form_completed: '#10B981', schedule_meeting: '#3B82F6', deal_won: '#EAB308',
+  form_completed: '#10B981', schedule_meeting: '#3B82F6', deal_won: '#EAB308', deal_lost: '#EF4444',
   on_site_visit: '#6366F1', send_quote: '#06B6D4',
   send_google_review: '#F59E0B', add_to_referral_program: '#EC4899',
   // Engagement
@@ -92,6 +92,7 @@ export const BOARD_ACTION_GROUPS: BoardActionGroup[] = [
       { shapeType: 'on_site_visit',    label: 'On-Site Visit',    iconName: 'map-pin' },
       { shapeType: 'send_quote',       label: 'Send Quote',       iconName: 'send' },
       { shapeType: 'deal_won',         label: 'Deal Won',         iconName: 'trophy' },
+      { shapeType: 'deal_lost',        label: 'Deal Lost',        iconName: 'circle-x' },
       { shapeType: 'add_to_cart',      label: 'Add to Cart',      iconName: 'shopping-cart' },
       { shapeType: 'subscribe',        label: 'Subscribe',        iconName: 'bell-ring' },
       { shapeType: 'goal',             label: 'Goal',             iconName: 'flag' },

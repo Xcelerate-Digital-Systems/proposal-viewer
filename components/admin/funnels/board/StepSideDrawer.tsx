@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { X, ExternalLink, Trash2, Check, Search, ChevronDown, ChevronRight } from 'lucide-react';
+import { X, ExternalLink, ArrowUpRight, Trash2, Check, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import type { FunnelStep, FunnelStepMetrics } from '@/lib/supabase';
 import {
   FUNNEL_STEP_DEFAULTS, FUNNEL_ICON_LIBRARY, FUNNEL_COLOR_PRESETS,
 } from '@/lib/types/funnel';
 import { StepIcon } from './nodes/FunnelStepNode';
+import FunnelLinkPicker from './FunnelLinkPicker';
 interface Props {
   step: FunnelStep;
   onUpdate: (patch: Partial<FunnelStep>) => void;
@@ -130,6 +131,13 @@ export default function StepSideDrawer({
             )}
           </div>
         </Field>
+
+        {/* Link to another funnel */}
+        <FunnelLinkPicker
+          currentFunnelId={step.funnel_id}
+          linkedFunnelId={step.linked_funnel_id}
+          onLink={(id) => onUpdate({ linked_funnel_id: id })}
+        />
 
         {/* Metrics — first after identity fields so users find it immediately */}
         <div>

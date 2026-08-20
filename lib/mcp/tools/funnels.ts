@@ -12,6 +12,7 @@ function buildNodeTypeCatalog() {
   };
   const pages: { slug: string; label: string; icon: string }[] = [];
   const offers: { slug: string; label: string; icon: string }[] = [];
+  const stages: { slug: string; label: string; icon: string }[] = [];
 
   for (const [slug, d] of Object.entries(FUNNEL_STEP_DEFAULTS)) {
     const entry = { slug, label: d.label, icon: d.icon };
@@ -27,6 +28,7 @@ function buildNodeTypeCatalog() {
       else if (['traffic_email', 'traffic_sms'].includes(slug)) sources.messaging.push(entry);
     } else if (slug.startsWith('page_')) pages.push(entry);
     else if (slug.startsWith('offer_')) offers.push(entry);
+    else if (slug.startsWith('stage_')) stages.push(entry);
   }
 
   const actions: Record<string, { slug: string; label: string; icon: string }[]> = {};
@@ -42,7 +44,7 @@ function buildNodeTypeCatalog() {
     { slug: 'text', label: 'Text', icon: 'type' },
   ];
 
-  return { sources, pages, offers, actions, drawing };
+  return { sources, pages, offers, stages, actions, drawing };
 }
 
 /** Resolve auth for a child operation (step/edge/shape) on a known funnel.
@@ -73,18 +75,19 @@ async function resolveAuthForFunnel(
 export function registerFunnelTools(server: McpServer) {
 
   server.tool('list_funnel_node_types', 'List all valid funnel node types grouped by category (Sources, Pages, Offers, Actions, Drawing). Steps use stepType slugs; Actions and Drawing use shapeType slugs via create_funnel_shape.', {
-    category: z.enum(['all', 'sources', 'pages', 'offers', 'actions', 'drawing']).optional().describe('Filter to a specific category. Default: all'),
+    category: z.enum(['all', 'sources', 'pages', 'offers', 'stages', 'actions', 'drawing']).optional().describe('Filter to a specific category. Default: all'),
   }, async ({ category }) => {
     const cat = category || 'all';
     const result: Record<string, unknown> = {};
     if (cat === 'all' || cat === 'sources') result.sources = { note: 'Use with create_funnel_step (stepType)', groups: NODE_TYPE_CATALOG.sources };
     if (cat === 'all' || cat === 'pages') result.pages = { note: 'Use with create_funnel_step (stepType)', items: NODE_TYPE_CATALOG.pages };
     if (cat === 'all' || cat === 'offers') result.offers = { note: 'Use with create_funnel_step (stepType)', items: NODE_TYPE_CATALOG.offers };
+    if (cat === 'all' || cat === 'stages') result.stages = { note: 'Use with create_funnel_step (stepType) — pipeline/CRM holding states', items: NODE_TYPE_CATALOG.stages };
     if (cat === 'all' || cat === 'actions') result.actions = { note: 'Use with create_funnel_shape (shapeType)', groups: NODE_TYPE_CATALOG.actions };
     if (cat === 'all' || cat === 'drawing') result.drawing = { note: 'Use with create_funnel_shape (shapeType)', items: NODE_TYPE_CATALOG.drawing };
     if (cat === 'all') {
       result._summary = {
-        stepTypes: 'traffic_*, page_*, offer_*, generic → use create_funnel_step',
+        stepTypes: 'traffic_*, page_*, offer_*, stage_*, generic → use create_funnel_step',
         shapeTypes: 'action nodes + drawing primitives → use create_funnel_shape',
       };
     }
@@ -98,7 +101,7 @@ export function registerFunnelTools(server: McpServer) {
     const sb = createServiceClient();
     let q = sb.from('funnels')
       .select('id, name, description, status, currency, forecast_period, is_template, created_at, updated_at')
-      .eq('company_id', auth.companyId).order('updated_at', { ascending: false });
+      .eq('company_id', auth.companyId).eq('is_template', false).order('updated_at', { ascending: false });
     if (status && status !== 'all') q = q.eq('status', status);
     const { data, error } = await q;
     if (error) return txt(`Error: ${error.message}`);
@@ -115,9 +118,9 @@ export function registerFunnelTools(server: McpServer) {
     const { data: funnel } = await sb.from('funnels').select('*').eq('id', funnelId).eq('company_id', auth.companyId).single();
     if (!funnel) return txt('Funnel not found');
     const [{ data: steps }, { data: edges }, { data: shapes }] = await Promise.all([
-      sb.from('funnel_steps').select('id, step_type, label, icon, url, color, board_x, board_y, metrics, created_at').eq('funnel_id', funnelId).eq('company_id', auth.companyId),
+      sb.from('funnel_steps').select('id, step_type, label, icon, url, color, board_x, board_y, metrics, linked_funnel_id, created_at').eq('funnel_id', funnelId).eq('company_id', auth.companyId),
       sb.from('funnel_board_edges').select('id, source_step_id, source_shape_id, target_step_id, target_shape_id, source_handle, target_handle, label, edge_type, animated, split_percent, style').eq('funnel_id', funnelId).eq('company_id', auth.companyId),
-      sb.from('funnel_board_shapes').select('id, shape_type, x, y, width, height, content, color').eq('funnel_id', funnelId).eq('company_id', auth.companyId),
+      sb.from('funnel_board_shapes').select('id, shape_type, x, y, width, height, content, color, linked_funnel_id').eq('funnel_id', funnelId).eq('company_id', auth.companyId),
     ]);
     return json({
       id: funnel.id, name: funnel.name, description: funnel.description, status: funnel.status,
@@ -126,7 +129,7 @@ export function registerFunnelTools(server: McpServer) {
       createdAt: funnel.created_at, updatedAt: funnel.updated_at,
       steps: (steps || []).map(s => ({
         id: s.id, type: s.step_type, label: s.label, icon: s.icon, url: s.url, color: s.color,
-        position: { x: s.board_x, y: s.board_y }, metrics: s.metrics,
+        position: { x: s.board_x, y: s.board_y }, metrics: s.metrics, linkedFunnelId: s.linked_funnel_id,
       })),
       edges: (edges || []).map(e => ({
         id: e.id, sourceStepId: e.source_step_id, sourceShapeId: e.source_shape_id,
@@ -137,7 +140,7 @@ export function registerFunnelTools(server: McpServer) {
       })),
       shapes: (shapes || []).map(s => ({
         id: s.id, type: s.shape_type, x: s.x, y: s.y, width: s.width, height: s.height,
-        content: s.content, color: s.color,
+        content: s.content, color: s.color, linkedFunnelId: s.linked_funnel_id,
       })),
     });
   });
@@ -227,6 +230,7 @@ export function registerFunnelTools(server: McpServer) {
       recurring_months: z.number().optional().describe('Months of recurring revenue per conversion'),
       notes: z.string().optional(),
     }).optional().describe('Forecast metrics'),
+    linkedFunnelId: z.string().optional().describe('Link this step to another funnel — clicking it navigates to that funnel'),
     companyId: z.string().optional().describe('Optional — auto-resolved from the funnel. Super admin: override to target a different company'),
   }, async (args, extra) => {
     const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
@@ -244,6 +248,7 @@ export function registerFunnelTools(server: McpServer) {
       board_x: Math.round(args.x),
       board_y: Math.round(args.y),
       metrics: args.metrics || {},
+      linked_funnel_id: args.linkedFunnelId || null,
     }).select('id, step_type, label, board_x, board_y').single();
     if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
     return json({ id: data.id, type: data.step_type, label: data.label, position: { x: data.board_x, y: data.board_y } });
@@ -267,6 +272,7 @@ export function registerFunnelTools(server: McpServer) {
       recurring_months: z.number().optional(),
       notes: z.string().optional(),
     }).optional(),
+    linkedFunnelId: z.string().nullable().optional().describe('Link to another funnel (pass null to clear)'),
     companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
   }, async (args, extra) => {
     const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
@@ -284,6 +290,7 @@ export function registerFunnelTools(server: McpServer) {
     if (args.url !== undefined) patch.url = args.url;
     if (args.color !== undefined) patch.color = args.color;
     if (args.metrics !== undefined) patch.metrics = args.metrics;
+    if (args.linkedFunnelId !== undefined) patch.linked_funnel_id = args.linkedFunnelId;
     if (Object.keys(patch).length <= 1) return txt('No fields to update.');
     const { error } = await sb.from('funnel_steps').update(patch).eq('id', args.stepId);
     if (error) return txt(`Failed: ${error.message}`);
@@ -392,6 +399,7 @@ export function registerFunnelTools(server: McpServer) {
     fontSize: z.number().optional().describe('Font size for text shapes'),
     endX: z.number().optional().describe('End X for arrow/line shapes'),
     endY: z.number().optional().describe('End Y for arrow/line shapes'),
+    linkedFunnelId: z.string().optional().describe('Link this shape to another funnel — clicking it navigates to that funnel'),
     companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
   }, async (args, extra) => {
     const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
@@ -413,6 +421,7 @@ export function registerFunnelTools(server: McpServer) {
       stroke_width: args.strokeWidth ?? 2,
       dashed: args.dashed ?? false,
       font_size: args.fontSize ?? null,
+      linked_funnel_id: args.linkedFunnelId || null,
     }).select('id, shape_type, x, y').single();
     if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
     return json({ id: data.id, type: data.shape_type, position: { x: data.x, y: data.y } });
@@ -433,6 +442,7 @@ export function registerFunnelTools(server: McpServer) {
     fontSize: z.number().optional(),
     endX: z.number().optional(),
     endY: z.number().optional(),
+    linkedFunnelId: z.string().nullable().optional().describe('Link to another funnel (pass null to clear)'),
     companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
   }, async (args, extra) => {
     const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
@@ -454,6 +464,7 @@ export function registerFunnelTools(server: McpServer) {
     if (args.fontSize !== undefined) patch.font_size = args.fontSize;
     if (args.endX !== undefined) patch.end_x = args.endX;
     if (args.endY !== undefined) patch.end_y = args.endY;
+    if (args.linkedFunnelId !== undefined) patch.linked_funnel_id = args.linkedFunnelId;
     if (Object.keys(patch).length <= 1) return txt('No fields to update.');
     const { error } = await sb.from('funnel_board_shapes').update(patch).eq('id', args.shapeId);
     if (error) return txt(`Failed: ${error.message}`);
@@ -491,5 +502,211 @@ export function registerFunnelTools(server: McpServer) {
     const { error } = await sb.from('funnel_board_edges').delete().eq('id', edgeId);
     if (error) return txt(`Failed: ${error.message}`);
     return txt('Edge deleted.');
+  });
+
+  // ── Funnel Template tools ──
+
+  server.tool('list_funnel_templates', 'List saved funnel templates. These are reusable funnel blueprints that can be stamped into new funnels.', {
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async ({ companyId }, extra) => {
+    const auth = getAuth(extra, companyId); if (!auth) return unauthorized();
+    const sb = createServiceClient();
+    const { data, error } = await sb.from('funnels')
+      .select('id, name, description, currency, forecast_period, created_at, updated_at')
+      .eq('company_id', auth.companyId)
+      .eq('is_template', true)
+      .order('updated_at', { ascending: false });
+    if (error) return txt(`Error: ${error.message}`);
+    if (!data?.length) return txt('No funnel templates found.');
+    return json(data);
+  });
+
+  server.tool('save_funnel_as_template', 'Save an existing funnel as a reusable template. Clones all steps, edges, shapes, and notes into a new template entry.', {
+    funnelId: z.string().describe('Source funnel to clone as a template'),
+    name: z.string().optional().describe('Template name (defaults to source funnel name)'),
+    companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
+  }, async (args, extra) => {
+    const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
+    if (!resolved) return unauthorized();
+    const { auth } = resolved;
+    const sb = createServiceClient();
+    const { data: source } = await sb.from('funnels').select('*').eq('id', args.funnelId).eq('company_id', auth.companyId).single();
+    if (!source) return txt('Funnel not found');
+
+    const [stepsRes, edgesRes, notesRes, shapesRes] = await Promise.all([
+      sb.from('funnel_steps').select('*').eq('funnel_id', source.id),
+      sb.from('funnel_board_edges').select('*').eq('funnel_id', source.id),
+      sb.from('funnel_board_notes').select('*').eq('funnel_id', source.id),
+      sb.from('funnel_board_shapes').select('*').eq('funnel_id', source.id),
+    ]);
+
+    const { data: newFunnel, error: fErr } = await sb.from('funnels').insert({
+      company_id: auth.companyId,
+      name: args.name || source.name,
+      description: source.description,
+      currency: source.currency,
+      forecast_period: source.forecast_period,
+      parent_funnel_id: null,
+      is_template: true,
+      created_by: auth.userId,
+    }).select('id, name').single();
+    if (fErr || !newFunnel) return txt(`Failed: ${fErr?.message || 'unknown'}`);
+
+    const stepIdMap = new Map<string, string>();
+    const srcSteps = stepsRes.data || [];
+    if (srcSteps.length > 0) {
+      const rows = srcSteps.map((s: Record<string, unknown>) => ({
+        funnel_id: newFunnel.id, company_id: auth.companyId,
+        step_type: s.step_type, label: s.label, icon: s.icon, url: s.url, color: s.color,
+        board_x: s.board_x, board_y: s.board_y, metrics: s.metrics, linked_funnel_id: s.linked_funnel_id,
+      }));
+      const { data: inserted } = await sb.from('funnel_steps').insert(rows).select('id');
+      inserted?.forEach((row: { id: string }, i: number) => { stepIdMap.set((srcSteps[i] as { id: string }).id, row.id); });
+    }
+
+    const shapeIdMap = new Map<string, string>();
+    const srcShapes = shapesRes.data || [];
+    if (srcShapes.length > 0) {
+      const rows = srcShapes.map((sh: Record<string, unknown>) => ({
+        funnel_id: newFunnel.id, company_id: auth.companyId,
+        shape_type: sh.shape_type, x: sh.x, y: sh.y, width: sh.width, height: sh.height,
+        end_x: sh.end_x, end_y: sh.end_y, content: sh.content,
+        color: sh.color, stroke_width: sh.stroke_width, dashed: sh.dashed, font_size: sh.font_size, linked_funnel_id: sh.linked_funnel_id,
+      }));
+      const { data: inserted } = await sb.from('funnel_board_shapes').insert(rows).select('id');
+      inserted?.forEach((row: { id: string }, i: number) => { shapeIdMap.set((srcShapes[i] as { id: string }).id, row.id); });
+    }
+
+    const srcNotes = notesRes.data || [];
+    if (srcNotes.length > 0) {
+      await sb.from('funnel_board_notes').insert(srcNotes.map((n: Record<string, unknown>) => ({
+        funnel_id: newFunnel.id, company_id: auth.companyId,
+        content: n.content, color: n.color,
+        board_x: n.board_x, board_y: n.board_y,
+        width: n.width, height: n.height, font_size: n.font_size,
+      })));
+    }
+
+    const srcEdges = edgesRes.data || [];
+    if (srcEdges.length > 0) {
+      const rows = srcEdges
+        .map((e: Record<string, unknown>) => {
+          const newSrcStep = e.source_step_id ? stepIdMap.get(e.source_step_id as string) : null;
+          const newTgtStep = e.target_step_id ? stepIdMap.get(e.target_step_id as string) : null;
+          const newSrcShape = e.source_shape_id ? shapeIdMap.get(e.source_shape_id as string) : null;
+          const newTgtShape = e.target_shape_id ? shapeIdMap.get(e.target_shape_id as string) : null;
+          if (e.source_step_id && !newSrcStep) return null;
+          if (e.target_step_id && !newTgtStep) return null;
+          if (e.source_shape_id && !newSrcShape) return null;
+          if (e.target_shape_id && !newTgtShape) return null;
+          return {
+            funnel_id: newFunnel.id, company_id: auth.companyId,
+            source_step_id: newSrcStep ?? null, target_step_id: newTgtStep ?? null,
+            source_shape_id: newSrcShape ?? null, target_shape_id: newTgtShape ?? null,
+            source_handle: e.source_handle, target_handle: e.target_handle,
+            label: e.label, edge_type: e.edge_type, animated: e.animated,
+            split_percent: e.split_percent, style: e.style,
+          };
+        })
+        .filter((r: unknown): r is NonNullable<typeof r> => r !== null);
+      if (rows.length > 0) await sb.from('funnel_board_edges').insert(rows);
+    }
+
+    return json({ id: newFunnel.id, name: newFunnel.name, isTemplate: true });
+  });
+
+  server.tool('create_funnel_from_template', 'Create a new funnel pre-populated from a saved template. Clones all steps, edges, shapes, and notes.', {
+    templateId: z.string().describe('Template funnel ID (from list_funnel_templates)'),
+    name: z.string().describe('Name for the new funnel'),
+    description: z.string().optional(),
+    companyId: z.string().optional().describe('Optional — auto-resolved from the template'),
+  }, async (args, extra) => {
+    const resolved = await resolveAuthForFunnel(extra, args.templateId, args.companyId);
+    if (!resolved) return unauthorized();
+    const { auth } = resolved;
+    const sb = createServiceClient();
+    const { data: template } = await sb.from('funnels').select('*').eq('id', args.templateId).eq('company_id', auth.companyId).eq('is_template', true).single();
+    if (!template) return txt('Template not found');
+
+    const [stepsRes, edgesRes, notesRes, shapesRes] = await Promise.all([
+      sb.from('funnel_steps').select('*').eq('funnel_id', template.id),
+      sb.from('funnel_board_edges').select('*').eq('funnel_id', template.id),
+      sb.from('funnel_board_notes').select('*').eq('funnel_id', template.id),
+      sb.from('funnel_board_shapes').select('*').eq('funnel_id', template.id),
+    ]);
+
+    const { data: newFunnel, error: fErr } = await sb.from('funnels').insert({
+      company_id: auth.companyId,
+      name: args.name,
+      description: args.description || template.description,
+      currency: template.currency,
+      forecast_period: template.forecast_period,
+      parent_funnel_id: null,
+      is_template: false,
+      created_by: auth.userId,
+    }).select('id, name').single();
+    if (fErr || !newFunnel) return txt(`Failed: ${fErr?.message || 'unknown'}`);
+
+    const stepIdMap = new Map<string, string>();
+    const srcSteps = stepsRes.data || [];
+    if (srcSteps.length > 0) {
+      const rows = srcSteps.map((s: Record<string, unknown>) => ({
+        funnel_id: newFunnel.id, company_id: auth.companyId,
+        step_type: s.step_type, label: s.label, icon: s.icon, url: s.url, color: s.color,
+        board_x: s.board_x, board_y: s.board_y, metrics: s.metrics, linked_funnel_id: s.linked_funnel_id,
+      }));
+      const { data: inserted } = await sb.from('funnel_steps').insert(rows).select('id');
+      inserted?.forEach((row: { id: string }, i: number) => { stepIdMap.set((srcSteps[i] as { id: string }).id, row.id); });
+    }
+
+    const shapeIdMap = new Map<string, string>();
+    const srcShapes = shapesRes.data || [];
+    if (srcShapes.length > 0) {
+      const rows = srcShapes.map((sh: Record<string, unknown>) => ({
+        funnel_id: newFunnel.id, company_id: auth.companyId,
+        shape_type: sh.shape_type, x: sh.x, y: sh.y, width: sh.width, height: sh.height,
+        end_x: sh.end_x, end_y: sh.end_y, content: sh.content,
+        color: sh.color, stroke_width: sh.stroke_width, dashed: sh.dashed, font_size: sh.font_size, linked_funnel_id: sh.linked_funnel_id,
+      }));
+      const { data: inserted } = await sb.from('funnel_board_shapes').insert(rows).select('id');
+      inserted?.forEach((row: { id: string }, i: number) => { shapeIdMap.set((srcShapes[i] as { id: string }).id, row.id); });
+    }
+
+    const srcNotes = notesRes.data || [];
+    if (srcNotes.length > 0) {
+      await sb.from('funnel_board_notes').insert(srcNotes.map((n: Record<string, unknown>) => ({
+        funnel_id: newFunnel.id, company_id: auth.companyId,
+        content: n.content, color: n.color,
+        board_x: n.board_x, board_y: n.board_y,
+        width: n.width, height: n.height, font_size: n.font_size,
+      })));
+    }
+
+    const srcEdges = edgesRes.data || [];
+    if (srcEdges.length > 0) {
+      const rows = srcEdges
+        .map((e: Record<string, unknown>) => {
+          const newSrcStep = e.source_step_id ? stepIdMap.get(e.source_step_id as string) : null;
+          const newTgtStep = e.target_step_id ? stepIdMap.get(e.target_step_id as string) : null;
+          const newSrcShape = e.source_shape_id ? shapeIdMap.get(e.source_shape_id as string) : null;
+          const newTgtShape = e.target_shape_id ? shapeIdMap.get(e.target_shape_id as string) : null;
+          if (e.source_step_id && !newSrcStep) return null;
+          if (e.target_step_id && !newTgtStep) return null;
+          if (e.source_shape_id && !newSrcShape) return null;
+          if (e.target_shape_id && !newTgtShape) return null;
+          return {
+            funnel_id: newFunnel.id, company_id: auth.companyId,
+            source_step_id: newSrcStep ?? null, target_step_id: newTgtStep ?? null,
+            source_shape_id: newSrcShape ?? null, target_shape_id: newTgtShape ?? null,
+            source_handle: e.source_handle, target_handle: e.target_handle,
+            label: e.label, edge_type: e.edge_type, animated: e.animated,
+            split_percent: e.split_percent, style: e.style,
+          };
+        })
+        .filter((r: unknown): r is NonNullable<typeof r> => r !== null);
+      if (rows.length > 0) await sb.from('funnel_board_edges').insert(rows);
+    }
+
+    return json({ id: newFunnel.id, name: newFunnel.name });
   });
 }

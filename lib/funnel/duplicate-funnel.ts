@@ -62,7 +62,7 @@ export async function duplicateFunnelAsScenario(opts: {
   const stepRows = srcSteps.map((s) => ({
     funnel_id: newFunnel.id, company_id: companyId,
     step_type: s.step_type, label: s.label, icon: s.icon, url: s.url, color: s.color,
-    board_x: s.board_x, board_y: s.board_y, metrics: s.metrics,
+    board_x: s.board_x, board_y: s.board_y, metrics: s.metrics, linked_funnel_id: s.linked_funnel_id,
   }));
   const stepIdMap = new Map<string, string>();
   if (stepRows.length > 0) {
@@ -76,7 +76,7 @@ export async function duplicateFunnelAsScenario(opts: {
     shape_type: sh.shape_type,
     x: sh.x, y: sh.y, width: sh.width, height: sh.height,
     end_x: sh.end_x, end_y: sh.end_y, content: sh.content,
-    color: sh.color, stroke_width: sh.stroke_width, dashed: sh.dashed, font_size: sh.font_size,
+    color: sh.color, stroke_width: sh.stroke_width, dashed: sh.dashed, font_size: sh.font_size, linked_funnel_id: sh.linked_funnel_id,
   }));
   const shapeIdMap = new Map<string, string>();
   if (shapeRows.length > 0) {

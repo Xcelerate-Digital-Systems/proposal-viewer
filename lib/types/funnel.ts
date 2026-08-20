@@ -137,15 +137,28 @@ export type FunnelStepType =
   | 'offer_bundle'
   | 'offer_coaching'
   | 'offer_event'
+  // Pipeline stages — holding states for CRM / opportunity funnels
+  | 'stage_new_lead'
+  | 'stage_contacted'
+  | 'stage_qualified'
+  | 'stage_proposal_sent'
+  | 'stage_negotiation'
+  | 'stage_awaiting_response'
+  | 'stage_in_review'
+  | 'stage_onboarding'
+  | 'stage_active_client'
+  | 'stage_churned'
+  | 'stage_custom'
   // Catch-all
   | 'generic';
 
-export type FunnelStepCategory = 'traffic' | 'page' | 'offer' | 'generic';
+export type FunnelStepCategory = 'traffic' | 'page' | 'offer' | 'stage' | 'generic';
 
 export function categoryForStepType(t: FunnelStepType): FunnelStepCategory {
   if (t.startsWith('traffic_')) return 'traffic';
   if (t.startsWith('page_')) return 'page';
   if (t.startsWith('offer_')) return 'offer';
+  if (t.startsWith('stage_')) return 'stage';
   return 'generic';
 }
 
@@ -189,6 +202,7 @@ export type FunnelStep = {
   board_x: number;
   board_y: number;
   metrics: FunnelStepMetrics;
+  linked_funnel_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -262,7 +276,7 @@ export type FunnelShapeType =
   | 'download' | 'share' | 'login'
   | 'sms_notification' | 'email_notification' | 'ghl_notification'
   | 'google_sheet' | 'webhook'
-  | 'form_completed' | 'schedule_meeting' | 'deal_won'
+  | 'form_completed' | 'schedule_meeting' | 'deal_won' | 'deal_lost'
   | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won'
   | 'on_site_visit' | 'send_quote'
   | 'send_google_review' | 'add_to_referral_program';
@@ -283,6 +297,7 @@ export type FunnelBoardShape = {
   stroke_width: number;
   dashed: boolean;
   font_size: number | null;
+  linked_funnel_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -395,6 +410,18 @@ export const FUNNEL_STEP_DEFAULTS: Record<
   offer_bundle:           { label: 'Bundle',             icon: 'layers',           color: '#2B2B2B', tint: '#F97316' },
   offer_coaching:         { label: 'Coaching',           icon: 'user-cog',         color: '#2B2B2B', tint: '#EC4899' },
   offer_event:            { label: 'Live Event',         icon: 'ticket',           color: '#2B2B2B', tint: '#A855F7' },
+  // Pipeline stages
+  stage_new_lead:          { label: 'New Lead',           icon: 'user-plus',        color: '#2B2B2B', tint: '#3B82F6' },
+  stage_contacted:         { label: 'Contacted',          icon: 'phone-outgoing',   color: '#2B2B2B', tint: '#0EA5E9' },
+  stage_qualified:         { label: 'Qualified',          icon: 'badge-check',      color: '#2B2B2B', tint: '#10B981' },
+  stage_proposal_sent:     { label: 'Proposal Sent',      icon: 'send',             color: '#2B2B2B', tint: '#8B5CF6' },
+  stage_negotiation:       { label: 'Negotiation',        icon: 'handshake',        color: '#2B2B2B', tint: '#F59E0B' },
+  stage_awaiting_response: { label: 'Awaiting Response',  icon: 'clock',            color: '#2B2B2B', tint: '#6366F1' },
+  stage_in_review:         { label: 'In Review',          icon: 'eye',              color: '#2B2B2B', tint: '#A855F7' },
+  stage_onboarding:        { label: 'Onboarding',         icon: 'rocket',           color: '#2B2B2B', tint: '#06B6D4' },
+  stage_active_client:     { label: 'Active Client',      icon: 'check-circle',     color: '#2B2B2B', tint: '#22C55E' },
+  stage_churned:           { label: 'Churned',            icon: 'user-x',           color: '#2B2B2B', tint: '#EF4444' },
+  stage_custom:            { label: 'Custom Stage',       icon: 'layers',           color: '#2B2B2B', tint: '#64748B' },
   // Catch-all
   generic:                { label: 'Step',               icon: 'square',           color: '#2B2B2B', tint: '#64748B' },
 };
@@ -435,6 +462,12 @@ const ALL_OFFER_TYPES: FunnelStepType[] = [
   'offer_bundle', 'offer_coaching', 'offer_event',
 ];
 
+const ALL_STAGE_TYPES: FunnelStepType[] = [
+  'stage_new_lead', 'stage_contacted', 'stage_qualified', 'stage_proposal_sent',
+  'stage_negotiation', 'stage_awaiting_response', 'stage_in_review',
+  'stage_onboarding', 'stage_active_client', 'stage_churned', 'stage_custom',
+];
+
 export const FUNNEL_STEP_TYPE_ORDER: { category: FunnelStepCategory; label: string; types: FunnelStepType[] }[] = [
   { category: 'traffic', label: 'Traffic', types: ALL_TRAFFIC_TYPES },
   {
@@ -446,6 +479,7 @@ export const FUNNEL_STEP_TYPE_ORDER: { category: FunnelStepCategory; label: stri
     ],
   },
   { category: 'offer', label: 'Offers', types: ALL_OFFER_TYPES },
+  { category: 'stage', label: 'Stages', types: ALL_STAGE_TYPES },
   { category: 'generic', label: 'Other', types: ['generic'] },
 ];
 
@@ -469,7 +503,7 @@ export interface PaletteGroup {
   items: PaletteItem[];
 }
 
-export type FunnelPaletteTabId = 'sources' | 'pages' | 'actions' | 'drawing';
+export type FunnelPaletteTabId = 'sources' | 'pages' | 'stages' | 'actions' | 'drawing';
 
 export interface PaletteTab {
   id: FunnelPaletteTabId;
@@ -562,6 +596,20 @@ export const FUNNEL_PALETTE_TABS: PaletteTab[] = [
         ]),
       },
       { key: 'custom_pages', label: 'Custom', items: [{ kind: 'upload', scope: 'page' }] },
+    ],
+  },
+  {
+    id: 'stages',
+    label: 'Stages',
+    groups: [
+      {
+        key: 'pipeline', label: 'Pipeline Stages',
+        items: stepItems([
+          'stage_new_lead', 'stage_contacted', 'stage_qualified', 'stage_proposal_sent',
+          'stage_negotiation', 'stage_awaiting_response', 'stage_in_review',
+          'stage_onboarding', 'stage_active_client', 'stage_churned', 'stage_custom',
+        ]),
+      },
     ],
   },
   {

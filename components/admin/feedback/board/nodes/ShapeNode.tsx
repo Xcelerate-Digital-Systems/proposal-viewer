@@ -2,6 +2,7 @@
 
 import { memo } from 'react';
 import type { NodeProps } from '@xyflow/react';
+import { ArrowUpRight } from 'lucide-react';
 import type { FeedbackBoardShape } from '@/lib/supabase';
 import { DIAMOND_TYPES, LEGACY_DEFAULT_COLOR, type DiamondType } from './diamond-config';
 import { TextShape } from './TextShape';
@@ -32,50 +33,68 @@ const ARROW_ANGLE = Math.PI / 7;
 /* ─── Main component ─────────────────────────────────────────────── */
 
 function ShapeNodeComponent({ data, selected }: NodeProps) {
-  const { shape, readOnly, onUpdateContent } = data as import('./shape-node-types').ShapeNodeData;
+  const { shape, readOnly, onUpdateContent, linkedFunnelId } = data as import('./shape-node-types').ShapeNodeData;
+
+  const linkBadge = linkedFunnelId ? (
+    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center shadow-sm pointer-events-none z-10">
+      <ArrowUpRight size={11} strokeWidth={2.5} />
+    </div>
+  ) : null;
 
   if (shape.shape_type === 'text') {
     return (
-      <TextShape
-        shape={shape}
-        selected={!!selected}
-        readOnly={readOnly}
-        onUpdateContent={onUpdateContent}
-      />
+      <div className="relative">
+        {linkBadge}
+        <TextShape
+          shape={shape}
+          selected={!!selected}
+          readOnly={readOnly}
+          onUpdateContent={onUpdateContent}
+        />
+      </div>
     );
   }
 
   if (shape.shape_type === 'decision') {
     return (
-      <DecisionShape
-        shape={shape}
-        selected={!!selected}
-        readOnly={readOnly}
-        onUpdateContent={onUpdateContent}
-      />
+      <div className="relative">
+        {linkBadge}
+        <DecisionShape
+          shape={shape}
+          selected={!!selected}
+          readOnly={readOnly}
+          onUpdateContent={onUpdateContent}
+        />
+      </div>
     );
   }
 
   if (shape.shape_type === 'wait') {
     return (
-      <WaitDiamond
-        shape={shape}
-        selected={!!selected}
-        readOnly={readOnly}
-        onUpdateContent={onUpdateContent}
-      />
+      <div className="relative">
+        {linkBadge}
+        <WaitDiamond
+          shape={shape}
+          selected={!!selected}
+          readOnly={readOnly}
+          onUpdateContent={onUpdateContent}
+        />
+      </div>
     );
   }
 
   if (DIAMOND_TYPES.has(shape.shape_type)) {
     return (
-      <EventDiamond
-        shape={shape}
-        diamondType={shape.shape_type as DiamondType}
-        selected={!!selected}
-        readOnly={readOnly}
-        onUpdateContent={onUpdateContent}
-      />
+      <div className="relative">
+        {linkBadge}
+        <EventDiamond
+          shape={shape}
+          diamondType={shape.shape_type as DiamondType}
+          selected={!!selected}
+          readOnly={readOnly}
+          onUpdateContent={onUpdateContent}
+        />
+      </div>
     );
   }
 

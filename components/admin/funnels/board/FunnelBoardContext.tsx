@@ -26,8 +26,8 @@ import { useFunnelNoteMutations } from './useFunnelNoteMutations';
 import { useFunnelEdgeMutations } from './useFunnelEdgeMutations';
 import { useFunnelShapeMutations } from './useFunnelShapeMutations';
 
-export type NewStep = Omit<FunnelStep, 'id' | 'funnel_id' | 'company_id' | 'created_at' | 'updated_at'>;
-export type NewShape = Omit<FunnelBoardShape, 'id' | 'funnel_id' | 'company_id' | 'created_at' | 'updated_at'>;
+export type NewStep = Omit<FunnelStep, 'id' | 'funnel_id' | 'company_id' | 'created_at' | 'updated_at' | 'linked_funnel_id'>;
+export type NewShape = Omit<FunnelBoardShape, 'id' | 'funnel_id' | 'company_id' | 'created_at' | 'updated_at' | 'linked_funnel_id'>;
 export type NewEdge = Omit<FunnelBoardEdge, 'id' | 'created_at' | 'updated_at'>;
 
 interface ContextValue {

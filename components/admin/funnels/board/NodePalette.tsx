@@ -6,8 +6,8 @@ import {
   MousePointerClick, FileText, PlayCircle, ChevronsDown, ShoppingBag, ShoppingCart,
   BellRing, Sparkles, MessageSquare, Mail, Bell, Sheet, StickyNote, PanelLeftOpen,
   Eye, Timer, LogOut, LogIn, Undo2, Download, Share2, Webhook, Plus, Upload,
-  Workflow, FileBox, MousePointer2, Pencil, Square, Circle, MoveRight, Minus, Type,
-  ClipboardCheck, CalendarCheck, Trophy, Target, Crown, MapPin, Send,
+  Workflow, FileBox, MousePointer2, Pencil, Square, Circle, MoveRight, Minus, Type, GitBranchPlus,
+  ClipboardCheck, CalendarCheck, Trophy, CircleX, Target, Crown, MapPin, Send,
   Star, Gift,
   type LucideIcon,
 } from 'lucide-react';
@@ -48,7 +48,7 @@ const SHAPE_ICONS: Record<string, LucideIcon> = {
 const SHAPE_TINTS: Record<string, string> = {
   // Conversion
   purchase: '#10B981', add_to_cart: '#F97316', subscribe: '#EC4899', goal: '#EAB308',
-  form_completed: '#10B981', schedule_meeting: '#3B82F6', deal_won: '#EAB308',
+  form_completed: '#10B981', schedule_meeting: '#3B82F6', deal_won: '#EAB308', deal_lost: '#EF4444',
   on_site_visit: '#6366F1', send_quote: '#06B6D4',
   send_google_review: '#F59E0B', add_to_referral_program: '#EC4899',
   // Engagement
@@ -70,6 +70,7 @@ const SHAPE_TINTS: Record<string, string> = {
 const TAB_ICONS: Record<FunnelPaletteTabId, LucideIcon> = {
   sources: MousePointer2,
   pages: FileBox,
+  stages: GitBranchPlus,
   actions: Workflow,
   drawing: Pencil,
 };

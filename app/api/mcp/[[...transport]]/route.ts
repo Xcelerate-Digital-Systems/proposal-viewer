@@ -82,16 +82,19 @@ const mcpHandler = createMcpHandler(
 - \`create_funnel\` — create a new empty funnel
 - \`update_funnel\` — edit name, description, status, currency, forecast settings
 - \`delete_funnel\` — delete a funnel and all its children
-- \`list_funnel_node_types\` — list all valid step and shape types grouped by category (sources, pages, offers, actions, drawing)
-- \`create_funnel_step\` — add a node (traffic source, page, offer, or generic)
-- \`update_funnel_step\` — edit label, position, metrics, icon, color, or stepType (no need to delete and recreate to change type)
+- \`list_funnel_node_types\` — list all valid step and shape types grouped by category (sources, pages, offers, stages, actions, drawing)
+- \`create_funnel_step\` — add a node (traffic source, page, offer, stage, or generic). Optional \`linkedFunnelId\` to cross-link to another funnel
+- \`update_funnel_step\` — edit label, position, metrics, icon, color, stepType, or linkedFunnelId (no need to delete and recreate to change type)
 - \`delete_funnel_step\` — remove a node and its connected edges
 - \`create_funnel_edge\` — connect two nodes/shapes with a labeled edge
 - \`update_funnel_edge\` — edit label, handles, animation, split percent
 - \`delete_funnel_edge\` — remove a connection
-- \`create_funnel_shape\` — add a shape (sticky note, annotation, decision diamond, action node, etc.)
-- \`update_funnel_shape\` — edit position, size, content, color, stroke, type
+- \`create_funnel_shape\` — add a shape (sticky note, annotation, decision diamond, action node, etc.). Optional \`linkedFunnelId\` to cross-link to another funnel
+- \`update_funnel_shape\` — edit position, size, content, color, stroke, type, or linkedFunnelId
 - \`delete_funnel_shape\` — remove a shape and its connected edges
+- \`list_funnel_templates\` — list saved funnel templates
+- \`save_funnel_as_template\` — clone a funnel into a reusable template
+- \`create_funnel_from_template\` — create a new funnel pre-populated from a template
 
 ### Client Access
 - \`list_access_requests\` — list client access requests (filter by clientId, status)
@@ -131,7 +134,7 @@ const mcpHandler = createMcpHandler(
   },
   {
     capabilities: { tools: {} },
-    serverInfo: { name: 'agencyviz', version: '1.8.0' },
+    serverInfo: { name: 'agencyviz', version: '1.9.0' },
     instructions: [
       'You are connected to the AgencyViz MCP — a B2B SaaS platform for agencies.',
       '',

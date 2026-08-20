@@ -349,6 +349,11 @@ function FunnelBoardInner() {
               onUpdate={(patch) => ctx.updateShape(selectedShape.id, patch)}
               onDelete={() => { ctx.deleteShape(selectedShape.id); ctx.selectShape(null); }}
               onClose={() => ctx.selectShape(null)}
+              funnelLink={{
+                currentFunnelId: ctx.funnel!.id,
+                linkedFunnelId: selectedShape.linked_funnel_id,
+                onLink: (id) => ctx.updateShape(selectedShape.id, { linked_funnel_id: id } as any),
+              }}
             />
           )}
 

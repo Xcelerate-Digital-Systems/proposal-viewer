@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { X, Trash2 } from 'lucide-react';
+
+const FunnelLinkPicker = lazy(() => import('@/components/admin/funnels/board/FunnelLinkPicker'));
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import type { FeedbackWaitUnit } from '@/lib/supabase';
 import { FUNNEL_COLOR_PRESETS } from '@/lib/types/funnel';
@@ -27,6 +29,11 @@ interface Props<T extends BoardShape> {
   onUpdate: (patch: Partial<T>) => void;
   onDelete: () => void;
   onClose: () => void;
+  funnelLink?: {
+    currentFunnelId: string;
+    linkedFunnelId: string | null;
+    onLink: (funnelId: string | null) => void;
+  };
 }
 
 const SHAPE_TYPE_LABELS: Record<string, string> = {
@@ -40,7 +47,7 @@ const SHAPE_TYPE_LABELS: Record<string, string> = {
   download: 'Download', share: 'Share', login: 'Login',
   sms_notification: 'SMS Notification', email_notification: 'Email Notification',
   ghl_notification: 'HighLevel Notification', google_sheet: 'Google Sheet', webhook: 'Webhook',
-  form_completed: 'Form Completed', schedule_meeting: 'Schedule Meeting', deal_won: 'Deal Won',
+  form_completed: 'Form Completed', schedule_meeting: 'Schedule Meeting', deal_won: 'Deal Won', deal_lost: 'Deal Lost',
   ghl_appointment: 'GHL Appointment', ghl_order: 'GHL Order',
   ghl_opportunity: 'GHL Opportunity', ghl_opportunity_won: 'GHL Opportunity Won',
   on_site_visit: 'On-Site Visit', send_quote: 'Send Quote',
@@ -80,7 +87,7 @@ function setEditableLabel(shape: BoardShape, next: string): string | null {
   return serializeActionContent({ label: trimmed || null });
 }
 
-export default function ShapeSideDrawer<T extends BoardShape>({ shape, onUpdate, onDelete, onClose }: Props<T>) {
+export default function ShapeSideDrawer<T extends BoardShape>({ shape, onUpdate, onDelete, onClose, funnelLink }: Props<T>) {
   const confirm = useConfirm();
   const [content, setContent] = useState(() => getEditableLabel(shape));
   useEffect(() => { setContent(getEditableLabel(shape)); }, [shape.id, shape.content]);
@@ -171,6 +178,16 @@ export default function ShapeSideDrawer<T extends BoardShape>({ shape, onUpdate,
             />
           </div>
         </div>
+
+        {funnelLink && (
+          <Suspense fallback={null}>
+            <FunnelLinkPicker
+              currentFunnelId={funnelLink.currentFunnelId}
+              linkedFunnelId={funnelLink.linkedFunnelId}
+              onLink={funnelLink.onLink}
+            />
+          </Suspense>
+        )}
 
         {isWait && waitData && (
           <div className="space-y-2">

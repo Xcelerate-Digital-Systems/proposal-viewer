@@ -5,4 +5,5 @@ export interface ShapeNodeData extends Record<string, unknown> {
   readOnly?: boolean;
   onUpdateContent?: (id: string, content: string) => void;
   onDelete?: (id: string) => void;
+  linkedFunnelId?: string | null;
 }
