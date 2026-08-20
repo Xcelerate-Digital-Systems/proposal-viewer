@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Trash2, ArrowRight, ArrowLeft, ArrowLeftRight, Minus, ChevronDown, X, Spline, MoveRight, GitFork } from 'lucide-react';
+import { Trash2, ArrowRight, ArrowLeft, ArrowLeftRight, Minus, ChevronDown, X, Spline, MoveRight, GitFork, Bold } from 'lucide-react';
 import type { Edge } from '@xyflow/react';
 
 export type ArrowDirection = 'none' | 'source' | 'target' | 'both';
@@ -34,6 +34,8 @@ interface EdgeStyle {
   arrowDir: ArrowDirection;
   labelFontSize: number;
   labelColor: string;
+  labelBold: boolean;
+  labelBgColor: string;
   edgeType: EdgePathType;
 }
 
@@ -46,6 +48,8 @@ export type EdgeStylePatch = {
   arrowDir?: ArrowDirection;
   labelFontSize?: number;
   labelColor?: string;
+  labelBold?: boolean;
+  labelBgColor?: string;
   edgeType?: EdgePathType;
 };
 
@@ -70,11 +74,26 @@ function readStyle(edge: Edge): EdgeStyle {
     arrowDir,
     labelFontSize: (data.labelFontSize as number) ?? (style.labelFontSize as number) ?? 16,
     labelColor: (data.labelColor as string) ?? (style.labelColor as string) ?? '#2B2B2B',
+    labelBold: !!(data.labelBold as boolean),
+    labelBgColor: (data.labelBgColor as string) ?? '',
     edgeType: (data.edgeType as EdgePathType) ?? 'bezier',
   };
 }
 
-type PopId = 'stroke-color' | 'stroke-width' | 'label-color' | null;
+const LABEL_BG_COLORS = [
+  { value: '', label: 'None' },
+  { value: '#ffffff', label: 'White' },
+  { value: '#FEF3C7', label: 'Yellow' },
+  { value: '#DCFCE7', label: 'Green' },
+  { value: '#DBEAFE', label: 'Blue' },
+  { value: '#EDE9FE', label: 'Purple' },
+  { value: '#FCE7F3', label: 'Pink' },
+  { value: '#FFEDD5', label: 'Orange' },
+  { value: '#2B2B2B', label: 'Dark' },
+  { value: '#017C87', label: 'Teal' },
+];
+
+type PopId = 'stroke-color' | 'stroke-width' | 'label-color' | 'label-bg' | null;
 
 export default function EdgeStyleEditor({ edge, onUpdate, onDelete, onClose }: EdgeStyleEditorProps) {
   const current = readStyle(edge);
@@ -321,10 +340,19 @@ export default function EdgeStyleEditor({ edge, onUpdate, onDelete, onClose }: E
         <span className="text-2xs text-ink/50">px</span>
       </div>
 
-      {/* Label colour */}
+      {/* Bold */}
+      <ToolbarBtn
+        active={current.labelBold}
+        onClick={() => onUpdate(edge.id, { labelBold: !current.labelBold })}
+        title="Bold label"
+      >
+        <Bold size={14} strokeWidth={2.4} />
+      </ToolbarBtn>
+
+      {/* Label text colour */}
       <div className="relative">
         <ToolbarBtn
-          title="Label color"
+          title="Text color"
           onClick={() => setOpenPop(openPop === 'label-color' ? null : 'label-color')}
           active={openPop === 'label-color'}
         >
@@ -344,6 +372,36 @@ export default function EdgeStyleEditor({ edge, onUpdate, onDelete, onClose }: E
                   title={c.label}
                   active={c.value.toLowerCase() === current.labelColor.toLowerCase()}
                   onClick={() => { onUpdate(edge.id, { labelColor: c.value }); setOpenPop(null); }}
+                />
+              ))}
+            </div>
+          </Pop>
+        )}
+      </div>
+
+      {/* Label background colour */}
+      <div className="relative">
+        <ToolbarBtn
+          title="Label background"
+          onClick={() => setOpenPop(openPop === 'label-bg' ? null : 'label-bg')}
+          active={openPop === 'label-bg'}
+        >
+          <span
+            className="w-4 h-3 rounded border border-edge"
+            style={{ backgroundColor: current.labelBgColor || '#ffffff' }}
+          />
+          <ChevronDown size={11} className="opacity-60" />
+        </ToolbarBtn>
+        {openPop === 'label-bg' && (
+          <Pop>
+            <div className="flex gap-1.5 flex-wrap max-w-[200px]">
+              {LABEL_BG_COLORS.map((c) => (
+                <ColorSwatch
+                  key={c.value || 'none'}
+                  color={c.value || 'transparent'}
+                  title={c.label}
+                  active={(c.value || '') === current.labelBgColor}
+                  onClick={() => { onUpdate(edge.id, { labelBgColor: c.value }); setOpenPop(null); }}
                 />
               ))}
             </div>

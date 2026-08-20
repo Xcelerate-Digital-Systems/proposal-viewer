@@ -122,6 +122,17 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
     }, 300);
   }, [boardEdges, updateEdge, setEdges]);
 
+  const handleLabelChange = useCallback((edgeId: string, text: string) => {
+    setEdges((eds) =>
+      eds.map((e) =>
+        e.id === edgeId
+          ? { ...e, data: { ...(e.data || {}), label: text || undefined, userLabel: text || null } }
+          : e
+      )
+    );
+    void updateEdge(edgeId, { label: text || null });
+  }, [updateEdge, setEdges]);
+
   /* ── Build edges ───────────────────────────────────────────── */
 
   useEffect(() => {
@@ -135,6 +146,8 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
         rawArrow === 'none' || rawArrow === 'source' || rawArrow === 'both' ? rawArrow : 'target';
       const labelFontSize = Number(style.labelFontSize) || 16;
       const labelColor = (style.labelColor as string) || '#2B2B2B';
+      const labelBold = !!style.labelBold;
+      const labelBgColor = (style.labelBgColor as string) || '';
       const waypoints = Array.isArray(style.waypoints) ? style.waypoints as { x: number; y: number }[] : [];
 
       const resolveSource = () => {
@@ -170,14 +183,15 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
           userLabel: userLabel || null,
           color: strokeColor, strokeWidth, dashed,
           animated: e.animated || false, arrowDir,
-          labelFontSize, labelColor,
+          labelFontSize, labelColor, labelBold, labelBgColor,
           waypoints,
           onWaypointsChange: handleWaypointsChange,
+          onLabelChange: handleLabelChange,
         },
       } as Edge;
     });
     setEdges(flow);
-  }, [boardEdges, boardNotes, setEdges, flowByEdge, handleWaypointsChange]);
+  }, [boardEdges, boardNotes, setEdges, flowByEdge, handleWaypointsChange, handleLabelChange]);
 
   /* ── Drag save ─────────────────────────────────────────────── */
 
@@ -282,6 +296,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
       dashed?: boolean; animated?: boolean;
       arrowDir?: 'none' | 'source' | 'target' | 'both';
       labelFontSize?: number; labelColor?: string;
+      labelBold?: boolean; labelBgColor?: string;
       edgeType?: 'bezier' | 'straight' | 'step';
     }) => {
       let nextEdge: Edge | undefined;
@@ -300,6 +315,8 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
         const nextArrowDir = patch.arrowDir ?? ((currentData.arrowDir as 'none' | 'source' | 'target' | 'both') ?? 'target');
         const nextLabelFontSize = patch.labelFontSize ?? (currentData.labelFontSize as number) ?? 16;
         const nextLabelColor = patch.labelColor ?? (currentData.labelColor as string) ?? '#2B2B2B';
+        const nextLabelBold = patch.labelBold !== undefined ? patch.labelBold : !!(currentData.labelBold as boolean);
+        const nextLabelBgColor = patch.labelBgColor !== undefined ? patch.labelBgColor : ((currentData.labelBgColor as string) ?? '');
         const nextEdgeType = patch.edgeType ?? (currentData.edgeType as string) ?? 'bezier';
         const updated: Edge = {
           ...edge,
@@ -312,6 +329,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
             color: nextColor, strokeWidth: nextStrokeWidth, dashed: nextDashed,
             animated: nextAnimated, arrowDir: nextArrowDir,
             labelFontSize: nextLabelFontSize, labelColor: nextLabelColor,
+            labelBold: nextLabelBold, labelBgColor: nextLabelBgColor,
             edgeType: nextEdgeType,
           },
         };
@@ -332,6 +350,8 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
           arrowDir: nextData.arrowDir,
           labelFontSize: nextData.labelFontSize,
           labelColor: nextData.labelColor,
+          labelBold: nextData.labelBold,
+          labelBgColor: nextData.labelBgColor,
           edgeType: nextData.edgeType,
           ...(existingWaypoints?.length ? { waypoints: existingWaypoints } : {}),
         } as Record<string, unknown>,
