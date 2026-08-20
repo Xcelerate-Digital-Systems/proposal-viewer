@@ -65,6 +65,8 @@ export async function POST(req: NextRequest) {
       source_url,
       media_src_url,
       thumbnail_src_url,
+      brand_logo_url: rawBrandLogoUrl,
+      brand_page_url: rawBrandPageUrl,
     } = body as Record<string, unknown>;
 
     const supabase = createServiceClient();
@@ -123,6 +125,13 @@ export async function POST(req: NextRequest) {
       if (!('error' in uploaded)) thumbnail_url = uploaded.public_url;
     }
 
+    // Download brand logo if provided (profile avatar from Meta)
+    let brand_logo_stored: string | null = null;
+    if (typeof rawBrandLogoUrl === 'string' && rawBrandLogoUrl.length > 0 && isValidWebhookUrl(rawBrandLogoUrl)) {
+      const uploaded = await downloadAndStore(rawBrandLogoUrl, owningCompanyId, 'brand-logo');
+      if (!('error' in uploaded)) brand_logo_stored = uploaded.public_url;
+    }
+
     const safeTitle =
       (typeof title === 'string' && title.trim()) ||
       (typeof brand === 'string' && brand.trim()) ||
@@ -146,6 +155,8 @@ export async function POST(req: NextRequest) {
         thumbnail_url,
         source_url: typeof source_url === 'string' ? source_url.trim() || null : null,
         brand: typeof brand === 'string' ? brand.trim() || null : null,
+        brand_logo_url: brand_logo_stored,
+        brand_page_url: typeof rawBrandPageUrl === 'string' ? rawBrandPageUrl.trim() || null : null,
         created_by: auth.member.user_id,
       })
       .select()
@@ -176,8 +187,7 @@ async function downloadAndStore(
   let res: Response;
   try {
     res = await fetch(srcUrl, {
-      redirect: 'manual',
-      // Meta CDN sometimes 403s without a referer/UA
+      redirect: 'follow',
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36',

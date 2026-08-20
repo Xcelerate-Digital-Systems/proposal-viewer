@@ -38,6 +38,8 @@ export type SwipeFile = {
   thumbnail_url: string | null;
   source_url: string | null;
   brand: string | null;
+  brand_logo_url: string | null;
+  brand_page_url: string | null;
   share_token: string;
   public_share_enabled: boolean;
   has_been_shared: boolean;

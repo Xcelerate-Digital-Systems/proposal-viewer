@@ -72,17 +72,27 @@ export default function SwipeMetaMockup({ file, compact = false, onShare }: Prop
     <div className="w-full rounded-2xl overflow-hidden border border-[#e4e6e9] bg-white">
       {/* Page header */}
       <div className="flex items-center gap-2.5 px-4 pt-3 pb-2">
-        <div
-          className="rounded-full flex items-center justify-center font-bold text-white shrink-0"
-          style={{
-            width: compact ? 32 : 40,
-            height: compact ? 32 : 40,
-            fontSize: (compact ? 32 : 40) * 0.4,
-            backgroundColor: avatarColor(pageName),
-          }}
-        >
-          {pageName.charAt(0).toUpperCase()}
-        </div>
+        {file.brand_logo_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={file.brand_logo_url}
+            alt=""
+            className="rounded-full shrink-0 object-cover"
+            style={{ width: compact ? 32 : 40, height: compact ? 32 : 40 }}
+          />
+        ) : (
+          <div
+            className="rounded-full flex items-center justify-center font-bold text-white shrink-0"
+            style={{
+              width: compact ? 32 : 40,
+              height: compact ? 32 : 40,
+              fontSize: (compact ? 32 : 40) * 0.4,
+              backgroundColor: avatarColor(pageName),
+            }}
+          >
+            {pageName.charAt(0).toUpperCase()}
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <div className={`font-semibold text-[#050505] ${compact ? 'text-xs' : 'text-caption'} truncate`}>
             {pageName}
@@ -149,7 +159,13 @@ export default function SwipeMetaMockup({ file, compact = false, onShare }: Prop
         {file.media_url ? (
           isVideo ? (
             // eslint-disable-next-line jsx-a11y/media-has-caption
-            <video src={file.media_url} controls className="w-full block" />
+            <video
+              src={file.media_url}
+              poster={file.thumbnail_url || undefined}
+              controls
+              preload="metadata"
+              className="w-full block"
+            />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={file.media_url} alt="" loading="lazy" className="w-full block" />

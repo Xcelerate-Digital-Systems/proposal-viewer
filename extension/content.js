@@ -293,6 +293,9 @@ async function openTypePicker(card, btn) {
     $save.textContent = 'Saving…';
     try {
       const payload = scrapeAdCard(card);
+      if (!payload.media_src_url && !payload.thumbnail_src_url) {
+        throw new Error('Could not extract a downloadable media URL from this ad. The video may use a format that cannot be saved.');
+      }
       payload.type_id = state.selectedTypeId;
       if (state.selectedTags.length) payload.tags = state.selectedTags;
       const res = await chrome.runtime.sendMessage({ type: 'IMPORT_AD', payload });
@@ -348,13 +351,36 @@ function scrapeAdCard(card) {
     (a) => !a.href.includes('/ads/library')
   );
   const brand = brandLink?.innerText?.trim() || '';
+  const brand_page_url = brandLink?.href || '';
+
+  // Profile avatar — Meta renders it as a circular img near the brand name
+  const brandImg = card.querySelector('img[src*="fbcdn"][src*="profile"], img[src*="scontent"]');
+  const brand_logo_url = brandImg?.src || '';
 
   const video = card.querySelector('video');
   let media_src_url = '';
   let thumbnail_src_url = '';
   if (video) {
-    media_src_url = video.src || video.querySelector('source')?.src || '';
+    // Prefer <source> src, then video.src — but skip blob: URLs since they
+    // can't be fetched server-side. Fall back to the video's currentSrc.
+    const candidates = [
+      video.querySelector('source')?.src,
+      video.src,
+      video.currentSrc,
+    ].filter((u) => u && !u.startsWith('blob:'));
+    media_src_url = candidates[0] || '';
     thumbnail_src_url = video.poster || '';
+    // If all sources are blob:, try to find the URL from a nearby link or
+    // data attribute that Meta embeds with the actual CDN URL.
+    if (!media_src_url) {
+      const dataEl = card.querySelector('[data-video-url]');
+      if (dataEl) media_src_url = dataEl.getAttribute('data-video-url') || '';
+    }
+    if (!media_src_url) {
+      // Meta Ad Library sometimes puts the real URL in an anchor wrapping the video
+      const videoLink = video.closest('a[href*="video"]') || card.querySelector('a[href*="fbcdn"][href*="video"]');
+      if (videoLink) media_src_url = videoLink.href;
+    }
   } else {
     const imgs = Array.from(card.querySelectorAll('img[src*="fbcdn"]')).filter(
       (i) => !/s\d{2}x\d{2}/.test(i.src)
@@ -402,6 +428,8 @@ function scrapeAdCard(card) {
 
   return {
     brand,
+    brand_page_url,
+    brand_logo_url,
     headline,
     primary_text,
     description,
