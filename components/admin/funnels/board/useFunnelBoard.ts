@@ -149,6 +149,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
       const labelBold = !!style.labelBold;
       const labelBgColor = (style.labelBgColor as string) || '';
       const waypoints = Array.isArray(style.waypoints) ? style.waypoints as { x: number; y: number }[] : [];
+      const edgeType = (style.edgeType as string) || 'bezier';
 
       const resolveSource = () => {
         if (!e.source_shape_id) return `step-${e.source_step_id}`;
@@ -184,6 +185,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
           color: strokeColor, strokeWidth, dashed,
           animated: e.animated || false, arrowDir,
           labelFontSize, labelColor, labelBold, labelBgColor,
+          edgeType,
           waypoints,
           onWaypointsChange: handleWaypointsChange,
           onLabelChange: handleLabelChange,

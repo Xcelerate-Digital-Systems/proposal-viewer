@@ -149,6 +149,12 @@ export default function FeedbackBoardViewer({
             dashed,
             animated: e.animated || false,
             arrowDir,
+            labelFontSize: Number((e.style as Record<string, unknown>)?.labelFontSize) || 16,
+            labelColor: ((e.style as Record<string, unknown>)?.labelColor as string) || '#2B2B2B',
+            labelBold: !!(e.style as Record<string, unknown>)?.labelBold,
+            labelBgColor: ((e.style as Record<string, unknown>)?.labelBgColor as string) || '',
+            edgeType: ((e.style as Record<string, unknown>)?.edgeType as string) || 'bezier',
+            waypoints: Array.isArray((e.style as Record<string, unknown>)?.waypoints) ? (e.style as Record<string, unknown>).waypoints as { x: number; y: number }[] : [],
           },
         } as Edge;
       })

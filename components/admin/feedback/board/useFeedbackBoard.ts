@@ -172,6 +172,10 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
             arrowDir,
             labelFontSize,
             labelColor,
+            labelBold: !!(e.style as Record<string, unknown>)?.labelBold,
+            labelBgColor: ((e.style as Record<string, unknown>)?.labelBgColor as string) || '',
+            edgeType: ((e.style as Record<string, unknown>)?.edgeType as string) || 'bezier',
+            waypoints: Array.isArray((e.style as Record<string, unknown>)?.waypoints) ? (e.style as Record<string, unknown>).waypoints as { x: number; y: number }[] : [],
           },
         } as Edge;
       })

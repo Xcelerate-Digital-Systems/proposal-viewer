@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import {
   ReactFlow, ReactFlowProvider, Controls, MiniMap,
   ConnectionMode, type NodeTypes, type EdgeTypes, type Node, type Edge,
-  MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { AlertTriangle, Monitor, RefreshCw, ServerCrash, WifiOff, Workflow } from 'lucide-react';
@@ -120,7 +119,7 @@ function PublicFunnelInner({ token }: { token: string }) {
       id: `shape-${shape.id}`,
       type: 'shape',
       position: { x: shape.x, y: shape.y },
-      data: { shape: shape as unknown as FeedbackBoardShape, readOnly: true },
+      data: { shape: shape as unknown as FeedbackBoardShape, readOnly: true, linkedFunnelId: shape.linked_funnel_id },
       draggable: false, selectable: false, connectable: false,
     }));
     return [...stepNodes, ...noteNodes, ...shapeNodes];
@@ -145,13 +144,17 @@ function PublicFunnelInner({ token }: { token: string }) {
       type: 'labeled',
       animated: e.animated || false,
       style: { stroke: strokeColor, strokeWidth },
-      markerEnd: { type: MarkerType.ArrowClosed, color: strokeColor, width: 16, height: 16 },
+      markerEnd: undefined,
       data: {
         label: e.label || undefined,
         color: strokeColor, strokeWidth, dashed,
         animated: e.animated || false, arrowDir,
         labelFontSize: Number(style.labelFontSize) || 16,
         labelColor: (style.labelColor as string) || '#2B2B2B',
+        labelBold: !!style.labelBold,
+        labelBgColor: (style.labelBgColor as string) || '',
+        edgeType: (style.edgeType as string) || 'bezier',
+        waypoints: Array.isArray(style.waypoints) ? style.waypoints as { x: number; y: number }[] : [],
       },
     } as Edge;
   }), [boardEdges]);
