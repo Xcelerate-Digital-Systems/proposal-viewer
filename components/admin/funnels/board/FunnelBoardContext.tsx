@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import {
   supabase,
   type Funnel,
+  type FunnelTab,
   type FunnelStep,
   type FunnelStepType,
   type FunnelBoardEdge,
@@ -25,10 +26,11 @@ import { useFunnelStepMutations } from './useFunnelStepMutations';
 import { useFunnelNoteMutations } from './useFunnelNoteMutations';
 import { useFunnelEdgeMutations } from './useFunnelEdgeMutations';
 import { useFunnelShapeMutations } from './useFunnelShapeMutations';
+import { useFunnelTabMutations } from './useFunnelTabMutations';
 
-export type NewStep = Omit<FunnelStep, 'id' | 'funnel_id' | 'company_id' | 'created_at' | 'updated_at' | 'linked_funnel_id'>;
-export type NewShape = Omit<FunnelBoardShape, 'id' | 'funnel_id' | 'company_id' | 'created_at' | 'updated_at' | 'linked_funnel_id'>;
-export type NewEdge = Omit<FunnelBoardEdge, 'id' | 'created_at' | 'updated_at'>;
+export type NewStep = Omit<FunnelStep, 'id' | 'funnel_id' | 'company_id' | 'created_at' | 'updated_at' | 'linked_funnel_id' | 'tab_id' | 'linked_tab_id'>;
+export type NewShape = Omit<FunnelBoardShape, 'id' | 'funnel_id' | 'company_id' | 'created_at' | 'updated_at' | 'linked_funnel_id' | 'tab_id' | 'linked_tab_id'>;
+export type NewEdge = Omit<FunnelBoardEdge, 'id' | 'created_at' | 'updated_at' | 'tab_id'>;
 
 interface ContextValue {
   funnelId: string;
@@ -38,6 +40,16 @@ interface ContextValue {
   funnel: Funnel | null;
   setFunnel: (updater: (prev: Funnel | null) => Funnel | null) => void;
   loading: boolean;
+
+  // Tabs
+  tabs: FunnelTab[];
+  activeTabId: string | null;
+  tabsEnabled: boolean;
+  switchTab: (id: string) => void;
+  createTab: (name?: string) => Promise<FunnelTab | null>;
+  renameTab: (id: string, name: string) => Promise<void>;
+  reorderTabs: (orderedIds: string[]) => Promise<void>;
+  deleteTab: (id: string) => Promise<void>;
 
   selectedStepId: string | null;
   selectStep: (id: string | null) => void;
@@ -100,11 +112,34 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
   const router = useRouter();
 
   const [funnel, setFunnelState] = useState<Funnel | null>(null);
-  const [steps, setSteps] = useState<FunnelStep[]>([]);
-  const [boardEdges, setBoardEdges] = useState<FunnelBoardEdge[]>([]);
-  const [boardNotes, setBoardNotes] = useState<FunnelBoardNote[]>([]);
-  const [shapes, setShapes] = useState<FunnelBoardShape[]>([]);
+  const [allSteps, setAllSteps] = useState<FunnelStep[]>([]);
+  const [allBoardEdges, setAllBoardEdges] = useState<FunnelBoardEdge[]>([]);
+  const [allBoardNotes, setAllBoardNotes] = useState<FunnelBoardNote[]>([]);
+  const [allShapes, setAllShapes] = useState<FunnelBoardShape[]>([]);
+  const [tabs, setTabs] = useState<FunnelTab[]>([]);
+  const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const tabsEnabled = tabs.length > 0;
+
+  // Tab-filtered views — when tabs exist, only show content for the active tab.
+  // When no tabs exist (legacy mode), show everything (tab_id is null for all rows).
+  const steps = useMemo(
+    () => tabsEnabled ? allSteps.filter((s) => s.tab_id === activeTabId) : allSteps,
+    [allSteps, activeTabId, tabsEnabled]
+  );
+  const boardEdges = useMemo(
+    () => tabsEnabled ? allBoardEdges.filter((e) => e.tab_id === activeTabId) : allBoardEdges,
+    [allBoardEdges, activeTabId, tabsEnabled]
+  );
+  const boardNotes = useMemo(
+    () => tabsEnabled ? allBoardNotes.filter((n) => n.tab_id === activeTabId) : allBoardNotes,
+    [allBoardNotes, activeTabId, tabsEnabled]
+  );
+  const shapes = useMemo(
+    () => tabsEnabled ? allShapes.filter((s) => s.tab_id === activeTabId) : allShapes,
+    [allShapes, activeTabId, tabsEnabled]
+  );
 
   // Selection — mutually exclusive
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
@@ -126,6 +161,11 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
     setSelectedStepId(null); setSelectedShapeId(null); setSelectedNoteId(null);
   }, []);
 
+  const switchTab = useCallback((id: string) => {
+    setActiveTabId(id);
+    clearSelection();
+  }, [clearSelection]);
+
   // Shared infrastructure
   const { syncStatus, markSaving, markDone } = useBoardSyncStatus();
   const { recordHistory, undo, redo, canUndo, canRedo, undoLabels, redoLabels } = useBoardHistory();
@@ -138,48 +178,84 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
     setFunnelState(data);
   }, [funnelId, companyId, router]);
 
+  const loadTabs = useCallback(async () => {
+    const { data } = await supabase
+      .from('funnel_tabs').select('*').eq('funnel_id', funnelId).order('position').order('created_at');
+    const loaded = data || [];
+    setTabs(loaded);
+    if (loaded.length > 0) {
+      setActiveTabId((prev) => {
+        if (prev && loaded.some((t) => t.id === prev)) return prev;
+        return loaded[0].id;
+      });
+    }
+  }, [funnelId]);
+
   const loadSteps = useCallback(async () => {
     const { data } = await supabase
       .from('funnel_steps').select('*').eq('funnel_id', funnelId).order('created_at');
-    setSteps(data || []);
+    setAllSteps(data || []);
   }, [funnelId]);
 
   const loadEdges = useCallback(async () => {
     const { data } = await supabase.from('funnel_board_edges').select('*').eq('funnel_id', funnelId);
-    setBoardEdges(data || []);
+    setAllBoardEdges(data || []);
   }, [funnelId]);
 
   const loadNotes = useCallback(async () => {
     const { data } = await supabase.from('funnel_board_notes').select('*').eq('funnel_id', funnelId);
-    setBoardNotes(data || []);
+    setAllBoardNotes(data || []);
   }, [funnelId]);
 
   const loadShapes = useCallback(async () => {
     const { data } = await supabase.from('funnel_board_shapes').select('*').eq('funnel_id', funnelId);
-    setShapes(data || []);
+    setAllShapes(data || []);
   }, [funnelId]);
 
   useEffect(() => {
-    Promise.all([fetchFunnel(), loadSteps(), loadEdges(), loadNotes(), loadShapes()])
+    Promise.all([fetchFunnel(), loadTabs(), loadSteps(), loadEdges(), loadNotes(), loadShapes()])
       .finally(() => setLoading(false));
-  }, [fetchFunnel, loadSteps, loadEdges, loadNotes, loadShapes]);
+  }, [fetchFunnel, loadTabs, loadSteps, loadEdges, loadNotes, loadShapes]);
 
-  // Mutation hooks
+  // Tab mutations
+  const tabMutations = useFunnelTabMutations({
+    funnelId, companyId, tabs, setTabs, setActiveTabId, markSaving, markDone,
+  });
+
+  // After creating the first tab, reload all content so tab_id is reflected
+  const createTab = useCallback(async (name?: string) => {
+    const isFirst = tabs.length === 0;
+    const result = await tabMutations.createTab(name);
+    if (result && isFirst) {
+      await Promise.all([loadSteps(), loadEdges(), loadNotes(), loadShapes()]);
+    }
+    return result;
+  }, [tabs.length, tabMutations, loadSteps, loadEdges, loadNotes, loadShapes]);
+
+  // Mutation hooks — pass activeTabId so new items get stamped
   const stepMutations = useFunnelStepMutations({
-    funnelId, companyId, steps, setSteps, setSelectedStepId,
-    boardEdges, setBoardEdges, markSaving, markDone, recordHistory, loadSteps,
+    funnelId, companyId, activeTabId,
+    steps: allSteps, setSteps: setAllSteps, setSelectedStepId,
+    boardEdges: allBoardEdges, setBoardEdges: setAllBoardEdges,
+    markSaving, markDone, recordHistory, loadSteps,
   });
 
   const noteMutations = useFunnelNoteMutations({
-    funnelId, companyId, boardNotes, setBoardNotes, markSaving, markDone, recordHistory,
+    funnelId, companyId, activeTabId,
+    boardNotes: allBoardNotes, setBoardNotes: setAllBoardNotes,
+    markSaving, markDone, recordHistory,
   });
 
   const edgeMutations = useFunnelEdgeMutations({
-    funnelId, companyId, boardEdges, setBoardEdges, markSaving, markDone, recordHistory, loadEdges,
+    funnelId, companyId, activeTabId,
+    boardEdges: allBoardEdges, setBoardEdges: setAllBoardEdges,
+    markSaving, markDone, recordHistory, loadEdges,
   });
 
   const shapeMutations = useFunnelShapeMutations({
-    funnelId, companyId, shapes, setShapes, boardEdges, setBoardEdges,
+    funnelId, companyId, activeTabId,
+    shapes: allShapes, setShapes: setAllShapes,
+    boardEdges: allBoardEdges, setBoardEdges: setAllBoardEdges,
     markSaving, markDone, recordHistory, loadShapes,
   });
 
@@ -192,10 +268,18 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
     () => ({
       funnelId, companyId, userId,
       funnel, setFunnel, loading,
+      // Tabs
+      tabs, activeTabId, tabsEnabled, switchTab,
+      createTab,
+      renameTab: tabMutations.renameTab,
+      reorderTabs: tabMutations.reorderTabs,
+      deleteTab: tabMutations.deleteTab,
+      // Selection
       selectedStepId, selectStep,
       selectedShapeId, selectShape,
       selectedNoteId, selectNote,
       clearSelection,
+      // Tab-filtered data
       steps,
       ...stepMutations,
       undo, redo, canUndo, canRedo, undoLabels, redoLabels,
@@ -209,6 +293,8 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
     }),
     [
       funnelId, companyId, userId, funnel, setFunnel, loading,
+      tabs, activeTabId, tabsEnabled, switchTab,
+      createTab, tabMutations,
       selectedStepId, selectStep,
       selectedShapeId, selectShape,
       selectedNoteId, selectNote,

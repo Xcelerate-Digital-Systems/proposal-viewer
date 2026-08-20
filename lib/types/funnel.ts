@@ -162,6 +162,16 @@ export function categoryForStepType(t: FunnelStepType): FunnelStepCategory {
   return 'generic';
 }
 
+export type FunnelTab = {
+  id: string;
+  funnel_id: string;
+  company_id: string;
+  name: string;
+  position: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Funnel = {
   id: string;
   company_id: string;
@@ -203,6 +213,8 @@ export type FunnelStep = {
   board_y: number;
   metrics: FunnelStepMetrics;
   linked_funnel_id: string | null;
+  tab_id: string | null;
+  linked_tab_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -245,6 +257,7 @@ export type FunnelBoardEdge = {
    *  routed along this edge. 0-100. Null means "auto / even split". */
   split_percent: number | null;
   style: Record<string, unknown>;
+  tab_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -260,6 +273,7 @@ export type FunnelBoardNote = {
   width: number | null;
   height: number | null;
   font_size: number | null;
+  tab_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -298,6 +312,8 @@ export type FunnelBoardShape = {
   dashed: boolean;
   font_size: number | null;
   linked_funnel_id: string | null;
+  tab_id: string | null;
+  linked_tab_id: string | null;
   created_at: string;
   updated_at: string;
 };

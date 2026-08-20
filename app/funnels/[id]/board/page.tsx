@@ -2,13 +2,14 @@
 
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Copy, ExternalLink, BookmarkPlus, Bookmark, Check, Loader2, AlertCircle, GitBranch } from 'lucide-react';
+import { ArrowLeft, Copy, ExternalLink, BookmarkPlus, Bookmark, Check, Loader2, AlertCircle, GitBranch, Layers } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { FunnelBoard } from '@/components/admin/funnels/board';
 import { useFunnelBoardContext } from '@/components/admin/funnels/board/FunnelBoardContext';
 import FunnelSettingsMenu from '@/components/admin/funnels/board/FunnelSettingsMenu';
 import EmbedMenu from '@/components/admin/funnels/board/EmbedMenu';
 import ScenarioSwitcher from '@/components/admin/funnels/board/ScenarioSwitcher';
+import FunnelTabBar from '@/components/admin/funnels/board/FunnelTabBar';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { supabase, type Funnel } from '@/lib/supabase';
@@ -132,6 +133,19 @@ function BoardContent({ funnelId }: { funnelId: string }) {
           {funnel && (
             <ScenarioSwitcher funnel={funnel} companyId={cid} userId={userId} />
           )}
+          {funnel && !ctx.tabsEnabled && (
+            <button
+              onClick={async () => {
+                const first = await ctx.createTab(funnel.name);
+                if (first) await ctx.createTab('Untitled');
+              }}
+              className="flex items-center gap-1 text-2xs text-muted hover:text-teal px-2 py-1 rounded-lg hover:bg-teal/5 transition-colors shrink-0"
+              title="Split this funnel into tabs"
+            >
+              <Layers size={11} />
+              Add tabs
+            </button>
+          )}
         </div>
 
         {/* Sync status */}
@@ -184,6 +198,18 @@ function BoardContent({ funnelId }: { funnelId: string }) {
           </div>
         )}
       </div>
+
+      {ctx.tabsEnabled && (
+        <FunnelTabBar
+          tabs={ctx.tabs}
+          activeTabId={ctx.activeTabId}
+          onSwitch={ctx.switchTab}
+          onCreate={ctx.createTab}
+          onRename={ctx.renameTab}
+          onReorder={ctx.reorderTabs}
+          onDelete={ctx.deleteTab}
+        />
+      )}
 
       <div className="flex-1 min-h-0">
         {loading ? (

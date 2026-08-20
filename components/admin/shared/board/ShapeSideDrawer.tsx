@@ -2,17 +2,18 @@
 
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, Bold, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 
 const FunnelLinkPicker = lazy(() => import('@/components/admin/funnels/board/FunnelLinkPicker'));
 import { useConfirm } from '@/components/ui/ConfirmDialog';
-import type { FeedbackWaitUnit } from '@/lib/supabase';
+import type { FeedbackWaitUnit, FunnelTab } from '@/lib/supabase';
 import { FUNNEL_COLOR_PRESETS } from '@/lib/types/funnel';
 import {
   parseDecisionContent, serializeDecisionContent,
   parseWaitContent, serializeWaitContent,
   parseActionContent, serializeActionContent,
 } from '@/components/admin/feedback/board/nodes/ShapeNode';
+import { parseTextContent, serializeTextContent } from '@/components/admin/feedback/board/nodes/TextShape';
 
 export interface BoardShape {
   id: string;
@@ -33,6 +34,10 @@ interface Props<T extends BoardShape> {
     currentFunnelId: string;
     linkedFunnelId: string | null;
     onLink: (funnelId: string | null) => void;
+    tabs?: FunnelTab[];
+    currentTabId?: string | null;
+    linkedTabId?: string | null;
+    onLinkTab?: (tabId: string | null) => void;
   };
 }
 
@@ -65,7 +70,8 @@ const WAIT_UNITS: { value: string; label: string }[] = [
 function getEditableLabel(shape: BoardShape): string {
   if (shape.shape_type === 'decision') return parseDecisionContent(shape.content).question;
   if (shape.shape_type === 'wait') return parseWaitContent(shape.content).label ?? '';
-  if (shape.shape_type === 'text' || shape.shape_type === 'rectangle' || shape.shape_type === 'ellipse') {
+  if (shape.shape_type === 'text') return parseTextContent(shape.content).text;
+  if (shape.shape_type === 'rectangle' || shape.shape_type === 'ellipse') {
     return shape.content || '';
   }
   return parseActionContent(shape.content).label ?? '';
@@ -81,20 +87,45 @@ function setEditableLabel(shape: BoardShape, next: string): string | null {
     const cur = parseWaitContent(shape.content);
     return serializeWaitContent({ ...cur, label: trimmed || null });
   }
-  if (shape.shape_type === 'text' || shape.shape_type === 'rectangle' || shape.shape_type === 'ellipse') {
+  if (shape.shape_type === 'text') {
+    const cur = parseTextContent(shape.content);
+    return serializeTextContent({ ...cur, text: trimmed });
+  }
+  if (shape.shape_type === 'rectangle' || shape.shape_type === 'ellipse') {
     return trimmed || null;
   }
   return serializeActionContent({ label: trimmed || null });
 }
 
+const TEXT_BG_COLORS = [
+  { value: '', label: 'None' },
+  { value: '#ffffff', label: 'White' },
+  { value: '#FEF3C7', label: 'Yellow' },
+  { value: '#DCFCE7', label: 'Green' },
+  { value: '#DBEAFE', label: 'Blue' },
+  { value: '#EDE9FE', label: 'Purple' },
+  { value: '#FCE7F3', label: 'Pink' },
+  { value: '#FFEDD5', label: 'Orange' },
+  { value: '#F1F5F9', label: 'Slate' },
+  { value: '#2B2B2B', label: 'Dark' },
+  { value: '#017C87', label: 'Teal' },
+];
+
 export default function ShapeSideDrawer<T extends BoardShape>({ shape, onUpdate, onDelete, onClose, funnelLink }: Props<T>) {
   const confirm = useConfirm();
   const [content, setContent] = useState(() => getEditableLabel(shape));
   useEffect(() => { setContent(getEditableLabel(shape)); }, [shape.id, shape.content]);
+  const textStyle = shape.shape_type === 'text' ? parseTextContent(shape.content) : null;
 
   const commitContent = () => {
     const next = setEditableLabel(shape, content);
     if (next !== (shape.content || null)) onUpdate({ content: next } as Partial<T>);
+  };
+
+  const updateTextStyle = (patch: Partial<{ bold: boolean; bgColor: string; align: 'left' | 'center' | 'right' }>) => {
+    if (!textStyle) return;
+    const next = serializeTextContent({ ...textStyle, ...patch });
+    onUpdate({ content: next } as Partial<T>);
   };
 
   const typeLabel = SHAPE_TYPE_LABELS[shape.shape_type] || 'Shape';
@@ -185,6 +216,10 @@ export default function ShapeSideDrawer<T extends BoardShape>({ shape, onUpdate,
               currentFunnelId={funnelLink.currentFunnelId}
               linkedFunnelId={funnelLink.linkedFunnelId}
               onLink={funnelLink.onLink}
+              tabs={funnelLink.tabs}
+              currentTabId={funnelLink.currentTabId}
+              linkedTabId={funnelLink.linkedTabId}
+              onLinkTab={funnelLink.onLinkTab}
             />
           </Suspense>
         )}
@@ -266,6 +301,78 @@ export default function ShapeSideDrawer<T extends BoardShape>({ shape, onUpdate,
               className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20"
             />
           </Field>
+        )}
+
+        {textStyle && (
+          <>
+            <div>
+              <h4 className="text-2xs uppercase tracking-wider font-semibold text-muted mb-2">Text style</h4>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => updateTextStyle({ bold: !textStyle.bold })}
+                  className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-colors ${
+                    textStyle.bold ? 'border-teal bg-teal/10 text-teal' : 'border-edge text-ink/70 hover:bg-surface'
+                  }`}
+                  title="Bold"
+                >
+                  <Bold size={14} strokeWidth={2.4} />
+                </button>
+                <span className="w-px h-5 bg-edge mx-0.5" />
+                <button
+                  type="button"
+                  onClick={() => updateTextStyle({ align: 'left' })}
+                  className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-colors ${
+                    (!textStyle.align || textStyle.align === 'left') ? 'border-teal bg-teal/10 text-teal' : 'border-edge text-ink/70 hover:bg-surface'
+                  }`}
+                  title="Align left"
+                >
+                  <AlignLeft size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateTextStyle({ align: 'center' })}
+                  className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-colors ${
+                    textStyle.align === 'center' ? 'border-teal bg-teal/10 text-teal' : 'border-edge text-ink/70 hover:bg-surface'
+                  }`}
+                  title="Align center"
+                >
+                  <AlignCenter size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateTextStyle({ align: 'right' })}
+                  className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-colors ${
+                    textStyle.align === 'right' ? 'border-teal bg-teal/10 text-teal' : 'border-edge text-ink/70 hover:bg-surface'
+                  }`}
+                  title="Align right"
+                >
+                  <AlignRight size={14} />
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-2xs uppercase tracking-wider font-semibold text-muted mb-2">Background</h4>
+              <div className="flex flex-wrap gap-1.5">
+                {TEXT_BG_COLORS.map((c) => {
+                  const active = (textStyle.bgColor || '') === c.value;
+                  return (
+                    <button
+                      key={c.value || 'none'}
+                      type="button"
+                      onClick={() => updateTextStyle({ bgColor: c.value })}
+                      className={`w-6 h-6 rounded-lg border transition-transform ${
+                        active ? 'border-ink scale-110' : 'border-edge'
+                      } ${!c.value ? 'bg-[repeating-conic-gradient(#e5e7eb_0%_25%,transparent_0%_50%)] bg-[length:8px_8px]' : ''}`}
+                      style={c.value ? { backgroundColor: c.value } : undefined}
+                      title={c.label}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </>
         )}
       </div>
 

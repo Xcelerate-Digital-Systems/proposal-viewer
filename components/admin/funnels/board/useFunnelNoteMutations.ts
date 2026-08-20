@@ -9,6 +9,7 @@ import type { HistoryOp } from '@/components/admin/feedback/board/useBoardHistor
 interface Deps {
   funnelId: string;
   companyId: string;
+  activeTabId: string | null;
   boardNotes: FunnelBoardNote[];
   setBoardNotes: React.Dispatch<React.SetStateAction<FunnelBoardNote[]>>;
   markSaving: () => void;
@@ -18,7 +19,7 @@ interface Deps {
 
 export function useFunnelNoteMutations(deps: Deps) {
   const toast = useToast();
-  const { funnelId, companyId, boardNotes, setBoardNotes, markSaving, markDone, recordHistory } = deps;
+  const { funnelId, companyId, activeTabId, boardNotes, setBoardNotes, markSaving, markDone, recordHistory } = deps;
 
   const addNote = useCallback(async (position?: { x: number; y: number }): Promise<FunnelBoardNote | null> => {
     const existing = boardNotes.length;
@@ -33,6 +34,7 @@ export function useFunnelNoteMutations(deps: Deps) {
         content: '',
         color: NOTE_COLORS[existing % NOTE_COLORS.length].value,
         board_x: x, board_y: y, width: 200, height: 150, font_size: 14,
+        tab_id: activeTabId,
       })
       .select().single();
     markDone(!error);
@@ -51,7 +53,7 @@ export function useFunnelNoteMutations(deps: Deps) {
       },
     });
     return data;
-  }, [funnelId, companyId, boardNotes.length, toast, markSaving, markDone, setBoardNotes, recordHistory]);
+  }, [funnelId, companyId, activeTabId, boardNotes.length, toast, markSaving, markDone, setBoardNotes, recordHistory]);
 
   const updateNote = useCallback(async (id: string, changes: Partial<FunnelBoardNote>) => {
     const before = boardNotes.find((n) => n.id === id);

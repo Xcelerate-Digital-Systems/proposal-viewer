@@ -9,6 +9,7 @@ import type { NewShape } from './FunnelBoardContext';
 interface Deps {
   funnelId: string;
   companyId: string;
+  activeTabId: string | null;
   shapes: FunnelBoardShape[];
   setShapes: React.Dispatch<React.SetStateAction<FunnelBoardShape[]>>;
   boardEdges: FunnelBoardEdge[];
@@ -22,7 +23,7 @@ interface Deps {
 export function useFunnelShapeMutations(deps: Deps) {
   const toast = useToast();
   const {
-    funnelId, companyId, shapes, setShapes,
+    funnelId, companyId, activeTabId, shapes, setShapes,
     boardEdges, setBoardEdges, markSaving, markDone, recordHistory, loadShapes,
   } = deps;
 
@@ -30,7 +31,7 @@ export function useFunnelShapeMutations(deps: Deps) {
     markSaving();
     const { data, error } = await supabase
       .from('funnel_board_shapes')
-      .insert({ ...shape, funnel_id: funnelId, company_id: companyId })
+      .insert({ ...shape, funnel_id: funnelId, company_id: companyId, tab_id: activeTabId })
       .select().single();
     markDone(!error);
     if (error) { toast.error('Failed to create shape'); return null; }
@@ -50,7 +51,7 @@ export function useFunnelShapeMutations(deps: Deps) {
       });
     }
     return data;
-  }, [funnelId, companyId, toast, recordHistory, markSaving, markDone, setShapes]);
+  }, [funnelId, companyId, activeTabId, toast, recordHistory, markSaving, markDone, setShapes]);
 
   const updateShape = useCallback(async (id: string, patch: Partial<FunnelBoardShape>) => {
     const before = shapes.find((s) => s.id === id);

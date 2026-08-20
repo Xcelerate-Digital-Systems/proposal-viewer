@@ -27,16 +27,18 @@ export async function duplicateFunnelAsScenario(opts: {
   const { source, companyId, userId, scenarioName, asTemplate, parentFunnelIdOverride } = opts;
 
   // 1. Load all of the source's child rows in parallel.
-  const [stepsRes, edgesRes, notesRes, shapesRes] = await Promise.all([
+  const [stepsRes, edgesRes, notesRes, shapesRes, tabsRes] = await Promise.all([
     supabase.from('funnel_steps').select('*').eq('funnel_id', source.id),
     supabase.from('funnel_board_edges').select('*').eq('funnel_id', source.id),
     supabase.from('funnel_board_notes').select('*').eq('funnel_id', source.id),
     supabase.from('funnel_board_shapes').select('*').eq('funnel_id', source.id),
+    supabase.from('funnel_tabs').select('*').eq('funnel_id', source.id).order('position'),
   ]);
   const srcSteps  = (stepsRes.data  || []) as FunnelStep[];
   const srcEdges  = (edgesRes.data  || []) as FunnelBoardEdge[];
   const srcNotes  = (notesRes.data  || []) as FunnelBoardNote[];
   const srcShapes = (shapesRes.data || []) as FunnelBoardShape[];
+  const srcTabs   = (tabsRes.data   || []) as { id: string; name: string; position: number }[];
 
   // 2. Create the new funnel row pointing back at the source.
   const { data: newFunnel, error: fErr } = await supabase
@@ -58,11 +60,24 @@ export async function duplicateFunnelAsScenario(opts: {
     .select().single();
   if (fErr || !newFunnel) return null;
 
+  // 2b. Tabs: clone and build old→new id map.
+  const tabIdMap = new Map<string, string>();
+  if (srcTabs.length > 0) {
+    const tabRows = srcTabs.map((t) => ({
+      funnel_id: newFunnel.id, company_id: companyId,
+      name: t.name, position: t.position,
+    }));
+    const { data: insertedTabs } = await supabase.from('funnel_tabs').insert(tabRows).select();
+    insertedTabs?.forEach((row, i) => { tabIdMap.set(srcTabs[i].id, row.id); });
+  }
+
   // 3. Steps: insert with new uuids, capture the old→new id map for edges.
   const stepRows = srcSteps.map((s) => ({
     funnel_id: newFunnel.id, company_id: companyId,
     step_type: s.step_type, label: s.label, icon: s.icon, url: s.url, color: s.color,
     board_x: s.board_x, board_y: s.board_y, metrics: s.metrics, linked_funnel_id: s.linked_funnel_id,
+    tab_id: s.tab_id ? tabIdMap.get(s.tab_id) ?? null : null,
+    linked_tab_id: s.linked_tab_id ? tabIdMap.get(s.linked_tab_id) ?? null : null,
   }));
   const stepIdMap = new Map<string, string>();
   if (stepRows.length > 0) {
@@ -77,6 +92,8 @@ export async function duplicateFunnelAsScenario(opts: {
     x: sh.x, y: sh.y, width: sh.width, height: sh.height,
     end_x: sh.end_x, end_y: sh.end_y, content: sh.content,
     color: sh.color, stroke_width: sh.stroke_width, dashed: sh.dashed, font_size: sh.font_size, linked_funnel_id: sh.linked_funnel_id,
+    tab_id: sh.tab_id ? tabIdMap.get(sh.tab_id) ?? null : null,
+    linked_tab_id: sh.linked_tab_id ? tabIdMap.get(sh.linked_tab_id) ?? null : null,
   }));
   const shapeIdMap = new Map<string, string>();
   if (shapeRows.length > 0) {
@@ -91,6 +108,7 @@ export async function duplicateFunnelAsScenario(opts: {
       content: n.content, color: n.color,
       board_x: n.board_x, board_y: n.board_y,
       width: n.width, height: n.height, font_size: n.font_size,
+      tab_id: n.tab_id ? tabIdMap.get(n.tab_id) ?? null : null,
     })));
   }
 
@@ -117,6 +135,7 @@ export async function duplicateFunnelAsScenario(opts: {
           source_handle: e.source_handle, target_handle: e.target_handle,
           label: e.label, edge_type: e.edge_type, animated: e.animated,
           split_percent: e.split_percent, style: e.style,
+          tab_id: e.tab_id ? tabIdMap.get(e.tab_id) ?? null : null,
         };
       })
       .filter((r): r is NonNullable<typeof r> => r !== null);

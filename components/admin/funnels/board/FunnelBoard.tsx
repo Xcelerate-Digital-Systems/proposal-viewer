@@ -352,7 +352,11 @@ function FunnelBoardInner() {
               funnelLink={{
                 currentFunnelId: ctx.funnel!.id,
                 linkedFunnelId: selectedShape.linked_funnel_id,
-                onLink: (id) => ctx.updateShape(selectedShape.id, { linked_funnel_id: id } as any),
+                onLink: (id) => ctx.updateShape(selectedShape.id, { linked_funnel_id: id, linked_tab_id: id ? null : selectedShape.linked_tab_id } as any),
+                tabs: ctx.tabs,
+                currentTabId: ctx.activeTabId,
+                linkedTabId: selectedShape.linked_tab_id,
+                onLinkTab: (id) => ctx.updateShape(selectedShape.id, { linked_tab_id: id, linked_funnel_id: id ? null : selectedShape.linked_funnel_id } as any),
               }}
             />
           )}
@@ -374,6 +378,8 @@ function FunnelBoardInner() {
               onUpdate={(patch) => ctx.updateStep(selectedStep.id, patch)}
               onDelete={() => ctx.deleteStep(selectedStep.id)}
               onClose={() => ctx.selectStep(null)}
+              tabs={ctx.tabs}
+              activeTabId={ctx.activeTabId}
             />
           )}
         </AnimatePresence>

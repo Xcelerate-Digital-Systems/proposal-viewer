@@ -9,6 +9,7 @@ import type { HistoryOp } from '@/components/admin/feedback/board/useBoardHistor
 interface Deps {
   funnelId: string;
   companyId: string;
+  activeTabId: string | null;
   steps: FunnelStep[];
   setSteps: React.Dispatch<React.SetStateAction<FunnelStep[]>>;
   setSelectedStepId: React.Dispatch<React.SetStateAction<string | null>>;
@@ -23,7 +24,7 @@ interface Deps {
 export function useFunnelStepMutations(deps: Deps) {
   const toast = useToast();
   const {
-    funnelId, companyId, steps, setSteps, setSelectedStepId,
+    funnelId, companyId, activeTabId, steps, setSteps, setSelectedStepId,
     boardEdges, setBoardEdges, markSaving, markDone, recordHistory, loadSteps,
   } = deps;
 
@@ -49,6 +50,7 @@ export function useFunnelStepMutations(deps: Deps) {
           board_x: Math.round(position.x),
           board_y: Math.round(position.y),
           metrics: {},
+          tab_id: activeTabId,
         })
         .select().single();
       markDone(!error);
@@ -67,7 +69,7 @@ export function useFunnelStepMutations(deps: Deps) {
       });
       return data;
     },
-    [funnelId, companyId, toast, recordHistory, insertStepRow, markSaving, markDone, setSteps, setSelectedStepId]
+    [funnelId, companyId, activeTabId, toast, recordHistory, insertStepRow, markSaving, markDone, setSteps, setSelectedStepId]
   );
 
   const updateStep = useCallback(async (id: string, patch: Partial<FunnelStep>) => {

@@ -34,6 +34,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
 
     const res = NextResponse.json({
       funnel: data.funnel,
+      tabs: data.tabs || [],
       steps: data.steps || [],
       boardEdges: data.boardEdges || [],
       boardNotes: data.boardNotes || [],

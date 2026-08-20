@@ -29,6 +29,7 @@ export interface FunnelStepNodeData extends Record<string, unknown> {
   readOnly?: boolean;
   onUpdate?: (id: string, patch: Partial<FunnelStep>) => void;
   onDelete?: (id: string) => void;
+  onNavigateTab?: (tabId: string) => void;
   forecastVisitors?: number;
   forecastConversions?: number;
 }
@@ -233,7 +234,7 @@ function PageHandles({ readOnly }: { readOnly?: boolean }) {
 
 function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   const {
-    step, readOnly, onUpdate, onDelete,
+    step, readOnly, onUpdate, onDelete, onNavigateTab,
   } = data as FunnelStepNodeData;
   const defaults = FUNNEL_STEP_DEFAULTS[step.step_type] ?? FUNNEL_STEP_DEFAULTS.generic;
   const iconSlug = step.icon || defaults.icon;
@@ -244,6 +245,8 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   const forecast = useForecast();
   const isSelected = selected || ctx?.selectedStepId === step.id;
   const hasLinkedFunnel = !!step.linked_funnel_id;
+  const hasLinkedTab = !!step.linked_tab_id;
+  const hasLink = hasLinkedFunnel || hasLinkedTab;
   const visitors = forecast?.visitorsByStep.get(step.id) ?? 0;
   const conversions = forecast?.conversionsByStep.get(step.id) ?? 0;
   const hasMetrics = visitors > 0;
@@ -315,13 +318,21 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   const pageBody = (
     <div onClick={handleBodyClick} className="group relative">
       <PageMockup stepType={step.step_type} tint={tint} selected={isSelected} />
-      {hasLinkedFunnel && (
+      {hasLink && (
         <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center shadow-sm pointer-events-none z-10">
-          <ArrowUpRight size={11} strokeWidth={2.5} />
+          {hasLinkedTab ? <Layers size={11} strokeWidth={2.5} /> : <ArrowUpRight size={11} strokeWidth={2.5} />}
         </div>
       )}
       {!readOnly && (
         <div className="absolute inset-0 rounded-lg bg-ink/45 text-white flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          {hasLinkedTab && (
+            <button type="button"
+              onClick={(e) => { e.stopPropagation(); ctx?.switchTab(step.linked_tab_id!); onNavigateTab?.(step.linked_tab_id!); }}
+              className="w-7 h-7 rounded-full bg-white/15 hover:bg-teal/80 flex items-center justify-center"
+              title="Go to linked tab">
+              <Layers size={14} />
+            </button>
+          )}
           {hasLinkedFunnel && (
             <button type="button"
               onClick={(e) => { e.stopPropagation(); router.push(`/funnels/${step.linked_funnel_id}`); }}
@@ -344,6 +355,15 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
             title="Delete step">
             <Trash2 size={14} />
           </button>
+        </div>
+      )}
+      {readOnly && hasLinkedTab && onNavigateTab && (
+        <div
+          className="absolute inset-0 rounded-lg bg-ink/35 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+          onClick={(e) => { e.stopPropagation(); onNavigateTab(step.linked_tab_id!); }}
+          title="Go to linked tab"
+        >
+          <Layers size={18} />
         </div>
       )}
     </div>
@@ -358,13 +378,21 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
       style={{ width: ICON_SIZE, height: ICON_SIZE, backgroundColor: tint }}
     >
       <StepIcon slug={iconSlug} size={40} brandSize={36} />
-      {hasLinkedFunnel && (
+      {hasLink && (
         <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center shadow-sm pointer-events-none z-10">
-          <ArrowUpRight size={11} strokeWidth={2.5} />
+          {hasLinkedTab ? <Layers size={11} strokeWidth={2.5} /> : <ArrowUpRight size={11} strokeWidth={2.5} />}
         </div>
       )}
       {!readOnly && (
         <div className="absolute inset-0 rounded-full bg-ink/55 text-white flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          {hasLinkedTab && (
+            <button type="button"
+              onClick={(e) => { e.stopPropagation(); ctx?.switchTab(step.linked_tab_id!); onNavigateTab?.(step.linked_tab_id!); }}
+              className="w-7 h-7 rounded-full bg-white/15 hover:bg-teal/80 flex items-center justify-center"
+              title="Go to linked tab">
+              <Layers size={14} />
+            </button>
+          )}
           {hasLinkedFunnel && (
             <button type="button"
               onClick={(e) => { e.stopPropagation(); router.push(`/funnels/${step.linked_funnel_id}`); }}
@@ -387,6 +415,15 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
             title="Delete step">
             <Trash2 size={14} />
           </button>
+        </div>
+      )}
+      {readOnly && hasLinkedTab && onNavigateTab && (
+        <div
+          className="absolute inset-0 rounded-full bg-ink/35 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+          onClick={(e) => { e.stopPropagation(); onNavigateTab(step.linked_tab_id!); }}
+          title="Go to linked tab"
+        >
+          <Layers size={18} />
         </div>
       )}
     </div>

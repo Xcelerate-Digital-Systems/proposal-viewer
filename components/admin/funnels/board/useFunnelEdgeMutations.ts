@@ -9,6 +9,7 @@ import type { NewEdge } from './FunnelBoardContext';
 interface Deps {
   funnelId: string;
   companyId: string;
+  activeTabId: string | null;
   boardEdges: FunnelBoardEdge[];
   setBoardEdges: React.Dispatch<React.SetStateAction<FunnelBoardEdge[]>>;
   markSaving: () => void;
@@ -19,7 +20,7 @@ interface Deps {
 
 export function useFunnelEdgeMutations(deps: Deps) {
   const toast = useToast();
-  const { funnelId, companyId, boardEdges, setBoardEdges, markSaving, markDone, recordHistory, loadEdges } = deps;
+  const { funnelId, companyId, activeTabId, boardEdges, setBoardEdges, markSaving, markDone, recordHistory, loadEdges } = deps;
 
   const insertEdgeRow = useCallback(async (row: FunnelBoardEdge) => {
     setBoardEdges((prev) => prev.some((e) => e.id === row.id) ? prev : [...prev, row]);
@@ -30,7 +31,7 @@ export function useFunnelEdgeMutations(deps: Deps) {
     markSaving();
     const { data, error } = await supabase
       .from('funnel_board_edges')
-      .insert({ ...edge, funnel_id: funnelId, company_id: companyId })
+      .insert({ ...edge, funnel_id: funnelId, company_id: companyId, tab_id: activeTabId })
       .select().single();
     markDone(!error);
     if (error) { toast.error('Failed to create connection'); return null; }
@@ -47,7 +48,7 @@ export function useFunnelEdgeMutations(deps: Deps) {
       });
     }
     return data;
-  }, [funnelId, companyId, toast, recordHistory, insertEdgeRow, markSaving, markDone, setBoardEdges]);
+  }, [funnelId, companyId, activeTabId, toast, recordHistory, insertEdgeRow, markSaving, markDone, setBoardEdges]);
 
   const updateEdge = useCallback(async (id: string, patch: Partial<FunnelBoardEdge>) => {
     const before = boardEdges.find((e) => e.id === id);

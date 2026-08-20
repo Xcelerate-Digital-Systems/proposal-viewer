@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { X, ExternalLink, ArrowUpRight, Trash2, Check, Search, ChevronDown, ChevronRight } from 'lucide-react';
-import type { FunnelStep, FunnelStepMetrics } from '@/lib/supabase';
+import type { FunnelStep, FunnelStepMetrics, FunnelTab } from '@/lib/supabase';
 import {
   FUNNEL_STEP_DEFAULTS, FUNNEL_ICON_LIBRARY, FUNNEL_COLOR_PRESETS,
 } from '@/lib/types/funnel';
@@ -14,6 +14,8 @@ interface Props {
   onUpdate: (patch: Partial<FunnelStep>) => void;
   onDelete: () => void;
   onClose: () => void;
+  tabs?: FunnelTab[];
+  activeTabId?: string | null;
 }
 
 const RECURRING_TYPES = new Set(['offer_subscription', 'offer_saas', 'offer_trial']);
@@ -21,6 +23,7 @@ const RECURRING_TYPES = new Set(['offer_subscription', 'offer_saas', 'offer_tria
 export default function StepSideDrawer({
   step,
   onUpdate, onDelete, onClose,
+  tabs, activeTabId,
 }: Props) {
   const defaults = FUNNEL_STEP_DEFAULTS[step.step_type] ?? FUNNEL_STEP_DEFAULTS.generic;
 
@@ -132,11 +135,15 @@ export default function StepSideDrawer({
           </div>
         </Field>
 
-        {/* Link to another funnel */}
+        {/* Link to tab or funnel */}
         <FunnelLinkPicker
           currentFunnelId={step.funnel_id}
           linkedFunnelId={step.linked_funnel_id}
-          onLink={(id) => onUpdate({ linked_funnel_id: id })}
+          onLink={(id) => onUpdate({ linked_funnel_id: id, linked_tab_id: id ? null : step.linked_tab_id } as any)}
+          tabs={tabs}
+          currentTabId={activeTabId}
+          linkedTabId={step.linked_tab_id}
+          onLinkTab={(id) => onUpdate({ linked_tab_id: id, linked_funnel_id: id ? null : step.linked_funnel_id } as any)}
         />
 
         {/* Metrics — first after identity fields so users find it immediately */}

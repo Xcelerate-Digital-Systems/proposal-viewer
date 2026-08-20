@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, use, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, use, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   ReactFlow, ReactFlowProvider, Controls, MiniMap,
@@ -9,7 +9,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { AlertTriangle, Monitor, RefreshCw, ServerCrash, WifiOff, Workflow } from 'lucide-react';
 import type {
-  Funnel, FunnelStep, FunnelBoardEdge, FunnelBoardNote, FunnelBoardShape,
+  Funnel, FunnelStep, FunnelTab, FunnelBoardEdge, FunnelBoardNote, FunnelBoardShape,
   FeedbackBoardShape, FeedbackBoardNote,
 } from '@/lib/supabase';
 import { type CompanyBranding } from '@/hooks/useProposal';
@@ -22,6 +22,7 @@ import FunnelStepNode from '@/components/admin/funnels/board/nodes/FunnelStepNod
 import StickyNoteNode from '@/components/admin/feedback/board/nodes/StickyNoteNode';
 import ShapeNode from '@/components/admin/feedback/board/nodes/ShapeNode';
 import LabeledEdge from '@/components/admin/feedback/board/edges/LabeledEdge';
+import FunnelTabBar from '@/components/admin/funnels/board/FunnelTabBar';
 
 const nodeTypes: NodeTypes = {
   funnelStep: FunnelStepNode,
@@ -43,10 +44,12 @@ function PublicFunnelInner({ token }: { token: string }) {
   const searchParams = useSearchParams();
   const isEmbed = searchParams.get('embed') === 'true';
   const [funnel, setFunnel] = useState<Funnel | null>(null);
-  const [steps, setSteps] = useState<FunnelStep[]>([]);
-  const [boardEdges, setBoardEdges] = useState<FunnelBoardEdge[]>([]);
-  const [boardNotes, setBoardNotes] = useState<FunnelBoardNote[]>([]);
-  const [boardShapes, setBoardShapes] = useState<FunnelBoardShape[]>([]);
+  const [allSteps, setAllSteps] = useState<FunnelStep[]>([]);
+  const [allBoardEdges, setAllBoardEdges] = useState<FunnelBoardEdge[]>([]);
+  const [allBoardNotes, setAllBoardNotes] = useState<FunnelBoardNote[]>([]);
+  const [allBoardShapes, setAllBoardShapes] = useState<FunnelBoardShape[]>([]);
+  const [tabs, setTabs] = useState<FunnelTab[]>([]);
+  const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
   const [brandingLoaded, setBrandingLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -69,10 +72,13 @@ function PublicFunnelInner({ token }: { token: string }) {
         }
         const data = await res.json();
         setFunnel(data.funnel);
-        setSteps(data.steps || []);
-        setBoardEdges(data.boardEdges || []);
-        setBoardNotes(data.boardNotes || []);
-        setBoardShapes(data.boardShapes || []);
+        setAllSteps(data.steps || []);
+        setAllBoardEdges(data.boardEdges || []);
+        setAllBoardNotes(data.boardNotes || []);
+        setAllBoardShapes(data.boardShapes || []);
+        const loadedTabs: FunnelTab[] = data.tabs || [];
+        setTabs(loadedTabs);
+        if (loadedTabs.length > 0) setActiveTabId(loadedTabs[0].id);
 
         if (data.funnel?.company_id) {
           const brandRes = await fetch(
@@ -97,6 +103,29 @@ function PublicFunnelInner({ token }: { token: string }) {
     return () => { document.title = 'Funnel'; };
   }, [funnel]);
 
+  const tabsEnabled = tabs.length > 0;
+
+  const steps = useMemo(
+    () => tabsEnabled ? allSteps.filter((s) => s.tab_id === activeTabId) : allSteps,
+    [allSteps, activeTabId, tabsEnabled]
+  );
+  const boardEdges = useMemo(
+    () => tabsEnabled ? allBoardEdges.filter((e) => e.tab_id === activeTabId) : allBoardEdges,
+    [allBoardEdges, activeTabId, tabsEnabled]
+  );
+  const boardNotes = useMemo(
+    () => tabsEnabled ? allBoardNotes.filter((n) => n.tab_id === activeTabId) : allBoardNotes,
+    [allBoardNotes, activeTabId, tabsEnabled]
+  );
+  const boardShapes = useMemo(
+    () => tabsEnabled ? allBoardShapes.filter((s) => s.tab_id === activeTabId) : allBoardShapes,
+    [allBoardShapes, activeTabId, tabsEnabled]
+  );
+
+  const handleNavigateTab = useCallback((tabId: string) => {
+    setActiveTabId(tabId);
+  }, []);
+
   const nodes: Node[] = useMemo(() => {
     const stepNodes: Node[] = steps.map((step) => ({
       id: `step-${step.id}`,
@@ -105,6 +134,7 @@ function PublicFunnelInner({ token }: { token: string }) {
       data: {
         step,
         readOnly: true,
+        onNavigateTab: tabsEnabled ? handleNavigateTab : undefined,
       },
       draggable: false, selectable: false, connectable: false,
     }));
@@ -123,7 +153,7 @@ function PublicFunnelInner({ token }: { token: string }) {
       draggable: false, selectable: false, connectable: false,
     }));
     return [...stepNodes, ...noteNodes, ...shapeNodes];
-  }, [steps, boardNotes, boardShapes]);
+  }, [steps, boardNotes, boardShapes, tabsEnabled, handleNavigateTab]);
 
   const edges: Edge[] = useMemo(() => boardEdges.map((e) => {
     const style = (e.style || {}) as Record<string, unknown>;
@@ -287,6 +317,15 @@ function PublicFunnelInner({ token }: { token: string }) {
               </div>
             </div>
           </div>
+        )}
+
+        {tabsEnabled && (
+          <FunnelTabBar
+            tabs={tabs}
+            activeTabId={activeTabId}
+            onSwitch={setActiveTabId}
+            readOnly
+          />
         )}
 
         <div className="flex-1 min-h-0 bg-notebook relative" role="region" aria-label={`${funnel.name} funnel canvas`}>
