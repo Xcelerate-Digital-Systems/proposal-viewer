@@ -1,17 +1,20 @@
 'use client';
 
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useCallback, useRef } from 'react';
 import {
   EdgeLabelRenderer,
   getBezierPath,
   getStraightPath,
   getSmoothStepPath,
   Position,
+  useReactFlow,
   type EdgeProps,
 } from '@xyflow/react';
 
 export type LabeledEdgeArrowDir = 'none' | 'source' | 'target' | 'both';
 export type LabeledEdgePathType = 'bezier' | 'straight' | 'step';
+
+export interface EdgeWaypoint { x: number; y: number }
 
 export interface LabeledEdgeData extends Record<string, unknown> {
   label?: string;
@@ -19,14 +22,12 @@ export interface LabeledEdgeData extends Record<string, unknown> {
   strokeWidth?: number;
   dashed?: boolean;
   animated?: boolean;
-  /** Which end(s) of the edge draw an arrowhead. Defaults to 'target'. */
   arrowDir?: LabeledEdgeArrowDir;
-  /** Label font size in px. Defaults to 16. */
   labelFontSize?: number;
-  /** Label text color (hex). Defaults to ink. */
   labelColor?: string;
-  /** Edge path type. Defaults to 'bezier'. */
   edgeType?: LabeledEdgePathType;
+  waypoints?: EdgeWaypoint[];
+  onWaypointsChange?: (edgeId: string, waypoints: EdgeWaypoint[]) => void;
 }
 
 const ARROW_LEN = 12;
@@ -66,6 +67,132 @@ function arrowHeadPath(x: number, y: number, angleRad: number): string {
   return `M ${p1x} ${p1y} L ${x} ${y} L ${p2x} ${p2y}`;
 }
 
+function buildWaypointPath(points: { x: number; y: number }[]): string {
+  if (points.length < 2) return '';
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 1; i < points.length; i++) d += ` L ${points[i].x} ${points[i].y}`;
+  return d;
+}
+
+function WaypointHandle({
+  x, y, edgeId, index, waypoints, onWaypointsChange, color,
+}: {
+  x: number; y: number; edgeId: string; index: number;
+  waypoints: EdgeWaypoint[]; onWaypointsChange: (id: string, wps: EdgeWaypoint[]) => void;
+  color: string;
+}) {
+  const { screenToFlowPosition } = useReactFlow();
+  const dragging = useRef(false);
+
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    dragging.current = true;
+    const el = e.currentTarget as HTMLElement;
+    el.setPointerCapture(e.pointerId);
+  }, []);
+
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+    const next = [...waypoints];
+    next[index] = { x: pos.x, y: pos.y };
+    onWaypointsChange(edgeId, next);
+  }, [edgeId, index, waypoints, onWaypointsChange, screenToFlowPosition]);
+
+  const onPointerUp = useCallback(() => { dragging.current = false; }, []);
+
+  const onDoubleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = waypoints.filter((_, i) => i !== index);
+    onWaypointsChange(edgeId, next);
+  }, [edgeId, index, waypoints, onWaypointsChange]);
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`,
+        pointerEvents: 'all',
+        zIndex: 10,
+      }}
+      className="nodrag nopan"
+    >
+      <div
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onDoubleClick={onDoubleClick}
+        className="w-3 h-3 rounded-full border-2 border-white cursor-grab active:cursor-grabbing shadow-sm"
+        style={{ backgroundColor: color }}
+        title="Drag to bend · double-click to remove"
+      />
+    </div>
+  );
+}
+
+function MidpointHandle({
+  x, y, edgeId, insertIndex, waypoints, onWaypointsChange,
+}: {
+  x: number; y: number; edgeId: string; insertIndex: number;
+  waypoints: EdgeWaypoint[]; onWaypointsChange: (id: string, wps: EdgeWaypoint[]) => void;
+}) {
+  const { screenToFlowPosition } = useReactFlow();
+  const dragging = useRef(false);
+  const inserted = useRef(false);
+
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    dragging.current = true;
+    inserted.current = false;
+    const el = e.currentTarget as HTMLElement;
+    el.setPointerCapture(e.pointerId);
+  }, []);
+
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+    if (!inserted.current) {
+      inserted.current = true;
+      const next = [...waypoints];
+      next.splice(insertIndex, 0, { x: pos.x, y: pos.y });
+      onWaypointsChange(edgeId, next);
+    } else {
+      const next = [...waypoints];
+      if (next[insertIndex]) {
+        next[insertIndex] = { x: pos.x, y: pos.y };
+        onWaypointsChange(edgeId, next);
+      }
+    }
+  }, [edgeId, insertIndex, waypoints, onWaypointsChange, screenToFlowPosition]);
+
+  const onPointerUp = useCallback(() => {
+    dragging.current = false;
+    inserted.current = false;
+  }, []);
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`,
+        pointerEvents: 'all',
+        zIndex: 8,
+      }}
+      className="nodrag nopan"
+    >
+      <div
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        className="w-2.5 h-2.5 rounded-full bg-ink/20 hover:bg-teal/60 cursor-grab transition-colors"
+        title="Drag to add bend point"
+      />
+    </div>
+  );
+}
+
 function LabeledEdgeComponent({
   id,
   sourceX,
@@ -93,6 +220,9 @@ function LabeledEdgeComponent({
   const animated = edgeData.animated || false;
   const arrowDir: LabeledEdgeArrowDir = edgeData.arrowDir ?? 'target';
   const edgeType: LabeledEdgePathType = edgeData.edgeType ?? 'bezier';
+  const waypoints = edgeData.waypoints || [];
+  const onWaypointsChange = edgeData.onWaypointsChange;
+  const hasWaypoints = waypoints.length > 0;
 
   const SNAP_THRESHOLD = 8;
   const dy = Math.abs(targetY - sourceY);
@@ -100,52 +230,67 @@ function LabeledEdgeComponent({
   const nearlyHorizontal = dy < SNAP_THRESHOLD && dx > SNAP_THRESHOLD;
   const nearlyVertical = dx < SNAP_THRESHOLD && dy > SNAP_THRESHOLD;
 
-  // Compute snapped coordinates for near-straight connections
   const snappedSourceY = nearlyHorizontal ? (sourceY + targetY) / 2 : sourceY;
   const snappedTargetY = nearlyHorizontal ? (sourceY + targetY) / 2 : targetY;
   const snappedSourceX = nearlyVertical ? (sourceX + targetX) / 2 : sourceX;
   const snappedTargetX = nearlyVertical ? (sourceX + targetX) / 2 : targetX;
 
-  const useStraight = edgeType === 'straight' || ((edgeType === 'bezier') && (nearlyHorizontal || nearlyVertical));
+  const useStraight = !hasWaypoints && (edgeType === 'straight' || ((edgeType === 'bezier') && (nearlyHorizontal || nearlyVertical)));
 
-  const [edgePath, labelX, labelY] = useStraight
-    ? getStraightPath({
-        sourceX: snappedSourceX,
-        sourceY: snappedSourceY,
-        targetX: snappedTargetX,
-        targetY: snappedTargetY,
-      })
-    : edgeType === 'step'
-      ? getSmoothStepPath({
-          sourceX,
-          sourceY,
-          sourcePosition,
-          targetX,
-          targetY,
-          targetPosition,
-          borderRadius: 8,
-        })
-      : getBezierPath({
-          sourceX,
-          sourceY,
-          sourcePosition,
-          targetX,
-          targetY,
-          targetPosition,
-        });
+  // Build path — waypoints override the normal path computation
+  let edgePath: string;
+  let labelX: number;
+  let labelY: number;
 
-  // Bias label toward the source so it doesn't sit under the arrowhead.
-  // For short edges (<120px), use 0.5 (centre) to avoid overlap.
+  if (hasWaypoints) {
+    const allPoints = [{ x: sourceX, y: sourceY }, ...waypoints, { x: targetX, y: targetY }];
+    edgePath = buildWaypointPath(allPoints);
+    const mid = Math.floor(allPoints.length / 2);
+    labelX = (allPoints[mid - 1].x + allPoints[mid].x) / 2;
+    labelY = (allPoints[mid - 1].y + allPoints[mid].y) / 2;
+  } else if (useStraight) {
+    [edgePath, labelX, labelY] = getStraightPath({
+      sourceX: snappedSourceX, sourceY: snappedSourceY,
+      targetX: snappedTargetX, targetY: snappedTargetY,
+    });
+  } else if (edgeType === 'step') {
+    [edgePath, labelX, labelY] = getSmoothStepPath({
+      sourceX, sourceY, sourcePosition,
+      targetX, targetY, targetPosition, borderRadius: 8,
+    });
+  } else {
+    [edgePath, labelX, labelY] = getBezierPath({
+      sourceX, sourceY, sourcePosition,
+      targetX, targetY, targetPosition,
+    });
+  }
+
   const edgeLen = Math.hypot(targetX - sourceX, targetY - sourceY);
   const bias = edgeLen < 120 ? 0.5 : 0.4;
-  const biasedLabelX = sourceX + (labelX - sourceX) * (2 * bias);
-  const biasedLabelY = sourceY + (labelY - sourceY) * (2 * bias);
+  const biasedLabelX = hasWaypoints ? labelX : sourceX + (labelX - sourceX) * (2 * bias);
+  const biasedLabelY = hasWaypoints ? labelY : sourceY + (labelY - sourceY) * (2 * bias);
 
   const arrowHeads = useMemo(() => {
     if (arrowDir === 'none') return '';
     const parts: string[] = [];
-    // For straight/snapped edges, compute arrow angle from actual line direction
-    // instead of handle position (which may not reflect the snapped path).
+
+    if (hasWaypoints) {
+      const allPts = [{ x: sourceX, y: sourceY }, ...waypoints, { x: targetX, y: targetY }];
+      if (arrowDir === 'target' || arrowDir === 'both') {
+        const prev = allPts[allPts.length - 2];
+        const last = allPts[allPts.length - 1];
+        const angle = Math.atan2(prev.y - last.y, prev.x - last.x);
+        parts.push(arrowHeadPath(last.x, last.y, angle));
+      }
+      if (arrowDir === 'source' || arrowDir === 'both') {
+        const first = allPts[0];
+        const second = allPts[1];
+        const angle = Math.atan2(second.y - first.y, second.x - first.x);
+        parts.push(arrowHeadPath(first.x, first.y, angle));
+      }
+      return parts.join(' ');
+    }
+
     const useLineAngle = useStraight;
     const lineAngle = Math.atan2(snappedTargetY - snappedSourceY, snappedTargetX - snappedSourceX);
     if (arrowDir === 'target' || arrowDir === 'both') {
@@ -161,13 +306,25 @@ function LabeledEdgeComponent({
       parts.push(arrowHeadPath(useLineAngle ? snappedSourceX : sourceX, useLineAngle ? snappedSourceY : sourceY, angle));
     }
     return parts.join(' ');
-  }, [arrowDir, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, useStraight, snappedSourceX, snappedSourceY, snappedTargetX, snappedTargetY]);
+  }, [arrowDir, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, useStraight, hasWaypoints, waypoints, snappedSourceX, snappedSourceY, snappedTargetX, snappedTargetY]);
 
-  // Click events bubble to React Flow's onEdgeClick handler.
+  // Build segment midpoints for inserting new waypoints
+  const segmentMidpoints = useMemo(() => {
+    if (!onWaypointsChange || !selected) return [];
+    const allPts = [{ x: sourceX, y: sourceY }, ...waypoints, { x: targetX, y: targetY }];
+    const mids: { x: number; y: number; insertIndex: number }[] = [];
+    for (let i = 0; i < allPts.length - 1; i++) {
+      mids.push({
+        x: (allPts[i].x + allPts[i + 1].x) / 2,
+        y: (allPts[i].y + allPts[i + 1].y) / 2,
+        insertIndex: i,
+      });
+    }
+    return mids;
+  }, [sourceX, sourceY, targetX, targetY, waypoints, onWaypointsChange, selected]);
 
   return (
     <>
-      {/* Invisible wider hit area */}
       <path
         d={edgePath}
         fill="none"
@@ -199,8 +356,8 @@ function LabeledEdgeComponent({
         )}
       </g>
 
-      {label && (
-        <EdgeLabelRenderer>
+      <EdgeLabelRenderer>
+        {label && (
           <div
             style={{
               position: 'absolute',
@@ -226,8 +383,31 @@ function LabeledEdgeComponent({
               {label}
             </div>
           </div>
-        </EdgeLabelRenderer>
-      )}
+        )}
+
+        {/* Waypoint drag handles — visible when selected */}
+        {selected && onWaypointsChange && waypoints.map((wp, i) => (
+          <WaypointHandle
+            key={`wp-${i}`}
+            x={wp.x} y={wp.y}
+            edgeId={id} index={i}
+            waypoints={waypoints}
+            onWaypointsChange={onWaypointsChange}
+            color={color}
+          />
+        ))}
+
+        {/* Midpoint handles for inserting new waypoints */}
+        {onWaypointsChange && segmentMidpoints.map((mp, i) => (
+          <MidpointHandle
+            key={`mid-${i}`}
+            x={mp.x} y={mp.y}
+            edgeId={id} insertIndex={mp.insertIndex}
+            waypoints={waypoints}
+            onWaypointsChange={onWaypointsChange}
+          />
+        ))}
+      </EdgeLabelRenderer>
     </>
   );
 }

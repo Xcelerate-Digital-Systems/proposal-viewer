@@ -52,7 +52,7 @@ export const BOARD_ACTION_ICONS: Record<string, LucideIcon> = {
   'clipboard-check': ClipboardCheck, 'calendar-check': CalendarCheck,
   trophy: Trophy, target: Target, crown: Crown,
   'map-pin': MapPin, send: Send,
-  star: Star, gift: Gift,
+  star: Star, gift: Gift, 'circle-x': CircleX,
 };
 
 /** Tile background tint per action shape. Kept in lockstep with
@@ -60,19 +60,19 @@ export const BOARD_ACTION_ICONS: Record<string, LucideIcon> = {
  *  tile colour matches the colour the node actually paints on canvas. */
 export const BOARD_ACTION_TINTS: Record<BoardActionShapeId, string> = {
   // Conversion
-  purchase: '#10B981', add_to_cart: '#F97316', subscribe: '#EC4899', goal: '#EAB308',
-  form_completed: '#10B981', schedule_meeting: '#3B82F6', deal_won: '#EAB308', deal_lost: '#EF4444',
+  purchase: '#10B981', add_to_cart: '#F97316', subscribe: '#EC4899', goal: '#F97316',
+  form_completed: '#06B6D4', schedule_meeting: '#3B82F6', deal_won: '#EAB308', deal_lost: '#EF4444',
   on_site_visit: '#6366F1', send_quote: '#06B6D4',
   send_google_review: '#F59E0B', add_to_referral_program: '#EC4899',
   // Engagement
   page_view: '#0EA5E9', button_click: '#3B82F6', form_submit: '#06B6D4',
-  video_play: '#EF4444', scroll_depth: '#6366F1', time_on_page: '#6366F1', exit_intent: '#F43F5E',
+  video_play: '#EF4444', scroll_depth: '#6366F1', time_on_page: '#A855F7', exit_intent: '#F43F5E',
   // Integration
   sms_notification: '#15803D', email_notification: '#B91C1C', ghl_notification: '#0EA5E9',
   webhook: '#7C3AED', google_sheet: '#0F9D58',
   call: '#059669', meeting: '#7C3AED', automation: '#F43F5E',
-  ghl_appointment: '#F97316', ghl_order: '#F97316',
-  ghl_opportunity: '#F97316', ghl_opportunity_won: '#15803D',
+  ghl_appointment: '#F97316', ghl_order: '#3B82F6',
+  ghl_opportunity: '#8B5CF6', ghl_opportunity_won: '#15803D',
   // Custom Actions
   decision: '#B45309', wait: '#8B5CF6', refund: '#DC2626',
   download: '#10B981', share: '#A855F7', login: '#0F766E', custom_event: '#64748B',
@@ -118,7 +118,7 @@ export const BOARD_ACTION_GROUPS: BoardActionGroup[] = [
       { shapeType: 'webhook',     label: 'Webhook',      iconName: 'webhook' },
       { shapeType: 'google_sheet',label: 'Google Sheet', iconName: 'sheet' },
       { shapeType: 'call',        label: 'Call',         iconName: 'phone' },
-      { shapeType: 'meeting',     label: 'Meeting',      iconName: 'calendar-days' },
+      { shapeType: 'meeting',     label: 'Book Meeting',  iconName: 'calendar-days' },
       { shapeType: 'automation',  label: 'Automation',   iconName: 'zap' },
     ],
   },
@@ -128,7 +128,7 @@ export const BOARD_ACTION_GROUPS: BoardActionGroup[] = [
     items: [
       { shapeType: 'sms_notification',       label: 'SMS Notification',        iconName: 'message-square' },
       { shapeType: 'email_notification',     label: 'Email Notification',      iconName: 'mail' },
-      { shapeType: 'ghl_notification',       label: 'HighLevel',               iconName: 'bell' },
+      { shapeType: 'ghl_notification',       label: 'GHL Notification',         iconName: 'bell' },
       { shapeType: 'ghl_appointment',        label: 'GHL Appointment',         iconName: 'calendar-days' },
       { shapeType: 'ghl_order',              label: 'GHL Order',               iconName: 'shopping-bag' },
       { shapeType: 'ghl_opportunity',        label: 'GHL Opportunity',         iconName: 'target' },

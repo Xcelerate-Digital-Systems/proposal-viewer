@@ -93,6 +93,7 @@ export type FunnelStepType =
   // Traffic sources — messaging platforms
   | 'traffic_slack'
   | 'traffic_messenger'
+  | 'traffic_whatsapp'
   | 'traffic_chatbot'
   // Traffic sources — other sites
   | 'traffic_zoho'
@@ -106,7 +107,6 @@ export type FunnelStepType =
   // Traffic sources — offline channels
   | 'traffic_print_ad'
   | 'traffic_conference'
-  | 'traffic_online_meeting'
   | 'traffic_direct_mail'
   | 'traffic_meeting'
   | 'traffic_billboard'
@@ -315,7 +315,7 @@ export const FUNNEL_STEP_DEFAULTS: Record<
 > = {
   // Generic traffic buckets
   traffic_paid:           { label: 'Paid Traffic',       icon: 'megaphone',        color: '#2B2B2B', tint: '#1877F2' },
-  traffic_organic:        { label: 'All Search',         icon: 'search',           color: '#2B2B2B', tint: '#EF4444' },
+  traffic_organic:        { label: 'Organic Search',     icon: 'search',           color: '#2B2B2B', tint: '#EF4444' },
   traffic_email:          { label: 'Email',              icon: 'mail',             color: '#2B2B2B', tint: '#3B82F6' },
   traffic_direct:         { label: 'Direct',             icon: 'link',             color: '#2B2B2B', tint: '#6366F1' },
   // Specific ad platforms (brand slugs → brand SVG with Lucide fallback)
@@ -330,7 +330,7 @@ export const FUNNEL_STEP_DEFAULTS: Record<
   traffic_snapchat_ads:   { label: 'Snapchat Ads',       icon: 'snapchat',         color: '#2B2B2B', tint: '#F7C701' },
   traffic_bing_ads:       { label: 'Bing Ads',           icon: 'bing',             color: '#2B2B2B', tint: '#F59E0B' },
   traffic_reddit_ads:     { label: 'Reddit Ads',         icon: 'reddit',           color: '#2B2B2B', tint: '#FF4500' },
-  traffic_native_ads:     { label: 'Native Ads',         icon: 'megaphone',        color: '#2B2B2B', tint: '#F59E0B' },
+  traffic_native_ads:     { label: 'Native Ads',         icon: 'globe',            color: '#2B2B2B', tint: '#F59E0B' },
   // Organic search
   traffic_google_organic:    { label: 'Google',          icon: 'google',           color: '#2B2B2B', tint: '#4285F4' },
   traffic_bing_organic:      { label: 'Bing',            icon: 'bing',             color: '#2B2B2B', tint: '#F59E0B' },
@@ -340,7 +340,7 @@ export const FUNNEL_STEP_DEFAULTS: Record<
   traffic_instagram_organic: { label: 'Instagram',       icon: 'instagram',        color: '#2B2B2B', tint: '#E4405F' },
   traffic_linkedin_organic:  { label: 'LinkedIn',        icon: 'linkedin',         color: '#2B2B2B', tint: '#0A66C2' },
   traffic_tiktok_organic:    { label: 'TikTok',          icon: 'tiktok',           color: '#2B2B2B', tint: '#111111' },
-  traffic_twitter_organic:   { label: 'X',               icon: 'twitter',          color: '#2B2B2B', tint: '#111111' },
+  traffic_twitter_organic:   { label: 'X (Twitter)',      icon: 'twitter',          color: '#2B2B2B', tint: '#111111' },
   traffic_pinterest_organic: { label: 'Pinterest',       icon: 'pinterest',        color: '#2B2B2B', tint: '#E60023' },
   traffic_reddit_organic:    { label: 'Reddit',          icon: 'reddit',           color: '#2B2B2B', tint: '#FF4500' },
   // Channels
@@ -366,6 +366,7 @@ export const FUNNEL_STEP_DEFAULTS: Record<
   // Messaging platforms
   traffic_slack:          { label: 'Slack',              icon: 'slack',            color: '#2B2B2B', tint: '#4A154B' },
   traffic_messenger:      { label: 'Messenger',          icon: 'messenger',        color: '#2B2B2B', tint: '#00B2FF' },
+  traffic_whatsapp:       { label: 'WhatsApp',           icon: 'whatsapp',         color: '#2B2B2B', tint: '#25D366' },
   traffic_chatbot:        { label: 'Chatbot',            icon: 'chatbot',          color: '#2B2B2B', tint: '#6366F1' },
   // Other sites
   traffic_zoho:               { label: 'Zoho',              icon: 'zoho',         color: '#2B2B2B', tint: '#C8202F' },
@@ -379,9 +380,8 @@ export const FUNNEL_STEP_DEFAULTS: Record<
   // Offline
   traffic_print_ad:           { label: 'Print Ad',          icon: 'newspaper',      color: '#2B2B2B', tint: '#64748B' },
   traffic_conference:         { label: 'Conference',        icon: 'users',          color: '#2B2B2B', tint: '#7C3AED' },
-  traffic_online_meeting:     { label: 'Online Meeting',    icon: 'video',          color: '#2B2B2B', tint: '#2D8CFF' },
   traffic_direct_mail:        { label: 'Direct Mail',       icon: 'mail',           color: '#2B2B2B', tint: '#F59E0B' },
-  traffic_meeting:            { label: 'Meeting',           icon: 'calendar',       color: '#2B2B2B', tint: '#A855F7' },
+  traffic_meeting:            { label: 'In-Person Meeting', icon: 'calendar',       color: '#2B2B2B', tint: '#A855F7' },
   traffic_billboard:          { label: 'Billboard',         icon: 'monitor',        color: '#2B2B2B', tint: '#EF4444' },
   traffic_business_card:      { label: 'Business Card',     icon: 'square-user',    color: '#2B2B2B', tint: '#0EA5E9' },
   traffic_phone:              { label: 'Phone',             icon: 'phone',          color: '#2B2B2B', tint: '#10B981' },
@@ -435,7 +435,7 @@ export const FUNNEL_ICON_LIBRARY: { group: string; icons: string[] }[] = [
   { group: 'Traffic',    icons: ['megaphone','search','mail','link','globe','smartphone','share-2','external-link','users','mic','star','newspaper'] },
   { group: 'Offers',     icons: ['package','graduation-cap','briefcase','gift','sparkles','target','book-open','cloud','repeat','timer','layers','user-cog','ticket'] },
   { group: 'Actions',    icons: ['phone','message-square','calendar','zap','flag','file-text','image','music'] },
-  { group: 'Brands',     icons: ['facebook','instagram','google','youtube','tiktok','linkedin','pinterest','twitter','snapchat','bing','stripe','mailchimp'] },
+  { group: 'Brands',     icons: ['facebook','instagram','google','youtube','tiktok','linkedin','pinterest','twitter','snapchat','bing','whatsapp','stripe','mailchimp'] },
 ];
 
 /** Color presets for the node tint swatch (12 swatches in the drawer). */
@@ -555,7 +555,7 @@ export const FUNNEL_PALETTE_TABS: PaletteTab[] = [
       },
       {
         key: 'messaging_src', label: 'Messaging',
-        items: stepItems(['traffic_slack', 'traffic_messenger', 'traffic_chatbot']),
+        items: stepItems(['traffic_slack', 'traffic_messenger', 'traffic_whatsapp', 'traffic_chatbot']),
       },
       {
         key: 'othersites', label: 'Other Sites',
@@ -567,7 +567,7 @@ export const FUNNEL_PALETTE_TABS: PaletteTab[] = [
       {
         key: 'offline', label: 'Offline',
         items: stepItems([
-          'traffic_print_ad', 'traffic_conference', 'traffic_online_meeting', 'traffic_direct_mail',
+          'traffic_print_ad', 'traffic_conference', 'traffic_direct_mail',
           'traffic_meeting', 'traffic_billboard', 'traffic_business_card', 'traffic_phone',
           'traffic_report', 'traffic_qr_code',
           'traffic_offline', 'traffic_podcast', 'traffic_influencer',

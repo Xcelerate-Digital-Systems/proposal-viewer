@@ -99,6 +99,29 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
     });
   }, [steps, boardNotes, shapes, updateStep, deleteStep, updateNote, deleteNote, handleShapeContentUpdate, setNodes]);
 
+  /* ── Waypoint handling ──────────────────────────────────────── */
+
+  const waypointTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleWaypointsChange = useCallback((edgeId: string, waypoints: { x: number; y: number }[]) => {
+    setEdges((eds) =>
+      eds.map((e) =>
+        e.id === edgeId
+          ? { ...e, data: { ...(e.data || {}), waypoints } }
+          : e
+      )
+    );
+    if (waypointTimer.current) clearTimeout(waypointTimer.current);
+    waypointTimer.current = setTimeout(() => {
+      const raw = boardEdges.find((be) => be.id === edgeId);
+      if (!raw) return;
+      const currentStyle = (raw.style || {}) as Record<string, unknown>;
+      void updateEdge(edgeId, {
+        style: { ...currentStyle, waypoints: waypoints.length > 0 ? waypoints : undefined } as Record<string, unknown>,
+      });
+    }, 300);
+  }, [boardEdges, updateEdge, setEdges]);
+
   /* ── Build edges ───────────────────────────────────────────── */
 
   useEffect(() => {
@@ -112,9 +135,8 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
         rawArrow === 'none' || rawArrow === 'source' || rawArrow === 'both' ? rawArrow : 'target';
       const labelFontSize = Number(style.labelFontSize) || 16;
       const labelColor = (style.labelColor as string) || '#2B2B2B';
+      const waypoints = Array.isArray(style.waypoints) ? style.waypoints as { x: number; y: number }[] : [];
 
-      // Note IDs are stored in the shape FK columns. Resolve back to the
-      // correct RF node prefix by checking whether the ID belongs to a note.
       const resolveSource = () => {
         if (!e.source_shape_id) return `step-${e.source_step_id}`;
         if (boardNotes.some((n) => n.id === e.source_shape_id)) return `note-${e.source_shape_id}`;
@@ -145,17 +167,17 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
         style: { stroke: strokeColor, strokeWidth },
         data: {
           label: displayLabel,
-          // Stashed raw user label so handleUpdateEdgeStyle can preserve it
-          // when only styling fields change (and not overwrite with composite).
           userLabel: userLabel || null,
           color: strokeColor, strokeWidth, dashed,
           animated: e.animated || false, arrowDir,
           labelFontSize, labelColor,
+          waypoints,
+          onWaypointsChange: handleWaypointsChange,
         },
       } as Edge;
     });
     setEdges(flow);
-  }, [boardEdges, boardNotes, setEdges, flowByEdge]);
+  }, [boardEdges, boardNotes, setEdges, flowByEdge, handleWaypointsChange]);
 
   /* ── Drag save ─────────────────────────────────────────────── */
 
@@ -298,17 +320,20 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
       });
       setSelectedEdge((prev) => (prev && prev.id === edgeId && nextEdge ? nextEdge : prev));
       if (!nextEdge) return;
+      const nextData = (nextEdge.data || {}) as Record<string, unknown>;
+      const existingWaypoints = nextData.waypoints as { x: number; y: number }[] | undefined;
       await updateEdge(edgeId, {
-        label: ((nextEdge.data as Record<string, unknown>)?.label as string | null) ?? null,
+        label: (nextData.label as string | null) ?? null,
         animated: nextEdge.animated ?? false,
         style: {
           stroke: nextEdge.style?.stroke,
           strokeWidth: nextEdge.style?.strokeWidth,
-          dashed: (nextEdge.data as Record<string, unknown>)?.dashed,
-          arrowDir: (nextEdge.data as Record<string, unknown>)?.arrowDir,
-          labelFontSize: (nextEdge.data as Record<string, unknown>)?.labelFontSize,
-          labelColor: (nextEdge.data as Record<string, unknown>)?.labelColor,
-          edgeType: (nextEdge.data as Record<string, unknown>)?.edgeType,
+          dashed: nextData.dashed,
+          arrowDir: nextData.arrowDir,
+          labelFontSize: nextData.labelFontSize,
+          labelColor: nextData.labelColor,
+          edgeType: nextData.edgeType,
+          ...(existingWaypoints?.length ? { waypoints: existingWaypoints } : {}),
         } as Record<string, unknown>,
       });
     },

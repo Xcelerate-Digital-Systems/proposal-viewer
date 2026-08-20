@@ -83,8 +83,9 @@ const mcpHandler = createMcpHandler(
 - \`update_funnel\` — edit name, description, status, currency, forecast settings
 - \`delete_funnel\` — delete a funnel and all its children
 - \`list_funnel_node_types\` — list all valid step and shape types grouped by category (sources, pages, offers, stages, actions, drawing)
-- \`create_funnel_step\` — add a node (traffic source, page, offer, stage, or generic). Optional \`linkedFunnelId\` to cross-link to another funnel
-- \`update_funnel_step\` — edit label, position, metrics, icon, color, stepType, or linkedFunnelId (no need to delete and recreate to change type)
+- \`list_funnel_icons\` — list all valid icon slugs (Lucide icons + brand logos). Invalid icons are rejected by create/update tools
+- \`create_funnel_step\` — add a node (traffic source, page, offer, stage, or generic). Optional \`linkedFunnelId\` to cross-link to another funnel. Icon must be a valid slug from \`list_funnel_icons\`
+- \`update_funnel_step\` — edit label, position, metrics, icon, color, stepType, or linkedFunnelId (no need to delete and recreate to change type). Icon must be a valid slug from \`list_funnel_icons\`
 - \`delete_funnel_step\` — remove a node and its connected edges
 - \`create_funnel_edge\` — connect two nodes/shapes with a labeled edge
 - \`update_funnel_edge\` — edit label, handles, animation, split percent
@@ -134,7 +135,7 @@ const mcpHandler = createMcpHandler(
   },
   {
     capabilities: { tools: {} },
-    serverInfo: { name: 'agencyviz', version: '1.9.0' },
+    serverInfo: { name: 'agencyviz', version: '1.10.0' },
     instructions: [
       'You are connected to the AgencyViz MCP — a B2B SaaS platform for agencies.',
       '',

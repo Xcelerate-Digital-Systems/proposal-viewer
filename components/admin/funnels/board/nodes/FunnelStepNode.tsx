@@ -12,6 +12,9 @@ import {
   Timer, Layers, UserCog, Ticket, Wrench, Building2, Hash,
   Bot, MapPin, QrCode, SquareUser, ShoppingBag,
   BadgeCheck, CheckCircle, Handshake, Rocket, Send, UserX,
+  Diamond, Clock, CalendarDays, MousePointerClick, PlayCircle, ChevronsDown,
+  ShoppingCart, BellRing, Bell, Sheet, Eye, LogOut, LogIn, Undo2, Download,
+  Webhook, ClipboardCheck, CalendarCheck, Trophy, Crown, CircleX,
   type LucideIcon,
 } from 'lucide-react';
 import type { FunnelStep } from '@/lib/supabase';
@@ -84,6 +87,29 @@ export const LUCIDE: Record<string, LucideIcon> = {
   rocket: Rocket,
   send: Send,
   'user-x': UserX,
+  diamond: Diamond,
+  clock: Clock,
+  'calendar-days': CalendarDays,
+  'mouse-pointer-click': MousePointerClick,
+  'play-circle': PlayCircle,
+  'chevrons-down': ChevronsDown,
+  'shopping-bag': ShoppingBag,
+  'shopping-cart': ShoppingCart,
+  'bell-ring': BellRing,
+  bell: Bell,
+  sheet: Sheet,
+  eye: Eye,
+  'log-out': LogOut,
+  'log-in': LogIn,
+  'undo-2': Undo2,
+  download: Download,
+  webhook: Webhook,
+  'clipboard-check': ClipboardCheck,
+  'calendar-check': CalendarCheck,
+  trophy: Trophy,
+  crown: Crown,
+  'map-pin': MapPin,
+  'circle-x': CircleX,
 };
 
 export const BRAND_SLUGS_SET = new Set([
@@ -91,7 +117,7 @@ export const BRAND_SLUGS_SET = new Set([
   'twitter','snapchat','bing','reddit','stripe','mailchimp',
   'hubspot','ghl','activecampaign','salesforce','slack',
   'simpro','aroflo','workflowmax','servicem8','fergus','ascora','jobber',
-  'messenger','chatbot',
+  'messenger','whatsapp','chatbot',
   'zoho','yelp','amazon','zoom','gmail','spotify','google-maps',
 ]);
 
@@ -107,23 +133,22 @@ const BRAND_FALLBACK_LUCIDE: Record<string, LucideIcon> = {
   slack: Hash,
   simpro: Wrench, aroflo: Wrench, workflowmax: Repeat, servicem8: Wrench,
   fergus: Wrench, ascora: Building2, jobber: Wrench,
-  messenger: MessageSquare, chatbot: Bot,
+  messenger: MessageSquare, whatsapp: Phone, chatbot: Bot,
   zoho: Briefcase, yelp: Star, amazon: ShoppingBag, zoom: Video,
   gmail: Mail, spotify: Music, 'google-maps': MapPin,
 };
 
-export function StepIcon({ slug, size = 32 }: { slug: string; size?: number }) {
+export function StepIcon({ slug, size = 32, brandSize }: { slug: string; size?: number; brandSize?: number }) {
   const [brandFailed, setBrandFailed] = useState(false);
+  const bs = brandSize ?? size;
 
   if (BRAND_SLUGS_SET.has(slug) && !brandFailed) {
-    // Brand SVG path. If the file isn't present yet, onError swaps to a
-    // Lucide fallback so the canvas never shows a broken-image icon.
     return (
       <img
         src={`/icons/brands/${slug}.svg`}
         alt={slug}
-        width={size}
-        height={size}
+        width={bs}
+        height={bs}
         style={{ filter: 'brightness(0) invert(1)' }}
         onError={() => setBrandFailed(true)}
       />
@@ -332,7 +357,7 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
       }`}
       style={{ width: ICON_SIZE, height: ICON_SIZE, backgroundColor: tint }}
     >
-      <StepIcon slug={iconSlug} size={56} />
+      <StepIcon slug={iconSlug} size={40} brandSize={36} />
       {hasLinkedFunnel && (
         <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center shadow-sm pointer-events-none z-10">
           <ArrowUpRight size={11} strokeWidth={2.5} />

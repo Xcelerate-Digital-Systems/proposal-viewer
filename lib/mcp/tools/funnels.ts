@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase-server';
 import { getAuth, unauthorized, txt, json, type McpServer } from '@/lib/mcp/types';
 import { FUNNEL_STEP_DEFAULTS } from '@/lib/types/funnel';
 import { BOARD_ACTION_GROUPS } from '@/lib/types/board-actions';
+import { LUCIDE_ICON_SLUGS, BRAND_ICON_SLUGS, VALID_ICON_SLUGS_SET } from '@/lib/funnel/icon-slugs';
 
 const NODE_TYPE_CATALOG = buildNodeTypeCatalog();
 
@@ -22,9 +23,9 @@ function buildNodeTypeCatalog() {
       else if (['traffic_facebook_organic', 'traffic_instagram_organic', 'traffic_linkedin_organic', 'traffic_tiktok_organic', 'traffic_twitter_organic', 'traffic_pinterest_organic', 'traffic_reddit_organic', 'traffic_organic_social'].includes(slug)) sources.social.push(entry);
       else if (['traffic_direct', 'traffic_referral', 'traffic_affiliate'].includes(slug)) sources.other.push(entry);
       else if (['traffic_hubspot', 'traffic_ghl', 'traffic_activecampaign', 'traffic_salesforce', 'traffic_simpro', 'traffic_aroflo', 'traffic_workflowmax', 'traffic_servicem8', 'traffic_fergus', 'traffic_ascora', 'traffic_jobber'].includes(slug)) sources.crm.push(entry);
-      else if (['traffic_slack', 'traffic_messenger', 'traffic_chatbot'].includes(slug)) sources.messaging.push(entry);
+      else if (['traffic_slack', 'traffic_messenger', 'traffic_whatsapp', 'traffic_chatbot'].includes(slug)) sources.messaging.push(entry);
       else if (['traffic_zoho', 'traffic_yelp', 'traffic_amazon', 'traffic_zoom', 'traffic_gmail', 'traffic_spotify', 'traffic_snapchat_organic', 'traffic_google_maps'].includes(slug)) sources.other_sites.push(entry);
-      else if (['traffic_print_ad', 'traffic_conference', 'traffic_online_meeting', 'traffic_direct_mail', 'traffic_meeting', 'traffic_billboard', 'traffic_business_card', 'traffic_phone', 'traffic_report', 'traffic_qr_code', 'traffic_offline', 'traffic_podcast', 'traffic_influencer'].includes(slug)) sources.offline.push(entry);
+      else if (['traffic_print_ad', 'traffic_conference', 'traffic_direct_mail', 'traffic_meeting', 'traffic_billboard', 'traffic_business_card', 'traffic_phone', 'traffic_report', 'traffic_qr_code', 'traffic_offline', 'traffic_podcast', 'traffic_influencer'].includes(slug)) sources.offline.push(entry);
       else if (['traffic_email', 'traffic_sms'].includes(slug)) sources.messaging.push(entry);
     } else if (slug.startsWith('page_')) pages.push(entry);
     else if (slug.startsWith('offer_')) offers.push(entry);
@@ -93,6 +94,18 @@ export function registerFunnelTools(server: McpServer) {
     }
     return json(result);
   });
+
+  server.tool('list_funnel_icons', 'List all valid icon slugs that can be used with create_funnel_step, update_funnel_step, create_funnel_shape, and update_funnel_shape. Icons not in this list will be rejected.', {
+    group: z.enum(['all', 'lucide', 'brands']).optional().describe('Filter to Lucide icons or brand logos. Default: all'),
+  }, async ({ group }) => {
+    const g = group || 'all';
+    const result: Record<string, unknown> = {};
+    if (g === 'all' || g === 'lucide') result.lucide = { note: 'Generic icons from the Lucide icon set', slugs: [...LUCIDE_ICON_SLUGS] };
+    if (g === 'all' || g === 'brands') result.brands = { note: 'Brand/platform logos (rendered as SVGs)', slugs: [...BRAND_ICON_SLUGS] };
+    result.total = VALID_ICON_SLUGS_SET.size;
+    return json(result);
+  });
+
   server.tool('list_funnels', 'List all funnels in the workspace.', {
     status: z.enum(['draft', 'active', 'archived', 'all']).optional(),
     companyId: z.string().optional().describe('Super admin only: target a different company'),
@@ -219,7 +232,7 @@ export function registerFunnelTools(server: McpServer) {
     label: z.string().describe('Display label for the node'),
     x: z.number().describe('Canvas X coordinate'),
     y: z.number().describe('Canvas Y coordinate'),
-    icon: z.string().optional().describe('Lucide icon name or brand slug (e.g. "facebook", "search")'),
+    icon: z.string().optional().describe('Icon slug — call list_funnel_icons to see all valid values'),
     url: z.string().optional().describe('Reference URL (e.g. the live page URL)'),
     color: z.string().optional().describe('Hex color for the node'),
     metrics: z.object({
@@ -235,6 +248,9 @@ export function registerFunnelTools(server: McpServer) {
   }, async (args, extra) => {
     const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
     if (!resolved) return unauthorized();
+    if (args.icon && !VALID_ICON_SLUGS_SET.has(args.icon)) {
+      return txt(`Invalid icon "${args.icon}". Call list_funnel_icons to see all valid icon slugs.`);
+    }
     const { auth } = resolved;
     const sb = createServiceClient();
     const { data, error } = await sb.from('funnel_steps').insert({
@@ -261,7 +277,7 @@ export function registerFunnelTools(server: McpServer) {
     label: z.string().optional(),
     x: z.number().optional(),
     y: z.number().optional(),
-    icon: z.string().optional(),
+    icon: z.string().optional().describe('Icon slug — call list_funnel_icons for valid values'),
     url: z.string().optional(),
     color: z.string().optional(),
     metrics: z.object({
@@ -277,6 +293,9 @@ export function registerFunnelTools(server: McpServer) {
   }, async (args, extra) => {
     const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
     if (!resolved) return unauthorized();
+    if (args.icon && !VALID_ICON_SLUGS_SET.has(args.icon)) {
+      return txt(`Invalid icon "${args.icon}". Call list_funnel_icons to see all valid icon slugs.`);
+    }
     const { auth } = resolved;
     const sb = createServiceClient();
     const { data: step } = await sb.from('funnel_steps').select('id').eq('id', args.stepId).eq('funnel_id', args.funnelId).eq('company_id', auth.companyId).single();
