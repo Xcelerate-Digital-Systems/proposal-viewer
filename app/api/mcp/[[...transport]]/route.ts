@@ -82,12 +82,16 @@ const mcpHandler = createMcpHandler(
 - \`create_funnel\` — create a new empty funnel
 - \`update_funnel\` — edit name, description, status, currency, forecast settings
 - \`delete_funnel\` — delete a funnel and all its children
+- \`list_funnel_node_types\` — list all valid step and shape types grouped by category (sources, pages, offers, actions, drawing)
 - \`create_funnel_step\` — add a node (traffic source, page, offer, or generic)
-- \`update_funnel_step\` — edit label, position, metrics, icon, color
+- \`update_funnel_step\` — edit label, position, metrics, icon, color, or stepType (no need to delete and recreate to change type)
 - \`delete_funnel_step\` — remove a node and its connected edges
-- \`create_funnel_edge\` — connect two nodes with a labeled edge
+- \`create_funnel_edge\` — connect two nodes/shapes with a labeled edge
 - \`update_funnel_edge\` — edit label, handles, animation, split percent
 - \`delete_funnel_edge\` — remove a connection
+- \`create_funnel_shape\` — add a shape (sticky note, annotation, decision diamond, action node, etc.)
+- \`update_funnel_shape\` — edit position, size, content, color, stroke, type
+- \`delete_funnel_shape\` — remove a shape and its connected edges
 
 ### Client Access
 - \`list_access_requests\` — list client access requests (filter by clientId, status)
@@ -128,6 +132,25 @@ const mcpHandler = createMcpHandler(
   {
     capabilities: { tools: {} },
     serverInfo: { name: 'agencyviz', version: '1.8.0' },
+    instructions: [
+      'You are connected to the AgencyViz MCP — a B2B SaaS platform for agencies.',
+      '',
+      '## First thing to do',
+      'Call `list_companies` immediately on your first turn to discover:',
+      '1. Which companies the authenticated user can access',
+      '2. Whether the user is a **super admin** (super admins see ALL companies; regular users see only their own)',
+      '',
+      'If multiple companies are returned, the user is a super admin. Ask which company they want to work with, or let them specify via the `companyId` parameter on any tool.',
+      '',
+      '## Key concepts',
+      '- **Campaigns**: feedback/markup projects with assets that move through review stages',
+      '- **Proposals & Quotes**: client-facing pitch documents with page editors',
+      '- **Funnel Planner**: visual funnel builders with steps and edges',
+      '- **Template Library**: reusable page and package templates',
+      '- **Swipe Vault**: ad reference collections',
+      '',
+      'Call `get_guide` for the full tool reference when you need detailed workflow information.',
+    ].join('\n'),
   },
   {
     streamableHttpEndpoint: '/api/mcp',
