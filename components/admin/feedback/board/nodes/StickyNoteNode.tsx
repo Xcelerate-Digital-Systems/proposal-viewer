@@ -23,12 +23,24 @@ export interface StickyNoteNodeData extends Record<string, unknown> {
   readOnly?: boolean;
   onUpdate?: (noteId: string, changes: Partial<FeedbackBoardNote>) => void;
   onDelete?: (noteId: string) => void;
+  description?: string | null;
 }
 
 /* ─── Component ────────────────────────────────────────────────── */
 
+function StickyNoteDescCard({ text }: { text: string }) {
+  return (
+    <div
+      className="bg-white rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.10)] border border-ink/15 px-3 py-2.5"
+      style={{ marginTop: -10, paddingTop: 16, minHeight: 44 }}
+    >
+      <p className="text-2xs text-ink/55 leading-snug whitespace-pre-wrap line-clamp-4 text-center">{text}</p>
+    </div>
+  );
+}
+
 function StickyNoteNodeComponent({ data, selected }: NodeProps) {
-  const { note, readOnly, onUpdate, onDelete } = data as StickyNoteNodeData;
+  const { note, readOnly, onUpdate, onDelete, description } = data as StickyNoteNodeData;
   const [editing, setEditing] = useState(false);
   const [content, setContent] = useState(note.content);
   const [showColors, setShowColors] = useState(false);
@@ -87,7 +99,7 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
       })()}
 
       <div
-        className={`relative group ${
+        className={`relative z-10 group ${
           !readOnly ? 'cursor-grab active:cursor-grabbing' : ''
         } rounded-lg shadow-md ${selected ? 'ring-2 ring-teal' : ''}`}
         style={{
@@ -173,6 +185,7 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
         </div>
       </div>
 
+      {description && <StickyNoteDescCard text={description} />}
     </>
   );
 }

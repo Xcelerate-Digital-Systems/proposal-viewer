@@ -5,7 +5,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { FUNNEL_STEP_DEFAULTS } from '@/lib/types/funnel';
-import { templatePositionForIndex, type FunnelTemplate } from './templates';
+import { templatePositionForStep, type FunnelTemplate } from './templates';
 
 export async function createFunnelFromTemplate(opts: {
   template: FunnelTemplate;
@@ -30,7 +30,7 @@ export async function createFunnelFromTemplate(opts: {
   // 2. Insert steps. Capture the returned uuids so we can wire edges next.
   const stepRows = template.steps.map((s, i) => {
     const defaults = FUNNEL_STEP_DEFAULTS[s.step_type] ?? FUNNEL_STEP_DEFAULTS.generic;
-    const pos = templatePositionForIndex(i);
+    const pos = templatePositionForStep(s, i);
     return {
       funnel_id: funnel.id,
       company_id: companyId,
@@ -65,8 +65,8 @@ export async function createFunnelFromTemplate(opts: {
         target_step_id: tgt,
         source_shape_id: null,
         target_shape_id: null,
-        source_handle: 'right',
-        target_handle: 'left',
+        source_handle: e.source_handle || 'right',
+        target_handle: e.target_handle || 'left',
         label: e.label || null,
         edge_type: 'labeled',
         animated: !!e.animated,

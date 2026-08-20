@@ -8,7 +8,7 @@ import {
   Eye, Timer, LogOut, LogIn, Undo2, Download, Share2, Webhook, Plus, Upload,
   Workflow, FileBox, MousePointer2, Pencil, Square, Circle, MoveRight, Minus, Type, GitBranchPlus,
   ClipboardCheck, CalendarCheck, Trophy, CircleX, Target, Crown, MapPin, Send,
-  Star, Gift,
+  Star, Gift, Settings,
   type LucideIcon,
 } from 'lucide-react';
 import type { FunnelStepType, FunnelShapeType } from '@/lib/supabase';
@@ -63,6 +63,8 @@ const SHAPE_TINTS: Record<string, string> = {
   // Custom Actions
   decision: '#B45309', wait: '#8B5CF6', refund: '#DC2626',
   download: '#10B981', share: '#A855F7', login: '#0F766E', custom_event: '#64748B',
+  // Module shapes
+  description_box: '#017C87',
   // Primitive drawing shapes
   rectangle: '#64748B', ellipse: '#64748B', arrow: '#64748B', line: '#64748B', text: '#64748B',
 };
@@ -70,8 +72,8 @@ const SHAPE_TINTS: Record<string, string> = {
 const TAB_ICONS: Record<FunnelPaletteTabId, LucideIcon> = {
   sources: MousePointer2,
   pages: FileBox,
-  stages: GitBranchPlus,
   actions: Workflow,
+  systems: Settings,
   drawing: Pencil,
 };
 
@@ -90,7 +92,8 @@ const DEFAULT_OPEN: Record<string, boolean> = {
   crm_src: true, messaging_src: true,
   offline: false, othersites: false, custom_src: false,
   pages: true, offers: false, custom_pages: false,
-  primitives: true, notes: true,
+  modules: true, primitives: true, notes: true,
+  pipeline: true, platforms_sys: true, comms_sys: true, automation_sys: true,
   conversion: true, engagement: true, integration: false,
   gohighlevel: true, messaging: true,
   custom_actions: false, custom_act: false,
@@ -302,6 +305,28 @@ function PaletteTile({ item, onClick }: { item: PaletteItem; onClick: () => void
   }
 
   if (item.kind === 'shape') {
+    if (item.shapeType === 'description_box') {
+      return (
+        <button
+          type="button"
+          draggable
+          onDragStart={handleDragStart}
+          onClick={onClick}
+          className="group col-span-2 flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-edge bg-white hover:border-teal/50 hover:shadow-sm transition-all cursor-grab active:cursor-grabbing"
+          title="Drag to canvas or click to add: Description Box"
+        >
+          <span className="w-10 h-10 shrink-0 rounded-lg bg-white border border-edge/60 shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex flex-col items-center justify-center gap-[2px] pointer-events-none">
+            <span className="h-[3px] w-6 rounded-sm bg-teal/70" />
+            <span className="h-[2px] w-5 rounded-sm bg-ink/20" />
+            <span className="h-[2px] w-6 rounded-sm bg-ink/15" />
+          </span>
+          <div className="text-left pointer-events-none min-w-0">
+            <span className="text-xs font-medium text-ink block">Description Box</span>
+            <span className="text-2xs text-muted">Title + body card</span>
+          </div>
+        </button>
+      );
+    }
     const Icon = SHAPE_ICONS[item.iconName] || Diamond;
     const tint = SHAPE_TINTS[item.shapeType] || '#64748B';
     return (

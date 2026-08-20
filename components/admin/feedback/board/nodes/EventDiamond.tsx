@@ -5,15 +5,11 @@ import type { FeedbackBoardShape } from '@/lib/supabase';
 import { parseActionContent, serializeActionContent } from './shape-parsers';
 import {
   DIAMOND_CONFIG,
-  DIAMOND_NODE_W,
-  DIAMOND_NODE_H,
-  DIAMOND_TOP_PAD,
   DIAMOND_LABEL_GAP,
   DIAMOND_LABEL_BELOW,
   diamondColorOverride,
   type DiamondType,
 } from './diamond-config';
-import { DiamondHandles } from './DiamondHandles';
 import { DiamondVisual } from './DiamondVisual';
 
 export function EventDiamond({
@@ -45,19 +41,15 @@ export function EventDiamond({
   return (
     <div
       className="relative flex flex-col items-center"
-      style={{ width: DIAMOND_NODE_W, height: DIAMOND_NODE_H }}
       onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
     >
-      <DiamondHandles readOnly={readOnly} />
-
-      <div style={{ height: DIAMOND_TOP_PAD }} aria-hidden />
       <DiamondVisual color={diamondColorOverride(shape) || config.color} Icon={config.Icon} selected={selected} />
 
       {/* Gap above label — keeps label centred between diamond bottom and
           the bottom-edge handle dot (which lives below the matching gap). */}
       <div style={{ height: DIAMOND_LABEL_GAP }} aria-hidden />
 
-      <div className="flex items-start justify-center pt-1 px-1" style={{ height: DIAMOND_LABEL_BELOW, width: 220 }}>
+      <div className="flex items-start justify-center pt-1 px-1" style={{ height: DIAMOND_LABEL_BELOW, width: editing ? 220 : undefined, maxWidth: editing ? undefined : 180 }}>
         {editing && !readOnly ? (
           <input
             type="text"

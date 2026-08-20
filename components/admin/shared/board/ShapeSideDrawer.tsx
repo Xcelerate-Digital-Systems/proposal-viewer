@@ -14,6 +14,7 @@ import {
   parseActionContent, serializeActionContent,
 } from '@/components/admin/feedback/board/nodes/ShapeNode';
 import { parseTextContent, serializeTextContent } from '@/components/admin/feedback/board/nodes/TextShape';
+import { parseDescriptionBoxContent, serializeDescriptionBoxContent } from '@/components/admin/feedback/board/nodes/DescriptionBoxShape';
 
 export interface BoardShape {
   id: string;
@@ -23,6 +24,7 @@ export interface BoardShape {
   stroke_width: number;
   dashed: boolean;
   font_size: number | null;
+  description?: string | null;
 }
 
 interface Props<T extends BoardShape> {
@@ -57,6 +59,7 @@ const SHAPE_TYPE_LABELS: Record<string, string> = {
   ghl_opportunity: 'GHL Opportunity', ghl_opportunity_won: 'GHL Opportunity Won',
   on_site_visit: 'On-Site Visit', send_quote: 'Send Quote',
   send_google_review: 'Send Google Review', add_to_referral_program: 'Add to Referral Program',
+  description_box: 'Description Box',
 };
 
 const STROKE_WIDTHS = [1, 2, 3, 4, 6];
@@ -71,6 +74,7 @@ function getEditableLabel(shape: BoardShape): string {
   if (shape.shape_type === 'decision') return parseDecisionContent(shape.content).question;
   if (shape.shape_type === 'wait') return parseWaitContent(shape.content).label ?? '';
   if (shape.shape_type === 'text') return parseTextContent(shape.content).text;
+  if (shape.shape_type === 'description_box') return parseDescriptionBoxContent(shape.content).title;
   if (shape.shape_type === 'rectangle' || shape.shape_type === 'ellipse') {
     return shape.content || '';
   }
@@ -90,6 +94,10 @@ function setEditableLabel(shape: BoardShape, next: string): string | null {
   if (shape.shape_type === 'text') {
     const cur = parseTextContent(shape.content);
     return serializeTextContent({ ...cur, text: trimmed });
+  }
+  if (shape.shape_type === 'description_box') {
+    const cur = parseDescriptionBoxContent(shape.content);
+    return serializeDescriptionBoxContent({ ...cur, title: trimmed });
   }
   if (shape.shape_type === 'rectangle' || shape.shape_type === 'ellipse') {
     return trimmed || null;
@@ -116,10 +124,30 @@ export default function ShapeSideDrawer<T extends BoardShape>({ shape, onUpdate,
   const [content, setContent] = useState(() => getEditableLabel(shape));
   useEffect(() => { setContent(getEditableLabel(shape)); }, [shape.id, shape.content]);
   const textStyle = shape.shape_type === 'text' ? parseTextContent(shape.content) : null;
+  const isDescBox = shape.shape_type === 'description_box';
+  const descBoxData = isDescBox ? parseDescriptionBoxContent(shape.content) : null;
+  const [descBody, setDescBody] = useState(() => descBoxData?.body ?? '');
+  useEffect(() => { if (isDescBox) setDescBody(parseDescriptionBoxContent(shape.content).body); }, [shape.id, shape.content, isDescBox]);
 
   const commitContent = () => {
     const next = setEditableLabel(shape, content);
     if (next !== (shape.content || null)) onUpdate({ content: next } as Partial<T>);
+  };
+
+  const commitDescBody = () => {
+    if (!descBoxData) return;
+    const trimmed = descBody.trim();
+    if (trimmed !== descBoxData.body) {
+      const next = serializeDescriptionBoxContent({ ...descBoxData, body: trimmed });
+      onUpdate({ content: next } as Partial<T>);
+    }
+  };
+
+  const [nodeDesc, setNodeDesc] = useState(shape.description || '');
+  useEffect(() => { setNodeDesc(shape.description || ''); }, [shape.id]);
+  const commitNodeDesc = () => {
+    const next = nodeDesc.trim() || null;
+    if (next !== (shape.description || null)) onUpdate({ description: next } as Partial<T>);
   };
 
   const updateTextStyle = (patch: Partial<{ bold: boolean; bgColor: string; align: 'left' | 'center' | 'right' }>) => {
@@ -129,7 +157,7 @@ export default function ShapeSideDrawer<T extends BoardShape>({ shape, onUpdate,
   };
 
   const typeLabel = SHAPE_TYPE_LABELS[shape.shape_type] || 'Shape';
-  const isLabelLike = shape.shape_type !== 'text' && shape.shape_type !== 'rectangle' && shape.shape_type !== 'ellipse';
+  const isLabelLike = shape.shape_type !== 'text' && shape.shape_type !== 'rectangle' && shape.shape_type !== 'ellipse' && shape.shape_type !== 'description_box';
   const hasStroke = shape.shape_type === 'rectangle' || shape.shape_type === 'ellipse'
     || shape.shape_type === 'arrow' || shape.shape_type === 'line';
   const isWait = shape.shape_type === 'wait';
@@ -162,6 +190,30 @@ export default function ShapeSideDrawer<T extends BoardShape>({ shape, onUpdate,
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
+        {isDescBox ? (
+          <>
+            <Field label="Title">
+              <input
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                onBlur={commitContent}
+                onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                placeholder="Box title"
+                className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20"
+              />
+            </Field>
+            <Field label="Description">
+              <textarea
+                value={descBody}
+                onChange={(e) => setDescBody(e.target.value)}
+                onBlur={commitDescBody}
+                rows={4}
+                placeholder="Add a description…"
+                className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20 resize-y"
+              />
+            </Field>
+          </>
+        ) : (
         <Field label={shape.shape_type === 'decision' ? 'Question' : isLabelLike ? 'Label' : 'Content'}>
           {isLabelLike ? (
             <input
@@ -183,6 +235,7 @@ export default function ShapeSideDrawer<T extends BoardShape>({ shape, onUpdate,
             />
           )}
         </Field>
+        )}
 
         <div>
           <h4 className="text-2xs uppercase tracking-wider font-semibold text-muted mb-2">Color</h4>
@@ -209,6 +262,20 @@ export default function ShapeSideDrawer<T extends BoardShape>({ shape, onUpdate,
             />
           </div>
         </div>
+
+        <Field label="Node description">
+          <textarea
+            value={nodeDesc}
+            onChange={(e) => setNodeDesc(e.target.value)}
+            onBlur={commitNodeDesc}
+            rows={3}
+            placeholder="Add a description to show below this node…"
+            className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20 resize-none"
+          />
+          <p className="text-2xs text-muted/70 mt-0.5 leading-snug">
+            Shows as a card below the node on the canvas. Leave empty to hide.
+          </p>
+        </Field>
 
         {funnelLink && (
           <Suspense fallback={null}>

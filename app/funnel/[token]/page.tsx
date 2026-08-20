@@ -143,18 +143,26 @@ function PublicFunnelInner({ token }: { token: string }) {
       id: `note-${note.id}`,
       type: 'stickyNote',
       position: { x: note.board_x, y: note.board_y },
-      data: { note: note as unknown as FeedbackBoardNote, readOnly: true },
+      data: { note: note as unknown as FeedbackBoardNote, readOnly: true, description: note.description },
       draggable: false, selectable: false, connectable: false,
     }));
     const shapeNodes: Node[] = boardShapes.map((shape) => ({
       id: `shape-${shape.id}`,
       type: 'shape',
       position: { x: shape.x, y: shape.y },
-      data: { shape: shape as unknown as FeedbackBoardShape, readOnly: true, linkedFunnelId: shape.linked_funnel_id },
+      data: {
+        shape: shape as unknown as FeedbackBoardShape,
+        readOnly: true,
+        linkedFunnelId: shape.linked_funnel_id,
+        linkedTabId: shape.linked_tab_id,
+        onNavigateTab: tabsEnabled ? handleNavigateTab : undefined,
+        tabs: tabsEnabled ? tabs : undefined,
+        description: shape.description,
+      },
       draggable: false, selectable: false, connectable: false,
     }));
     return [...stepNodes, ...noteNodes, ...shapeNodes];
-  }, [steps, boardNotes, boardShapes, tabsEnabled, handleNavigateTab]);
+  }, [steps, boardNotes, boardShapes, tabs, tabsEnabled, handleNavigateTab]);
 
   const edges: Edge[] = useMemo(() => boardEdges.map((e) => {
     const style = (e.style || {}) as Record<string, unknown>;

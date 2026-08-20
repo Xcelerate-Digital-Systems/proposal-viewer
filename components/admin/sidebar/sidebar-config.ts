@@ -58,7 +58,8 @@ export const ALL_SECTIONS: SectionDef[] = [
     defaultHref: '/funnels',
     matchPaths: ['/funnels'],
     items: [
-      { href: '/funnels', label: 'Funnel Planner', icon: Workflow },
+      { href: '/funnels', label: 'Funnels', icon: Workflow },
+      { href: '/funnels/templates', label: 'Templates', icon: Bookmark },
     ],
   },
   {

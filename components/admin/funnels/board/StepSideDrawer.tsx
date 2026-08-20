@@ -29,6 +29,7 @@ export default function StepSideDrawer({
 
   const [label, setLabel] = useState(step.label);
   const [url, setUrl] = useState(step.url || '');
+  const [desc, setDesc] = useState(step.description || '');
   const [iconQuery, setIconQuery] = useState('');
   const [metricsOpen, setMetricsOpen] = useState(true);
 
@@ -37,7 +38,7 @@ export default function StepSideDrawer({
   const isOffer = step.step_type.startsWith('offer_');
   const showRecurring = RECURRING_TYPES.has(step.step_type);
 
-  useEffect(() => { setLabel(step.label); setUrl(step.url || ''); }, [step.id]);
+  useEffect(() => { setLabel(step.label); setUrl(step.url || ''); setDesc(step.description || ''); }, [step.id]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
 
   const metricsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -57,6 +58,10 @@ export default function StepSideDrawer({
   const commitUrl = () => {
     const next = url.trim() || null;
     if (next !== (step.url || null)) onUpdate({ url: next });
+  };
+  const commitDesc = () => {
+    const next = desc.trim() || null;
+    if (next !== (step.description || null)) onUpdate({ description: next });
   };
 
   const setIcon = (slug: string) => onUpdate({ icon: slug });
@@ -133,6 +138,21 @@ export default function StepSideDrawer({
               </a>
             )}
           </div>
+        </Field>
+
+        {/* Description (shown as card below the node on the canvas) */}
+        <Field label="Description">
+          <textarea
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
+            onBlur={commitDesc}
+            rows={3}
+            placeholder="Add a description to show below this node…"
+            className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal resize-none"
+          />
+          <p className="text-2xs text-muted/70 mt-0.5 leading-snug">
+            Shows as a card below the node on the canvas. Leave empty to hide.
+          </p>
         </Field>
 
         {/* Link to tab or funnel */}
@@ -270,10 +290,10 @@ export default function StepSideDrawer({
                           onClick={() => setIcon(slug)}
                           className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-teal/40 ${
                             active
-                              ? 'bg-teal text-white ring-2 ring-teal/30'
-                              : 'bg-surface text-ink/70 hover:bg-white hover:ring-1 hover:ring-edge'
+                              ? 'ring-2 ring-teal/30'
+                              : 'hover:ring-1 hover:ring-edge'
                           }`}
-                          style={active ? { backgroundColor: step.color || defaults.tint } : undefined}
+                          style={{ backgroundColor: active ? (step.color || defaults.tint) : '#2B2B2B' }}
                           title={slug}
                         >
                           <StepIcon slug={slug} size={14} />

@@ -19,6 +19,10 @@ export interface TemplateStepSeed {
   icon?: string;
   color?: string;
   metrics?: FunnelStepMetrics;
+  /** Override the auto-calculated horizontal position. */
+  x?: number;
+  /** Override the default row Y position. */
+  y?: number;
 }
 
 export interface TemplateEdgeSeed {
@@ -27,6 +31,8 @@ export interface TemplateEdgeSeed {
   label?: string;
   split_percent?: number;
   animated?: boolean;
+  source_handle?: string;
+  target_handle?: string;
 }
 
 export interface FunnelTemplate {
@@ -199,11 +205,11 @@ export const FUNNEL_TEMPLATES: FunnelTemplate[] = [
     description: 'Quiz → segmented offer based on result.',
     category: 'leadgen',
     steps: [
-      { key: 'src',    step_type: 'traffic_paid',     label: 'Paid Ads',     icon: 'megaphone', metrics: { visitors: 6000, cost: 0.80 } },
-      { key: 'quiz',   step_type: 'page_optin',       label: 'Quiz',         icon: 'sparkles', metrics: { conversion_rate: 55 } },
-      { key: 'opt',    step_type: 'page_optin',       label: 'Email Gate',   metrics: { conversion_rate: 60 } },
-      { key: 'a',      step_type: 'offer_product',    label: 'Result A',     metrics: { conversion_rate: 8, value: 97 } },
-      { key: 'b',      step_type: 'offer_product',    label: 'Result B',     metrics: { conversion_rate: 12, value: 147 } },
+      { key: 'src',    step_type: 'traffic_paid',     label: 'Paid Ads',     icon: 'megaphone', metrics: { visitors: 6000, cost: 0.80 }, x: 80, y: 200 },
+      { key: 'quiz',   step_type: 'page_optin',       label: 'Quiz',         icon: 'sparkles', metrics: { conversion_rate: 55 }, x: 360, y: 200 },
+      { key: 'opt',    step_type: 'page_optin',       label: 'Email Gate',   metrics: { conversion_rate: 60 }, x: 640, y: 200 },
+      { key: 'a',      step_type: 'offer_product',    label: 'Result A',     metrics: { conversion_rate: 8, value: 97 }, x: 920, y: 80 },
+      { key: 'b',      step_type: 'offer_product',    label: 'Result B',     metrics: { conversion_rate: 12, value: 147 }, x: 920, y: 320 },
     ],
     edges: [
       { from: 'src',  to: 'quiz' },
@@ -351,10 +357,10 @@ export const FUNNEL_TEMPLATES: FunnelTemplate[] = [
     description: 'Survey segments visitors into the right offer.',
     category: 'leadgen',
     steps: [
-      { key: 'src',     step_type: 'traffic_paid',  label: 'Paid Ads',  icon: 'megaphone', metrics: { visitors: 4000, cost: 1.10 } },
-      { key: 'survey',  step_type: 'page_optin',    label: 'Survey',    icon: 'file-text', metrics: { conversion_rate: 60 } },
-      { key: 'lo',      step_type: 'offer_product', label: 'Low-Ticket', metrics: { conversion_rate: 15, value: 97 } },
-      { key: 'hi',      step_type: 'offer_service', label: 'High-Ticket', metrics: { conversion_rate: 5, value: 2000 } },
+      { key: 'src',     step_type: 'traffic_paid',  label: 'Paid Ads',  icon: 'megaphone', metrics: { visitors: 4000, cost: 1.10 }, x: 80, y: 200 },
+      { key: 'survey',  step_type: 'page_optin',    label: 'Survey',    icon: 'file-text', metrics: { conversion_rate: 60 }, x: 360, y: 200 },
+      { key: 'lo',      step_type: 'offer_product', label: 'Low-Ticket', metrics: { conversion_rate: 15, value: 97 }, x: 640, y: 80 },
+      { key: 'hi',      step_type: 'offer_service', label: 'High-Ticket', metrics: { conversion_rate: 5, value: 2000 }, x: 640, y: 320 },
     ],
     edges: [
       { from: 'src',    to: 'survey' },
@@ -406,12 +412,12 @@ export const FUNNEL_TEMPLATES: FunnelTemplate[] = [
     description: 'SEO + social → blog → lead magnet → email nurture → sales page.',
     category: 'leadgen',
     steps: [
-      { key: 'seo',    step_type: 'traffic_google_organic', label: 'Google SEO',      metrics: { visitors: 8000 } },
-      { key: 'social', step_type: 'traffic_organic_social', label: 'Organic Social',  metrics: { visitors: 4000 } },
-      { key: 'blog',   step_type: 'page_landing',           label: 'Blog Post',       metrics: { conversion_rate: 15 } },
-      { key: 'magnet', step_type: 'offer_lead_magnet',      label: 'Lead Magnet',     metrics: { conversion_rate: 35 } },
-      { key: 'nurture',step_type: 'traffic_email',          label: 'Email Nurture',   icon: 'mail', metrics: { conversion_rate: 25 } },
-      { key: 'sales',  step_type: 'page_sales',             label: 'Sales Page',      metrics: { conversion_rate: 5, value: 297 } },
+      { key: 'seo',    step_type: 'traffic_google_organic', label: 'Google SEO',      metrics: { visitors: 8000 }, x: 80, y: 80 },
+      { key: 'social', step_type: 'traffic_organic_social', label: 'Organic Social',  metrics: { visitors: 4000 }, x: 80, y: 320 },
+      { key: 'blog',   step_type: 'page_landing',           label: 'Blog Post',       metrics: { conversion_rate: 15 }, x: 360, y: 200 },
+      { key: 'magnet', step_type: 'offer_lead_magnet',      label: 'Lead Magnet',     metrics: { conversion_rate: 35 }, x: 640, y: 200 },
+      { key: 'nurture',step_type: 'traffic_email',          label: 'Email Nurture',   icon: 'mail', metrics: { conversion_rate: 25 }, x: 920, y: 200 },
+      { key: 'sales',  step_type: 'page_sales',             label: 'Sales Page',      metrics: { conversion_rate: 5, value: 297 }, x: 1200, y: 200 },
     ],
     edges: [
       { from: 'seo',    to: 'blog' },
@@ -427,11 +433,11 @@ export const FUNNEL_TEMPLATES: FunnelTemplate[] = [
     description: 'Social + SEO → landing page → subscribe → welcome sequence → sponsor CTA.',
     category: 'leadgen',
     steps: [
-      { key: 'social', step_type: 'traffic_organic_social', label: 'Social Posts',     metrics: { visitors: 6000 } },
-      { key: 'seo',    step_type: 'traffic_google_organic', label: 'SEO Traffic',      metrics: { visitors: 3000 } },
-      { key: 'land',   step_type: 'page_landing',           label: 'Subscribe Page',   metrics: { conversion_rate: 30 } },
-      { key: 'welcome',step_type: 'traffic_email',          label: 'Welcome Sequence', icon: 'mail', metrics: { conversion_rate: 55 } },
-      { key: 'sponsor',step_type: 'offer_subscription',     label: 'Sponsor CTA',      metrics: { conversion_rate: 2, value: 5 } },
+      { key: 'social', step_type: 'traffic_organic_social', label: 'Social Posts',     metrics: { visitors: 6000 }, x: 80, y: 80 },
+      { key: 'seo',    step_type: 'traffic_google_organic', label: 'SEO Traffic',      metrics: { visitors: 3000 }, x: 80, y: 320 },
+      { key: 'land',   step_type: 'page_landing',           label: 'Subscribe Page',   metrics: { conversion_rate: 30 }, x: 360, y: 200 },
+      { key: 'welcome',step_type: 'traffic_email',          label: 'Welcome Sequence', icon: 'mail', metrics: { conversion_rate: 55 }, x: 640, y: 200 },
+      { key: 'sponsor',step_type: 'offer_subscription',     label: 'Sponsor CTA',      metrics: { conversion_rate: 2, value: 5 }, x: 920, y: 200 },
     ],
     edges: [
       { from: 'social',  to: 'land' },
@@ -446,12 +452,12 @@ export const FUNNEL_TEMPLATES: FunnelTemplate[] = [
     description: 'Referral + LinkedIn → case studies → discovery call → proposal → close.',
     category: 'service',
     steps: [
-      { key: 'referral', step_type: 'traffic_referral',       label: 'Referrals',       metrics: { visitors: 200 } },
-      { key: 'linkedin', step_type: 'traffic_linkedin_organic', label: 'LinkedIn',      metrics: { visitors: 500 } },
-      { key: 'cases',    step_type: 'page_landing',           label: 'Case Studies',    metrics: { conversion_rate: 20 } },
-      { key: 'call',     step_type: 'page_calendar',          label: 'Discovery Call',  metrics: { conversion_rate: 60 } },
-      { key: 'proposal', step_type: 'offer_service',          label: 'Proposal',        metrics: { conversion_rate: 70 } },
-      { key: 'close',    step_type: 'offer_service',          label: 'Client Won',      metrics: { conversion_rate: 40, value: 5000 } },
+      { key: 'referral', step_type: 'traffic_referral',       label: 'Referrals',       metrics: { visitors: 200 }, x: 80, y: 80 },
+      { key: 'linkedin', step_type: 'traffic_linkedin_organic', label: 'LinkedIn',      metrics: { visitors: 500 }, x: 80, y: 320 },
+      { key: 'cases',    step_type: 'page_landing',           label: 'Case Studies',    metrics: { conversion_rate: 20 }, x: 360, y: 200 },
+      { key: 'call',     step_type: 'page_calendar',          label: 'Discovery Call',  metrics: { conversion_rate: 60 }, x: 640, y: 200 },
+      { key: 'proposal', step_type: 'offer_service',          label: 'Proposal',        metrics: { conversion_rate: 70 }, x: 920, y: 200 },
+      { key: 'close',    step_type: 'offer_service',          label: 'Client Won',      metrics: { conversion_rate: 40, value: 5000 }, x: 1200, y: 200 },
     ],
     edges: [
       { from: 'referral', to: 'cases' },
@@ -467,12 +473,12 @@ export const FUNNEL_TEMPLATES: FunnelTemplate[] = [
     description: 'Google Maps + ads → website → call or form → appointment booking.',
     category: 'service',
     steps: [
-      { key: 'maps',   step_type: 'traffic_google_maps',  label: 'Google Maps',    metrics: { visitors: 2000 } },
-      { key: 'ads',    step_type: 'traffic_google_ads',   label: 'Google Ads',     metrics: { visitors: 1500, cost: 3.50 } },
-      { key: 'site',   step_type: 'page_landing',         label: 'Website',        metrics: { conversion_rate: 15 } },
-      { key: 'form',   step_type: 'page_form',            label: 'Contact Form',   metrics: { conversion_rate: 40 } },
-      { key: 'phone',  step_type: 'traffic_phone',        label: 'Phone Call',     metrics: { conversion_rate: 30 } },
-      { key: 'appt',   step_type: 'page_calendar',        label: 'Appointment',    metrics: { conversion_rate: 60, value: 500 } },
+      { key: 'maps',   step_type: 'traffic_google_maps',  label: 'Google Maps',    metrics: { visitors: 2000 }, x: 80, y: 80 },
+      { key: 'ads',    step_type: 'traffic_google_ads',   label: 'Google Ads',     metrics: { visitors: 1500, cost: 3.50 }, x: 80, y: 320 },
+      { key: 'site',   step_type: 'page_landing',         label: 'Website',        metrics: { conversion_rate: 15 }, x: 360, y: 200 },
+      { key: 'form',   step_type: 'page_form',            label: 'Contact Form',   metrics: { conversion_rate: 40 }, x: 640, y: 80 },
+      { key: 'phone',  step_type: 'traffic_phone',        label: 'Phone Call',     metrics: { conversion_rate: 30 }, x: 640, y: 320 },
+      { key: 'appt',   step_type: 'page_calendar',        label: 'Appointment',    metrics: { conversion_rate: 60, value: 500 }, x: 920, y: 200 },
     ],
     edges: [
       { from: 'maps',  to: 'site' },
@@ -485,6 +491,14 @@ export const FUNNEL_TEMPLATES: FunnelTemplate[] = [
   },
 ];
 
+export function templatePositionForStep(step: TemplateStepSeed, i: number) {
+  return {
+    board_x: step.x ?? STEP_X(i),
+    board_y: step.y ?? ROW_Y,
+  };
+}
+
+/** @deprecated Use templatePositionForStep instead */
 export function templatePositionForIndex(i: number) {
   return { board_x: STEP_X(i), board_y: ROW_Y };
 }

@@ -12,17 +12,16 @@ import type { FeedbackBoardShape } from '@/lib/supabase';
 
 /* ─── Diamond geometry constants ─────────────────────────────────── */
 
-export const DIAMOND_SIDE = 30;
-export const DIAMOND_BOX_SIZE = 42;
+export const DIAMOND_SIDE = 62;
+export const DIAMOND_BOX_SIZE = 88;
 export const DIAMOND_INSET = (DIAMOND_BOX_SIZE - DIAMOND_SIDE) / 2;
 export const DIAMOND_LABEL_GAP = 8;
 export const DIAMOND_LABEL_BELOW = 22;
 
-/** Cards and icon-circles place their side handles at Y=100. Diamonds are
- *  smaller, so we pad their frame top to push the visual centre to Y=100
+/** Diamond visual centre Y — matches circle step nodes (ICON_SIZE / 2 = 44)
  *  so horizontal edges between any two node types draw as a straight line. */
-export const SHARED_SIDE_Y = 100;
-export const DIAMOND_TOP_PAD = SHARED_SIDE_Y - DIAMOND_BOX_SIZE / 2;
+export const SHARED_SIDE_Y = DIAMOND_BOX_SIZE / 2;
+export const DIAMOND_TOP_PAD = 0;
 
 export const DIAMOND_NODE_W = DIAMOND_BOX_SIZE;
 export const DIAMOND_NODE_H = DIAMOND_TOP_PAD + DIAMOND_BOX_SIZE + DIAMOND_LABEL_GAP + DIAMOND_LABEL_BELOW;

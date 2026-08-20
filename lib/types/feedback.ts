@@ -646,7 +646,8 @@ export type FeedbackShapeType =
   | 'form_completed' | 'schedule_meeting' | 'deal_won' | 'deal_lost'
   | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won'
   | 'on_site_visit' | 'send_quote'
-  | 'send_google_review' | 'add_to_referral_program';
+  | 'send_google_review' | 'add_to_referral_program'
+  | 'description_box';
 
 /** Stored as JSON in `review_board_shapes.content` for the label-only action
  *  shapes (Call, Meeting, Automation, Goal). Kept as an object — not a raw

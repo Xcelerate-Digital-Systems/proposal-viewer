@@ -70,6 +70,7 @@ export function useFunnelBoardClipboard(
           content: orig.content,
           color: orig.color, stroke_width: orig.stroke_width,
           dashed: orig.dashed, font_size: orig.font_size,
+          description: orig.description,
         });
       } else if (node.id.startsWith('note-')) {
         const origId = node.id.slice(5);
@@ -164,6 +165,7 @@ export function useFunnelBoardClipboard(
             end_x: orig.end_x, end_y: orig.end_y,
             content: orig.content, color: orig.color,
             stroke_width: orig.stroke_width, dashed: orig.dashed, font_size: orig.font_size,
+            description: orig.description,
           },
         });
       } else if (node.id.startsWith('note-')) {

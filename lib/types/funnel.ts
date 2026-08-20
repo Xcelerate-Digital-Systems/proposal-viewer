@@ -149,16 +149,40 @@ export type FunnelStepType =
   | 'stage_active_client'
   | 'stage_churned'
   | 'stage_custom'
+  // Systems & automation — tool/platform nodes for process mapping
+  | 'system_hubspot'
+  | 'system_ghl'
+  | 'system_activecampaign'
+  | 'system_salesforce'
+  | 'system_mailchimp'
+  | 'system_stripe'
+  | 'system_slack'
+  | 'system_zapier'
+  | 'system_gmail'
+  | 'system_google_sheets'
+  | 'system_zoom'
+  | 'system_simpro'
+  | 'system_aroflo'
+  | 'system_workflowmax'
+  | 'system_servicem8'
+  | 'system_fergus'
+  | 'system_ascora'
+  | 'system_jobber'
+  | 'system_whatsapp'
+  | 'system_messenger'
+  | 'system_chatbot'
+  | 'system_generic'
   // Catch-all
   | 'generic';
 
-export type FunnelStepCategory = 'traffic' | 'page' | 'offer' | 'stage' | 'generic';
+export type FunnelStepCategory = 'traffic' | 'page' | 'offer' | 'stage' | 'system' | 'generic';
 
 export function categoryForStepType(t: FunnelStepType): FunnelStepCategory {
   if (t.startsWith('traffic_')) return 'traffic';
   if (t.startsWith('page_')) return 'page';
   if (t.startsWith('offer_')) return 'offer';
   if (t.startsWith('stage_')) return 'stage';
+  if (t.startsWith('system_')) return 'system';
   return 'generic';
 }
 
@@ -212,6 +236,7 @@ export type FunnelStep = {
   board_x: number;
   board_y: number;
   metrics: FunnelStepMetrics;
+  description: string | null;
   linked_funnel_id: string | null;
   tab_id: string | null;
   linked_tab_id: string | null;
@@ -273,6 +298,7 @@ export type FunnelBoardNote = {
   width: number | null;
   height: number | null;
   font_size: number | null;
+  description: string | null;
   tab_id: string | null;
   created_at: string;
   updated_at: string;
@@ -293,7 +319,8 @@ export type FunnelShapeType =
   | 'form_completed' | 'schedule_meeting' | 'deal_won' | 'deal_lost'
   | 'ghl_appointment' | 'ghl_order' | 'ghl_opportunity' | 'ghl_opportunity_won'
   | 'on_site_visit' | 'send_quote'
-  | 'send_google_review' | 'add_to_referral_program';
+  | 'send_google_review' | 'add_to_referral_program'
+  | 'description_box';
 
 export type FunnelBoardShape = {
   id: string;
@@ -311,6 +338,7 @@ export type FunnelBoardShape = {
   stroke_width: number;
   dashed: boolean;
   font_size: number | null;
+  description: string | null;
   linked_funnel_id: string | null;
   tab_id: string | null;
   linked_tab_id: string | null;
@@ -438,6 +466,29 @@ export const FUNNEL_STEP_DEFAULTS: Record<
   stage_active_client:     { label: 'Active Client',      icon: 'check-circle',     color: '#2B2B2B', tint: '#22C55E' },
   stage_churned:           { label: 'Churned',            icon: 'user-x',           color: '#2B2B2B', tint: '#EF4444' },
   stage_custom:            { label: 'Custom Stage',       icon: 'layers',           color: '#2B2B2B', tint: '#64748B' },
+  // Systems & automation
+  system_hubspot:         { label: 'HubSpot',            icon: 'hubspot',          color: '#2B2B2B', tint: '#FF7A59' },
+  system_ghl:             { label: 'GoHighLevel',        icon: 'ghl',              color: '#2B2B2B', tint: '#161616' },
+  system_activecampaign:  { label: 'ActiveCampaign',     icon: 'activecampaign',   color: '#2B2B2B', tint: '#356AE6' },
+  system_salesforce:      { label: 'Salesforce',         icon: 'salesforce',       color: '#2B2B2B', tint: '#00A1E0' },
+  system_mailchimp:       { label: 'Mailchimp',          icon: 'mailchimp',        color: '#2B2B2B', tint: '#FFE01B' },
+  system_stripe:          { label: 'Stripe',             icon: 'stripe',           color: '#2B2B2B', tint: '#635BFF' },
+  system_slack:           { label: 'Slack',              icon: 'slack',            color: '#2B2B2B', tint: '#4A154B' },
+  system_zapier:          { label: 'Zapier',             icon: 'zap',              color: '#2B2B2B', tint: '#FF4A00' },
+  system_gmail:           { label: 'Gmail',              icon: 'gmail',            color: '#2B2B2B', tint: '#EA4335' },
+  system_google_sheets:   { label: 'Google Sheets',      icon: 'sheet',            color: '#2B2B2B', tint: '#0F9D58' },
+  system_zoom:            { label: 'Zoom',               icon: 'zoom',             color: '#2B2B2B', tint: '#2D8CFF' },
+  system_simpro:          { label: 'Simpro',             icon: 'simpro',           color: '#2B2B2B', tint: '#1C8DC9' },
+  system_aroflo:          { label: 'AroFlo',             icon: 'aroflo',           color: '#2B2B2B', tint: '#1D8C2C' },
+  system_workflowmax:     { label: 'WorkflowMax',        icon: 'workflowmax',      color: '#2B2B2B', tint: '#00A0DC' },
+  system_servicem8:       { label: 'ServiceM8',          icon: 'servicem8',        color: '#2B2B2B', tint: '#0094E5' },
+  system_fergus:          { label: 'Fergus',             icon: 'fergus',           color: '#2B2B2B', tint: '#2E83B7' },
+  system_ascora:          { label: 'Ascora',             icon: 'ascora',           color: '#2B2B2B', tint: '#FF5A1F' },
+  system_jobber:          { label: 'Jobber',             icon: 'jobber',           color: '#2B2B2B', tint: '#00BD9C' },
+  system_whatsapp:        { label: 'WhatsApp',           icon: 'whatsapp',         color: '#2B2B2B', tint: '#25D366' },
+  system_messenger:       { label: 'Messenger',          icon: 'messenger',        color: '#2B2B2B', tint: '#00B2FF' },
+  system_chatbot:         { label: 'Chatbot',            icon: 'chatbot',          color: '#2B2B2B', tint: '#6366F1' },
+  system_generic:         { label: 'System',             icon: 'zap',              color: '#2B2B2B', tint: '#64748B' },
   // Catch-all
   generic:                { label: 'Step',               icon: 'square',           color: '#2B2B2B', tint: '#64748B' },
 };
@@ -496,6 +547,18 @@ export const FUNNEL_STEP_TYPE_ORDER: { category: FunnelStepCategory; label: stri
   },
   { category: 'offer', label: 'Offers', types: ALL_OFFER_TYPES },
   { category: 'stage', label: 'Stages', types: ALL_STAGE_TYPES },
+  {
+    category: 'system',
+    label: 'Systems',
+    types: [
+      'system_hubspot', 'system_ghl', 'system_activecampaign', 'system_salesforce',
+      'system_mailchimp', 'system_stripe', 'system_slack', 'system_zapier',
+      'system_gmail', 'system_google_sheets', 'system_zoom',
+      'system_simpro', 'system_aroflo', 'system_workflowmax', 'system_servicem8',
+      'system_fergus', 'system_ascora', 'system_jobber',
+      'system_whatsapp', 'system_messenger', 'system_chatbot', 'system_generic',
+    ],
+  },
   { category: 'generic', label: 'Other', types: ['generic'] },
 ];
 
@@ -504,7 +567,8 @@ export const FUNNEL_STEP_TYPE_ORDER: { category: FunnelStepCategory; label: stri
  *  one categorised list so the user has a single place to add anything to
  *  the canvas. */
 export type FunnelPrimitiveShapeId = 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'text';
-export type FunnelShapePaletteId = BoardActionShapeId | FunnelPrimitiveShapeId;
+export type FunnelModuleShapeId = 'description_box';
+export type FunnelShapePaletteId = BoardActionShapeId | FunnelPrimitiveShapeId | FunnelModuleShapeId;
 
 export type PaletteItem =
   | { kind: 'step'; stepType: FunnelStepType }
@@ -519,7 +583,7 @@ export interface PaletteGroup {
   items: PaletteItem[];
 }
 
-export type FunnelPaletteTabId = 'sources' | 'pages' | 'stages' | 'actions' | 'drawing';
+export type FunnelPaletteTabId = 'sources' | 'pages' | 'actions' | 'systems' | 'drawing';
 
 export interface PaletteTab {
   id: FunnelPaletteTabId;
@@ -615,20 +679,6 @@ export const FUNNEL_PALETTE_TABS: PaletteTab[] = [
     ],
   },
   {
-    id: 'stages',
-    label: 'Stages',
-    groups: [
-      {
-        key: 'pipeline', label: 'Pipeline Stages',
-        items: stepItems([
-          'stage_new_lead', 'stage_contacted', 'stage_qualified', 'stage_proposal_sent',
-          'stage_negotiation', 'stage_awaiting_response', 'stage_in_review',
-          'stage_onboarding', 'stage_active_client', 'stage_churned', 'stage_custom',
-        ]),
-      },
-    ],
-  },
-  {
     id: 'actions',
     label: 'Actions',
     groups: [
@@ -657,9 +707,51 @@ export const FUNNEL_PALETTE_TABS: PaletteTab[] = [
     ],
   },
   {
+    id: 'systems',
+    label: 'Systems',
+    groups: [
+      {
+        key: 'pipeline', label: 'Pipeline Stages',
+        items: stepItems([
+          'stage_new_lead', 'stage_contacted', 'stage_qualified', 'stage_proposal_sent',
+          'stage_negotiation', 'stage_awaiting_response', 'stage_in_review',
+          'stage_onboarding', 'stage_active_client', 'stage_churned', 'stage_custom',
+        ]),
+      },
+      {
+        key: 'platforms_sys', label: 'CRM & Platforms',
+        items: stepItems([
+          'system_hubspot', 'system_ghl', 'system_activecampaign', 'system_salesforce',
+          'system_simpro', 'system_aroflo', 'system_workflowmax', 'system_servicem8',
+          'system_fergus', 'system_ascora', 'system_jobber',
+        ]),
+      },
+      {
+        key: 'comms_sys', label: 'Communication',
+        items: stepItems([
+          'system_gmail', 'system_slack', 'system_whatsapp', 'system_messenger', 'system_chatbot',
+        ]),
+      },
+      {
+        key: 'automation_sys', label: 'Automation & Tools',
+        items: stepItems([
+          'system_zapier', 'system_stripe', 'system_mailchimp', 'system_google_sheets', 'system_zoom',
+          'system_generic',
+        ]),
+      },
+    ],
+  },
+  {
     id: 'drawing',
     label: 'Drawing',
     groups: [
+      {
+        key: 'modules',
+        label: 'Modules',
+        items: [
+          { kind: 'shape', shapeType: 'description_box', label: 'Description Box', iconName: 'file-text' },
+        ],
+      },
       {
         key: 'primitives',
         label: 'Shapes',

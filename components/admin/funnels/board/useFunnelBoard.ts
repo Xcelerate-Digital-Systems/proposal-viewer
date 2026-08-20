@@ -65,6 +65,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
         readOnly: false,
         onUpdate: (id, changes) => void updateNote(id, changes as Partial<typeof note>),
         onDelete: (id) => void deleteNote(id),
+        description: note.description,
       } satisfies StickyNoteNodeData,
     }));
 
@@ -77,6 +78,9 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
         readOnly: false,
         onUpdateContent: handleShapeContentUpdate,
         linkedFunnelId: shape.linked_funnel_id,
+        linkedTabId: shape.linked_tab_id,
+        tabs,
+        description: shape.description,
       } satisfies ShapeNodeData,
     }));
 

@@ -47,15 +47,17 @@ export function useFunnelBoardInteractions(
   }, [ctx]);
 
   const addShapeAt = useCallback((shapeType: FunnelShapeType, flowX: number, flowY: number) => {
-    const offsetX = shapeType === 'decision' ? 120 : 54;
-    const offsetY = shapeType === 'decision' ? 120 : 70;
+    const isDecision = shapeType === 'decision';
+    const isDescBox = shapeType === 'description_box';
+    const offsetX = isDecision ? 120 : isDescBox ? 130 : 54;
+    const offsetY = isDecision ? 120 : isDescBox ? 50 : 70;
     void ctx.createShape({
       shape_type: shapeType,
       x: Math.round(flowX - offsetX), y: Math.round(flowY - offsetY),
       width: null, height: null, end_x: null, end_y: null,
-      content: null,
+      content: isDescBox ? JSON.stringify({ title: '', body: '' }) : null,
       color: '#2B2B2B', stroke_width: 2, dashed: false,
-      font_size: null,
+      font_size: null, description: null,
     });
   }, [ctx]);
 

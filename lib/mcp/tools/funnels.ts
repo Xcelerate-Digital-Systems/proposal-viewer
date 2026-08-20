@@ -244,6 +244,9 @@ export function registerFunnelTools(server: McpServer) {
       notes: z.string().optional(),
     }).optional().describe('Forecast metrics'),
     linkedFunnelId: z.string().optional().describe('Link this step to another funnel — clicking it navigates to that funnel'),
+    linkedTabId: z.string().optional().describe('Link this step to a tab within the same funnel — clicking it switches to that tab'),
+    tabId: z.string().optional().describe('Tab this step belongs to (required when funnel has tabs)'),
+    description: z.string().optional().describe('Description text shown below the step label'),
     companyId: z.string().optional().describe('Optional — auto-resolved from the funnel. Super admin: override to target a different company'),
   }, async (args, extra) => {
     const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
@@ -265,6 +268,9 @@ export function registerFunnelTools(server: McpServer) {
       board_y: Math.round(args.y),
       metrics: args.metrics || {},
       linked_funnel_id: args.linkedFunnelId || null,
+      linked_tab_id: args.linkedTabId || null,
+      tab_id: args.tabId || null,
+      description: args.description || null,
     }).select('id, step_type, label, board_x, board_y').single();
     if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
     return json({ id: data.id, type: data.step_type, label: data.label, position: { x: data.board_x, y: data.board_y } });
@@ -289,6 +295,8 @@ export function registerFunnelTools(server: McpServer) {
       notes: z.string().optional(),
     }).optional(),
     linkedFunnelId: z.string().nullable().optional().describe('Link to another funnel (pass null to clear)'),
+    linkedTabId: z.string().nullable().optional().describe('Link to a tab within the same funnel (pass null to clear)'),
+    description: z.string().nullable().optional().describe('Description text shown below the step label (pass null to clear)'),
     companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
   }, async (args, extra) => {
     const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
@@ -310,6 +318,8 @@ export function registerFunnelTools(server: McpServer) {
     if (args.color !== undefined) patch.color = args.color;
     if (args.metrics !== undefined) patch.metrics = args.metrics;
     if (args.linkedFunnelId !== undefined) patch.linked_funnel_id = args.linkedFunnelId;
+    if (args.linkedTabId !== undefined) patch.linked_tab_id = args.linkedTabId;
+    if (args.description !== undefined) patch.description = args.description;
     if (Object.keys(patch).length <= 1) return txt('No fields to update.');
     const { error } = await sb.from('funnel_steps').update(patch).eq('id', args.stepId);
     if (error) return txt(`Failed: ${error.message}`);
@@ -345,6 +355,7 @@ export function registerFunnelTools(server: McpServer) {
     animated: z.boolean().optional(),
     splitPercent: z.number().optional().describe('0-100 flow split percentage'),
     edgeType: z.string().optional().describe('Edge type. Default: labeled'),
+    tabId: z.string().optional().describe('Tab this edge belongs to (required when funnel has tabs)'),
     companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
   }, async (args, extra) => {
     const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
@@ -366,6 +377,7 @@ export function registerFunnelTools(server: McpServer) {
       edge_type: args.edgeType || 'labeled',
       animated: args.animated ?? false,
       split_percent: args.splitPercent ?? null,
+      tab_id: args.tabId || null,
       style: { stroke: '#2B2B2B', strokeWidth: 2 },
     }).select('id').single();
     if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
@@ -419,6 +431,9 @@ export function registerFunnelTools(server: McpServer) {
     endX: z.number().optional().describe('End X for arrow/line shapes'),
     endY: z.number().optional().describe('End Y for arrow/line shapes'),
     linkedFunnelId: z.string().optional().describe('Link this shape to another funnel — clicking it navigates to that funnel'),
+    linkedTabId: z.string().optional().describe('Link this shape to a tab within the same funnel — clicking it switches to that tab'),
+    tabId: z.string().optional().describe('Tab this shape belongs to (required when funnel has tabs)'),
+    description: z.string().optional().describe('Description text shown below the shape'),
     companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
   }, async (args, extra) => {
     const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
@@ -441,6 +456,9 @@ export function registerFunnelTools(server: McpServer) {
       dashed: args.dashed ?? false,
       font_size: args.fontSize ?? null,
       linked_funnel_id: args.linkedFunnelId || null,
+      linked_tab_id: args.linkedTabId || null,
+      tab_id: args.tabId || null,
+      description: args.description || null,
     }).select('id, shape_type, x, y').single();
     if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
     return json({ id: data.id, type: data.shape_type, position: { x: data.x, y: data.y } });
@@ -462,6 +480,8 @@ export function registerFunnelTools(server: McpServer) {
     endX: z.number().optional(),
     endY: z.number().optional(),
     linkedFunnelId: z.string().nullable().optional().describe('Link to another funnel (pass null to clear)'),
+    linkedTabId: z.string().nullable().optional().describe('Link to a tab within the same funnel (pass null to clear)'),
+    description: z.string().nullable().optional().describe('Description text shown below the shape (pass null to clear)'),
     companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
   }, async (args, extra) => {
     const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
@@ -484,6 +504,8 @@ export function registerFunnelTools(server: McpServer) {
     if (args.endX !== undefined) patch.end_x = args.endX;
     if (args.endY !== undefined) patch.end_y = args.endY;
     if (args.linkedFunnelId !== undefined) patch.linked_funnel_id = args.linkedFunnelId;
+    if (args.linkedTabId !== undefined) patch.linked_tab_id = args.linkedTabId;
+    if (args.description !== undefined) patch.description = args.description;
     if (Object.keys(patch).length <= 1) return txt('No fields to update.');
     const { error } = await sb.from('funnel_board_shapes').update(patch).eq('id', args.shapeId);
     if (error) return txt(`Failed: ${error.message}`);
@@ -521,6 +543,99 @@ export function registerFunnelTools(server: McpServer) {
     const { error } = await sb.from('funnel_board_edges').delete().eq('id', edgeId);
     if (error) return txt(`Failed: ${error.message}`);
     return txt('Edge deleted.');
+  });
+
+  // ── Funnel Tab tools ──
+
+  server.tool('list_funnel_tabs', 'List all tabs for a funnel. Returns empty array if the funnel has no tabs (legacy single-canvas mode).', {
+    funnelId: z.string(),
+    companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
+  }, async ({ funnelId, companyId }, extra) => {
+    const resolved = await resolveAuthForFunnel(extra, funnelId, companyId);
+    if (!resolved) return unauthorized();
+    const { auth } = resolved;
+    const sb = createServiceClient();
+    const { data, error } = await sb.from('funnel_tabs')
+      .select('id, name, position, created_at')
+      .eq('funnel_id', funnelId)
+      .eq('company_id', auth.companyId)
+      .order('position');
+    if (error) return txt(`Error: ${error.message}`);
+    return json(data || []);
+  });
+
+  server.tool('create_funnel_tab', 'Create a new tab in a funnel. If this is the first tab, all existing content (steps, shapes, edges, notes) is automatically reassigned to it.', {
+    funnelId: z.string(),
+    name: z.string().describe('Tab name'),
+    companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
+  }, async (args, extra) => {
+    const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
+    if (!resolved) return unauthorized();
+    const { auth } = resolved;
+    const sb = createServiceClient();
+    const { data: existing } = await sb.from('funnel_tabs')
+      .select('id')
+      .eq('funnel_id', args.funnelId)
+      .eq('company_id', auth.companyId);
+    const isFirst = !existing || existing.length === 0;
+    const maxPos = isFirst ? 0 : (await sb.from('funnel_tabs')
+      .select('position')
+      .eq('funnel_id', args.funnelId)
+      .order('position', { ascending: false })
+      .limit(1)
+      .single()).data?.position ?? 0;
+    const { data, error } = await sb.from('funnel_tabs').insert({
+      funnel_id: args.funnelId,
+      company_id: auth.companyId,
+      name: args.name,
+      position: isFirst ? 0 : maxPos + 1,
+    }).select('id, name, position').single();
+    if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
+    if (isFirst) {
+      await Promise.all([
+        sb.from('funnel_steps').update({ tab_id: data.id }).eq('funnel_id', args.funnelId).is('tab_id', null),
+        sb.from('funnel_board_edges').update({ tab_id: data.id }).eq('funnel_id', args.funnelId).is('tab_id', null),
+        sb.from('funnel_board_shapes').update({ tab_id: data.id }).eq('funnel_id', args.funnelId).is('tab_id', null),
+        sb.from('funnel_board_notes').update({ tab_id: data.id }).eq('funnel_id', args.funnelId).is('tab_id', null),
+      ]);
+    }
+    return json({ id: data.id, name: data.name, position: data.position, backfilledExisting: isFirst });
+  });
+
+  server.tool('update_funnel_tab', 'Rename a funnel tab.', {
+    tabId: z.string(),
+    funnelId: z.string(),
+    name: z.string().describe('New tab name'),
+    companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
+  }, async (args, extra) => {
+    const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
+    if (!resolved) return unauthorized();
+    const sb = createServiceClient();
+    const { error } = await sb.from('funnel_tabs')
+      .update({ name: args.name, updated_at: new Date().toISOString() })
+      .eq('id', args.tabId)
+      .eq('funnel_id', args.funnelId);
+    if (error) return txt(`Failed: ${error.message}`);
+    return txt('Tab renamed.');
+  });
+
+  server.tool('delete_funnel_tab', 'Delete a funnel tab and all its content (steps, shapes, edges, notes). Cannot delete the last tab.', {
+    tabId: z.string(),
+    funnelId: z.string(),
+    companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
+  }, async (args, extra) => {
+    const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
+    if (!resolved) return unauthorized();
+    const { auth } = resolved;
+    const sb = createServiceClient();
+    const { data: tabs } = await sb.from('funnel_tabs')
+      .select('id')
+      .eq('funnel_id', args.funnelId)
+      .eq('company_id', auth.companyId);
+    if (!tabs || tabs.length <= 1) return txt('Cannot delete the last tab.');
+    const { error } = await sb.from('funnel_tabs').delete().eq('id', args.tabId);
+    if (error) return txt(`Failed: ${error.message}`);
+    return txt('Tab deleted (all content cascaded).');
   });
 
   // ── Funnel Template tools ──

@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { supabase, type FunnelTab } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 interface Deps {
   funnelId: string;
@@ -16,6 +17,7 @@ interface Deps {
 
 export function useFunnelTabMutations(deps: Deps) {
   const toast = useToast();
+  const confirm = useConfirm();
   const { funnelId, companyId, tabs, setTabs, setActiveTabId, markSaving, markDone } = deps;
 
   const createTab = useCallback(async (name?: string): Promise<FunnelTab | null> => {
@@ -79,6 +81,14 @@ export function useFunnelTabMutations(deps: Deps) {
 
   const deleteTab = useCallback(async (id: string) => {
     if (tabs.length <= 1) { toast.error('Cannot delete the last tab'); return; }
+    const tab = tabs.find((t) => t.id === id);
+    const ok = await confirm({
+      title: `Delete "${tab?.name || 'tab'}"`,
+      message: 'This will permanently delete the tab and all its steps, shapes, and connections. This cannot be undone.',
+      confirmLabel: 'Delete tab',
+      destructive: true,
+    });
+    if (!ok) return;
     const idx = tabs.findIndex((t) => t.id === id);
     setTabs((prev) => prev.filter((t) => t.id !== id));
     setActiveTabId((prev) => {
@@ -89,7 +99,7 @@ export function useFunnelTabMutations(deps: Deps) {
     markSaving();
     await supabase.from('funnel_tabs').delete().eq('id', id);
     markDone(true);
-  }, [tabs, toast, markSaving, markDone, setTabs, setActiveTabId]);
+  }, [tabs, toast, confirm, markSaving, markDone, setTabs, setActiveTabId]);
 
   return { createTab, renameTab, reorderTabs, deleteTab };
 }

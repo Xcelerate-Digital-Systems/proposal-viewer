@@ -169,6 +169,8 @@ const ICON_SIZE = 88;
 const LABEL_OFFSET = 36;
 const METRICS_H = 18;
 const NAV_PILL_H = 26;
+const DESC_CARD_MIN_H = 56;
+const DESC_CARD_OVERLAP = 20;
 const LABEL_GAP = 8;
 
 // Handles anchored to the 88px circle (matches IconHandles geometry from
@@ -176,18 +178,14 @@ const LABEL_GAP = 8;
 const HANDLE_BASE =
   '!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors';
 
-function StepHandles({ readOnly }: { readOnly?: boolean }) {
-  // Generous outset on top / sides so incoming horizontal + top edges have
-  // breathing room around the disc. Bottom stays tight because the label
-  // already sits right below; extra space there would just push the next
-  // node further away.
+function StepHandles({ readOnly, frameH, hasDesc }: { readOnly?: boolean; frameH: number; hasDesc?: boolean }) {
   const sideOutset = 20;
-  const bottomOutset = 8;
+  const bottomOutset = hasDesc ? 2 : 8;
   const cy = ICON_SIZE / 2;
   const leftX = FRAME_W / 2 - ICON_SIZE / 2 - sideOutset;
   const rightX = FRAME_W / 2 + ICON_SIZE / 2 + sideOutset;
   const topY = -sideOutset;
-  const bottomY = ICON_SIZE + LABEL_GAP + LABEL_OFFSET + bottomOutset;
+  const bottomY = frameH + bottomOutset;
   return (
     <>
       <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
@@ -213,13 +211,13 @@ const SHARED_SIDE_HANDLE_Y = 100;
  *  the canonical baseline. Top handle hangs above the page top edge; bottom
  *  handle clears the label entirely so the connection dot (and edge tip)
  *  doesn't overlap the label text. */
-function PageHandles({ readOnly }: { readOnly?: boolean }) {
+function PageHandles({ readOnly, frameH, hasDesc }: { readOnly?: boolean; frameH: number; hasDesc?: boolean }) {
   const sideOutset = 20;
-  const bottomOutset = 8;
+  const bottomOutset = hasDesc ? 2 : 8;
   const leftX = FRAME_W / 2 - PAGE_MOCKUP_W / 2 - sideOutset;
   const rightX = FRAME_W / 2 + PAGE_MOCKUP_W / 2 + sideOutset;
   const topY = -sideOutset;
-  const bottomY = PAGE_MOCKUP_H + LABEL_GAP + LABEL_OFFSET + bottomOutset;
+  const bottomY = frameH + bottomOutset;
   return (
     <>
       <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
@@ -279,14 +277,16 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   };
 
   const linkedTabName = hasLinkedTab ? (tabs?.find((t) => t.id === step.linked_tab_id)?.name ?? null) : null;
-  const showNavPill = hasLinkedTab && (linkedTabName || hasLinkedTab);
+  const showNavPill = hasLinkedTab || hasLinkedFunnel;
 
   const isPage = step.step_type.startsWith('page_');
+  const hasDescription = !!step.description;
   const metricsRow = hasMetrics ? METRICS_H : 0;
   const navRow = showNavPill ? NAV_PILL_H : 0;
+  const descRow = hasDescription ? (DESC_CARD_MIN_H - DESC_CARD_OVERLAP) : 0;
   const frameH = isPage
-    ? PAGE_MOCKUP_H + LABEL_GAP + LABEL_OFFSET + metricsRow + navRow
-    : ICON_SIZE + LABEL_GAP + LABEL_OFFSET + metricsRow + navRow;
+    ? PAGE_MOCKUP_H + LABEL_GAP + LABEL_OFFSET + metricsRow + navRow + descRow
+    : ICON_SIZE + LABEL_GAP + LABEL_OFFSET + metricsRow + navRow + descRow;
 
   const labelEl = (
     <div className="flex items-start max-w-full px-1 w-full justify-center" style={{ height: LABEL_OFFSET }}>
@@ -411,40 +411,51 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
     </div>
   );
 
+  const navPillEl = showNavPill ? (
+    <NavPill
+      label={hasLinkedTab ? linkedTabName : 'Linked funnel'}
+      icon={hasLinkedTab ? 'tab' : 'funnel'}
+      onClick={() => {
+        if (hasLinkedTab) {
+          if (readOnly && onNavigateTab) onNavigateTab(step.linked_tab_id!);
+          else { ctx?.switchTab(step.linked_tab_id!); onNavigateTab?.(step.linked_tab_id!); }
+        } else if (hasLinkedFunnel) {
+          router.push(`/funnels/${step.linked_funnel_id}`);
+        }
+      }}
+    />
+  ) : null;
+
   return (
     <>
-      {isPage ? <PageHandles readOnly={readOnly} /> : <StepHandles readOnly={readOnly} />}
+      {isPage ? <PageHandles readOnly={readOnly} frameH={frameH} hasDesc={hasDescription} /> : <StepHandles readOnly={readOnly} frameH={frameH} hasDesc={hasDescription} />}
       <div
         className={`flex flex-col items-center ${!readOnly ? 'cursor-grab active:cursor-grabbing' : ''}`}
-        style={{ width: FRAME_W, height: frameH }}
+        style={{ width: FRAME_W, minHeight: frameH }}
         role="group"
         aria-label={step.label || defaults.label}
       >
-        {/* Pages: body at top (centre at Y=100), label + metrics below.
-            Discs: 56px empty space above keeps disc centred at Y=100,
-            then disc, then label below — so vertical edges land on the
-            disc's top edge without crossing the label text. */}
-        {isPage ? (
-          <>
-            {pageBody}
-            <div style={{ height: LABEL_GAP }} aria-hidden />
+        <div className="relative z-10">
+          {isPage ? pageBody : discBody}
+        </div>
+        {hasDescription ? (
+          <div
+            className="w-full bg-white rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.10)] border border-ink/15 flex flex-col items-center"
+            style={{ marginTop: -DESC_CARD_OVERLAP, paddingTop: DESC_CARD_OVERLAP + 4, minHeight: DESC_CARD_MIN_H }}
+          >
             {labelEl}
             {hasMetrics && <MetricsBadge visitors={visitors} conversions={conversions} />}
-            {showNavPill && <NavPill label={linkedTabName} onClick={() => {
-              if (readOnly && onNavigateTab) onNavigateTab(step.linked_tab_id!);
-              else { ctx?.switchTab(step.linked_tab_id!); onNavigateTab?.(step.linked_tab_id!); }
-            }} />}
-          </>
+            {navPillEl}
+            <p className="text-2xs text-ink/55 leading-snug whitespace-pre-wrap line-clamp-4 px-3 pb-2.5 w-full text-center">
+              {step.description}
+            </p>
+          </div>
         ) : (
           <>
-            {discBody}
             <div style={{ height: LABEL_GAP }} aria-hidden />
             {labelEl}
             {hasMetrics && <MetricsBadge visitors={visitors} conversions={conversions} />}
-            {showNavPill && <NavPill label={linkedTabName} onClick={() => {
-              if (readOnly && onNavigateTab) onNavigateTab(step.linked_tab_id!);
-              else { ctx?.switchTab(step.linked_tab_id!); onNavigateTab?.(step.linked_tab_id!); }
-            }} />}
+            {navPillEl}
           </>
         )}
       </div>
@@ -452,17 +463,17 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   );
 }
 
-function NavPill({ label, onClick }: { label: string | null; onClick: () => void }) {
+function NavPill({ label, icon, onClick }: { label: string | null; icon?: 'tab' | 'funnel'; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       className="mt-1 flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal text-white text-2xs font-medium shadow-sm hover:bg-teal-hover transition-colors cursor-pointer"
       style={{ height: NAV_PILL_H }}
-      title={label ? `Go to ${label}` : 'Go to linked tab'}
+      title={label ? `Go to ${label}` : icon === 'funnel' ? 'Go to linked funnel' : 'Go to linked tab'}
     >
-      <Layers size={11} strokeWidth={2.5} />
-      <span className="truncate max-w-[120px]">{label || 'Linked tab'}</span>
+      {icon === 'funnel' ? <ArrowUpRight size={11} strokeWidth={2.5} /> : <Layers size={11} strokeWidth={2.5} />}
+      <span className="truncate max-w-[120px]">{label || (icon === 'funnel' ? 'Linked funnel' : 'Linked tab')}</span>
     </button>
   );
 }

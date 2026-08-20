@@ -22,7 +22,7 @@ export function DiamondVisual({
         }}
       />
       <div className="absolute inset-0 flex items-center justify-center text-white pointer-events-none">
-        <Icon size={16} strokeWidth={2} />
+        <Icon size={28} strokeWidth={2} />
       </div>
     </div>
   );

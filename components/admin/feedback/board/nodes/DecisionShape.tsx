@@ -17,7 +17,7 @@ import { diamondColorOverride } from './diamond-config';
 
 /* ─── Decision-specific layout constants ─────────────────────────── */
 
-const DECISION_DIAMOND_BOX = 42;
+const DECISION_DIAMOND_BOX = 88;
 const DECISION_PILL_SLOT = 80;
 const DECISION_LABEL_GAP = 8;
 const DECISION_LABEL_BELOW = 22;
@@ -229,7 +229,7 @@ export function DecisionShape({
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center text-white pointer-events-none">
-            <GitBranch size={16} strokeWidth={2} />
+            <GitBranch size={28} strokeWidth={2} />
           </div>
         </div>
 

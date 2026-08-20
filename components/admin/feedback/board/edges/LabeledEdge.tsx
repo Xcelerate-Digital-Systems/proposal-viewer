@@ -267,9 +267,14 @@ function LabeledEdgeComponent({
   if (hasWaypoints) {
     const allPoints = [{ x: sourceX, y: sourceY }, ...waypoints, { x: targetX, y: targetY }];
     edgePath = buildWaypointPath(allPoints, edgeType === 'bezier');
-    const mid = Math.floor(allPoints.length / 2);
-    labelX = (allPoints[mid - 1].x + allPoints[mid].x) / 2;
-    labelY = (allPoints[mid - 1].y + allPoints[mid].y) / 2;
+    if (waypoints.length === 1) {
+      labelX = waypoints[0].x;
+      labelY = waypoints[0].y;
+    } else {
+      const mid = Math.floor(allPoints.length / 2);
+      labelX = (allPoints[mid - 1].x + allPoints[mid].x) / 2;
+      labelY = (allPoints[mid - 1].y + allPoints[mid].y) / 2;
+    }
   } else if (useStraight) {
     [edgePath, labelX, labelY] = getStraightPath({
       sourceX: snappedSourceX, sourceY: snappedSourceY,
@@ -497,8 +502,8 @@ function LabeledEdgeComponent({
           </div>
         )}
 
-        {/* Waypoint drag handles */}
-        {onWaypointsChange && waypoints.map((wp, i) => (
+        {/* Waypoint drag handles — hide the single waypoint when a label covers it */}
+        {onWaypointsChange && !(label && waypoints.length === 1) && waypoints.map((wp, i) => (
           <WaypointHandle
             key={`wp-${i}`}
             x={wp.x} y={wp.y}
@@ -509,8 +514,8 @@ function LabeledEdgeComponent({
           />
         ))}
 
-        {/* Midpoint handles — hidden when label serves as the drag point */}
-        {onWaypointsChange && !(label && waypoints.length === 0) && segmentMidpoints.map((mp, i) => (
+        {/* Midpoint handles — only show when selected, hidden when label serves as the drag point */}
+        {selected && onWaypointsChange && !(label && waypoints.length === 0) && segmentMidpoints.map((mp, i) => (
           <MidpointHandle
             key={`mid-${i}`}
             x={mp.x} y={mp.y}

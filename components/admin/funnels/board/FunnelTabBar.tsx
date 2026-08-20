@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Plus, X, GripVertical } from 'lucide-react';
+import { Plus, GripVertical, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import type { FunnelTab } from '@/lib/supabase';
 
 interface Props {
@@ -22,6 +22,7 @@ export default function FunnelTabBar({
   const [editDraft, setEditDraft] = useState('');
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [menuTabId, setMenuTabId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -119,14 +120,47 @@ export default function FunnelTabBar({
               </span>
             )}
 
-            {!readOnly && onDelete && tabs.length > 1 && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onDelete(tab.id); }}
-                className="opacity-0 group-hover:opacity-100 w-4 h-4 rounded flex items-center justify-center text-faint hover:text-rose-500 hover:bg-rose-50 transition-all shrink-0"
-                title="Delete tab"
-              >
-                <X size={10} />
-              </button>
+            {!readOnly && (
+              <div className="relative">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setMenuTabId(menuTabId === tab.id ? null : tab.id); }}
+                  className="opacity-0 group-hover:opacity-100 w-4 h-4 rounded flex items-center justify-center text-faint hover:text-ink transition-all shrink-0"
+                  title="Tab options"
+                >
+                  <MoreHorizontal size={11} />
+                </button>
+                {menuTabId === tab.id && (
+                  <>
+                    <div className="fixed inset-0 z-[60]" onClick={() => setMenuTabId(null)} />
+                    <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-edge shadow-popover rounded-lg py-1 z-[70]">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMenuTabId(null);
+                          setEditingId(tab.id);
+                          setEditDraft(tab.name);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-ink hover:bg-surface transition-colors"
+                      >
+                        <Pencil size={11} className="text-muted" />
+                        Rename
+                      </button>
+                      {onDelete && tabs.length > 1 && (
+                        <>
+                          <div className="border-t border-edge my-1" />
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setMenuTabId(null); onDelete(tab.id); }}
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 transition-colors"
+                          >
+                            <Trash2 size={11} />
+                            Delete tab
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             )}
           </div>
         );

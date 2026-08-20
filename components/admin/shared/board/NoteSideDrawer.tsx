@@ -11,6 +11,7 @@ export interface BoardNote {
   content: string;
   color: string;
   font_size: number | null;
+  description?: string | null;
 }
 
 interface Props<T extends BoardNote> {
@@ -27,6 +28,13 @@ export default function NoteSideDrawer<T extends BoardNote>({ note, onUpdate, on
 
   const commitContent = () => {
     if ((content || '') !== (note.content || '')) onUpdate({ content } as Partial<T>);
+  };
+
+  const [noteDesc, setNoteDesc] = useState(note.description || '');
+  useEffect(() => { setNoteDesc(note.description || ''); }, [note.id]);
+  const commitNoteDesc = () => {
+    const next = noteDesc.trim() || null;
+    if (next !== (note.description || null)) onUpdate({ description: next } as Partial<T>);
   };
 
   return (
@@ -63,6 +71,20 @@ export default function NoteSideDrawer<T extends BoardNote>({ note, onUpdate, on
             placeholder="Type a note…"
             className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20 resize-y"
           />
+        </Field>
+
+        <Field label="Description">
+          <textarea
+            value={noteDesc}
+            onChange={(e) => setNoteDesc(e.target.value)}
+            onBlur={commitNoteDesc}
+            rows={3}
+            placeholder="Add a description to show below this note…"
+            className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal focus:ring-2 focus:ring-teal/20 resize-none"
+          />
+          <p className="text-2xs text-muted/70 mt-0.5 leading-snug">
+            Shows as a card below the note on the canvas. Leave empty to hide.
+          </p>
         </Field>
 
         <div>

@@ -11,14 +11,11 @@ import {
 import type { FeedbackWaitContent } from '@/lib/supabase';
 import {
   Clock,
-  DIAMOND_NODE_W,
-  DIAMOND_NODE_H,
-  DIAMOND_TOP_PAD,
   DIAMOND_LABEL_GAP,
   DIAMOND_LABEL_BELOW,
   diamondColorOverride,
+  DIAMOND_BOX_SIZE,
 } from './diamond-config';
-import { DiamondHandles } from './DiamondHandles';
 import { DiamondVisual } from './DiamondVisual';
 
 const WAIT_COLOR = '#8B5CF6';
@@ -65,17 +62,13 @@ export function WaitDiamond({
   return (
     <div
       className="relative flex flex-col items-center"
-      style={{ width: DIAMOND_NODE_W, height: DIAMOND_NODE_H }}
       onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
     >
-      <DiamondHandles readOnly={readOnly} />
-
-      <div style={{ height: DIAMOND_TOP_PAD }} aria-hidden />
       <DiamondVisual color={diamondColorOverride(shape) || WAIT_COLOR} Icon={Clock} selected={selected} />
 
       <div style={{ height: DIAMOND_LABEL_GAP }} aria-hidden />
 
-      <div className="flex items-start justify-center pt-1 px-1" style={{ height: DIAMOND_LABEL_BELOW, width: 320 }}>
+      <div className="flex items-start justify-center pt-1 px-1" style={{ height: DIAMOND_LABEL_BELOW, width: editing ? 320 : undefined, maxWidth: editing ? undefined : 180 }}>
         {editing && !readOnly ? (
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <input
