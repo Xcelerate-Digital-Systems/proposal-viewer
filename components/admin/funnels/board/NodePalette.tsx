@@ -110,7 +110,10 @@ export default function NodePalette({ onPickStep, onPickShape, onPickSticky }: P
     else if (item.kind === 'shape') onPickShape(item.shapeType as FunnelShapeType);
     else if (item.kind === 'sticky') onPickSticky();
     else if (item.kind === 'upload') {
-      toast.info('Custom icon upload is coming soon — file picker will be wired in the next pass.');
+      // Custom logos are uploaded per-node rather than into the palette: add a
+      // node, then set its logo under "Runs in" in the side panel, which has
+      // the upload control. Nothing to promise for a future pass.
+      toast.info('Add a node, then upload your own logo under "Runs in" in the side panel.');
     }
   };
 
@@ -256,13 +259,13 @@ function PaletteTile({ item, onClick }: { item: PaletteItem; onClick: () => void
         type="button"
         onClick={onClick}
         className="group flex flex-col items-center gap-1.5 px-1 py-2.5 rounded-lg border border-dashed border-edge bg-white hover:border-teal/60 hover:bg-teal/[0.03] transition-all"
-        title="Upload your own icon"
+        title="Where to upload your own logo"
       >
         <span className="w-11 h-11 flex items-center justify-center rounded-full bg-surface text-muted group-hover:text-teal group-hover:bg-teal/10 transition-colors">
           <Plus size={20} strokeWidth={2} />
         </span>
         <span className="text-2xs text-ink/80 text-center leading-tight px-0.5 flex items-center gap-0.5">
-          <Upload size={9} /> Upload
+          <Upload size={9} /> Own logo
         </span>
       </button>
     );
