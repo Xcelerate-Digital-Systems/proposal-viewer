@@ -28,13 +28,14 @@ export async function duplicateFunnelAsScenario(opts: {
   const { source, companyId, userId, scenarioName, asTemplate, parentFunnelIdOverride } = opts;
 
   // 1. Load all of the source's child rows in parallel.
-  const [stepsRes, edgesRes, notesRes, shapesRes, tabsRes, sectionsRes] = await Promise.all([
+  const [stepsRes, edgesRes, notesRes, shapesRes, tabsRes, sectionsRes, legendsRes] = await Promise.all([
     supabase.from('funnel_steps').select('*').eq('funnel_id', source.id),
     supabase.from('funnel_board_edges').select('*').eq('funnel_id', source.id),
     supabase.from('funnel_board_notes').select('*').eq('funnel_id', source.id),
     supabase.from('funnel_board_shapes').select('*').eq('funnel_id', source.id),
     supabase.from('funnel_tabs').select('*').eq('funnel_id', source.id).order('position'),
     supabase.from('funnel_board_sections').select('*').eq('funnel_id', source.id),
+    supabase.from('funnel_legends').select('*').eq('funnel_id', source.id),
   ]);
   const srcSteps  = (stepsRes.data  || []) as FunnelStep[];
   const srcEdges  = (edgesRes.data  || []) as FunnelBoardEdge[];
@@ -42,6 +43,7 @@ export async function duplicateFunnelAsScenario(opts: {
   const srcShapes = (shapesRes.data || []) as FunnelBoardShape[];
   const srcTabs   = (tabsRes.data   || []) as { id: string; name: string; position: number }[];
   const srcSections = (sectionsRes.data || []) as FunnelBoardSection[];
+  const srcLegends = (legendsRes.data || []) as { id: string; tab_id: string | null; position: string; entries: unknown }[];
 
   // 2. Create the new funnel row pointing back at the source.
   const { data: newFunnel, error: fErr } = await supabase
@@ -160,6 +162,15 @@ export async function duplicateFunnelAsScenario(opts: {
     if (edgeRows.length > 0) {
       await supabase.from('funnel_board_edges').insert(edgeRows);
     }
+  }
+
+  // 7. Legends: clone with tab remapping.
+  if (srcLegends.length > 0) {
+    await supabase.from('funnel_legends').insert(srcLegends.map((lg) => ({
+      funnel_id: newFunnel.id, company_id: companyId,
+      tab_id: lg.tab_id ? tabIdMap.get(lg.tab_id) ?? null : null,
+      position: lg.position, entries: lg.entries,
+    })));
   }
 
   return { id: newFunnel.id, share_token: newFunnel.share_token };

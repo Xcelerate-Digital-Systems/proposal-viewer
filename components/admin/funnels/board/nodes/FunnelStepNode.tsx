@@ -44,6 +44,7 @@ export interface FunnelStepNodeData extends Record<string, unknown> {
    *  in directly. On the admin board this is omitted and looked up from
    *  context instead. */
   role?: FunnelRole | null;
+  connectedHandleIds?: Set<string>;
 }
 
 // Map icon slug → lucide component. Brand SVGs (facebook/google/etc.) are
@@ -271,7 +272,11 @@ const LABEL_GAP = 8;
 const HANDLE_BASE =
   '!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors';
 
-function StepHandles({ readOnly }: { readOnly?: boolean; frameH?: number; hasDesc?: boolean }) {
+function handleCls(id: string, connected?: Set<string>) {
+  return connected?.has(id) ? `${HANDLE_BASE} handle-connected` : HANDLE_BASE;
+}
+
+function StepHandles({ readOnly, connectedHandleIds }: { readOnly?: boolean; frameH?: number; hasDesc?: boolean; connectedHandleIds?: Set<string> }) {
   const sideOutset = 20;
   const cy = ICON_SIZE / 2;
   const leftX = FRAME_W / 2 - ICON_SIZE / 2 - sideOutset;
@@ -279,13 +284,13 @@ function StepHandles({ readOnly }: { readOnly?: boolean; frameH?: number; hasDes
   const topY = -sideOutset;
   return (
     <>
-      <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
+      <Handle id="top" type="source" position={Position.Top} className={handleCls('top', connectedHandleIds)}
         style={{ top: topY }} isConnectable={!readOnly} />
-      <Handle id="right" type="source" position={Position.Right} className={HANDLE_BASE}
+      <Handle id="right" type="source" position={Position.Right} className={handleCls('right', connectedHandleIds)}
         style={{ top: cy, right: FRAME_W - rightX }} isConnectable={!readOnly} />
-      <Handle id="bottom" type="source" position={Position.Bottom} className={HANDLE_BASE}
+      <Handle id="bottom" type="source" position={Position.Bottom} className={handleCls('bottom', connectedHandleIds)}
         style={{ bottom: -8, top: 'auto' }} isConnectable={!readOnly} />
-      <Handle id="left" type="source" position={Position.Left} className={HANDLE_BASE}
+      <Handle id="left" type="source" position={Position.Left} className={handleCls('left', connectedHandleIds)}
         style={{ top: cy, left: leftX }} isConnectable={!readOnly} />
     </>
   );
@@ -302,20 +307,20 @@ const SHARED_SIDE_HANDLE_Y = 100;
  *  the canonical baseline. Top handle hangs above the page top edge; bottom
  *  handle clears the label entirely so the connection dot (and edge tip)
  *  doesn't overlap the label text. */
-function PageHandles({ readOnly }: { readOnly?: boolean; frameH?: number; hasDesc?: boolean }) {
+function PageHandles({ readOnly, connectedHandleIds }: { readOnly?: boolean; frameH?: number; hasDesc?: boolean; connectedHandleIds?: Set<string> }) {
   const sideOutset = 20;
   const leftX = FRAME_W / 2 - PAGE_MOCKUP_W / 2 - sideOutset;
   const rightX = FRAME_W / 2 + PAGE_MOCKUP_W / 2 + sideOutset;
   const topY = -sideOutset;
   return (
     <>
-      <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
+      <Handle id="top" type="source" position={Position.Top} className={handleCls('top', connectedHandleIds)}
         style={{ top: topY }} isConnectable={!readOnly} />
-      <Handle id="right" type="source" position={Position.Right} className={HANDLE_BASE}
+      <Handle id="right" type="source" position={Position.Right} className={handleCls('right', connectedHandleIds)}
         style={{ top: SHARED_SIDE_HANDLE_Y, right: FRAME_W - rightX }} isConnectable={!readOnly} />
-      <Handle id="bottom" type="source" position={Position.Bottom} className={HANDLE_BASE}
+      <Handle id="bottom" type="source" position={Position.Bottom} className={handleCls('bottom', connectedHandleIds)}
         style={{ bottom: -8, top: 'auto' }} isConnectable={!readOnly} />
-      <Handle id="left" type="source" position={Position.Left} className={HANDLE_BASE}
+      <Handle id="left" type="source" position={Position.Left} className={handleCls('left', connectedHandleIds)}
         style={{ top: SHARED_SIDE_HANDLE_Y, left: leftX }} isConnectable={!readOnly} />
     </>
   );
@@ -323,7 +328,7 @@ function PageHandles({ readOnly }: { readOnly?: boolean; frameH?: number; hasDes
 
 function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   const {
-    step, readOnly, onUpdate, onDelete, onNavigateTab, tabs, role: roleFromData,
+    step, readOnly, onUpdate, onDelete, onNavigateTab, tabs, role: roleFromData, connectedHandleIds,
   } = data as FunnelStepNodeData;
   const defaults = FUNNEL_STEP_DEFAULTS[step.step_type] ?? FUNNEL_STEP_DEFAULTS.generic;
   const iconSlug = step.icon || defaults.icon;
@@ -592,7 +597,7 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
 
   return (
     <>
-      {isPage ? <PageHandles readOnly={readOnly} frameH={frameH} hasDesc={hasDescription} /> : <StepHandles readOnly={readOnly} frameH={frameH} hasDesc={hasDescription} />}
+      {isPage ? <PageHandles readOnly={readOnly} frameH={frameH} hasDesc={hasDescription} connectedHandleIds={connectedHandleIds} /> : <StepHandles readOnly={readOnly} frameH={frameH} hasDesc={hasDescription} connectedHandleIds={connectedHandleIds} />}
       <div
         className={`flex flex-col items-center ${!readOnly ? 'cursor-grab active:cursor-grabbing' : ''}`}
         style={{ width: FRAME_W, minHeight: frameH }}

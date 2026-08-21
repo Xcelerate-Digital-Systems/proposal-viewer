@@ -43,6 +43,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       boardShapes: data.boardShapes || [],
       boardSections: data.boardSections || [],
       roles: data.roles || [],
+      legends: data.legends || [],
     });
     res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     return res;

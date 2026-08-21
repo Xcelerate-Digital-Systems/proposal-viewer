@@ -41,6 +41,7 @@ function StickyNoteDescCard({ text }: { text: string }) {
 
 function StickyNoteNodeComponent({ data, selected }: NodeProps) {
   const { note, readOnly, onUpdate, onDelete, description } = data as StickyNoteNodeData;
+  const connectedHandleIds = (data as Record<string, unknown>).connectedHandleIds as Set<string> | undefined;
   const [editing, setEditing] = useState(false);
   const [content, setContent] = useState(note.content);
   const [showColors, setShowColors] = useState(false);
@@ -84,16 +85,17 @@ function StickyNoteNodeComponent({ data, selected }: NodeProps) {
     <>
       {(() => {
         const cls = '!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors';
+        const c = (id: string) => connectedHandleIds?.has(id) ? `${cls} handle-connected` : cls;
         return (
           <>
-            <Handle id="left" type="source" position={Position.Left} className={`${cls} !-left-1.5`} isConnectable={!readOnly} aria-label="Connect left" />
-            <Handle id="left-source" type="source" position={Position.Left} className={`${cls} !-left-1.5`} isConnectable={!readOnly} aria-hidden="true" />
-            <Handle id="top" type="source" position={Position.Top} className={`${cls} !-top-1.5`} isConnectable={!readOnly} aria-label="Connect top" />
-            <Handle id="top-source" type="source" position={Position.Top} className={`${cls} !-top-1.5`} isConnectable={!readOnly} aria-hidden="true" />
-            <Handle id="right" type="source" position={Position.Right} className={`${cls} !-right-1.5`} isConnectable={!readOnly} aria-label="Connect right" />
-            <Handle id="right-target" type="source" position={Position.Right} className={`${cls} !-right-1.5`} isConnectable={!readOnly} aria-hidden="true" />
-            <Handle id="bottom" type="source" position={Position.Bottom} className={`${cls} !-bottom-1.5`} isConnectable={!readOnly} aria-label="Connect bottom" />
-            <Handle id="bottom-target" type="source" position={Position.Bottom} className={`${cls} !-bottom-1.5`} isConnectable={!readOnly} aria-hidden="true" />
+            <Handle id="left" type="source" position={Position.Left} className={`${c('left')} !-left-1.5`} isConnectable={!readOnly} aria-label="Connect left" />
+            <Handle id="left-source" type="source" position={Position.Left} className={`${c('left-source')} !-left-1.5`} isConnectable={!readOnly} aria-hidden="true" />
+            <Handle id="top" type="source" position={Position.Top} className={`${c('top')} !-top-1.5`} isConnectable={!readOnly} aria-label="Connect top" />
+            <Handle id="top-source" type="source" position={Position.Top} className={`${c('top-source')} !-top-1.5`} isConnectable={!readOnly} aria-hidden="true" />
+            <Handle id="right" type="source" position={Position.Right} className={`${c('right')} !-right-1.5`} isConnectable={!readOnly} aria-label="Connect right" />
+            <Handle id="right-target" type="source" position={Position.Right} className={`${c('right-target')} !-right-1.5`} isConnectable={!readOnly} aria-hidden="true" />
+            <Handle id="bottom" type="source" position={Position.Bottom} className={`${c('bottom')} !-bottom-1.5`} isConnectable={!readOnly} aria-label="Connect bottom" />
+            <Handle id="bottom-target" type="source" position={Position.Bottom} className={`${c('bottom-target')} !-bottom-1.5`} isConnectable={!readOnly} aria-hidden="true" />
           </>
         );
       })()}

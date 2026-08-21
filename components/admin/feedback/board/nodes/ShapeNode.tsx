@@ -50,7 +50,11 @@ const DIAMOND_FRAME_W = 200;
 const HANDLE_BASE =
   '!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors';
 
-function DiamondNodeHandles({ readOnly }: { readOnly?: boolean; frameH?: number }) {
+function dHandleCls(id: string, connected?: Set<string>) {
+  return connected?.has(id) ? `${HANDLE_BASE} handle-connected` : HANDLE_BASE;
+}
+
+function DiamondNodeHandles({ readOnly, connectedHandleIds }: { readOnly?: boolean; frameH?: number; connectedHandleIds?: Set<string> }) {
   const sideOutset = 20;
   const cy = DIAMOND_BOX_SIZE / 2;
   const leftX = DIAMOND_FRAME_W / 2 - DIAMOND_BOX_SIZE / 2 - sideOutset;
@@ -58,21 +62,21 @@ function DiamondNodeHandles({ readOnly }: { readOnly?: boolean; frameH?: number 
   const topY = -sideOutset;
   return (
     <>
-      <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
+      <Handle id="top" type="source" position={Position.Top} className={dHandleCls('top', connectedHandleIds)}
         style={{ top: topY }} isConnectable={!readOnly} />
-      <Handle id="top-source" type="source" position={Position.Top} className={HANDLE_BASE}
+      <Handle id="top-source" type="source" position={Position.Top} className={dHandleCls('top-source', connectedHandleIds)}
         style={{ top: topY }} isConnectable={!readOnly} />
-      <Handle id="right" type="source" position={Position.Right} className={HANDLE_BASE}
+      <Handle id="right" type="source" position={Position.Right} className={dHandleCls('right', connectedHandleIds)}
         style={{ top: cy, right: DIAMOND_FRAME_W - rightX }} isConnectable={!readOnly} />
-      <Handle id="right-target" type="source" position={Position.Right} className={HANDLE_BASE}
+      <Handle id="right-target" type="source" position={Position.Right} className={dHandleCls('right-target', connectedHandleIds)}
         style={{ top: cy, right: DIAMOND_FRAME_W - rightX }} isConnectable={!readOnly} />
-      <Handle id="bottom" type="source" position={Position.Bottom} className={HANDLE_BASE}
+      <Handle id="bottom" type="source" position={Position.Bottom} className={dHandleCls('bottom', connectedHandleIds)}
         style={{ bottom: -8, top: 'auto' }} isConnectable={!readOnly} />
-      <Handle id="bottom-target" type="source" position={Position.Bottom} className={HANDLE_BASE}
+      <Handle id="bottom-target" type="source" position={Position.Bottom} className={dHandleCls('bottom-target', connectedHandleIds)}
         style={{ bottom: -8, top: 'auto' }} isConnectable={!readOnly} />
-      <Handle id="left" type="source" position={Position.Left} className={HANDLE_BASE}
+      <Handle id="left" type="source" position={Position.Left} className={dHandleCls('left', connectedHandleIds)}
         style={{ top: cy, left: leftX }} isConnectable={!readOnly} />
-      <Handle id="left-source" type="source" position={Position.Left} className={HANDLE_BASE}
+      <Handle id="left-source" type="source" position={Position.Left} className={dHandleCls('left-source', connectedHandleIds)}
         style={{ top: cy, left: leftX }} isConnectable={!readOnly} />
     </>
   );
@@ -111,7 +115,7 @@ function ShapeNavPill({ label, icon, onClick }: { label: string | null; icon: 't
 }
 
 function ShapeNodeComponent({ data, selected }: NodeProps) {
-  const { shape, readOnly, onUpdateContent, linkedFunnelId, linkedTabId, onNavigateTab, tabs, description, message, role: roleFromData } = data as import('./shape-node-types').ShapeNodeData;
+  const { shape, readOnly, onUpdateContent, linkedFunnelId, linkedTabId, onNavigateTab, tabs, description, message, role: roleFromData, connectedHandleIds } = data as import('./shape-node-types').ShapeNodeData & { connectedHandleIds?: Set<string> };
   const router = useRouter();
   const [messageOpen, setMessageOpen] = useState(false);
 
@@ -141,7 +145,7 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
           {hasLinkedTab ? <Layers size={11} strokeWidth={2.5} /> : <ArrowUpRight size={11} strokeWidth={2.5} />}
         </div>
       )}
-      {role && <RoleChip role={role} compact />}
+      {role && <RoleChip role={role} />}
     </>
   ) : null;
 
@@ -187,7 +191,7 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
       )}
       {role && (
         <div className="absolute" style={{ top: 6, left: 6 }}>
-          <RoleChip role={role} compact />
+          <RoleChip role={role} />
         </div>
       )}
       {shapePlatform && <PlatformBadge slug={shapePlatform} size={28} offset={8} />}
@@ -284,7 +288,7 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
     const waitLabel = waitContent.label?.trim() || `Wait ${formatWaitLabel(waitContent)}`;
     return (
       <>
-        <DiamondNodeHandles readOnly={readOnly} frameH={frameH} />
+        <DiamondNodeHandles readOnly={readOnly} frameH={frameH} connectedHandleIds={connectedHandleIds} />
         <div className="relative flex flex-col items-center" style={{ width: DIAMOND_FRAME_W, minHeight: frameH }}>
           <div className="relative z-10">
             {diamondCorners}
@@ -320,7 +324,7 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
     const eventLabel = eventContent.label || eventConfig?.placeholder || shape.shape_type;
     return (
       <>
-        <DiamondNodeHandles readOnly={readOnly} frameH={frameH} />
+        <DiamondNodeHandles readOnly={readOnly} frameH={frameH} connectedHandleIds={connectedHandleIds} />
         <div className="relative flex flex-col items-center" style={{ width: DIAMOND_FRAME_W, minHeight: frameH }}>
           <div className="relative z-10">
             {diamondCorners}

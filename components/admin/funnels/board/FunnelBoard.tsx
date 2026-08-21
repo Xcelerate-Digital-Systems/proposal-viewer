@@ -27,6 +27,7 @@ import CanvasContextMenu from '@/components/admin/shared/CanvasContextMenu';
 import AlignmentGuides from '@/components/admin/shared/AlignmentGuides';
 import CombinedEdgePanel from './CombinedEdgePanel';
 import SyncStatusPill from '@/components/admin/shared/SyncStatusPill';
+import FunnelLegendPanel from './FunnelLegendPanel';
 import { defaultEdgeOptions } from './funnel-board-config';
 import { useFunnelBoard } from './useFunnelBoard';
 import { useFunnelBoardContextOrThrow } from './FunnelBoardContext';
@@ -440,6 +441,8 @@ function FunnelBoardInner() {
               )}
             </Panel>
           )}
+
+          <FunnelLegendPanel funnelId={ctx.funnelId} tabId={ctx.activeTabId} />
         </ReactFlow>
 
         <AlignmentGuides horizontals={interactions.guides.horizontals} verticals={interactions.guides.verticals} />

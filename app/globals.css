@@ -379,3 +379,6 @@ body {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+.public-funnel-viewer .react-flow__handle.handle-connected {
+  opacity: 1 !important;
+}

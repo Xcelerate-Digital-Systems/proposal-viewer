@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, use, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
-  ReactFlow, ReactFlowProvider, Controls, MiniMap, Background, BackgroundVariant,
+  ReactFlow, ReactFlowProvider, Controls, MiniMap, Background, BackgroundVariant, Panel,
   ConnectionMode, type NodeTypes, type EdgeTypes, type Node, type Edge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -29,6 +29,7 @@ import LabeledEdge from '@/components/admin/feedback/board/edges/LabeledEdge';
 import FunnelTabBar from '@/components/admin/funnels/board/FunnelTabBar';
 import SectionNode from '@/components/admin/funnels/board/nodes/SectionNode';
 import ViewAsRoleMenu from '@/components/admin/funnels/board/ViewAsRoleMenu';
+import { FunnelLegendPanelReadOnly, type FunnelLegend } from '@/components/admin/funnels/board/FunnelLegendPanel';
 
 const nodeTypes: NodeTypes = {
   funnelStep: FunnelStepNode,
@@ -57,6 +58,7 @@ function PublicFunnelInner({ token }: { token: string }) {
   const [allBoardShapes, setAllBoardShapes] = useState<FunnelBoardShape[]>([]);
   const [allBoardSections, setAllBoardSections] = useState<FunnelBoardSection[]>([]);
   const [roles, setRoles] = useState<FunnelRole[]>([]);
+  const [legends, setLegends] = useState<FunnelLegend[]>([]);
   const [viewAsRoleId, setViewAsRoleId] = useState<string | null>(null);
   const [tabs, setTabs] = useState<FunnelTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
@@ -88,6 +90,7 @@ function PublicFunnelInner({ token }: { token: string }) {
         setAllBoardShapes(data.boardShapes || []);
         setAllBoardSections(data.boardSections || []);
         setRoles(data.roles || []);
+        setLegends(data.legends || []);
         const loadedTabs: FunnelTab[] = data.tabs || [];
         setTabs(loadedTabs);
         if (loadedTabs.length > 0) setActiveTabId(loadedTabs[0].id);
@@ -138,6 +141,11 @@ function PublicFunnelInner({ token }: { token: string }) {
     [allBoardSections, activeTabId, tabsEnabled]
   );
 
+  const activeLegend = useMemo(
+    () => legends.find(l => tabsEnabled ? l.tab_id === activeTabId : !l.tab_id) || null,
+    [legends, activeTabId, tabsEnabled]
+  );
+
   // Same forecast the admin board computes. Without this the viewer showed no
   // visitor counts, no flow labels, and — because the metrics row feeds into
   // node height — rendered nodes at a different height than the editor did.
@@ -162,46 +170,79 @@ function PublicFunnelInner({ token }: { token: string }) {
     setActiveTabId(tabId);
   }, []);
 
+  const noteIds = useMemo(() => new Set(boardNotes.map((n) => n.id)), [boardNotes]);
+
+  const connectedHandles = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    const add = (nodeId: string, handleId: string) => {
+      let s = m.get(nodeId);
+      if (!s) { s = new Set(); m.set(nodeId, s); }
+      s.add(handleId);
+    };
+    for (const e of boardEdges) {
+      const src = e.source_shape_id
+        ? (noteIds.has(e.source_shape_id) ? `note-${e.source_shape_id}` : `shape-${e.source_shape_id}`)
+        : `step-${e.source_step_id}`;
+      const tgt = e.target_shape_id
+        ? (noteIds.has(e.target_shape_id) ? `note-${e.target_shape_id}` : `shape-${e.target_shape_id}`)
+        : `step-${e.target_step_id}`;
+      add(src, e.source_handle || 'right');
+      add(tgt, e.target_handle || 'left');
+    }
+    return m;
+  }, [boardEdges, noteIds]);
+
   const nodes: Node[] = useMemo(() => {
     const roleById = new Map(roles.map((r) => [r.id, r]));
 
-    const stepNodes: Node[] = steps.map((step) => ({
-      id: `step-${step.id}`,
-      type: 'funnelStep',
-      position: { x: step.board_x, y: step.board_y },
-      data: {
-        step,
-        readOnly: true,
-        onNavigateTab: tabsEnabled ? handleNavigateTab : undefined,
-        tabs: tabsEnabled ? tabs : undefined,
-        role: step.role_id ? roleById.get(step.role_id) ?? null : null,
-      },
-      draggable: false, connectable: false,
-    }));
-    const noteNodes: Node[] = boardNotes.map((note) => ({
-      id: `note-${note.id}`,
-      type: 'stickyNote',
-      position: { x: note.board_x, y: note.board_y },
-      data: { note: note as unknown as FeedbackBoardNote, readOnly: true, description: note.description },
-      draggable: false, selectable: false, connectable: false,
-    }));
-    const shapeNodes: Node[] = boardShapes.map((shape) => ({
-      id: `shape-${shape.id}`,
-      type: 'shape',
-      position: { x: shape.x, y: shape.y },
-      data: {
-        shape: shape as unknown as FeedbackBoardShape,
-        readOnly: true,
-        linkedFunnelId: shape.linked_funnel_id,
-        linkedTabId: shape.linked_tab_id,
-        onNavigateTab: tabsEnabled ? handleNavigateTab : undefined,
-        tabs: tabsEnabled ? tabs : undefined,
-        description: shape.description,
-        message: shape.message,
-        role: shape.role_id ? roleById.get(shape.role_id) ?? null : null,
-      },
-      draggable: false, connectable: false,
-    }));
+    const stepNodes: Node[] = steps.map((step) => {
+      const nid = `step-${step.id}`;
+      return {
+        id: nid,
+        type: 'funnelStep',
+        position: { x: step.board_x, y: step.board_y },
+        data: {
+          step,
+          readOnly: true,
+          onNavigateTab: tabsEnabled ? handleNavigateTab : undefined,
+          tabs: tabsEnabled ? tabs : undefined,
+          role: step.role_id ? roleById.get(step.role_id) ?? null : null,
+          connectedHandleIds: connectedHandles.get(nid),
+        },
+        draggable: false, connectable: false,
+      };
+    });
+    const noteNodes: Node[] = boardNotes.map((note) => {
+      const nid = `note-${note.id}`;
+      return {
+        id: nid,
+        type: 'stickyNote',
+        position: { x: note.board_x, y: note.board_y },
+        data: { note: note as unknown as FeedbackBoardNote, readOnly: true, description: note.description, connectedHandleIds: connectedHandles.get(nid) },
+        draggable: false, selectable: false, connectable: false,
+      };
+    });
+    const shapeNodes: Node[] = boardShapes.map((shape) => {
+      const nid = `shape-${shape.id}`;
+      return {
+        id: nid,
+        type: 'shape',
+        position: { x: shape.x, y: shape.y },
+        data: {
+          shape: shape as unknown as FeedbackBoardShape,
+          readOnly: true,
+          linkedFunnelId: shape.linked_funnel_id,
+          linkedTabId: shape.linked_tab_id,
+          onNavigateTab: tabsEnabled ? handleNavigateTab : undefined,
+          tabs: tabsEnabled ? tabs : undefined,
+          description: shape.description,
+          message: shape.message,
+          role: shape.role_id ? roleById.get(shape.role_id) ?? null : null,
+          connectedHandleIds: connectedHandles.get(nid),
+        },
+        draggable: false, connectable: false,
+      };
+    });
     const sectionNodes: Node[] = boardSections.map((section) => ({
       id: `section-${section.id}`,
       type: 'section',
@@ -229,9 +270,7 @@ function PublicFunnelInner({ token }: { token: string }) {
     });
 
     return [...sectionNodes, ...withDim(stepNodes), ...noteNodes, ...withDim(shapeNodes)];
-  }, [steps, boardNotes, boardShapes, boardSections, tabs, tabsEnabled, handleNavigateTab, viewAsRoleId, roles]);
-
-  const noteIds = useMemo(() => new Set(boardNotes.map((n) => n.id)), [boardNotes]);
+  }, [steps, boardNotes, boardShapes, boardSections, tabs, tabsEnabled, handleNavigateTab, viewAsRoleId, roles, connectedHandles]);
 
   const edges: Edge[] = useMemo(() => boardEdges.map((e) => {
     const style = (e.style || {}) as Record<string, unknown>;
@@ -472,6 +511,7 @@ function PublicFunnelInner({ token }: { token: string }) {
                 zoomable
                 pannable
               />
+              {activeLegend && <FunnelLegendPanelReadOnly legend={activeLegend} />}
             </ReactFlow>
           </ReactFlowProvider>
           </ForecastCtx.Provider>

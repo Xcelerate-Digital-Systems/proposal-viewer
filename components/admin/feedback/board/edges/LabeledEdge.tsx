@@ -8,6 +8,7 @@ import {
   getSmoothStepPath,
   Position,
   useReactFlow,
+  useEdges,
   type EdgeProps,
 } from '@xyflow/react';
 
@@ -207,19 +208,67 @@ function MidpointHandle({
   );
 }
 
+const FAN_SPACING = 14;
+
+function fanOffset(idx: number, count: number): number {
+  if (count <= 1) return 0;
+  return (idx - (count - 1) / 2) * FAN_SPACING;
+}
+
+function applyPerpendicularOffset(
+  x: number, y: number, pos: Position, offset: number,
+): [number, number] {
+  if (offset === 0) return [x, y];
+  switch (pos) {
+    case Position.Top:
+    case Position.Bottom:
+      return [x + offset, y];
+    case Position.Left:
+    case Position.Right:
+      return [x, y + offset];
+    default:
+      return [x, y];
+  }
+}
+
 function LabeledEdgeComponent({
   id,
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
+  source,
+  target,
+  sourceX: rawSourceX,
+  sourceY: rawSourceY,
+  targetX: rawTargetX,
+  targetY: rawTargetY,
   sourcePosition,
   targetPosition,
+  sourceHandleId,
+  targetHandleId,
   style = {},
   data,
   selected,
 }: EdgeProps) {
   const edgeData = (data || {}) as LabeledEdgeData;
+
+  const allEdges = useEdges();
+  const { srcOff, tgtOff } = useMemo(() => {
+    const srcHandle = sourceHandleId || 'right';
+    const tgtHandle = targetHandleId || 'left';
+
+    const srcSiblings = allEdges
+      .filter(e => e.source === source && (e.sourceHandle || 'right') === srcHandle)
+      .sort((a, b) => a.id.localeCompare(b.id));
+    const tgtSiblings = allEdges
+      .filter(e => e.target === target && (e.targetHandle || 'left') === tgtHandle)
+      .sort((a, b) => a.id.localeCompare(b.id));
+
+    return {
+      srcOff: fanOffset(srcSiblings.findIndex(e => e.id === id), srcSiblings.length),
+      tgtOff: fanOffset(tgtSiblings.findIndex(e => e.id === id), tgtSiblings.length),
+    };
+  }, [allEdges, id, source, target, sourceHandleId, targetHandleId]);
+
+  const [sourceX, sourceY] = applyPerpendicularOffset(rawSourceX, rawSourceY, sourcePosition, srcOff);
+  const [targetX, targetY] = applyPerpendicularOffset(rawTargetX, rawTargetY, targetPosition, tgtOff);
   const label = edgeData.label;
   const rawColor = edgeData.color || (style as Record<string, string>).stroke || '#2B2B2B';
   const color = selected

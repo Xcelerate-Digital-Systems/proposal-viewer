@@ -1,11 +1,21 @@
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuth, unauthorized, txt, json, type McpServer } from '@/lib/mcp/types';
-import { FUNNEL_STEP_DEFAULTS, defaultRoleColor } from '@/lib/types/funnel';
+import { FUNNEL_STEP_DEFAULTS, defaultRoleColor, messageKindForStep, parseNodeMessage, hasMessageContent, type FunnelStepType } from '@/lib/types/funnel';
 import { BOARD_ACTION_GROUPS } from '@/lib/types/board-actions';
 import { LUCIDE_ICON_SLUGS, BRAND_ICON_SLUGS, VALID_ICON_SLUGS_SET } from '@/lib/funnel/icon-slugs';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'")
+    .replace(/&#x27;/g, "'");
+}
 
 function friendlyError(msg: string): string {
   if (msg.includes('invalid input syntax for type uuid'))
@@ -90,6 +100,39 @@ async function resolveAuthForFunnel(
   return { auth: { ...auth, companyId: funnel.company_id }, funnelId };
 }
 
+function estimateStepHeight(step: { step_type: string; description?: string | null; linked_funnel_id?: string | null; linked_tab_id?: string | null; message?: unknown }): { width: number; minHeight: number; maxHeight: number } {
+  const FRAME_W = 200;
+  const ICON_SIZE = 88;
+  const PAGE_MOCKUP_H = 200;
+  const DESC_CARD_MIN_H = 56;
+  const DESC_CARD_OVERLAP = 20;
+  const NAV_PILL_H = 26;
+  const METRICS_H = 18;
+
+  const isPage = step.step_type.startsWith('page_');
+  const topH = isPage ? PAGE_MOCKUP_H : ICON_SIZE;
+  const hasDesc = !!step.description;
+  const hasLink = !!step.linked_funnel_id || !!step.linked_tab_id;
+  const msgKind = messageKindForStep(step.step_type as FunnelStepType);
+  const parsed = msgKind ? parseNodeMessage(step.message) : null;
+  const hasMsg = !!parsed && hasMessageContent(parsed);
+
+  const navRow = (hasLink ? NAV_PILL_H + 4 : 0) + (hasMsg ? NAV_PILL_H + 4 : 0);
+  const descArea = hasDesc ? 66 : 0;
+  const cardPadTop = DESC_CARD_OVERLAP + 4;
+  const labelRow = 22;
+  const cardBottomPad = 10;
+
+  const cardNoMetrics = cardPadTop + labelRow + navRow + descArea + cardBottomPad;
+  const cardWithMetrics = cardNoMetrics + METRICS_H + 2;
+
+  return {
+    width: FRAME_W,
+    minHeight: topH + Math.max(DESC_CARD_MIN_H, cardNoMetrics) - DESC_CARD_OVERLAP,
+    maxHeight: topH + Math.max(DESC_CARD_MIN_H, cardWithMetrics) - DESC_CARD_OVERLAP,
+  };
+}
+
 export function registerFunnelTools(server: McpServer) {
 
   server.tool('list_funnel_node_types', 'List all valid funnel node types grouped by category (Sources, Pages, Offers, Actions, Drawing). Steps use stepType slugs; Actions and Drawing use shapeType slugs via create_funnel_shape.', {
@@ -139,11 +182,12 @@ export function registerFunnelTools(server: McpServer) {
     return json(data);
   });
 
-  server.tool('get_funnel', 'Get funnel detail with all steps, edges, and shapes. Pass tabId to filter to a single tab (recommended for large boards).', {
+  server.tool('get_funnel', 'Get funnel detail with all steps, edges, and shapes. Pass tabId to filter to a single tab (recommended for large boards). Use mode:"summary" for a lightweight overview without full node arrays.', {
     funnelId: z.string(),
     tabId: z.string().optional().describe('Filter to a single tab — drastically reduces payload on multi-tab boards'),
+    mode: z.enum(['full', 'summary']).optional().describe('full (default): all nodes/edges/shapes. summary: metadata + counts + tab list only — avoids the tool-result size cap on large boards'),
     companyId: z.string().optional().describe('Optional — auto-resolved from the funnel. Super admin: override to target a different company'),
-  }, async ({ funnelId, tabId, companyId }, extra) => {
+  }, async ({ funnelId, tabId, mode, companyId }, extra) => {
     const resolved = await resolveAuthForFunnel(extra, funnelId, companyId);
     if (!resolved) return unauthorized();
     const { auth } = resolved;
@@ -160,20 +204,44 @@ export function registerFunnelTools(server: McpServer) {
       shapesQ = shapesQ.eq('tab_id', tabId);
       sectionsQ = sectionsQ.eq('tab_id', tabId);
     }
-    const [{ data: steps }, { data: edges }, { data: shapes }, { data: sections }] = await Promise.all([stepsQ, edgesQ, shapesQ, sectionsQ]);
+    if (mode === 'summary') {
+      const [{ count: stepCount }, { count: edgeCount }, { count: shapeCount }, { count: sectionCount }] = await Promise.all([
+        sb.from('funnel_steps').select('*', { count: 'exact', head: true }).eq('funnel_id', funnelId).eq('company_id', auth.companyId),
+        sb.from('funnel_board_edges').select('*', { count: 'exact', head: true }).eq('funnel_id', funnelId).eq('company_id', auth.companyId),
+        sb.from('funnel_board_shapes').select('*', { count: 'exact', head: true }).eq('funnel_id', funnelId).eq('company_id', auth.companyId),
+        sb.from('funnel_board_sections').select('*', { count: 'exact', head: true }).eq('funnel_id', funnelId).eq('company_id', auth.companyId),
+      ]);
+      const { data: tabList } = await sb.from('funnel_tabs').select('id, name, position').eq('funnel_id', funnelId).eq('company_id', auth.companyId).order('position');
+      return json({
+        id: funnel.id, name: funnel.name, description: funnel.description, status: funnel.status,
+        currency: funnel.currency, forecastPeriod: funnel.forecast_period, defaultDealValue: funnel.default_deal_value,
+        isTemplate: funnel.is_template,
+        createdAt: funnel.created_at, updatedAt: funnel.updated_at,
+        counts: { steps: stepCount ?? 0, edges: edgeCount ?? 0, shapes: shapeCount ?? 0, sections: sectionCount ?? 0 },
+        tabs: tabList || [],
+        _hint: 'Use tabId filter with mode:"full" to read one tab at a time.',
+      });
+    }
+    let legendQ = sb.from('funnel_legends').select('id, position, entries, tab_id').eq('funnel_id', funnelId).eq('company_id', auth.companyId);
+    if (tabId) legendQ = legendQ.eq('tab_id', tabId);
+    const [{ data: steps }, { data: edges }, { data: shapes }, { data: sections }, { data: legends }] = await Promise.all([stepsQ, edgesQ, shapesQ, sectionsQ, legendQ]);
+    const legend = tabId
+      ? (legends || [])[0] || null
+      : (legends || []).length > 0 ? legends : null;
     return json({
       id: funnel.id, name: funnel.name, description: funnel.description, status: funnel.status,
       currency: funnel.currency, forecastPeriod: funnel.forecast_period, defaultDealValue: funnel.default_deal_value,
       isTemplate: funnel.is_template,
       createdAt: funnel.created_at, updatedAt: funnel.updated_at,
       ...(tabId ? { filteredByTabId: tabId } : {}),
-      _nodeSizeHint: 'Steps are fixed-size circles — the rendered frame is roughly 140×140px, plus a description card below (140×variable). Shapes have explicit width/height when set. Use these approximations for collision/layout calculations.',
+      _nodeSizeHint: 'Each step includes renderedSize: {width, minHeight, maxHeight}. minHeight = no forecast metrics row; maxHeight = with metrics row. Shapes carry explicit width/height. All values in px.',
       steps: (steps || []).map(s => ({
         id: s.id, type: s.step_type, label: s.label, icon: s.icon, url: s.url, color: s.color,
         position: { x: s.board_x, y: s.board_y }, metrics: s.metrics,
         linkedFunnelId: s.linked_funnel_id, linkedTabId: s.linked_tab_id,
         tabId: s.tab_id, description: s.description, message: s.message,
         roleId: s.role_id, platform: s.platform,
+        renderedSize: estimateStepHeight(s),
       })),
       edges: (edges || []).map(e => ({
         id: e.id, sourceStepId: e.source_step_id, sourceShapeId: e.source_shape_id,
@@ -196,6 +264,10 @@ export function registerFunnelTools(server: McpServer) {
         x: sec.x, y: sec.y, width: sec.width, height: sec.height,
         tabId: sec.tab_id, locked: sec.locked,
       })),
+      legend: legend ? (Array.isArray(legend)
+        ? legend.map(l => ({ id: l.id, position: l.position, entries: l.entries, tabId: l.tab_id }))
+        : { id: legend.id, position: legend.position, entries: legend.entries, tabId: legend.tab_id }
+      ) : null,
     });
   });
 
@@ -211,8 +283,8 @@ export function registerFunnelTools(server: McpServer) {
     const sb = createServiceClient();
     const row: Record<string, unknown> = {
       company_id: auth.companyId,
-      name: args.name,
-      description: args.description || null,
+      name: decodeEntities(args.name),
+      description: args.description ? decodeEntities(args.description) : null,
       created_by: auth.userId,
     };
     if (args.currency) row.currency = args.currency;
@@ -248,7 +320,10 @@ export function registerFunnelTools(server: McpServer) {
     let count = 0;
     for (const [param, col] of MAP) {
       const val = (args as Record<string, unknown>)[param];
-      if (val !== undefined) { updates[col] = val; count++; }
+      if (val !== undefined) {
+        updates[col] = (param === 'name' || param === 'description') && typeof val === 'string' ? decodeEntities(val) : val;
+        count++;
+      }
     }
     if (count === 0) return txt('No fields to update.');
     const { error } = await sb.from('funnels').update(updates).eq('id', args.funnelId);
@@ -312,7 +387,7 @@ export function registerFunnelTools(server: McpServer) {
       funnel_id: args.funnelId,
       company_id: auth.companyId,
       step_type: args.stepType,
-      label: args.label,
+      label: decodeEntities(args.label),
       icon: args.icon || null,
       url: args.url || null,
       color: args.color || null,
@@ -322,7 +397,7 @@ export function registerFunnelTools(server: McpServer) {
       linked_funnel_id: args.linkedFunnelId || null,
       linked_tab_id: args.linkedTabId || null,
       tab_id: args.tabId || null,
-      description: args.description || null,
+      description: args.description ? decodeEntities(args.description) : null,
       message: args.message ?? null,
       role_id: args.roleId ?? null,
       platform: args.platform ?? null,
@@ -375,7 +450,7 @@ export function registerFunnelTools(server: McpServer) {
     if (!step) return txt('Step not found');
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (args.stepType !== undefined) patch.step_type = args.stepType;
-    if (args.label !== undefined) patch.label = args.label;
+    if (args.label !== undefined) patch.label = decodeEntities(args.label);
     if (args.x !== undefined) patch.board_x = Math.round(args.x);
     if (args.y !== undefined) patch.board_y = Math.round(args.y);
     if (args.icon !== undefined) patch.icon = args.icon;
@@ -385,7 +460,7 @@ export function registerFunnelTools(server: McpServer) {
     if (args.linkedFunnelId !== undefined) patch.linked_funnel_id = args.linkedFunnelId;
     if (args.linkedTabId !== undefined) patch.linked_tab_id = args.linkedTabId;
     if (args.tabId !== undefined) patch.tab_id = args.tabId;
-    if (args.description !== undefined) patch.description = args.description;
+    if (args.description !== undefined) patch.description = args.description !== null ? decodeEntities(args.description) : null;
     if (args.message !== undefined) patch.message = args.message;
     if (args.roleId !== undefined) patch.role_id = args.roleId;
     if (args.platform !== undefined) patch.platform = args.platform;
@@ -418,8 +493,8 @@ export function registerFunnelTools(server: McpServer) {
     sourceShapeId: z.string().optional().describe('Source shape ID (use this OR sourceStepId)'),
     targetStepId: z.string().optional().describe('Target step ID (use this OR targetShapeId)'),
     targetShapeId: z.string().optional().describe('Target shape ID (use this OR targetStepId)'),
-    sourceHandle: z.enum(['top', 'right', 'bottom', 'left']).optional().describe('Default: right'),
-    targetHandle: z.enum(['top', 'right', 'bottom', 'left']).optional().describe('Default: left'),
+    sourceHandle: z.enum(['top', 'right', 'bottom', 'left', 'top-source', 'right-target', 'bottom-target', 'left-source']).optional().describe('Default: right. Diamond shapes have extra handles: top-source, right-target, bottom-target, left-source.'),
+    targetHandle: z.enum(['top', 'right', 'bottom', 'left', 'top-source', 'right-target', 'bottom-target', 'left-source']).optional().describe('Default: left. Diamond shapes have extra handles: top-source, right-target, bottom-target, left-source.'),
     label: z.string().optional().describe('Edge label text'),
     animated: z.boolean().optional(),
     splitPercent: z.number().optional().describe('0-100 flow split percentage'),
@@ -453,7 +528,7 @@ export function registerFunnelTools(server: McpServer) {
       target_shape_id: args.targetShapeId || null,
       source_handle: args.sourceHandle || 'right',
       target_handle: args.targetHandle || 'left',
-      label: args.label || null,
+      label: args.label ? decodeEntities(args.label) : null,
       edge_type: args.edgeType || 'labeled',
       animated: args.animated ?? false,
       split_percent: args.splitPercent ?? null,
@@ -468,8 +543,8 @@ export function registerFunnelTools(server: McpServer) {
     edgeId: z.string(),
     funnelId: z.string(),
     label: z.string().nullable().optional(),
-    sourceHandle: z.enum(['top', 'right', 'bottom', 'left']).optional(),
-    targetHandle: z.enum(['top', 'right', 'bottom', 'left']).optional(),
+    sourceHandle: z.enum(['top', 'right', 'bottom', 'left', 'top-source', 'right-target', 'bottom-target', 'left-source']).optional(),
+    targetHandle: z.enum(['top', 'right', 'bottom', 'left', 'top-source', 'right-target', 'bottom-target', 'left-source']).optional(),
     animated: z.boolean().optional(),
     splitPercent: z.number().nullable().optional(),
     edgeType: z.string().optional(),
@@ -488,7 +563,7 @@ export function registerFunnelTools(server: McpServer) {
     const { data: e } = await sb.from('funnel_board_edges').select('id, style').eq('id', args.edgeId).eq('funnel_id', args.funnelId).eq('company_id', auth.companyId).single();
     if (!e) return txt('Edge not found');
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    if (args.label !== undefined) patch.label = args.label;
+    if (args.label !== undefined) patch.label = args.label !== null ? decodeEntities(args.label) : null;
     if (args.sourceHandle !== undefined) patch.source_handle = args.sourceHandle;
     if (args.targetHandle !== undefined) patch.target_handle = args.targetHandle;
     if (args.animated !== undefined) patch.animated = args.animated;
@@ -558,7 +633,7 @@ export function registerFunnelTools(server: McpServer) {
       height: args.height ?? null,
       end_x: args.endX ?? null,
       end_y: args.endY ?? null,
-      content: args.content || null,
+      content: args.content ? decodeEntities(args.content) : null,
       color: args.color || '#2B2B2B',
       stroke_width: args.strokeWidth ?? 2,
       dashed: args.dashed ?? false,
@@ -566,7 +641,7 @@ export function registerFunnelTools(server: McpServer) {
       linked_funnel_id: args.linkedFunnelId || null,
       linked_tab_id: args.linkedTabId || null,
       tab_id: args.tabId || null,
-      description: args.description || null,
+      description: args.description ? decodeEntities(args.description) : null,
       message: args.message ?? null,
       role_id: args.roleId ?? null,
       platform: args.platform ?? null,
@@ -617,7 +692,7 @@ export function registerFunnelTools(server: McpServer) {
     if (args.y !== undefined) patch.y = Math.round(args.y);
     if (args.width !== undefined) patch.width = args.width;
     if (args.height !== undefined) patch.height = args.height;
-    if (args.content !== undefined) patch.content = args.content;
+    if (args.content !== undefined) patch.content = decodeEntities(args.content);
     if (args.color !== undefined) patch.color = args.color;
     if (args.strokeWidth !== undefined) patch.stroke_width = args.strokeWidth;
     if (args.dashed !== undefined) patch.dashed = args.dashed;
@@ -627,7 +702,7 @@ export function registerFunnelTools(server: McpServer) {
     if (args.linkedFunnelId !== undefined) patch.linked_funnel_id = args.linkedFunnelId;
     if (args.linkedTabId !== undefined) patch.linked_tab_id = args.linkedTabId;
     if (args.tabId !== undefined) patch.tab_id = args.tabId;
-    if (args.description !== undefined) patch.description = args.description;
+    if (args.description !== undefined) patch.description = args.description !== null ? decodeEntities(args.description) : null;
     if (args.message !== undefined) patch.message = args.message;
     if (args.roleId !== undefined) patch.role_id = args.roleId;
     if (args.platform !== undefined) patch.platform = args.platform;
@@ -761,7 +836,7 @@ export function registerFunnelTools(server: McpServer) {
     const { data, error } = await sb.from('funnel_tabs').insert({
       funnel_id: args.funnelId,
       company_id: auth.companyId,
-      name: args.name,
+      name: decodeEntities(args.name),
       position: isFirst ? 0 : maxPos + 1,
     }).select('id, name, position').single();
     if (error || !data) return txt(`Failed: ${friendlyError(error?.message || 'unknown')}`);
@@ -786,7 +861,7 @@ export function registerFunnelTools(server: McpServer) {
     if (!resolved) return unauthorized();
     const sb = createServiceClient();
     const { error } = await sb.from('funnel_tabs')
-      .update({ name: args.name, updated_at: new Date().toISOString() })
+      .update({ name: decodeEntities(args.name), updated_at: new Date().toISOString() })
       .eq('id', args.tabId)
       .eq('funnel_id', args.funnelId);
     if (error) return txt(`Failed: ${friendlyError(error.message)}`);
@@ -850,7 +925,7 @@ export function registerFunnelTools(server: McpServer) {
 
     const { data: newFunnel, error: fErr } = await sb.from('funnels').insert({
       company_id: auth.companyId,
-      name: args.name || source.name,
+      name: args.name ? decodeEntities(args.name) : source.name,
       description: source.description,
       currency: source.currency,
       forecast_period: source.forecast_period,
@@ -945,8 +1020,8 @@ export function registerFunnelTools(server: McpServer) {
 
     const { data: newFunnel, error: fErr } = await sb.from('funnels').insert({
       company_id: auth.companyId,
-      name: args.name,
-      description: args.description || template.description,
+      name: decodeEntities(args.name),
+      description: args.description ? decodeEntities(args.description) : template.description,
       currency: template.currency,
       forecast_period: template.forecast_period,
       parent_funnel_id: null,
@@ -1059,7 +1134,7 @@ export function registerFunnelTools(server: McpServer) {
     const { data, error } = await sb.from('funnel_board_sections').insert({
       funnel_id: args.funnelId,
       company_id: resolved.auth.companyId,
-      label: args.label,
+      label: decodeEntities(args.label),
       color: args.color || 'teal',
       x: Math.round(args.x), y: Math.round(args.y),
       width: Math.round(args.width), height: Math.round(args.height),
@@ -1086,7 +1161,7 @@ export function registerFunnelTools(server: McpServer) {
       .eq('company_id', resolved.auth.companyId).single();
     if (!sec) return txt('Section not found');
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    if (args.label !== undefined) patch.label = args.label;
+    if (args.label !== undefined) patch.label = decodeEntities(args.label);
     if (args.color !== undefined) patch.color = args.color;
     if (args.x !== undefined) patch.x = Math.round(args.x);
     if (args.y !== undefined) patch.y = Math.round(args.y);
@@ -1137,7 +1212,7 @@ export function registerFunnelTools(server: McpServer) {
   }, async (args, extra) => {
     const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
     const sb = createServiceClient();
-    const name = args.name.trim();
+    const name = decodeEntities(args.name.trim());
     if (!name) return txt('Role name is required.');
     // Names are unique per company, case-insensitively — return the existing
     // row rather than erroring so this is safe to call repeatedly.
@@ -1175,5 +1250,145 @@ export function registerFunnelTools(server: McpServer) {
       .eq('id', args.roleId).eq('company_id', auth.companyId);
     if (error) return txt(`Failed: ${friendlyError(error.message)}`);
     return txt('Role deleted.');
+  });
+
+  // ── Legend tools ──────────────────────────────────────────────────
+
+  const LEGEND_POSITIONS = ['top-left', 'top-right', 'bottom-left', 'bottom-right'] as const;
+
+  const legendEntrySchema = z.object({
+    stroke: z.string().describe('CSS colour, e.g. "#FF6B00" or "#2B2B2B"'),
+    strokeWidth: z.number().optional().describe('Line width in px (default 2)'),
+    dashed: z.boolean().optional().describe('Dashed line style'),
+    animated: z.boolean().optional().describe('Animated (marching-ants) style'),
+    label: z.string().describe('Human-readable name for this line style, e.g. "Automated email"'),
+  });
+
+  server.tool('set_funnel_legend', 'Create or replace the legend for a funnel tab. The legend is a viewport-pinned key that explains the board\'s edge (line) styles. Upserts on (funnelId, tabId).', {
+    funnelId: z.string(),
+    tabId: z.string().nullable().optional().describe('Tab to attach the legend to. Null or omitted = single-canvas funnel.'),
+    position: z.enum(LEGEND_POSITIONS).optional().describe('Viewport corner. Default: bottom-left'),
+    entries: z.array(legendEntrySchema).describe('Line-style definitions. Each entry = one row in the legend.'),
+    companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
+  }, async (args, extra) => {
+    const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
+    if (!resolved) return unauthorized();
+    const { auth } = resolved;
+    const sb = createServiceClient();
+    const pos = args.position || 'bottom-left';
+    const entries = args.entries.map(e => ({
+      stroke: e.stroke,
+      strokeWidth: e.strokeWidth ?? 2,
+      dashed: e.dashed ?? false,
+      animated: e.animated ?? false,
+      label: decodeEntities(e.label),
+    }));
+
+    const tabVal = args.tabId || null;
+    let findQ = sb.from('funnel_legends')
+      .select('id')
+      .eq('funnel_id', args.funnelId)
+      .eq('company_id', auth.companyId);
+    if (tabVal) findQ = findQ.eq('tab_id', tabVal);
+    else findQ = findQ.is('tab_id', null);
+    const { data: existingRow } = await findQ.maybeSingle();
+
+    if (existingRow) {
+      const { error } = await sb.from('funnel_legends')
+        .update({ position: pos, entries, updated_at: new Date().toISOString() })
+        .eq('id', existingRow.id);
+      if (error) return txt(`Failed: ${friendlyError(error.message)}`);
+      return json({ id: existingRow.id, position: pos, entries, updated: true });
+    }
+
+    const { data, error } = await sb.from('funnel_legends').insert({
+      funnel_id: args.funnelId,
+      company_id: auth.companyId,
+      tab_id: tabVal,
+      position: pos,
+      entries,
+    }).select('id').single();
+    if (error || !data) return txt(`Failed: ${friendlyError(error?.message || 'unknown')}`);
+    return json({ id: data.id, position: pos, entries, created: true });
+  });
+
+  server.tool('auto_derive_legend', 'Scan edges on a funnel tab and return the distinct line-style combinations in use. Use the result to build a legend — name each entry, then pass the array to set_funnel_legend. Also flags styles with no existing legend label.', {
+    funnelId: z.string(),
+    tabId: z.string().optional().describe('Tab to scan. Omit for single-canvas funnels.'),
+    companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
+  }, async (args, extra) => {
+    const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
+    if (!resolved) return unauthorized();
+    const { auth } = resolved;
+    const sb = createServiceClient();
+
+    let q = sb.from('funnel_board_edges')
+      .select('style, animated')
+      .eq('funnel_id', args.funnelId)
+      .eq('company_id', auth.companyId);
+    if (args.tabId) q = q.eq('tab_id', args.tabId);
+    const { data: edges } = await q;
+
+    // Collect distinct visual combos
+    const combos = new Map<string, { stroke: string; strokeWidth: number; dashed: boolean; animated: boolean; count: number }>();
+    for (const e of edges || []) {
+      const style = (e.style || {}) as Record<string, unknown>;
+      const stroke = (style.stroke as string) || '#2B2B2B';
+      const strokeWidth = Number(style.strokeWidth) || 2;
+      const dashed = !!style.dashed;
+      const animated = !!e.animated;
+      const key = `${stroke}|${strokeWidth}|${dashed}|${animated}`;
+      const existing = combos.get(key);
+      if (existing) { existing.count++; } else {
+        combos.set(key, { stroke, strokeWidth, dashed, animated, count: 1 });
+      }
+    }
+
+    // Check existing legend for labels
+    const legendQ = args.tabId
+      ? sb.from('funnel_legends').select('entries').eq('funnel_id', args.funnelId).eq('tab_id', args.tabId).maybeSingle()
+      : sb.from('funnel_legends').select('entries').eq('funnel_id', args.funnelId).is('tab_id', null).maybeSingle();
+    const { data: legendRow } = await legendQ;
+    const existingEntries = (legendRow?.entries || []) as Array<{ stroke: string; strokeWidth?: number; dashed?: boolean; animated?: boolean; label: string }>;
+    const labelMap = new Map<string, string>();
+    for (const le of existingEntries) {
+      const key = `${le.stroke}|${le.strokeWidth ?? 2}|${!!le.dashed}|${!!le.animated}`;
+      labelMap.set(key, le.label);
+    }
+
+    const derived = Array.from(combos.entries()).map(([key, c]) => ({
+      stroke: c.stroke,
+      strokeWidth: c.strokeWidth,
+      dashed: c.dashed,
+      animated: c.animated,
+      edgeCount: c.count,
+      existingLabel: labelMap.get(key) || null,
+      needsLabel: !labelMap.has(key),
+    }));
+
+    return json({
+      styles: derived.sort((a, b) => b.edgeCount - a.edgeCount),
+      totalEdges: (edges || []).length,
+      unlabelledCount: derived.filter(d => d.needsLabel).length,
+      _hint: 'Name each style, then call set_funnel_legend with the entries array.',
+    });
+  });
+
+  server.tool('delete_funnel_legend', 'Remove the legend from a funnel tab.', {
+    funnelId: z.string(),
+    tabId: z.string().nullable().optional(),
+    companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
+  }, async (args, extra) => {
+    const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
+    if (!resolved) return unauthorized();
+    const { auth } = resolved;
+    const sb = createServiceClient();
+    const tabVal = args.tabId || null;
+    let q = sb.from('funnel_legends').delete().eq('funnel_id', args.funnelId).eq('company_id', auth.companyId);
+    if (tabVal) q = q.eq('tab_id', tabVal);
+    else q = q.is('tab_id', null);
+    const { error } = await q;
+    if (error) return txt(`Failed: ${friendlyError(error.message)}`);
+    return txt('Legend removed.');
   });
 }
