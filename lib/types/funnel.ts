@@ -240,6 +240,15 @@ export type FunnelStep = {
   linked_funnel_id: string | null;
   tab_id: string | null;
   linked_tab_id: string | null;
+  /** Email/SMS copy attached to this node — see FunnelNodeMessage. Null when
+   *  the node carries no message, or isn't a message-capable type. */
+  message: FunnelNodeMessage | null;
+  /** Owning role — a plain label, not an AgencyViz user. See FunnelRole. */
+  role_id: string | null;
+  /** Brand slug for the system this node runs in ('ghl', 'servicem8', …),
+   *  shown as a small logo badge. Separate from `icon`, which is the node's
+   *  own mark — a Qualified stage keeps its tick and gains a GHL badge. */
+  platform: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -342,9 +351,187 @@ export type FunnelBoardShape = {
   linked_funnel_id: string | null;
   tab_id: string | null;
   linked_tab_id: string | null;
+  /** Email/SMS copy attached to this node — see FunnelNodeMessage. Kept in its
+   *  own column rather than folded into `content`, which is parsed by the
+   *  shared feedback shape helpers and drops unknown keys. */
+  message: FunnelNodeMessage | null;
+  /** Owning role — a plain label, not an AgencyViz user. See FunnelRole. */
+  role_id: string | null;
+  /** Brand slug for the system this node runs in ('ghl', 'servicem8', …),
+   *  shown as a small logo badge. Separate from `icon`, which is the node's
+   *  own mark — a Qualified stage keeps its tick and gains a GHL badge. */
+  platform: string | null;
   created_at: string;
   updated_at: string;
 };
+
+/* ─── Node messages ─────────────────────────────────────────────────────────
+ *
+ *  An email or SMS node can carry the actual copy that would be sent, so the
+ *  funnel doubles as the place that copy lives. Nothing renders on the canvas
+ *  beyond a small badge — the copy opens in a modal, in the admin board and in
+ *  the public viewer alike.
+ */
+
+export type FunnelMessageKind = 'email' | 'sms';
+
+export type FunnelNodeMessage = {
+  kind: FunnelMessageKind;
+  /** Email only — the "from" line shown in the preview. */
+  from?: string | null;
+  /** Email only. */
+  subject?: string | null;
+  /** Email only — inbox preview text after the subject. */
+  preheader?: string | null;
+  body: string;
+};
+
+/** Step types that can carry a message, and which kind. */
+export const MESSAGE_STEP_TYPES: Partial<Record<FunnelStepType, FunnelMessageKind>> = {
+  traffic_email: 'email',
+  traffic_sms: 'sms',
+};
+
+/** Shape types that can carry a message, and which kind. */
+export const MESSAGE_SHAPE_TYPES: Partial<Record<FunnelShapeType, FunnelMessageKind>> = {
+  email_notification: 'email',
+  sms_notification: 'sms',
+};
+
+export function messageKindForStep(t: FunnelStepType): FunnelMessageKind | null {
+  return MESSAGE_STEP_TYPES[t] ?? null;
+}
+
+export function messageKindForShape(t: FunnelShapeType | string): FunnelMessageKind | null {
+  return MESSAGE_SHAPE_TYPES[t as FunnelShapeType] ?? null;
+}
+
+/** Normalise whatever came back from jsonb into a usable message, or null.
+ *  Tolerates a stringified payload, since Supabase clients have historically
+ *  round-tripped jsonb columns both ways. */
+export function parseNodeMessage(raw: unknown): FunnelNodeMessage | null {
+  if (!raw) return null;
+  let obj: unknown = raw;
+  if (typeof raw === 'string') {
+    try { obj = JSON.parse(raw); } catch { return null; }
+  }
+  if (!obj || typeof obj !== 'object') return null;
+  const m = obj as Partial<FunnelNodeMessage>;
+  if (m.kind !== 'email' && m.kind !== 'sms') return null;
+  return {
+    kind: m.kind,
+    from: typeof m.from === 'string' ? m.from : null,
+    subject: typeof m.subject === 'string' ? m.subject : null,
+    preheader: typeof m.preheader === 'string' ? m.preheader : null,
+    body: typeof m.body === 'string' ? m.body : '',
+  };
+}
+
+/** True when there's something worth opening a modal for. A message with an
+ *  empty body and no subject is treated as absent so nodes don't sprout a
+ *  badge the moment the editor is touched. */
+export function hasMessageContent(m: FunnelNodeMessage | null): boolean {
+  if (!m) return false;
+  return !!(m.body.trim() || m.subject?.trim());
+}
+
+/* ─── Roles ─────────────────────────────────────────────────────────────────
+ *
+ *  A role is a coloured label describing who owns a step — "Sales Rep",
+ *  "Account Manager", "Me". Deliberately NOT linked to team_members or auth
+ *  users: assigning one must never imply inviting anybody to the account.
+ *
+ *  Company-scoped rather than funnel-scoped, so a role typed once on one
+ *  funnel is offered on every other funnel and pipeline.
+ */
+
+export type FunnelRole = {
+  id: string;
+  company_id: string;
+  name: string;
+  color: string;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Swatches offered when creating a role. Deliberately distinct from the node
+ *  tints so a role chip never reads as part of the node's own colour. */
+export const FUNNEL_ROLE_COLORS = [
+  '#017C87', '#3B82F6', '#8B5CF6', '#EC4899',
+  '#F97316', '#EAB308', '#10B981', '#64748B',
+];
+
+/** Deterministic colour for a newly typed role, so two people adding "Sales
+ *  Rep" on different funnels don't get different swatches. */
+export function defaultRoleColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
+  return FUNNEL_ROLE_COLORS[Math.abs(hash) % FUNNEL_ROLE_COLORS.length];
+}
+
+/* ─── Board sections ────────────────────────────────────────────────────────
+ *
+ *  A labelled tinted region drawn behind the nodes — "Lead Generation",
+ *  "Onboarding" — so a large canvas reads as a handful of phases when zoomed
+ *  out.
+ *
+ *  Membership is positional: a node belongs to a section when it sits inside
+ *  the section's bounds. There's no join table and no FK on the node, which
+ *  means dragging a node in or out is the only thing that changes membership,
+ *  and nothing can fall out of sync.
+ *
+ *  Sections are NOT React Flow parent nodes. Parenting would make child
+ *  coordinates relative to the parent, and board_x/board_y are absolute
+ *  everywhere else in the funnel code (forecast, viewer, snapping).
+ */
+
+export type FunnelBoardSection = {
+  id: string;
+  funnel_id: string;
+  company_id: string;
+  tab_id: string | null;
+  label: string;
+  /** Key into FUNNEL_SECTION_COLORS, not a hex value. */
+  color: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export const FUNNEL_SECTION_COLORS: Record<
+  string,
+  { fill: string; border: string; text: string; label: string }
+> = {
+  teal:   { fill: 'rgba(1,124,135,0.06)',   border: 'rgba(1,124,135,0.35)',   text: '#017C87', label: 'Teal' },
+  blue:   { fill: 'rgba(59,130,246,0.06)',  border: 'rgba(59,130,246,0.35)',  text: '#2563EB', label: 'Blue' },
+  purple: { fill: 'rgba(139,92,246,0.06)',  border: 'rgba(139,92,246,0.35)',  text: '#7C3AED', label: 'Purple' },
+  amber:  { fill: 'rgba(245,158,11,0.07)',  border: 'rgba(245,158,11,0.40)',  text: '#B45309', label: 'Amber' },
+  rose:   { fill: 'rgba(244,63,94,0.06)',   border: 'rgba(244,63,94,0.35)',   text: '#E11D48', label: 'Rose' },
+  green:  { fill: 'rgba(16,185,129,0.06)',  border: 'rgba(16,185,129,0.35)',  text: '#059669', label: 'Green' },
+  slate:  { fill: 'rgba(100,116,139,0.07)', border: 'rgba(100,116,139,0.35)', text: '#475569', label: 'Slate' },
+};
+
+export const FUNNEL_SECTION_COLOR_KEYS = Object.keys(FUNNEL_SECTION_COLORS);
+
+export function sectionPalette(color: string) {
+  return FUNNEL_SECTION_COLORS[color] ?? FUNNEL_SECTION_COLORS.teal;
+}
+
+/** True when a node's top-left corner sits inside the section. Corner rather
+ *  than centre because node heights vary a lot (a page mockup is far taller
+ *  than an icon disc) and the corner is the one point we always know. */
+export function nodeInSection(
+  node: { x: number; y: number },
+  section: { x: number; y: number; width: number; height: number },
+): boolean {
+  return node.x >= section.x
+    && node.x <= section.x + section.width
+    && node.y >= section.y
+    && node.y <= section.y + section.height;
+}
 
 /** Default visual treatment per step type, used when the row's icon/color are null.
  *
@@ -502,7 +689,13 @@ export const FUNNEL_ICON_LIBRARY: { group: string; icons: string[] }[] = [
   { group: 'Traffic',    icons: ['megaphone','search','mail','link','globe','smartphone','share-2','external-link','users','mic','star','newspaper'] },
   { group: 'Offers',     icons: ['package','graduation-cap','briefcase','gift','sparkles','target','book-open','cloud','repeat','timer','layers','user-cog','ticket'] },
   { group: 'Actions',    icons: ['phone','message-square','calendar','zap','flag','file-text','image','music'] },
-  { group: 'Brands',     icons: ['facebook','instagram','google','youtube','tiktok','linkedin','pinterest','twitter','snapchat','bing','whatsapp','stripe','mailchimp'] },
+  { group: 'Brands',     icons: ['facebook','instagram','google','youtube','tiktok','linkedin','pinterest','twitter','snapchat','bing','reddit','whatsapp','messenger','spotify','amazon','yelp','google-maps'] },
+  /** CRM / delivery platforms, kept separate from consumer Brands so a pipeline
+   *  stage can be swapped to the system that actually runs it — a Qualified
+   *  stage carrying the GoHighLevel mark, an Active Client stage carrying
+   *  ServiceM8. Every slug here must exist in BRAND_SLUGS_SET or it silently
+   *  falls back to a generic square. */
+  { group: 'CRM & Tools', icons: ['ghl','hubspot','salesforce','activecampaign','mailchimp','stripe','slack','gmail','zoom','zoho','servicem8','simpro','aroflo','workflowmax','fergus','ascora','jobber'] },
 ];
 
 /** Color presets for the node tint swatch (12 swatches in the drawer). */

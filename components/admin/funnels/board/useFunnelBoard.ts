@@ -7,6 +7,8 @@ import {
 } from '@xyflow/react';
 import type { FeedbackBoardShape, FeedbackBoardNote } from '@/lib/supabase';
 import { formatCount } from '@/lib/funnel/forecast';
+import { nodeInSection } from '@/lib/types/funnel';
+import { type SectionNodeData } from './nodes/SectionNode';
 import { type FunnelStepNodeData } from './nodes/FunnelStepNode';
 import { type StickyNoteNodeData } from '@/components/admin/feedback/board/nodes/StickyNoteNode';
 import { type ShapeNodeData } from '@/components/admin/feedback/board/nodes/ShapeNode';
@@ -24,9 +26,9 @@ import { visualCentre } from './funnel-board-config';
 export function useFunnelBoard(flowByEdge?: Map<string, number>) {
   const ctx = useFunnelBoardContextOrThrow();
   const {
-    steps, boardNotes, shapes, boardEdges, tabs,
+    steps, boardNotes, shapes, boardEdges, tabs, sections, viewAsRoleId,
     updateStep, deleteStep, deleteNote,
-    updateNote, updateShape,
+    updateNote, updateShape, updateSection,
     createEdge, updateEdge, deleteEdge,
   } = ctx;
 
@@ -39,6 +41,11 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
   const handleShapeContentUpdate = useCallback(
     (id: string, content: string) => { void updateShape(id, { content }); },
     [updateShape]
+  );
+
+  const handleSectionRename = useCallback(
+    (id: string, label: string) => { void updateSection(id, { label }); },
+    [updateSection]
   );
 
   useEffect(() => {
@@ -69,6 +76,21 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
       } satisfies StickyNoteNodeData,
     }));
 
+    // Sections go first in the array and carry a negative zIndex so they paint
+    // behind every other node — they're backdrops, not participants.
+    const sectionNodes: Node[] = sections.map((section) => ({
+      id: `section-${section.id}`,
+      type: 'section',
+      position: { x: section.x, y: section.y },
+      style: { width: section.width, height: section.height },
+      zIndex: -1,
+      data: {
+        section,
+        readOnly: false,
+        onRename: handleSectionRename,
+      } satisfies SectionNodeData,
+    }));
+
     const shapeNodes: Node[] = shapes.map((shape) => ({
       id: `shape-${shape.id}`,
       type: 'shape',
@@ -81,6 +103,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
         linkedTabId: shape.linked_tab_id,
         tabs,
         description: shape.description,
+        message: shape.message,
       } satisfies ShapeNodeData,
     }));
 
@@ -90,7 +113,14 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
       for (const n of prev) {
         if (n.parentId) parentMap.set(n.id, { parentId: n.parentId, extent: n.extent as string });
       }
-      const newNodes = [...stepNodes, ...noteNodes, ...shapeNodes].map((n) => {
+      // "View as": fade nodes not owned by the selected role. Applied here on
+      // the node object rather than inside each node component, so one rule
+      // covers steps, shapes, notes and sections alike. Nodes fade rather than
+      // hide — the connections between owners are the point of the map.
+      const dimFor = (roleId: string | null | undefined) =>
+        viewAsRoleId && roleId !== viewAsRoleId ? 0.25 : 1;
+
+      const newNodes = [...sectionNodes, ...stepNodes, ...noteNodes, ...shapeNodes].map((n) => {
         const group = parentMap.get(n.id);
         if (group) {
           const parent = groupNodes.find((g) => g.id === group.parentId);
@@ -99,10 +129,18 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
           }
         }
         return n;
+      }).map((n) => {
+        if (!viewAsRoleId) return n;
+        // Sections and notes carry no owner, so they stay at full strength.
+        if (n.type === 'section' || n.type === 'stickyNote') return n;
+        const source = n.type === 'funnelStep'
+          ? (n.data as { step?: { role_id?: string | null } }).step?.role_id
+          : (n.data as { shape?: { role_id?: string | null } }).shape?.role_id;
+        return { ...n, style: { ...(n.style || {}), opacity: dimFor(source), transition: 'opacity 150ms' } };
       });
       return [...groupNodes, ...newNodes];
     });
-  }, [steps, boardNotes, shapes, tabs, updateStep, deleteStep, updateNote, deleteNote, handleShapeContentUpdate, setNodes]);
+  }, [steps, boardNotes, shapes, sections, tabs, viewAsRoleId, updateStep, deleteStep, updateNote, deleteNote, handleShapeContentUpdate, handleSectionRename, setNodes]);
 
   /* ── Waypoint handling ──────────────────────────────────────── */
 
@@ -207,10 +245,67 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
       await updateNote(nodeId.replace('note-', ''), { board_x: x, board_y: y });
     } else if (nodeId.startsWith('shape-')) {
       await updateShape(nodeId.replace('shape-', ''), { x, y });
+    } else if (nodeId.startsWith('section-')) {
+      await updateSection(nodeId.replace('section-', ''), { x, y });
     } else if (nodeId.startsWith('step-')) {
       await updateStep(nodeId.replace('step-', ''), { board_x: x, board_y: y });
     }
-  }, [updateNote, updateShape, updateStep]);
+  }, [updateNote, updateShape, updateSection, updateStep]);
+
+  /* ── Section drag carries its contents ──────────────────────────
+   *
+   *  Sections aren't React Flow parents (that would make child coordinates
+   *  relative, and board_x/board_y are absolute everywhere else), so moving a
+   *  section has to move the nodes inside it by hand. Membership is captured
+   *  once at drag start — nodes that happen to slide under the section
+   *  mid-drag are not swept up.
+   */
+  const sectionDragRef = useRef<{
+    origin: { x: number; y: number };
+    members: { id: string; x: number; y: number }[];
+  } | null>(null);
+
+  const onNodeDragStart = useCallback((_: React.MouseEvent, node: Node) => {
+    if (!node.id.startsWith('section-')) { sectionDragRef.current = null; return; }
+    const sectionId = node.id.replace('section-', '');
+    const section = sections.find((s) => s.id === sectionId);
+    if (!section) { sectionDragRef.current = null; return; }
+
+    const bounds = { x: node.position.x, y: node.position.y, width: section.width, height: section.height };
+    const members = nodes
+      .filter((n) => n.id !== node.id && !n.id.startsWith('section-'))
+      .filter((n) => nodeInSection(n.position, bounds))
+      .map((n) => ({ id: n.id, x: n.position.x, y: n.position.y }));
+
+    sectionDragRef.current = { origin: { x: node.position.x, y: node.position.y }, members };
+  }, [nodes, sections]);
+
+  const onNodeDrag = useCallback((_: React.MouseEvent, node: Node) => {
+    const drag = sectionDragRef.current;
+    if (!drag || !node.id.startsWith('section-')) return;
+    const dx = node.position.x - drag.origin.x;
+    const dy = node.position.y - drag.origin.y;
+    if (dx === 0 && dy === 0) return;
+    const byId = new Map(drag.members.map((m) => [m.id, m]));
+    setNodes((nds) => nds.map((n) => {
+      const start = byId.get(n.id);
+      return start ? { ...n, position: { x: start.x + dx, y: start.y + dy } } : n;
+    }));
+  }, [setNodes]);
+
+  const onNodeDragStop = useCallback((_: React.MouseEvent, node: Node) => {
+    const drag = sectionDragRef.current;
+    sectionDragRef.current = null;
+    if (!drag || !node.id.startsWith('section-')) return;
+    const dx = node.position.x - drag.origin.x;
+    const dy = node.position.y - drag.origin.y;
+    if (dx === 0 && dy === 0) return;
+    // Persist every member's new home. The section's own position is saved by
+    // onNodesChange's drag-end path, same as any other node.
+    for (const m of drag.members) {
+      void saveNodePosition(m.id, m.x + dx, m.y + dy);
+    }
+  }, [saveNodePosition]);
 
   const pendingPositions = useRef<Map<string, { x: number; y: number }>>(new Map());
   const positionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -227,6 +322,16 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
       if (c.type === 'position' && c.position && !c.dragging) {
         dragEndIds.add(c.id);
       }
+      // NodeResizer emits dimension changes; persist the section's new box once
+      // the user lets go.
+      if (c.type === 'dimensions' && c.resizing === false && c.id.startsWith('section-')) {
+        const dims = (c as NodeChange & { dimensions?: { width: number; height: number } }).dimensions;
+        if (dims) {
+          void updateSection(c.id.replace('section-', ''), {
+            width: Math.round(dims.width), height: Math.round(dims.height),
+          });
+        }
+      }
     }
 
     setNodes((nds) => {
@@ -236,7 +341,10 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
       for (const id of Array.from(dragEndIds)) {
         const node = updated.find((n) => n.id === id);
         if (!node) continue;
-        const snapped = computeSnapPosition(node, updated, ALIGNMENT_TOLERANCE, visualCentre, 4);
+        // Sections are backdrops — snapping them to node edges fights the user.
+        const snapped = id.startsWith('section-')
+          ? null
+          : computeSnapPosition(node, updated, ALIGNMENT_TOLERANCE, visualCentre, 4);
         const finalPos = snapped || node.position;
         if (snapped) {
           updated = updated.map((n) => n.id === id ? { ...n, position: snapped } : n);
@@ -250,7 +358,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
       if (positionTimer.current) clearTimeout(positionTimer.current);
       positionTimer.current = setTimeout(flushPositions, 250);
     }
-  }, [flushPositions, setNodes]);
+  }, [flushPositions, setNodes, updateSection]);
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)),
@@ -260,7 +368,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
   /* ── Connect / delete / style ──────────────────────────────── */
 
   const onConnect = useCallback(async (connection: Connection) => {
-    if (!connection.source || !connection.target) return;
+    if (!connection.source || !connection.target) return null;
 
     // RF node ids: steps use `step-{uuid}`, shapes `shape-{uuid}`, notes `note-{uuid}`.
     // Split into step vs shape columns so FK cascades behave correctly.
@@ -274,7 +382,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
     const src = resolveId(connection.source);
     const tgt = resolveId(connection.target);
 
-    await createEdge({
+    return createEdge({
       funnel_id: ctx.funnelId,
       company_id: ctx.companyId,
       source_step_id: src.stepId,
@@ -373,15 +481,31 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
     async (oldEdge: Edge, newConnection: Connection) => {
       if (!newConnection.source || !newConnection.target) return;
       if (newConnection.source === newConnection.target) return;
+
+      // Dragging an endpoint is a *move*, not a rebuild. The row is deleted and
+      // recreated (the FK columns decide whether an end is a step or a shape,
+      // so there's no in-place update), which means every styling field has to
+      // be carried across by hand — otherwise label, colour, width, dashes,
+      // arrows, waypoints and the split percentage all silently reset.
+      const previous = boardEdges.find((e) => e.id === oldEdge.id);
       await deleteEdge(oldEdge.id);
-      await onConnect(newConnection);
+      const created = await onConnect(newConnection);
+      if (created && previous) {
+        await updateEdge(created.id, {
+          label: previous.label,
+          animated: previous.animated,
+          split_percent: previous.split_percent,
+          style: previous.style,
+        });
+      }
     },
-    [deleteEdge, onConnect]
+    [boardEdges, deleteEdge, onConnect, updateEdge]
   );
 
   return {
     nodes, edges,
     onNodesChange, onEdgesChange, onConnect, onReconnect, onEdgeClick,
+    onNodeDragStart, onNodeDrag, onNodeDragStop,
     selectedEdge, handleUpdateEdgeStyle, handleDeleteEdge,
     closeEdgeEditor: () => setSelectedEdge(null),
   };

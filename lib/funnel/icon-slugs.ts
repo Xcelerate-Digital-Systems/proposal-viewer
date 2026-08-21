@@ -13,6 +13,7 @@ export const LUCIDE_ICON_SLUGS = [
   'mouse-pointer-click', 'play-circle', 'chevrons-down', 'shopping-bag', 'shopping-cart',
   'bell-ring', 'bell', 'sheet', 'eye', 'log-out', 'log-in', 'undo-2', 'download',
   'webhook', 'clipboard-check', 'calendar-check', 'trophy', 'crown', 'map-pin', 'circle-x',
+  'chatbot',
 ] as const;
 
 export const BRAND_ICON_SLUGS = [
@@ -20,7 +21,7 @@ export const BRAND_ICON_SLUGS = [
   'twitter', 'snapchat', 'bing', 'reddit', 'stripe', 'mailchimp',
   'hubspot', 'ghl', 'activecampaign', 'salesforce', 'slack',
   'simpro', 'aroflo', 'workflowmax', 'servicem8', 'fergus', 'ascora', 'jobber',
-  'messenger', 'whatsapp', 'chatbot',
+  'messenger', 'whatsapp',
   'zoho', 'yelp', 'amazon', 'zoom', 'gmail', 'spotify', 'google-maps',
 ] as const;
 

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase-server';
 import { getAuth, unauthorized, txt, json, type McpServer } from '@/lib/mcp/types';
-import { FUNNEL_STEP_DEFAULTS } from '@/lib/types/funnel';
+import { FUNNEL_STEP_DEFAULTS, defaultRoleColor } from '@/lib/types/funnel';
 import { BOARD_ACTION_GROUPS } from '@/lib/types/board-actions';
 import { LUCIDE_ICON_SLUGS, BRAND_ICON_SLUGS, VALID_ICON_SLUGS_SET } from '@/lib/funnel/icon-slugs';
 
@@ -130,10 +130,11 @@ export function registerFunnelTools(server: McpServer) {
     const sb = createServiceClient();
     const { data: funnel } = await sb.from('funnels').select('*').eq('id', funnelId).eq('company_id', auth.companyId).single();
     if (!funnel) return txt('Funnel not found');
-    const [{ data: steps }, { data: edges }, { data: shapes }] = await Promise.all([
-      sb.from('funnel_steps').select('id, step_type, label, icon, url, color, board_x, board_y, metrics, linked_funnel_id, created_at').eq('funnel_id', funnelId).eq('company_id', auth.companyId),
+    const [{ data: steps }, { data: edges }, { data: shapes }, { data: sections }] = await Promise.all([
+      sb.from('funnel_steps').select('id, step_type, label, icon, url, color, board_x, board_y, metrics, linked_funnel_id, description, message, role_id, platform, tab_id, created_at').eq('funnel_id', funnelId).eq('company_id', auth.companyId),
       sb.from('funnel_board_edges').select('id, source_step_id, source_shape_id, target_step_id, target_shape_id, source_handle, target_handle, label, edge_type, animated, split_percent, style').eq('funnel_id', funnelId).eq('company_id', auth.companyId),
-      sb.from('funnel_board_shapes').select('id, shape_type, x, y, width, height, content, color, linked_funnel_id').eq('funnel_id', funnelId).eq('company_id', auth.companyId),
+      sb.from('funnel_board_shapes').select('id, shape_type, x, y, width, height, content, color, linked_funnel_id, description, message, role_id, platform').eq('funnel_id', funnelId).eq('company_id', auth.companyId),
+      sb.from('funnel_board_sections').select('id, label, color, x, y, width, height, tab_id').eq('funnel_id', funnelId).eq('company_id', auth.companyId),
     ]);
     return json({
       id: funnel.id, name: funnel.name, description: funnel.description, status: funnel.status,
@@ -143,6 +144,8 @@ export function registerFunnelTools(server: McpServer) {
       steps: (steps || []).map(s => ({
         id: s.id, type: s.step_type, label: s.label, icon: s.icon, url: s.url, color: s.color,
         position: { x: s.board_x, y: s.board_y }, metrics: s.metrics, linkedFunnelId: s.linked_funnel_id,
+        tabId: s.tab_id, description: s.description, message: s.message,
+        roleId: s.role_id, platform: s.platform,
       })),
       edges: (edges || []).map(e => ({
         id: e.id, sourceStepId: e.source_step_id, sourceShapeId: e.source_shape_id,
@@ -154,6 +157,12 @@ export function registerFunnelTools(server: McpServer) {
       shapes: (shapes || []).map(s => ({
         id: s.id, type: s.shape_type, x: s.x, y: s.y, width: s.width, height: s.height,
         content: s.content, color: s.color, linkedFunnelId: s.linked_funnel_id,
+        description: s.description, message: s.message,
+        roleId: s.role_id, platform: s.platform,
+      })),
+      sections: (sections || []).map(sec => ({
+        id: sec.id, label: sec.label, color: sec.color,
+        x: sec.x, y: sec.y, width: sec.width, height: sec.height, tabId: sec.tab_id,
       })),
     });
   });
@@ -247,6 +256,15 @@ export function registerFunnelTools(server: McpServer) {
     linkedTabId: z.string().optional().describe('Link this step to a tab within the same funnel — clicking it switches to that tab'),
     tabId: z.string().optional().describe('Tab this step belongs to (required when funnel has tabs)'),
     description: z.string().optional().describe('Description text shown below the step label'),
+    message: z.object({
+      kind: z.enum(['email', 'sms']),
+      from: z.string().optional().describe('Email only — the sender line'),
+      subject: z.string().optional().describe('Email only'),
+      preheader: z.string().optional().describe('Email only — inbox preview text'),
+      body: z.string(),
+    }).nullable().optional().describe('Email/SMS copy attached to this node, shown in a preview modal on click. Only meaningful on message-capable types (traffic_email, traffic_sms, email_notification, sms_notification).'),
+    roleId: z.string().nullable().optional().describe('Owning role — a plain label, not a user account. Use list_funnel_roles / create_funnel_role.'),
+    platform: z.string().nullable().optional().describe('System this node runs in — a brand slug ("ghl", "servicem8", "hubspot") or the public URL of an uploaded logo. Rendered as a badge on the node.'),
     companyId: z.string().optional().describe('Optional — auto-resolved from the funnel. Super admin: override to target a different company'),
   }, async (args, extra) => {
     const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
@@ -271,6 +289,9 @@ export function registerFunnelTools(server: McpServer) {
       linked_tab_id: args.linkedTabId || null,
       tab_id: args.tabId || null,
       description: args.description || null,
+      message: args.message ?? null,
+      role_id: args.roleId ?? null,
+      platform: args.platform ?? null,
     }).select('id, step_type, label, board_x, board_y').single();
     if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
     return json({ id: data.id, type: data.step_type, label: data.label, position: { x: data.board_x, y: data.board_y } });
@@ -297,6 +318,15 @@ export function registerFunnelTools(server: McpServer) {
     linkedFunnelId: z.string().nullable().optional().describe('Link to another funnel (pass null to clear)'),
     linkedTabId: z.string().nullable().optional().describe('Link to a tab within the same funnel (pass null to clear)'),
     description: z.string().nullable().optional().describe('Description text shown below the step label (pass null to clear)'),
+    message: z.object({
+      kind: z.enum(['email', 'sms']),
+      from: z.string().optional().describe('Email only — the sender line'),
+      subject: z.string().optional().describe('Email only'),
+      preheader: z.string().optional().describe('Email only — inbox preview text'),
+      body: z.string(),
+    }).nullable().optional().describe('Email/SMS copy attached to this node, shown in a preview modal on click. Only meaningful on message-capable types (traffic_email, traffic_sms, email_notification, sms_notification).'),
+    roleId: z.string().nullable().optional().describe('Owning role — a plain label, not a user account. Use list_funnel_roles / create_funnel_role.'),
+    platform: z.string().nullable().optional().describe('System this node runs in — a brand slug ("ghl", "servicem8", "hubspot") or the public URL of an uploaded logo. Rendered as a badge on the node.'),
     companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
   }, async (args, extra) => {
     const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
@@ -320,6 +350,12 @@ export function registerFunnelTools(server: McpServer) {
     if (args.linkedFunnelId !== undefined) patch.linked_funnel_id = args.linkedFunnelId;
     if (args.linkedTabId !== undefined) patch.linked_tab_id = args.linkedTabId;
     if (args.description !== undefined) patch.description = args.description;
+    if (args.message !== undefined) patch.message = args.message;
+    if (args.roleId !== undefined) patch.role_id = args.roleId;
+    if (args.platform !== undefined) patch.platform = args.platform;
+    if (args.message !== undefined) patch.message = args.message;
+    if (args.roleId !== undefined) patch.role_id = args.roleId;
+    if (args.platform !== undefined) patch.platform = args.platform;
     if (Object.keys(patch).length <= 1) return txt('No fields to update.');
     const { error } = await sb.from('funnel_steps').update(patch).eq('id', args.stepId);
     if (error) return txt(`Failed: ${error.message}`);
@@ -434,6 +470,15 @@ export function registerFunnelTools(server: McpServer) {
     linkedTabId: z.string().optional().describe('Link this shape to a tab within the same funnel — clicking it switches to that tab'),
     tabId: z.string().optional().describe('Tab this shape belongs to (required when funnel has tabs)'),
     description: z.string().optional().describe('Description text shown below the shape'),
+    message: z.object({
+      kind: z.enum(['email', 'sms']),
+      from: z.string().optional(),
+      subject: z.string().optional(),
+      preheader: z.string().optional(),
+      body: z.string(),
+    }).nullable().optional().describe('Email/SMS copy shown in a preview modal on click. Meaningful on email_notification / sms_notification shapes.'),
+    roleId: z.string().nullable().optional().describe('Owning role — a plain label, not a user account.'),
+    platform: z.string().nullable().optional().describe('System this node runs in — a brand slug ("ghl", "servicem8") or an uploaded logo URL.'),
     companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
   }, async (args, extra) => {
     const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
@@ -459,6 +504,9 @@ export function registerFunnelTools(server: McpServer) {
       linked_tab_id: args.linkedTabId || null,
       tab_id: args.tabId || null,
       description: args.description || null,
+      message: args.message ?? null,
+      role_id: args.roleId ?? null,
+      platform: args.platform ?? null,
     }).select('id, shape_type, x, y').single();
     if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
     return json({ id: data.id, type: data.shape_type, position: { x: data.x, y: data.y } });
@@ -482,6 +530,15 @@ export function registerFunnelTools(server: McpServer) {
     linkedFunnelId: z.string().nullable().optional().describe('Link to another funnel (pass null to clear)'),
     linkedTabId: z.string().nullable().optional().describe('Link to a tab within the same funnel (pass null to clear)'),
     description: z.string().nullable().optional().describe('Description text shown below the shape (pass null to clear)'),
+    message: z.object({
+      kind: z.enum(['email', 'sms']),
+      from: z.string().optional(),
+      subject: z.string().optional(),
+      preheader: z.string().optional(),
+      body: z.string(),
+    }).nullable().optional().describe('Email/SMS copy shown in a preview modal on click (pass null to clear).'),
+    roleId: z.string().nullable().optional().describe('Owning role (pass null to clear).'),
+    platform: z.string().nullable().optional().describe('System this node runs in — brand slug or uploaded logo URL (pass null to clear).'),
     companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
   }, async (args, extra) => {
     const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
@@ -842,5 +899,148 @@ export function registerFunnelTools(server: McpServer) {
     }
 
     return json({ id: newFunnel.id, name: newFunnel.name });
+  });
+
+  // ── Board section tools ──
+  //
+  // Sections are labelled background regions ("Lead Generation", "Onboarding")
+  // drawn behind the nodes. Membership is POSITIONAL — a node belongs to a
+  // section when it sits inside its bounds — so there is nothing to assign;
+  // place the section's rectangle over the nodes it should contain.
+
+  server.tool('list_funnel_sections', 'List the labelled background sections on a funnel.', {
+    funnelId: z.string(),
+    companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
+  }, async (args, extra) => {
+    const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
+    if (!resolved) return unauthorized();
+    const sb = createServiceClient();
+    const { data, error } = await sb.from('funnel_board_sections')
+      .select('id, label, color, x, y, width, height, tab_id')
+      .eq('funnel_id', args.funnelId).eq('company_id', resolved.auth.companyId)
+      .order('created_at');
+    if (error) return txt(`Failed: ${error.message}`);
+    return json(data || []);
+  });
+
+  server.tool('create_funnel_section', 'Draw a labelled background region behind the nodes. Nodes belong to it by sitting inside its bounds — size the rectangle to cover the nodes it should group.', {
+    funnelId: z.string(),
+    label: z.string().describe('Shown above the region, e.g. "Lead Generation"'),
+    x: z.number(), y: z.number(),
+    width: z.number(), height: z.number(),
+    color: z.enum(['teal', 'blue', 'purple', 'amber', 'rose', 'green', 'slate']).optional().describe('Default: teal'),
+    tabId: z.string().optional().describe('Tab this section belongs to (required when the funnel has tabs)'),
+    companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
+  }, async (args, extra) => {
+    const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
+    if (!resolved) return unauthorized();
+    const sb = createServiceClient();
+    const { data, error } = await sb.from('funnel_board_sections').insert({
+      funnel_id: args.funnelId,
+      company_id: resolved.auth.companyId,
+      label: args.label,
+      color: args.color || 'teal',
+      x: Math.round(args.x), y: Math.round(args.y),
+      width: Math.round(args.width), height: Math.round(args.height),
+      tab_id: args.tabId || null,
+    }).select('id').single();
+    if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
+    return json({ id: data.id });
+  });
+
+  server.tool('update_funnel_section', 'Update a section label, colour, position or size.', {
+    sectionId: z.string(),
+    funnelId: z.string().describe('Funnel ID for ownership verification'),
+    label: z.string().optional(),
+    color: z.enum(['teal', 'blue', 'purple', 'amber', 'rose', 'green', 'slate']).optional(),
+    x: z.number().optional(), y: z.number().optional(),
+    width: z.number().optional(), height: z.number().optional(),
+    companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
+  }, async (args, extra) => {
+    const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
+    if (!resolved) return unauthorized();
+    const sb = createServiceClient();
+    const { data: sec } = await sb.from('funnel_board_sections').select('id')
+      .eq('id', args.sectionId).eq('funnel_id', args.funnelId)
+      .eq('company_id', resolved.auth.companyId).single();
+    if (!sec) return txt('Section not found');
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (args.label !== undefined) patch.label = args.label;
+    if (args.color !== undefined) patch.color = args.color;
+    if (args.x !== undefined) patch.x = Math.round(args.x);
+    if (args.y !== undefined) patch.y = Math.round(args.y);
+    if (args.width !== undefined) patch.width = Math.round(args.width);
+    if (args.height !== undefined) patch.height = Math.round(args.height);
+    if (Object.keys(patch).length <= 1) return txt('No fields to update.');
+    const { error } = await sb.from('funnel_board_sections').update(patch).eq('id', args.sectionId);
+    if (error) return txt(`Failed: ${error.message}`);
+    return txt('Section updated.');
+  });
+
+  server.tool('delete_funnel_section', 'Remove a section outline. Nodes inside it are untouched.', {
+    sectionId: z.string(),
+    funnelId: z.string().describe('Funnel ID for ownership verification'),
+    companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
+  }, async (args, extra) => {
+    const resolved = await resolveAuthForFunnel(extra, args.funnelId, args.companyId);
+    if (!resolved) return unauthorized();
+    const sb = createServiceClient();
+    const { error } = await sb.from('funnel_board_sections').delete()
+      .eq('id', args.sectionId).eq('funnel_id', args.funnelId)
+      .eq('company_id', resolved.auth.companyId);
+    if (error) return txt(`Failed: ${error.message}`);
+    return txt('Section deleted.');
+  });
+
+  // ── Role tools ──
+  //
+  // A role is a coloured LABEL describing who owns a step ("Sales Rep", "Me").
+  // It is deliberately NOT a user account — creating one invites nobody and
+  // grants no access. Roles are company-scoped and reusable across funnels.
+
+  server.tool('list_funnel_roles', 'List the company\'s funnel roles. Roles are plain labels for who owns a step — not user accounts.', {
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async (args, extra) => {
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
+    const sb = createServiceClient();
+    const { data, error } = await sb.from('funnel_roles')
+      .select('id, name, color').eq('company_id', auth.companyId).order('name');
+    if (error) return txt(`Failed: ${error.message}`);
+    return json(data || []);
+  });
+
+  server.tool('create_funnel_role', 'Create a role label (e.g. "Account Manager"). Assigning it to a node marks who owns that step — it does not invite anyone or grant access. Reusable across every funnel in the company.', {
+    name: z.string(),
+    color: z.string().optional().describe('Hex colour, e.g. "#017C87". Defaults to one derived from the name.'),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async (args, extra) => {
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
+    const sb = createServiceClient();
+    const name = args.name.trim();
+    if (!name) return txt('Role name is required.');
+    // Names are unique per company, case-insensitively — return the existing
+    // row rather than erroring so this is safe to call repeatedly.
+    const { data: existing } = await sb.from('funnel_roles')
+      .select('id, name, color').eq('company_id', auth.companyId).ilike('name', name).maybeSingle();
+    if (existing) return json({ ...existing, existing: true });
+    const { data, error } = await sb.from('funnel_roles').insert({
+      company_id: auth.companyId,
+      name,
+      color: args.color || defaultRoleColor(name),
+    }).select('id, name, color').single();
+    if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
+    return json(data);
+  });
+
+  server.tool('delete_funnel_role', 'Delete a role label. Nodes using it keep their place and simply lose the owner marker.', {
+    roleId: z.string(),
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async (args, extra) => {
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
+    const sb = createServiceClient();
+    const { error } = await sb.from('funnel_roles').delete()
+      .eq('id', args.roleId).eq('company_id', auth.companyId);
+    if (error) return txt(`Failed: ${error.message}`);
+    return txt('Role deleted.');
   });
 }

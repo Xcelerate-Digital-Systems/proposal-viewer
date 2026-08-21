@@ -7,7 +7,9 @@
 // Inputs are manual — there is no live data. The output is what the planner
 // renders on edge labels and the top-bar summary.
 
-import type { FunnelStep, FunnelBoardEdge, FunnelForecastPeriod, FunnelCurrency } from '@/lib/supabase';
+import type {
+  FunnelStep, FunnelBoardEdge, FunnelBoardShape, FunnelForecastPeriod, FunnelCurrency,
+} from '@/lib/supabase';
 import { FUNNEL_PERIODS, FUNNEL_CURRENCIES } from '@/lib/types/funnel';
 
 export interface Forecast {
@@ -39,9 +41,21 @@ export function emptyForecast(): Forecast {
   };
 }
 
-/** Topological-ish forward pass. Cycles are tolerated (each step is visited at
- *  most once after all its predecessors have been settled — back-edges into
- *  already-settled nodes are dropped to avoid infinite recursion).
+/** Topological-ish forward pass over the whole board graph.
+ *
+ *  The graph is NOT step-only. Shapes (decision diamonds, waits, actions,
+ *  events, …) are first-class nodes that pass flow straight through at 100%,
+ *  so `Ad → Landing Page → [Decision] → Booking` propagates correctly instead
+ *  of dropping to zero the moment a shape sits mid-chain. Shapes carry no
+ *  metrics of their own — they route, they don't convert. A shape that fans
+ *  out to several edges still honours each edge's `split_percent`.
+ *
+ *  Sticky notes are annotations, not flow: an edge whose endpoint resolves to
+ *  neither a step nor a shape is dropped from the graph.
+ *
+ *  Cycles are tolerated (each node is visited at most once after all its
+ *  predecessors have been settled — back-edges into already-settled nodes are
+ *  dropped to avoid infinite recursion).
  *
  *  When `period` is provided, source visitor counts (and downstream flow) are
  *  multiplied by the period's multiplier — e.g. yearly multiplies visitors by
@@ -55,83 +69,108 @@ export function computeForecast(
   edges: FunnelBoardEdge[],
   period: FunnelForecastPeriod = 'total',
   defaultDealValue: number | null = null,
+  shapes: FunnelBoardShape[] = [],
 ): Forecast {
   const fc = emptyForecast();
   if (steps.length === 0) return fc;
 
+  // Unified node keyspace so steps and shapes share one graph. Step and shape
+  // ids come from different tables, so they're prefixed to stay unambiguous.
+  const stepKey = (id: string) => `s:${id}`;
+  const shapeKey = (id: string) => `h:${id}`;
+
+  const stepById = new Map(steps.map((s) => [stepKey(s.id), s]));
+  const shapeIds = new Set(shapes.map((sh) => shapeKey(sh.id)));
+  const nodeKeys: string[] = [
+    ...steps.map((s) => stepKey(s.id)),
+    ...shapes.map((sh) => shapeKey(sh.id)),
+  ];
+  const isNode = (k: string | null) => k != null && (stepById.has(k) || shapeIds.has(k));
+
+  /** Resolve an edge endpoint to a graph node key, or null when it points at
+   *  something that isn't part of the flow (e.g. a sticky note). */
+  const endpoint = (stepId: string | null, shapeId: string | null): string | null => {
+    if (stepId) { const k = stepKey(stepId); return stepById.has(k) ? k : null; }
+    if (shapeId) { const k = shapeKey(shapeId); return shapeIds.has(k) ? k : null; }
+    return null;
+  };
+
   // Index edges by source for fast fan-out lookups.
   const outgoing = new Map<string, FunnelBoardEdge[]>();
   const incoming = new Map<string, FunnelBoardEdge[]>();
+  const edgeEnds = new Map<string, { from: string; to: string }>();
   for (const e of edges) {
-    if (!e.source_step_id || !e.target_step_id) continue; // step-to-step only
-    if (!outgoing.has(e.source_step_id)) outgoing.set(e.source_step_id, []);
-    outgoing.get(e.source_step_id)!.push(e);
-    if (!incoming.has(e.target_step_id)) incoming.set(e.target_step_id, []);
-    incoming.get(e.target_step_id)!.push(e);
+    const from = endpoint(e.source_step_id, e.source_shape_id);
+    const to = endpoint(e.target_step_id, e.target_shape_id);
+    if (!isNode(from) || !isNode(to)) continue;
+    edgeEnds.set(e.id, { from: from!, to: to! });
+    if (!outgoing.has(from!)) outgoing.set(from!, []);
+    outgoing.get(from!)!.push(e);
+    if (!incoming.has(to!)) incoming.set(to!, []);
+    incoming.get(to!)!.push(e);
   }
 
-  const stepById = new Map(steps.map((s) => [s.id, s]));
-
-  // Seed: any step with manual `visitors` set OR no incoming step-edges is a
-  // source. Sources start with their visitors count (default 0 if unset).
+  // Kahn-style topological order over the unified node set.
   const order: string[] = [];
   const settled = new Set<string>();
   const inDegree = new Map<string, number>();
-  for (const s of steps) inDegree.set(s.id, (incoming.get(s.id) || []).length);
+  for (const k of nodeKeys) inDegree.set(k, (incoming.get(k) || []).length);
 
-  // Kahn-style: start with zero-indegree nodes
   const queue: string[] = [];
-  for (const s of steps) if ((inDegree.get(s.id) || 0) === 0) queue.push(s.id);
+  for (const k of nodeKeys) if ((inDegree.get(k) || 0) === 0) queue.push(k);
 
   while (queue.length) {
-    const id = queue.shift()!;
-    if (settled.has(id)) continue;
-    settled.add(id);
-    order.push(id);
-    for (const e of outgoing.get(id) || []) {
-      const tgt = e.target_step_id!;
+    const k = queue.shift()!;
+    if (settled.has(k)) continue;
+    settled.add(k);
+    order.push(k);
+    for (const e of outgoing.get(k) || []) {
+      const tgt = edgeEnds.get(e.id)!.to;
       inDegree.set(tgt, (inDegree.get(tgt) || 0) - 1);
       if ((inDegree.get(tgt) || 0) <= 0) queue.push(tgt);
     }
   }
   // Append any unsettled nodes (e.g. inside a cycle) at the end so we still
   // produce some output for them.
-  for (const s of steps) if (!settled.has(s.id)) order.push(s.id);
+  for (const k of nodeKeys) if (!settled.has(k)) order.push(k);
 
   const periodMultiplier = FUNNEL_PERIODS.find((p) => p.code === period)?.multiplier ?? 1;
   const RECURRING_OFFER_TYPES = new Set(['offer_subscription', 'offer_saas', 'offer_trial']);
 
   // Forward pass
-  for (const id of order) {
-    const step = stepById.get(id);
-    if (!step) continue;
+  for (const key of order) {
+    const step = stepById.get(key);
+    const upstream = sumIncoming(key, incoming, fc.flowByEdge);
+
+    // Shapes are pure routers: whatever arrives leaves, no CVR, no money.
+    if (!step) {
+      distribute(key, upstream, outgoing, edgeEnds, fc.flowByEdge);
+      continue;
+    }
+
     const manual = step.metrics?.visitors ?? null;
-    const upstream = sumIncoming(id, incoming, fc.flowByEdge);
     // If user typed a visitors count, that overrides upstream — useful for
     // sources, and for cases like "assume 1000 land here" mid-funnel.
     // Apply the period multiplier to source-supplied visitor counts only;
     // downstream nodes inherit it through the upstream flow.
-    const rawVisitors = manual != null ? manual : upstream;
-    const visitors = manual != null ? rawVisitors * periodMultiplier : rawVisitors;
-    fc.visitorsByStep.set(id, visitors);
+    const visitors = manual != null ? manual * periodMultiplier : upstream;
+    fc.visitorsByStep.set(step.id, visitors);
 
     const cvr = clamp01(step.metrics?.conversion_rate);
     const conversions = visitors * cvr;
-    fc.conversionsByStep.set(id, conversions);
+    fc.conversionsByStep.set(step.id, conversions);
 
-    // Distribute conversions across outgoing edges by their split_percent.
-    const outs = outgoing.get(id) || [];
-    if (outs.length > 0) {
-      const splits = normalizeSplits(outs);
-      for (let i = 0; i < outs.length; i++) {
-        fc.flowByEdge.set(outs[i].id, conversions * splits[i]);
-      }
-    }
+    distribute(key, conversions, outgoing, edgeEnds, fc.flowByEdge);
 
     // Costs / revenue per step. Recurring offer types multiply value by the
     // user-supplied recurring_months (defaults to 1) so subscription LTV is
     // captured without separate plumbing.
-    const value = step.metrics?.value ?? defaultDealValue ?? 0;
+    //
+    // `default_deal_value` is a funnel-wide *deal* value, so it only backfills
+    // offer steps. Applying it to every node would book the same revenue once
+    // per step in the chain and inflate revenue/profit/ROAS by the chain length.
+    const isOffer = step.step_type.startsWith('offer_');
+    const value = step.metrics?.value ?? (isOffer ? defaultDealValue ?? 0 : 0);
     const cost = step.metrics?.cost ?? 0;
     const ltvMultiplier = RECURRING_OFFER_TYPES.has(step.step_type)
       ? Math.max(1, step.metrics?.recurring_months ?? 1)
@@ -152,9 +191,26 @@ export function computeForecast(
   return fc;
 }
 
-function sumIncoming(stepId: string, incoming: Map<string, FunnelBoardEdge[]>, flowByEdge: Map<string, number>): number {
+/** Route `amount` out of a node across its outgoing edges, honouring each
+ *  edge's split_percent. */
+function distribute(
+  nodeKey: string,
+  amount: number,
+  outgoing: Map<string, FunnelBoardEdge[]>,
+  edgeEnds: Map<string, { from: string; to: string }>,
+  flowByEdge: Map<string, number>,
+) {
+  const outs = outgoing.get(nodeKey) || [];
+  if (outs.length === 0) return;
+  const splits = normalizeSplits(outs);
+  for (let i = 0; i < outs.length; i++) {
+    flowByEdge.set(outs[i].id, amount * splits[i]);
+  }
+}
+
+function sumIncoming(nodeKey: string, incoming: Map<string, FunnelBoardEdge[]>, flowByEdge: Map<string, number>): number {
   let total = 0;
-  for (const e of incoming.get(stepId) || []) {
+  for (const e of incoming.get(nodeKey) || []) {
     total += flowByEdge.get(e.id) ?? 0;
   }
   return total;
@@ -167,35 +223,49 @@ function clamp01(n: number | null | undefined): number {
   return n / 100;
 }
 
-/** Distribute fan-out among N edges. If any edge has split_percent set, those
- *  are honoured proportionally; unset edges share the remainder evenly. If
- *  none are set, evenly split. */
+/** Distribute fan-out among N edges.
+ *
+ *  An explicit split_percent is taken literally: an edge marked 30% carries 30%
+ *  of the upstream flow, full stop. That matters because drop-off is the normal
+ *  case in a funnel — "30% of people who land here book a call" has to be
+ *  expressible, and the other 70% simply leave rather than going somewhere else.
+ *  Rescaling explicit percentages up to fill 100% (which this used to do) turned
+ *  every lone labelled edge into a pass-through.
+ *
+ *  Edges left unset share whatever percentage the explicit ones didn't claim.
+ *  If nothing is set at all, flow splits evenly, which keeps the common
+ *  "just draw the branches" case sensible.
+ *
+ *  The only rescaling left is the overflow guard: if explicit values add up to
+ *  more than 100% they're scaled back down to 100%, so a typo can't manufacture
+ *  more traffic than arrived. */
 function normalizeSplits(edges: FunnelBoardEdge[]): number[] {
-  const set: number[] = [];
-  let setSum = 0;
+  const explicit: number[] = [];
+  let explicitSum = 0;
   let unsetCount = 0;
+
   for (const e of edges) {
     const v = e.split_percent;
     if (v != null && Number.isFinite(v) && v >= 0) {
-      set.push(v);
-      setSum += v;
+      explicit.push(v);
+      explicitSum += v;
     } else {
-      set.push(NaN);
+      explicit.push(NaN);
       unsetCount += 1;
     }
   }
-  // If nothing is set, even split.
-  if (setSum === 0 && unsetCount > 0) {
+
+  // Nothing specified — even split across the branches.
+  if (unsetCount === edges.length) {
     return edges.map(() => 1 / edges.length);
   }
-  // If only some are set, those take their share (out of 100) and the rest
-  // split the remainder evenly.
-  const remainder = Math.max(0, 100 - setSum);
+
+  // Overflow guard only: scale explicit values down if they exceed 100%.
+  const scale = explicitSum > 100 ? 100 / explicitSum : 1;
+  const remainder = Math.max(0, 100 - explicitSum * scale);
   const perUnset = unsetCount > 0 ? remainder / unsetCount : 0;
-  const raw = set.map((v) => (Number.isNaN(v) ? perUnset : v));
-  // Normalise to sum=1 so totals stay coherent if user typed >100% across set edges.
-  const total = raw.reduce((a, b) => a + b, 0) || 1;
-  return raw.map((v) => v / total);
+
+  return explicit.map((v) => (Number.isNaN(v) ? perUnset : v * scale) / 100);
 }
 
 export function formatCount(n: number): string {

@@ -16,7 +16,7 @@ import {
   FUNNEL_STEP_DEFAULTS, FUNNEL_PALETTE_TABS,
   type PaletteItem, type PaletteGroup, type FunnelPaletteTabId,
 } from '@/lib/types/funnel';
-import { StepIcon } from './nodes/FunnelStepNode';
+import { StepIcon, isFullColourBrand } from './nodes/FunnelStepNode';
 import { useToast } from '@/components/ui/Toast';
 
 interface Props {
@@ -291,10 +291,10 @@ function PaletteTile({ item, onClick }: { item: PaletteItem; onClick: () => void
           </span>
         ) : (
           <span
-            className="w-11 h-11 rounded-full shrink-0 pointer-events-none flex items-center justify-center"
+            className="w-11 h-11 rounded-full overflow-hidden shrink-0 pointer-events-none flex items-center justify-center"
             style={{ backgroundColor: def.tint }}
           >
-            <StepIcon slug={def.icon} size={22} />
+            <StepIcon slug={def.icon} size={22} fillContainer={isFullColourBrand(def.icon)} />
           </span>
         )}
         <span className="text-2xs text-ink/80 text-center leading-tight line-clamp-2 pointer-events-none px-0.5">

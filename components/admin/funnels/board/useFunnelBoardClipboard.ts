@@ -55,7 +55,8 @@ export function useFunnelBoardClipboard(
         if (next) {
           await ctx.updateStep(next.id, {
             label: orig.label, icon: orig.icon, url: orig.url,
-            color: orig.color, metrics: orig.metrics,
+            color: orig.color, metrics: orig.metrics, message: orig.message,
+            role_id: orig.role_id, platform: orig.platform,
           });
         }
       } else if (node.id.startsWith('shape-')) {
@@ -67,6 +68,7 @@ export function useFunnelBoardClipboard(
           x: orig.x + 40, y: orig.y + 40,
           width: orig.width, height: orig.height,
           end_x: orig.end_x, end_y: orig.end_y,
+          message: orig.message, role_id: orig.role_id, platform: orig.platform,
           content: orig.content,
           color: orig.color, stroke_width: orig.stroke_width,
           dashed: orig.dashed, font_size: orig.font_size,
@@ -117,6 +119,7 @@ export function useFunnelBoardClipboard(
       if (node.id.startsWith('note-'))       await ctx.deleteNote(node.id.slice(5));
       else if (node.id.startsWith('shape-')) await ctx.deleteShape(node.id.slice(6));
       else if (node.id.startsWith('step-'))  await ctx.deleteStep(node.id.slice(5));
+      else if (node.id.startsWith('section-')) await ctx.deleteSection(node.id.slice(8));
     }
   }, [rf, ctx]);
 
@@ -165,7 +168,8 @@ export function useFunnelBoardClipboard(
             end_x: orig.end_x, end_y: orig.end_y,
             content: orig.content, color: orig.color,
             stroke_width: orig.stroke_width, dashed: orig.dashed, font_size: orig.font_size,
-            description: orig.description,
+            description: orig.description, message: orig.message, role_id: orig.role_id,
+            platform: orig.platform,
           },
         });
       } else if (node.id.startsWith('note-')) {

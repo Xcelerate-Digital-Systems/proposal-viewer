@@ -145,27 +145,20 @@ CREATE POLICY "Team members manage funnel board shapes" ON public.funnel_board_s
     OR is_super_admin()
   );
 
--- Public read via share_token (so /api/funnel/[token] works via anon client
--- too, even though our public route uses the service client).
+-- NOTE: there are deliberately NO public/anon read policies on the funnel
+-- tables. The public viewer never touches them via the anon client — it calls
+-- /api/funnel/[token], which uses the service-role client and the
+-- SECURITY DEFINER get_funnel_data(p_token) RPC below to scope reads to a
+-- single share_token.
+--
+-- Do not add `USING (share_token IS NOT NULL)` style policies here. share_token
+-- is NOT NULL with a default on every row, so that predicate is true for the
+-- whole table and would expose every tenant's funnels to anon.
 DROP POLICY IF EXISTS "Public read funnels via share token" ON public.funnels;
-CREATE POLICY "Public read funnels via share token" ON public.funnels
-  FOR SELECT USING (share_token IS NOT NULL);
-
 DROP POLICY IF EXISTS "Public read funnel steps via share" ON public.funnel_steps;
-CREATE POLICY "Public read funnel steps via share" ON public.funnel_steps
-  FOR SELECT USING (funnel_id IN (SELECT id FROM public.funnels WHERE share_token IS NOT NULL));
-
 DROP POLICY IF EXISTS "Public read funnel edges via share" ON public.funnel_board_edges;
-CREATE POLICY "Public read funnel edges via share" ON public.funnel_board_edges
-  FOR SELECT USING (funnel_id IN (SELECT id FROM public.funnels WHERE share_token IS NOT NULL));
-
 DROP POLICY IF EXISTS "Public read funnel notes via share" ON public.funnel_board_notes;
-CREATE POLICY "Public read funnel notes via share" ON public.funnel_board_notes
-  FOR SELECT USING (funnel_id IN (SELECT id FROM public.funnels WHERE share_token IS NOT NULL));
-
 DROP POLICY IF EXISTS "Public read funnel shapes via share" ON public.funnel_board_shapes;
-CREATE POLICY "Public read funnel shapes via share" ON public.funnel_board_shapes
-  FOR SELECT USING (funnel_id IN (SELECT id FROM public.funnels WHERE share_token IS NOT NULL));
 
 -- ─── Public read RPC (mirrors get_whiteboard_data) ──────────────────────────
 
