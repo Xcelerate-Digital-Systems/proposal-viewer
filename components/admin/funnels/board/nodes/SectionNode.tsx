@@ -85,7 +85,7 @@ function SectionNodeComponent({ data, selected, draggable }: NodeProps) {
           />
         ) : (
           <span
-            onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
+            onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly && !isLocked) setEditing(true); }}
             className="text-xs font-semibold whitespace-nowrap overflow-hidden text-ellipsis"
             style={{ color: palette.text }}
             title={readOnly ? section.label : 'Double-click to rename'}

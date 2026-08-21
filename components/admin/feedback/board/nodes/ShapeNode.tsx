@@ -503,9 +503,15 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
         className={selected ? 'ring-2 ring-teal/30 rounded-sm' : ''}
       >
         <svg width={svgWidth} height={svgHeight} viewBox={`0 0 ${svgWidth} ${svgHeight}`}>
+          {/* Invisible fat stroke for easier click targeting */}
+          {isElbow ? (
+            <path d={linePath!} fill="none" stroke="transparent" strokeWidth={Math.max(strokeWidth, 2) + 16} strokeLinecap="round" strokeLinejoin="round" />
+          ) : (
+            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="transparent" strokeWidth={Math.max(strokeWidth, 2) + 16} strokeLinecap="round" />
+          )}
           {isElbow ? (
             <path
-              d={linePath}
+              d={linePath!}
               fill="none"
               stroke={color}
               strokeWidth={strokeWidth}

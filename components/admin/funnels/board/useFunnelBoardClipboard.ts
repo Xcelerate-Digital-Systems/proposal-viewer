@@ -149,11 +149,15 @@ export function useFunnelBoardClipboard(
   }, [ctx]);
 
   useEffect(() => {
-    rf.setNodes((nds) => nds.map((n) => ({
-      ...n,
-      draggable: !lockedNodes.has(n.id),
-      className: lockedNodes.has(n.id) ? 'opacity-80' : undefined,
-    })));
+    rf.setNodes((nds) => nds.map((n) => {
+      const isLocked = lockedNodes.has(n.id);
+      return {
+        ...n,
+        draggable: !isLocked,
+        selectable: n.id.startsWith('section-') ? !isLocked : n.selectable,
+        className: isLocked ? 'opacity-80' : undefined,
+      };
+    }));
   }, [lockedNodes, rf]);
 
   /* ─── Copy / paste ─── */

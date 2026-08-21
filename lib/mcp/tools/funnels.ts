@@ -858,7 +858,7 @@ export function registerFunnelTools(server: McpServer) {
       is_template: true,
       created_by: auth.userId,
     }).select('id, name').single();
-    if (fErr || !newFunnel) return txt(`Failed: ${fErr?.message || 'unknown'}`);
+    if (fErr || !newFunnel) return txt(`Failed: ${friendlyError(fErr?.message || 'unknown')}`);
 
     const stepIdMap = new Map<string, string>();
     const srcSteps = stepsRes.data || [];
@@ -953,7 +953,7 @@ export function registerFunnelTools(server: McpServer) {
       is_template: false,
       created_by: auth.userId,
     }).select('id, name').single();
-    if (fErr || !newFunnel) return txt(`Failed: ${fErr?.message || 'unknown'}`);
+    if (fErr || !newFunnel) return txt(`Failed: ${friendlyError(fErr?.message || 'unknown')}`);
 
     const stepIdMap = new Map<string, string>();
     const srcSteps = stepsRes.data || [];
