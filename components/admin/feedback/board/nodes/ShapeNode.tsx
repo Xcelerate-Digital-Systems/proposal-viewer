@@ -11,7 +11,8 @@ import {
 import RoleChip from '@/components/admin/funnels/board/nodes/RoleChip';
 import PlatformBadge from '@/components/admin/funnels/board/nodes/PlatformBadge';
 import type { FeedbackBoardShape } from '@/lib/supabase';
-import { DIAMOND_TYPES, DIAMOND_BOX_SIZE, LEGACY_DEFAULT_COLOR, type DiamondType } from './diamond-config';
+import { DIAMOND_TYPES, DIAMOND_BOX_SIZE, DIAMOND_CONFIG, DIAMOND_LABEL_GAP, DIAMOND_LABEL_BELOW, LEGACY_DEFAULT_COLOR, type DiamondType } from './diamond-config';
+import { parseActionContent, parseWaitContent, formatWaitLabel } from './shape-parsers';
 import { TextShape } from './TextShape';
 import { DecisionShape } from './DecisionShape';
 import { WaitDiamond } from './WaitDiamond';
@@ -49,13 +50,12 @@ const DIAMOND_FRAME_W = 200;
 const HANDLE_BASE =
   '!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors';
 
-function DiamondNodeHandles({ readOnly, frameH }: { readOnly?: boolean; frameH: number }) {
+function DiamondNodeHandles({ readOnly }: { readOnly?: boolean; frameH?: number }) {
   const sideOutset = 20;
   const cy = DIAMOND_BOX_SIZE / 2;
   const leftX = DIAMOND_FRAME_W / 2 - DIAMOND_BOX_SIZE / 2 - sideOutset;
   const rightX = DIAMOND_FRAME_W / 2 + DIAMOND_BOX_SIZE / 2 + sideOutset;
   const topY = -sideOutset;
-  const bottomY = frameH + 8;
   return (
     <>
       <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
@@ -67,9 +67,9 @@ function DiamondNodeHandles({ readOnly, frameH }: { readOnly?: boolean; frameH: 
       <Handle id="right-target" type="source" position={Position.Right} className={HANDLE_BASE}
         style={{ top: cy, right: DIAMOND_FRAME_W - rightX }} isConnectable={!readOnly} />
       <Handle id="bottom" type="source" position={Position.Bottom} className={HANDLE_BASE}
-        style={{ top: bottomY, bottom: 'auto' }} isConnectable={!readOnly} />
+        style={{ bottom: -8, top: 'auto' }} isConnectable={!readOnly} />
       <Handle id="bottom-target" type="source" position={Position.Bottom} className={HANDLE_BASE}
-        style={{ top: bottomY, bottom: 'auto' }} isConnectable={!readOnly} />
+        style={{ bottom: -8, top: 'auto' }} isConnectable={!readOnly} />
       <Handle id="left" type="source" position={Position.Left} className={HANDLE_BASE}
         style={{ top: cy, left: leftX }} isConnectable={!readOnly} />
       <Handle id="left-source" type="source" position={Position.Left} className={HANDLE_BASE}
@@ -271,34 +271,71 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
   }
 
   if (shape.shape_type === 'wait') {
-    const frameH = DIAMOND_BOX_SIZE + 8 + 22 + (showNavPill ? 26 : 0) + (description ? 36 : 0);
+    const hasDesc = !!description;
+    const navH = showNavPill ? 32 : 0;
+    const msgH = showMessagePill ? 32 : 0;
+    const cardPadTop = 20 + 4;
+    const labelRow = 22;
+    const descTextArea = hasDesc ? 56 + 10 : 0;
+    const cardBottomPad = 10;
+    const cardInner = cardPadTop + labelRow + navH + msgH + descTextArea + cardBottomPad;
+    const frameH = DIAMOND_BOX_SIZE + Math.max(56, cardInner) - 20;
+    const waitContent = parseWaitContent(shape.content);
+    const waitLabel = waitContent.label?.trim() || `Wait ${formatWaitLabel(waitContent)}`;
     return (
       <>
         <DiamondNodeHandles readOnly={readOnly} frameH={frameH} />
         <div className="relative flex flex-col items-center" style={{ width: DIAMOND_FRAME_W, minHeight: frameH }}>
           <div className="relative z-10">
             {diamondCorners}
-            <WaitDiamond shape={shape} selected={!!selected} readOnly={readOnly} onUpdateContent={onUpdateContent} />
+            <WaitDiamond shape={shape} selected={!!selected} readOnly={readOnly} onUpdateContent={onUpdateContent} hideLabel />
           </div>
-          {navPillEl}
-          {description && <ShapeDescCard text={description} />}
+          <div
+            className="w-full bg-white rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.10)] border border-ink/15 flex flex-col items-center"
+            style={{ marginTop: -20, paddingTop: 24, paddingBottom: cardBottomPad, minHeight: 56 }}
+          >
+            <span className="block text-detail text-ink/80 text-center leading-tight whitespace-nowrap px-2">{waitLabel}</span>
+            {navPillEl}
+            {hasDesc && (
+              <p className="text-2xs text-ink/55 leading-snug whitespace-pre-wrap px-3 pt-1 w-full text-center">{description}</p>
+            )}
+          </div>
         </div>
       </>
     );
   }
 
   if (DIAMOND_TYPES.has(shape.shape_type)) {
-    const frameH = DIAMOND_BOX_SIZE + 8 + 22 + (showNavPill ? 26 : 0) + (description ? 36 : 0);
+    const hasDesc = !!description;
+    const navH = showNavPill ? 32 : 0;
+    const msgH = showMessagePill ? 32 : 0;
+    const cardPadTop = 20 + 4;
+    const labelRow = 22;
+    const descTextArea = hasDesc ? 56 + 10 : 0;
+    const cardBottomPad = 10;
+    const cardInner = cardPadTop + labelRow + navH + msgH + descTextArea + cardBottomPad;
+    const frameH = DIAMOND_BOX_SIZE + Math.max(56, cardInner) - 20;
+    const eventContent = parseActionContent(shape.content);
+    const eventConfig = DIAMOND_CONFIG[shape.shape_type as DiamondType];
+    const eventLabel = eventContent.label || eventConfig?.placeholder || shape.shape_type;
     return (
       <>
         <DiamondNodeHandles readOnly={readOnly} frameH={frameH} />
         <div className="relative flex flex-col items-center" style={{ width: DIAMOND_FRAME_W, minHeight: frameH }}>
           <div className="relative z-10">
             {diamondCorners}
-            <EventDiamond shape={shape} diamondType={shape.shape_type as DiamondType} selected={!!selected} readOnly={readOnly} onUpdateContent={onUpdateContent} />
+            <EventDiamond shape={shape} diamondType={shape.shape_type as DiamondType} selected={!!selected} readOnly={readOnly} onUpdateContent={onUpdateContent} hideLabel />
           </div>
-          {navPillEl}
-          {description && <ShapeDescCard text={description} />}
+          <div
+            className="w-full bg-white rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.10)] border border-ink/15 flex flex-col items-center"
+            style={{ marginTop: -20, paddingTop: 24, paddingBottom: cardBottomPad, minHeight: 56 }}
+          >
+            <span className="block text-detail text-ink/80 text-center leading-tight whitespace-nowrap px-2">{eventLabel}</span>
+            {navPillEl}
+            {hasDesc && (
+              <p className="text-2xs text-ink/55 leading-snug whitespace-pre-wrap px-3 pt-1 w-full text-center">{description}</p>
+            )}
+          </div>
         </div>
       </>
     );
@@ -379,7 +416,8 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
     );
   }
 
-  if (shape.shape_type === 'arrow' || shape.shape_type === 'line') {
+  if (shape.shape_type === 'arrow' || shape.shape_type === 'line'
+    || shape.shape_type === 'double_arrow' || shape.shape_type === 'elbow_arrow') {
     const dx = endX;
     const dy = endY;
     const minX = Math.min(0, dx);
@@ -396,17 +434,27 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
     const x2 = offsetX + dx;
     const y2 = offsetY + dy;
 
-    let arrowHeadD = '';
-    if (shape.shape_type === 'arrow') {
-      const angle = Math.atan2(y2 - y1, x2 - x1);
+    const isElbow = shape.shape_type === 'elbow_arrow';
+    const hasEndHead = shape.shape_type === 'arrow' || shape.shape_type === 'double_arrow' || isElbow;
+    const hasStartHead = shape.shape_type === 'double_arrow';
+
+    const makeArrowHead = (tipX: number, tipY: number, fromX: number, fromY: number) => {
+      const angle = Math.atan2(tipY - fromY, tipX - fromX);
       const a1 = angle + Math.PI - ARROW_ANGLE;
       const a2 = angle + Math.PI + ARROW_ANGLE;
-      const p1x = x2 + Math.cos(a1) * ARROW_HEAD;
-      const p1y = y2 + Math.sin(a1) * ARROW_HEAD;
-      const p2x = x2 + Math.cos(a2) * ARROW_HEAD;
-      const p2y = y2 + Math.sin(a2) * ARROW_HEAD;
-      arrowHeadD = `M ${p1x} ${p1y} L ${x2} ${y2} L ${p2x} ${p2y}`;
-    }
+      return `M ${tipX + Math.cos(a1) * ARROW_HEAD} ${tipY + Math.sin(a1) * ARROW_HEAD} L ${tipX} ${tipY} L ${tipX + Math.cos(a2) * ARROW_HEAD} ${tipY + Math.sin(a2) * ARROW_HEAD}`;
+    };
+
+    const elbowMidX = x2;
+    const elbowMidY = y1;
+    const linePath = isElbow
+      ? `M ${x1} ${y1} L ${elbowMidX} ${elbowMidY} L ${x2} ${y2}`
+      : undefined;
+
+    const endHeadD = hasEndHead
+      ? makeArrowHead(x2, y2, isElbow ? elbowMidX : x1, isElbow ? elbowMidY : y1)
+      : '';
+    const startHeadD = hasStartHead ? makeArrowHead(x1, y1, x2, y2) : '';
 
     const handleSize = 8;
     const onEndpointDrag = (which: 'start' | 'end') => (e: React.MouseEvent) => {
@@ -446,25 +494,32 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
         className={selected ? 'ring-2 ring-teal/30 rounded-sm' : ''}
       >
         <svg width={svgWidth} height={svgHeight} viewBox={`0 0 ${svgWidth} ${svgHeight}`}>
-          <line
-            x1={x1}
-            y1={y1}
-            x2={x2}
-            y2={y2}
-            stroke={color}
-            strokeWidth={strokeWidth}
-            strokeDasharray={dashArray}
-            strokeLinecap="round"
-          />
-          {arrowHeadD && (
+          {isElbow ? (
             <path
-              d={arrowHeadD}
+              d={linePath}
               fill="none"
               stroke={color}
               strokeWidth={strokeWidth}
+              strokeDasharray={dashArray}
               strokeLinecap="round"
               strokeLinejoin="round"
             />
+          ) : (
+            <line
+              x1={x1} y1={y1} x2={x2} y2={y2}
+              stroke={color}
+              strokeWidth={strokeWidth}
+              strokeDasharray={dashArray}
+              strokeLinecap="round"
+            />
+          )}
+          {endHeadD && (
+            <path d={endHeadD} fill="none" stroke={color} strokeWidth={strokeWidth}
+              strokeLinecap="round" strokeLinejoin="round" />
+          )}
+          {startHeadD && (
+            <path d={startHeadD} fill="none" stroke={color} strokeWidth={strokeWidth}
+              strokeLinecap="round" strokeLinejoin="round" />
           )}
           {selected && !readOnly && (
             <>

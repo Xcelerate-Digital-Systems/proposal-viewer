@@ -41,6 +41,8 @@ function buildNodeTypeCatalog() {
     { slug: 'rectangle', label: 'Rectangle', icon: 'square' },
     { slug: 'ellipse', label: 'Ellipse', icon: 'circle' },
     { slug: 'arrow', label: 'Arrow', icon: 'move-right' },
+    { slug: 'double_arrow', label: 'Double Arrow', icon: 'move-horizontal' },
+    { slug: 'elbow_arrow', label: 'Elbow Arrow', icon: 'corner-down-right' },
     { slug: 'line', label: 'Line', icon: 'minus' },
     { slug: 'text', label: 'Text', icon: 'type' },
   ];
@@ -454,7 +456,7 @@ export function registerFunnelTools(server: McpServer) {
 
   server.tool('create_funnel_shape', 'Add a shape (sticky note, annotation, decision diamond, action node, etc.) to a funnel board. Returns the new shape ID.', {
     funnelId: z.string(),
-    shapeType: z.string().describe('Shape type — primitives: rectangle, ellipse, arrow, line, text. Actions: decision, wait, call, meeting, automation, goal, button_click, form_submit, video_play, scroll_depth, purchase, add_to_cart, subscribe, custom_event, page_view, time_on_page, exit_intent, refund, download, share, login, sms_notification, email_notification, ghl_notification, google_sheet, webhook, form_completed, schedule_meeting, deal_won, send_quote, send_google_review, add_to_referral_program, etc.'),
+    shapeType: z.string().describe('Shape type — primitives: rectangle, ellipse, arrow, double_arrow, elbow_arrow, line, text. Actions: decision, wait, call, meeting, automation, goal, button_click, form_submit, video_play, scroll_depth, purchase, add_to_cart, subscribe, custom_event, page_view, time_on_page, exit_intent, refund, download, share, login, sms_notification, email_notification, ghl_notification, google_sheet, webhook, form_completed, schedule_meeting, deal_won, send_quote, send_google_review, add_to_referral_program, etc.'),
     x: z.number().describe('Canvas X coordinate'),
     y: z.number().describe('Canvas Y coordinate'),
     content: z.string().optional().describe('Text content (for text shapes, sticky notes, labels)'),

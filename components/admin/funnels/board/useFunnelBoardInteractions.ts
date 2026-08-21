@@ -49,12 +49,16 @@ export function useFunnelBoardInteractions(
   const addShapeAt = useCallback((shapeType: FunnelShapeType, flowX: number, flowY: number) => {
     const isDecision = shapeType === 'decision';
     const isDescBox = shapeType === 'description_box';
+    const isLineShape = shapeType === 'arrow' || shapeType === 'line'
+      || shapeType === 'double_arrow' || shapeType === 'elbow_arrow';
     const offsetX = isDecision ? 120 : isDescBox ? 130 : 54;
     const offsetY = isDecision ? 120 : isDescBox ? 50 : 70;
     void ctx.createShape({
       shape_type: shapeType,
       x: Math.round(flowX - offsetX), y: Math.round(flowY - offsetY),
-      width: null, height: null, end_x: null, end_y: null,
+      width: null, height: null,
+      end_x: isLineShape ? 200 : null,
+      end_y: isLineShape ? (shapeType === 'elbow_arrow' ? 100 : 0) : null,
       content: isDescBox ? JSON.stringify({ title: '', body: '' }) : null,
       color: '#2B2B2B', stroke_width: 2, dashed: false,
       font_size: null, description: null, message: null, role_id: null, platform: null,
@@ -163,9 +167,13 @@ export function useFunnelBoardInteractions(
   }, [rf, autoConnect]);
 
   const onNodeDrag = useCallback((_e: React.MouseEvent, node: Node) => {
+    if (node.id.startsWith('section-')) {
+      setGuides({ horizontals: [], verticals: [] });
+      return;
+    }
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
-      const others = rf.getNodes().filter((n) => n.id !== node.id && !n.selected);
+      const others = rf.getNodes().filter((n) => n.id !== node.id && !n.selected && !n.id.startsWith('section-'));
       const drag = visualCentre(node);
       let bestH: number | null = null;
       let bestV: number | null = null;

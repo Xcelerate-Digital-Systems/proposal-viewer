@@ -634,7 +634,7 @@ export type FeedbackBoardNote = {
 };
 
 export type FeedbackShapeType =
-  | 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'text'
+  | 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'double_arrow' | 'elbow_arrow' | 'text'
   | 'decision' | 'wait'
   | 'call' | 'meeting' | 'automation' | 'goal'
   | 'button_click' | 'form_submit' | 'video_play' | 'scroll_depth'

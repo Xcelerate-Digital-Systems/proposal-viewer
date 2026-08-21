@@ -2,26 +2,24 @@
 
 import { memo, useState, useEffect, useRef } from 'react';
 import { NodeResizer, useStore, type NodeProps } from '@xyflow/react';
+import { Lock, Unlock } from 'lucide-react';
 import { sectionPalette, type FunnelBoardSection } from '@/lib/types/funnel';
 
 export interface SectionNodeData extends Record<string, unknown> {
   section: FunnelBoardSection;
   readOnly?: boolean;
   onRename?: (id: string, label: string) => void;
+  onToggleLock?: () => void;
 }
 
-/** Below this zoom the label would be unreadable at its normal size, so it
- *  scales back up to stay legible — the point of sections is that a zoomed-out
- *  board still reads as a handful of named phases. */
 const LABEL_LEGIBLE_ZOOM = 0.75;
 
-function SectionNodeComponent({ data, selected }: NodeProps) {
-  const { section, readOnly, onRename } = data as SectionNodeData;
+function SectionNodeComponent({ data, selected, draggable }: NodeProps) {
+  const { section, readOnly, onRename, onToggleLock } = data as SectionNodeData;
+  const isLocked = draggable === false;
   const palette = sectionPalette(section.color);
 
   const zoom = useStore((s) => s.transform[2]);
-  // Counter-scale the label once the canvas is zoomed out past the threshold,
-  // capped so it never becomes absurd on a very wide board.
   const labelScale = zoom < LABEL_LEGIBLE_ZOOM
     ? Math.min(LABEL_LEGIBLE_ZOOM / Math.max(zoom, 0.08), 6)
     : 1;
@@ -62,7 +60,7 @@ function SectionNodeComponent({ data, selected }: NodeProps) {
       )}
 
       <div
-        className="absolute left-3 select-none"
+        className="absolute left-3 select-none flex items-end gap-1.5"
         style={{
           bottom: '100%',
           marginBottom: 6,
@@ -93,6 +91,17 @@ function SectionNodeComponent({ data, selected }: NodeProps) {
           >
             {section.label}
           </span>
+        )}
+        {!readOnly && onToggleLock && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onToggleLock(); }}
+            className="flex items-center justify-center w-5 h-5 rounded bg-white/80 hover:bg-white border shadow-sm transition-colors"
+            style={{ borderColor: palette.border, color: palette.text }}
+            title={isLocked ? 'Unlock section (allow dragging)' : 'Lock section (prevent accidental drags)'}
+          >
+            {isLocked ? <Lock size={11} strokeWidth={2.5} /> : <Unlock size={11} strokeWidth={2.5} />}
+          </button>
         )}
       </div>
     </div>

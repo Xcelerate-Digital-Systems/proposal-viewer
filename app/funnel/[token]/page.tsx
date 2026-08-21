@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, use, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
-  ReactFlow, ReactFlowProvider, Controls, MiniMap,
+  ReactFlow, ReactFlowProvider, Controls, MiniMap, Background, BackgroundVariant,
   ConnectionMode, type NodeTypes, type EdgeTypes, type Node, type Edge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -176,7 +176,7 @@ function PublicFunnelInner({ token }: { token: string }) {
         tabs: tabsEnabled ? tabs : undefined,
         role: step.role_id ? roleById.get(step.role_id) ?? null : null,
       },
-      draggable: false, selectable: false, connectable: false,
+      draggable: false, connectable: false,
     }));
     const noteNodes: Node[] = boardNotes.map((note) => ({
       id: `note-${note.id}`,
@@ -200,7 +200,7 @@ function PublicFunnelInner({ token }: { token: string }) {
         message: shape.message,
         role: shape.role_id ? roleById.get(shape.role_id) ?? null : null,
       },
-      draggable: false, selectable: false, connectable: false,
+      draggable: false, connectable: false,
     }));
     const sectionNodes: Node[] = boardSections.map((section) => ({
       id: `section-${section.id}`,
@@ -444,16 +444,18 @@ function PublicFunnelInner({ token }: { token: string }) {
               fitViewOptions={{ padding: 0.2 }}
               minZoom={0.1}
               maxZoom={2}
+              className="public-funnel-viewer"
               style={{ background: 'transparent' }}
               nodesDraggable={false}
               nodesConnectable={false}
-              elementsSelectable={false}
+              nodesFocusable={false}
               panOnDrag
               zoomOnScroll
               zoomOnPinch
               onlyRenderVisibleElements
               proOptions={{ hideAttribution: true }}
             >
+              <Background variant={BackgroundVariant.Dots} gap={22} size={1.5} color="rgba(43,43,43,0.25)" />
               <Controls
                 showInteractive={false}
                 className="!bg-white/90 !border !border-edge/50 !shadow-none !rounded-lg !backdrop-blur-sm"

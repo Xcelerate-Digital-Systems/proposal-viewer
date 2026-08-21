@@ -6,7 +6,7 @@ import {
   MousePointerClick, FileText, PlayCircle, ChevronsDown, ShoppingBag, ShoppingCart,
   BellRing, Sparkles, MessageSquare, Mail, Bell, Sheet, StickyNote, PanelLeftOpen,
   Eye, Timer, LogOut, LogIn, Undo2, Download, Share2, Webhook, Plus, Upload,
-  Workflow, FileBox, MousePointer2, Pencil, Square, Circle, MoveRight, Minus, Type, GitBranchPlus,
+  Workflow, FileBox, MousePointer2, Pencil, Square, Circle, MoveRight, MoveHorizontal, CornerDownRight, Minus, Type, GitBranchPlus,
   ClipboardCheck, CalendarCheck, Trophy, CircleX, Target, Crown, MapPin, Send,
   Star, Gift, Settings,
   type LucideIcon,
@@ -81,6 +81,8 @@ const PRIMITIVE_ICONS: Record<string, LucideIcon> = {
   rectangle: Square,
   ellipse: Circle,
   arrow: MoveRight,
+  double_arrow: MoveHorizontal,
+  elbow_arrow: CornerDownRight,
   line: Minus,
   text: Type,
 };

@@ -28,6 +28,17 @@ export function useFunnelBoardClipboard(
 
   const clipboardRef = useRef<ClipboardEntry[]>([]);
   const [lockedNodes, setLockedNodes] = useState<Set<string>>(new Set());
+  const lockedInitRef = useRef(false);
+  useEffect(() => {
+    if (lockedInitRef.current) return;
+    if (ctx.sections.length === 0) return;
+    lockedInitRef.current = true;
+    const initial = new Set<string>();
+    for (const sec of ctx.sections) {
+      if (sec.locked) initial.add(`section-${sec.id}`);
+    }
+    if (initial.size > 0) setLockedNodes(initial);
+  }, [ctx.sections]);
 
   /* ─── Duplicate selected nodes (Cmd+D + context-menu action) ─── */
 
@@ -57,13 +68,15 @@ export function useFunnelBoardClipboard(
             label: orig.label, icon: orig.icon, url: orig.url,
             color: orig.color, metrics: orig.metrics, message: orig.message,
             role_id: orig.role_id, platform: orig.platform,
+            description: orig.description,
+            linked_tab_id: orig.linked_tab_id, linked_funnel_id: orig.linked_funnel_id,
           });
         }
       } else if (node.id.startsWith('shape-')) {
         const origId = node.id.slice(6);
         const orig = ctx.shapes.find((s) => s.id === origId);
         if (!orig) continue;
-        await ctx.createShape({
+        const newShape = await ctx.createShape({
           shape_type: orig.shape_type,
           x: orig.x + 40, y: orig.y + 40,
           width: orig.width, height: orig.height,
@@ -74,6 +87,12 @@ export function useFunnelBoardClipboard(
           dashed: orig.dashed, font_size: orig.font_size,
           description: orig.description,
         });
+        if (newShape && (orig.linked_tab_id || orig.linked_funnel_id)) {
+          await ctx.updateShape(newShape.id, {
+            linked_tab_id: orig.linked_tab_id,
+            linked_funnel_id: orig.linked_funnel_id,
+          });
+        }
       } else if (node.id.startsWith('note-')) {
         const origId = node.id.slice(5);
         const orig = ctx.boardNotes.find((n) => n.id === origId);
@@ -109,10 +128,25 @@ export function useFunnelBoardClipboard(
       const next = new Set(prev);
       for (const n of selected) {
         if (allLocked) next.delete(n.id); else next.add(n.id);
+        if (n.id.startsWith('section-')) {
+          void ctx.updateSection(n.id.replace('section-', ''), { locked: !allLocked });
+        }
       }
       return next;
     });
-  }, [rf, lockedNodes]);
+  }, [rf, lockedNodes, ctx]);
+
+  const toggleLock = useCallback((nodeId: string) => {
+    setLockedNodes((prev) => {
+      const next = new Set(prev);
+      const wasLocked = next.has(nodeId);
+      if (wasLocked) next.delete(nodeId); else next.add(nodeId);
+      if (nodeId.startsWith('section-')) {
+        void ctx.updateSection(nodeId.replace('section-', ''), { locked: !wasLocked });
+      }
+      return next;
+    });
+  }, [ctx]);
 
   useEffect(() => {
     rf.setNodes((nds) => nds.map((n) => ({
@@ -221,6 +255,7 @@ export function useFunnelBoardClipboard(
       y: Math.round(minY),
       width: Math.round(maxX - minX),
       height: Math.round(maxY - minY),
+      locked: false,
     });
   }, [rf, ctx]);
 
@@ -382,6 +417,7 @@ export function useFunnelBoardClipboard(
     duplicateSelected,
     deleteSelected,
     toggleLockSelected,
+    toggleLock,
     copySelected,
     pasteAtViewport,
     alignH,

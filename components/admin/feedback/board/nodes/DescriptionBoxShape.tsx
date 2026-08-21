@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Handle, Position } from '@xyflow/react';
+import { Handle, Position, NodeResizer } from '@xyflow/react';
 import type { FeedbackBoardShape } from '@/lib/supabase';
 
 export type DescriptionBoxData = {
@@ -80,13 +80,26 @@ export function DescriptionBoxShape({
   const hasBody = !!data.body;
   const isEmpty = !hasTitle && !hasBody;
 
+  const boxW = shape.width ?? BOX_W;
+  const boxH = shape.height ?? undefined;
+
   return (
     <div
       className={`relative transition-shadow ${
         selected ? 'ring-2 ring-teal/40 ring-offset-2 ring-offset-white' : ''
       }`}
-      style={{ width: BOX_W, minHeight: MIN_H }}
+      style={{ width: boxW, minHeight: MIN_H, height: boxH }}
     >
+      {!readOnly && (
+        <NodeResizer
+          isVisible={selected}
+          minWidth={160}
+          minHeight={MIN_H}
+          lineClassName="!border-teal/30"
+          handleClassName="!w-2.5 !h-2.5 !bg-white !rounded-sm"
+          handleStyle={{ border: '2px solid #017C87' }}
+        />
+      )}
       {/* Handles */}
       <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
         style={{ top: -5 }} isConnectable={!readOnly} />

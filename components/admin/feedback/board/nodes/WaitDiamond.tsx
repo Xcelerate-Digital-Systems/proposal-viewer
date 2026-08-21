@@ -21,12 +21,13 @@ import { DiamondVisual } from './DiamondVisual';
 const WAIT_COLOR = '#8B5CF6';
 
 export function WaitDiamond({
-  shape, selected, readOnly, onUpdateContent,
+  shape, selected, readOnly, onUpdateContent, hideLabel,
 }: {
   shape: FeedbackBoardShape;
   selected: boolean;
   readOnly?: boolean;
   onUpdateContent?: (id: string, content: string) => void;
+  hideLabel?: boolean;
 }) {
   const content = useMemo(() => parseWaitContent(shape.content), [shape.content]);
   const [editing, setEditing] = useState(false);
@@ -66,50 +67,54 @@ export function WaitDiamond({
     >
       <DiamondVisual color={diamondColorOverride(shape) || WAIT_COLOR} Icon={Clock} selected={selected} />
 
-      <div style={{ height: DIAMOND_LABEL_GAP }} aria-hidden />
+      {(!hideLabel || editing) && (
+        <>
+          <div style={{ height: DIAMOND_LABEL_GAP }} aria-hidden />
 
-      <div className="flex items-start justify-center pt-1 px-1" style={{ height: DIAMOND_LABEL_BELOW, width: editing ? 320 : undefined, maxWidth: editing ? undefined : 180 }}>
-        {editing && !readOnly ? (
-          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-            <input
-              type="number"
-              min={1}
-              max={9999}
-              autoFocus
-              value={duration}
-              onChange={(e) => setDuration(parseInt(e.target.value, 10) || 1)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') { e.preventDefault(); commit(); }
-                if (e.key === 'Escape') { setDuration(content.duration); setUnit(content.unit); setLabelDraft(content.label ?? ''); setEditing(false); }
-              }}
-              className="w-14 text-center px-2 py-1.5 rounded-lg border border-edge bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
-            />
-            <select
-              value={unit}
-              onChange={(e) => setUnit(e.target.value as FeedbackWaitUnit)}
-              onBlur={commit}
-              className="px-2 py-1.5 rounded-lg border border-edge bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
-            >
-              {WAIT_UNITS.map((u) => (
-                <option key={u.value} value={u.value}>{u.label}</option>
-              ))}
-            </select>
-            <input
-              type="text"
-              value={labelDraft}
-              onChange={(e) => setLabelDraft(e.target.value)}
-              onBlur={commit}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }}
-              placeholder="Label"
-              className="w-32 px-2.5 py-1.5 rounded-lg border border-edge bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
-            />
+          <div className="flex items-start justify-center pt-1 px-1" style={{ height: DIAMOND_LABEL_BELOW, width: editing ? 320 : undefined, maxWidth: editing ? undefined : 180 }}>
+            {editing && !readOnly ? (
+              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <input
+                  type="number"
+                  min={1}
+                  max={9999}
+                  autoFocus
+                  value={duration}
+                  onChange={(e) => setDuration(parseInt(e.target.value, 10) || 1)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); commit(); }
+                    if (e.key === 'Escape') { setDuration(content.duration); setUnit(content.unit); setLabelDraft(content.label ?? ''); setEditing(false); }
+                  }}
+                  className="w-14 text-center px-2 py-1.5 rounded-lg border border-edge bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+                />
+                <select
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value as FeedbackWaitUnit)}
+                  onBlur={commit}
+                  className="px-2 py-1.5 rounded-lg border border-edge bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+                >
+                  {WAIT_UNITS.map((u) => (
+                    <option key={u.value} value={u.value}>{u.label}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  value={labelDraft}
+                  onChange={(e) => setLabelDraft(e.target.value)}
+                  onBlur={commit}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }}
+                  placeholder="Label"
+                  className="w-32 px-2.5 py-1.5 rounded-lg border border-edge bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+                />
+              </div>
+            ) : (
+              <span className="block text-detail text-ink/80 text-center leading-tight whitespace-nowrap">
+                {labelText}
+              </span>
+            )}
           </div>
-        ) : (
-          <span className="block text-detail text-ink/80 text-center leading-tight whitespace-nowrap">
-            {labelText}
-          </span>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

@@ -271,14 +271,12 @@ const LABEL_GAP = 8;
 const HANDLE_BASE =
   '!w-2.5 !h-2.5 !bg-ink/70 !border-2 !border-white hover:!bg-teal transition-colors';
 
-function StepHandles({ readOnly, frameH, hasDesc }: { readOnly?: boolean; frameH: number; hasDesc?: boolean }) {
+function StepHandles({ readOnly }: { readOnly?: boolean; frameH?: number; hasDesc?: boolean }) {
   const sideOutset = 20;
-  const bottomOutset = hasDesc ? 2 : 8;
   const cy = ICON_SIZE / 2;
   const leftX = FRAME_W / 2 - ICON_SIZE / 2 - sideOutset;
   const rightX = FRAME_W / 2 + ICON_SIZE / 2 + sideOutset;
   const topY = -sideOutset;
-  const bottomY = frameH + bottomOutset;
   return (
     <>
       <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
@@ -286,7 +284,7 @@ function StepHandles({ readOnly, frameH, hasDesc }: { readOnly?: boolean; frameH
       <Handle id="right" type="source" position={Position.Right} className={HANDLE_BASE}
         style={{ top: cy, right: FRAME_W - rightX }} isConnectable={!readOnly} />
       <Handle id="bottom" type="source" position={Position.Bottom} className={HANDLE_BASE}
-        style={{ top: bottomY, bottom: 'auto' }} isConnectable={!readOnly} />
+        style={{ bottom: -8, top: 'auto' }} isConnectable={!readOnly} />
       <Handle id="left" type="source" position={Position.Left} className={HANDLE_BASE}
         style={{ top: cy, left: leftX }} isConnectable={!readOnly} />
     </>
@@ -304,13 +302,11 @@ const SHARED_SIDE_HANDLE_Y = 100;
  *  the canonical baseline. Top handle hangs above the page top edge; bottom
  *  handle clears the label entirely so the connection dot (and edge tip)
  *  doesn't overlap the label text. */
-function PageHandles({ readOnly, frameH, hasDesc }: { readOnly?: boolean; frameH: number; hasDesc?: boolean }) {
+function PageHandles({ readOnly }: { readOnly?: boolean; frameH?: number; hasDesc?: boolean }) {
   const sideOutset = 20;
-  const bottomOutset = hasDesc ? 2 : 8;
   const leftX = FRAME_W / 2 - PAGE_MOCKUP_W / 2 - sideOutset;
   const rightX = FRAME_W / 2 + PAGE_MOCKUP_W / 2 + sideOutset;
   const topY = -sideOutset;
-  const bottomY = frameH + bottomOutset;
   return (
     <>
       <Handle id="top" type="source" position={Position.Top} className={HANDLE_BASE}
@@ -318,7 +314,7 @@ function PageHandles({ readOnly, frameH, hasDesc }: { readOnly?: boolean; frameH
       <Handle id="right" type="source" position={Position.Right} className={HANDLE_BASE}
         style={{ top: SHARED_SIDE_HANDLE_Y, right: FRAME_W - rightX }} isConnectable={!readOnly} />
       <Handle id="bottom" type="source" position={Position.Bottom} className={HANDLE_BASE}
-        style={{ top: bottomY, bottom: 'auto' }} isConnectable={!readOnly} />
+        style={{ bottom: -8, top: 'auto' }} isConnectable={!readOnly} />
       <Handle id="left" type="source" position={Position.Left} className={HANDLE_BASE}
         style={{ top: SHARED_SIDE_HANDLE_Y, left: leftX }} isConnectable={!readOnly} />
     </>
@@ -398,15 +394,19 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   const parsedMessage = messageKind ? parseNodeMessage(step.message) : null;
   const showMessagePill = !!parsedMessage && hasMessageContent(parsedMessage);
 
-  const metricsRow = hasMetrics ? METRICS_H : 0;
-  const navRow = (showNavPill ? NAV_PILL_H : 0) + (showMessagePill ? NAV_PILL_H : 0);
-  const descRow = hasDescription ? (DESC_CARD_MIN_H - DESC_CARD_OVERLAP) : 0;
-  const frameH = isPage
-    ? PAGE_MOCKUP_H + LABEL_GAP + LABEL_OFFSET + metricsRow + navRow + descRow
-    : ICON_SIZE + LABEL_GAP + LABEL_OFFSET + metricsRow + navRow + descRow;
+  const metricsRow = hasMetrics ? METRICS_H + 2 : 0;
+  const navRow = (showNavPill ? NAV_PILL_H + 4 : 0) + (showMessagePill ? NAV_PILL_H + 4 : 0);
+  const topH = isPage ? PAGE_MOCKUP_H : ICON_SIZE;
+
+  const cardPadTop = DESC_CARD_OVERLAP + 4;
+  const labelRow = 22;
+  const descTextArea = hasDescription ? 56 + 10 : 0;
+  const cardBottomPad = 10;
+  const cardInner = cardPadTop + labelRow + metricsRow + navRow + descTextArea + cardBottomPad;
+  const frameH = topH + Math.max(DESC_CARD_MIN_H, cardInner) - DESC_CARD_OVERLAP;
 
   const labelEl = (
-    <div className="flex items-start max-w-full px-1 w-full justify-center" style={{ height: LABEL_OFFSET }}>
+    <div className="flex items-start max-w-full px-1 w-full justify-center py-0.5">
       {editing ? (
         <input
           ref={inputRef}
@@ -602,26 +602,19 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
         <div className="relative z-10">
           {isPage ? pageBody : discBody}
         </div>
-        {hasDescription ? (
-          <div
-            className="w-full bg-white rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.10)] border border-ink/15 flex flex-col items-center"
-            style={{ marginTop: -DESC_CARD_OVERLAP, paddingTop: DESC_CARD_OVERLAP + 4, minHeight: DESC_CARD_MIN_H }}
-          >
-            {labelEl}
-            {hasMetrics && <MetricsBadge visitors={visitors} conversions={conversions} />}
-            {navPillEl}
-            <p className="text-2xs text-ink/55 leading-snug whitespace-pre-wrap line-clamp-4 px-3 pb-2.5 w-full text-center">
+        <div
+          className="w-full bg-white rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.10)] border border-ink/15 flex flex-col items-center"
+          style={{ marginTop: -DESC_CARD_OVERLAP, paddingTop: DESC_CARD_OVERLAP + 4, paddingBottom: cardBottomPad, minHeight: DESC_CARD_MIN_H }}
+        >
+          {labelEl}
+          {hasMetrics && <MetricsBadge visitors={visitors} conversions={conversions} />}
+          {navPillEl}
+          {hasDescription && (
+            <p className="text-2xs text-ink/55 leading-snug whitespace-pre-wrap px-3 pt-1 w-full text-center">
               {step.description}
             </p>
-          </div>
-        ) : (
-          <>
-            <div style={{ height: LABEL_GAP }} aria-hidden />
-            {labelEl}
-            {hasMetrics && <MetricsBadge visitors={visitors} conversions={conversions} />}
-            {navPillEl}
-          </>
-        )}
+          )}
+        </div>
       </div>
     </>
   );

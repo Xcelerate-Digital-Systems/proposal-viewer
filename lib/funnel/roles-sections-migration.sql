@@ -63,9 +63,12 @@ CREATE TABLE IF NOT EXISTS public.funnel_board_sections (
   y           double precision NOT NULL DEFAULT 0,
   width       double precision NOT NULL DEFAULT 400,
   height      double precision NOT NULL DEFAULT 300,
+  locked      boolean NOT NULL DEFAULT false,
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE public.funnel_board_sections ADD COLUMN IF NOT EXISTS locked boolean NOT NULL DEFAULT false;
 
 CREATE INDEX IF NOT EXISTS funnel_board_sections_funnel_id_idx ON public.funnel_board_sections(funnel_id);
 CREATE INDEX IF NOT EXISTS funnel_board_sections_tab_id_idx    ON public.funnel_board_sections(tab_id);

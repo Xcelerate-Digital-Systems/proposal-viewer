@@ -369,3 +369,13 @@ body {
   from { transform: rotate(0deg) translateX(84px) rotate(0deg); }
   to   { transform: rotate(360deg) translateX(84px) rotate(-360deg); }
 }
+
+/* ── Public funnel viewer — suppress selection styling & hide handles ──── */
+.public-funnel-viewer .react-flow__node.selected {
+  box-shadow: none !important;
+  outline: none !important;
+}
+.public-funnel-viewer .react-flow__handle {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

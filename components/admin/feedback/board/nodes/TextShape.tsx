@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { NodeResizer } from '@xyflow/react';
 import type { FeedbackBoardShape } from '@/lib/supabase';
 
 export type TextStyleData = {
@@ -67,6 +68,8 @@ export function TextShape({
   };
 
   const align = styleData.align || 'left';
+  const shapeW = shape.width ?? undefined;
+  const shapeH = shape.height ?? undefined;
 
   if (editing && !readOnly) {
     return (
@@ -75,9 +78,21 @@ export function TextShape({
         style={{
           backgroundColor: styleData.bgColor || 'transparent',
           padding: hasBg ? '12px 16px' : '4px',
+          width: shapeW,
+          height: shapeH,
           minWidth: 120,
         }}
       >
+        {!readOnly && (
+          <NodeResizer
+            isVisible={selected}
+            minWidth={80}
+            minHeight={28}
+            lineClassName="!border-teal/30"
+            handleClassName="!w-2.5 !h-2.5 !bg-white !rounded-sm"
+            handleStyle={{ border: '2px solid #017C87' }}
+          />
+        )}
         <textarea
           ref={inputRef}
           value={draft}
@@ -94,7 +109,7 @@ export function TextShape({
             }
           }}
           placeholder="Type something…"
-          className="bg-transparent border-none outline-none resize-none min-w-[100px] min-h-[28px] w-full"
+          className="bg-transparent border-none outline-none resize-none min-w-[100px] min-h-[28px] w-full h-full"
           style={{
             fontSize,
             lineHeight: 1.4,
@@ -121,9 +136,21 @@ export function TextShape({
         textAlign: align,
         backgroundColor: styleData.bgColor || 'transparent',
         padding: hasBg ? '12px 16px' : '4px',
+        width: shapeW,
+        height: shapeH,
         minWidth: hasBg ? 120 : undefined,
       }}
     >
+      {!readOnly && (
+        <NodeResizer
+          isVisible={selected}
+          minWidth={80}
+          minHeight={28}
+          lineClassName="!border-teal/30"
+          handleClassName="!w-2.5 !h-2.5 !bg-white !rounded-sm"
+          handleStyle={{ border: '2px solid #017C87' }}
+        />
+      )}
       {styleData.text || (!readOnly && <span className="opacity-40">Double-click to edit</span>)}
     </div>
   );

@@ -60,7 +60,15 @@ function FunnelBoardInner() {
     [ctx.steps, ctx.boardEdges, ctx.shapes, ctx.funnel?.forecast_period, ctx.funnel?.default_deal_value]
   );
 
-  const board = useFunnelBoard(forecast.flowByEdge);
+  const viewportCentre = useCallback(() => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    return rect
+      ? rf.screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 3 })
+      : { x: 200, y: 200 };
+  }, [rf]);
+
+  const clipboard = useFunnelBoardClipboard(viewportCentre);
+  const board = useFunnelBoard(forecast.flowByEdge, clipboard.lockedNodes, clipboard.toggleLock);
 
   const isValidConnection = useCallback((connection: Edge | Connection) => {
     const src = connection.source;
@@ -72,19 +80,11 @@ function FunnelBoardInner() {
     return true;
   }, [board.edges]);
 
-  const viewportCentre = useCallback(() => {
-    const rect = containerRef.current?.getBoundingClientRect();
-    return rect
-      ? rf.screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 3 })
-      : { x: 200, y: 200 };
-  }, [rf]);
-
   const interactions = useFunnelBoardInteractions(containerRef, viewportCentre, {
     onConnect: board.onConnect,
     edges: board.edges,
     isValidConnection,
   });
-  const clipboard = useFunnelBoardClipboard(viewportCentre);
 
   const minimapNodeColor = useCallback((node: Node) => {
     if (node.type === 'section') return 'rgba(1,124,135,0.08)';
@@ -198,7 +198,7 @@ function FunnelBoardInner() {
     // A click rather than a drag — treat as a cancel, not a sliver of a section.
     if (width < MIN_SECTION || height < MIN_SECTION) return;
 
-    void ctx.createSection({ label: 'Section', color: 'teal', x, y, width, height });
+    void ctx.createSection({ label: 'Section', color: 'teal', x, y, width, height, locked: false });
   };
 
   // Screen-space preview of the rectangle being dragged out.
@@ -298,7 +298,7 @@ function FunnelBoardInner() {
             });
           }}
         >
-          <Background variant={BackgroundVariant.Dots} gap={22} size={1.2} color="rgba(43,43,43,0.15)" />
+          <Background variant={BackgroundVariant.Dots} gap={22} size={1.5} color="rgba(43,43,43,0.25)" />
           <Controls
             showInteractive={false}
             className="!bg-white !border !border-edge !shadow-sm !rounded-lg"

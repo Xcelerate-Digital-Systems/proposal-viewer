@@ -316,7 +316,7 @@ export type FunnelBoardNote = {
 /** Same shape_type union as `FeedbackShapeType` — the reused ShapeNode renders
  *  identical decision/wait/event/action nodes inside the funnel canvas. */
 export type FunnelShapeType =
-  | 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'text'
+  | 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'double_arrow' | 'elbow_arrow' | 'text'
   | 'decision' | 'wait'
   | 'call' | 'meeting' | 'automation' | 'goal'
   | 'button_click' | 'form_submit' | 'video_play' | 'scroll_depth'
@@ -497,6 +497,7 @@ export type FunnelBoardSection = {
   y: number;
   width: number;
   height: number;
+  locked: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -759,7 +760,7 @@ export const FUNNEL_STEP_TYPE_ORDER: { category: FunnelStepCategory; label: stri
  *  shapes (decision / wait / events / notifications), and sticky notes into
  *  one categorised list so the user has a single place to add anything to
  *  the canvas. */
-export type FunnelPrimitiveShapeId = 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'text';
+export type FunnelPrimitiveShapeId = 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'double_arrow' | 'elbow_arrow' | 'text';
 export type FunnelModuleShapeId = 'description_box';
 export type FunnelShapePaletteId = BoardActionShapeId | FunnelPrimitiveShapeId | FunnelModuleShapeId;
 
@@ -952,6 +953,8 @@ export const FUNNEL_PALETTE_TABS: PaletteTab[] = [
           { kind: 'shape', shapeType: 'rectangle', label: 'Rectangle', iconName: 'square' },
           { kind: 'shape', shapeType: 'ellipse', label: 'Ellipse', iconName: 'circle' },
           { kind: 'shape', shapeType: 'arrow', label: 'Arrow', iconName: 'move-right' },
+          { kind: 'shape', shapeType: 'double_arrow', label: 'Double Arrow', iconName: 'move-horizontal' },
+          { kind: 'shape', shapeType: 'elbow_arrow', label: 'Elbow Arrow', iconName: 'corner-down-right' },
           { kind: 'shape', shapeType: 'line', label: 'Line', iconName: 'minus' },
           { kind: 'shape', shapeType: 'text', label: 'Text', iconName: 'type' },
         ],

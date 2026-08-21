@@ -23,7 +23,11 @@ import { visualCentre } from './funnel-board-config';
  * reads visual fields (shape_type, x/y/w/h, content, color, …) — never the
  * FK column.
  */
-export function useFunnelBoard(flowByEdge?: Map<string, number>) {
+export function useFunnelBoard(
+  flowByEdge?: Map<string, number>,
+  lockedNodes?: Set<string>,
+  onToggleLock?: (nodeId: string) => void,
+) {
   const ctx = useFunnelBoardContextOrThrow();
   const {
     steps, boardNotes, shapes, boardEdges, tabs, sections, viewAsRoleId,
@@ -88,6 +92,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
         section,
         readOnly: false,
         onRename: handleSectionRename,
+        onToggleLock: onToggleLock ? () => onToggleLock(`section-${section.id}`) : undefined,
       } satisfies SectionNodeData,
     }));
 
@@ -116,17 +121,20 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
         viewAsRoleId && roleId !== viewAsRoleId ? 0.25 : 1;
 
       const newNodes = [...sectionNodes, ...stepNodes, ...noteNodes, ...shapeNodes].map((n) => {
-        if (!viewAsRoleId) return n;
-        // Sections and notes carry no owner, so they stay at full strength.
-        if (n.type === 'section' || n.type === 'stickyNote') return n;
+        const locked = lockedNodes?.has(n.id);
+        const base = locked
+          ? { ...n, draggable: false as const, className: 'opacity-80' }
+          : n;
+        if (!viewAsRoleId) return base;
+        if (n.type === 'section' || n.type === 'stickyNote') return base;
         const source = n.type === 'funnelStep'
           ? (n.data as { step?: { role_id?: string | null } }).step?.role_id
           : (n.data as { shape?: { role_id?: string | null } }).shape?.role_id;
-        return { ...n, style: { ...(n.style || {}), opacity: dimFor(source), transition: 'opacity 150ms' } };
+        return { ...base, style: { ...(base.style || {}), opacity: dimFor(source), transition: 'opacity 150ms' } };
       });
       return newNodes;
     });
-  }, [steps, boardNotes, shapes, sections, tabs, viewAsRoleId, updateStep, deleteStep, updateNote, deleteNote, handleShapeContentUpdate, handleSectionRename, setNodes]);
+  }, [steps, boardNotes, shapes, sections, tabs, viewAsRoleId, lockedNodes, updateStep, deleteStep, updateNote, deleteNote, handleShapeContentUpdate, handleSectionRename, setNodes]);
 
   /* ── Waypoint handling ──────────────────────────────────────── */
 
@@ -250,6 +258,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
     origin: { x: number; y: number };
     members: { id: string; x: number; y: number }[];
   } | null>(null);
+  const sectionDragRaf = useRef(0);
 
   const onNodeDragStart = useCallback((_: React.MouseEvent, node: Node) => {
     if (!node.id.startsWith('section-')) { sectionDragRef.current = null; return; }
@@ -269,14 +278,17 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
   const onNodeDrag = useCallback((_: React.MouseEvent, node: Node) => {
     const drag = sectionDragRef.current;
     if (!drag || !node.id.startsWith('section-')) return;
-    const dx = node.position.x - drag.origin.x;
-    const dy = node.position.y - drag.origin.y;
-    if (dx === 0 && dy === 0) return;
-    const byId = new Map(drag.members.map((m) => [m.id, m]));
-    setNodes((nds) => nds.map((n) => {
-      const start = byId.get(n.id);
-      return start ? { ...n, position: { x: start.x + dx, y: start.y + dy } } : n;
-    }));
+    cancelAnimationFrame(sectionDragRaf.current);
+    sectionDragRaf.current = requestAnimationFrame(() => {
+      const dx = node.position.x - drag.origin.x;
+      const dy = node.position.y - drag.origin.y;
+      if (dx === 0 && dy === 0) return;
+      const byId = new Map(drag.members.map((m) => [m.id, m]));
+      setNodes((nds) => nds.map((n) => {
+        const start = byId.get(n.id);
+        return start ? { ...n, position: { x: start.x + dx, y: start.y + dy } } : n;
+      }));
+    });
   }, [setNodes]);
 
   const onNodeDragStop = useCallback((_: React.MouseEvent, node: Node) => {
@@ -310,12 +322,18 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
       }
       // NodeResizer emits dimension changes; persist the section's new box once
       // the user lets go.
-      if (c.type === 'dimensions' && c.resizing === false && c.id.startsWith('section-')) {
+      if (c.type === 'dimensions' && c.resizing === false) {
         const dims = (c as NodeChange & { dimensions?: { width: number; height: number } }).dimensions;
         if (dims) {
-          void updateSection(c.id.replace('section-', ''), {
-            width: Math.round(dims.width), height: Math.round(dims.height),
-          });
+          if (c.id.startsWith('section-')) {
+            void updateSection(c.id.replace('section-', ''), {
+              width: Math.round(dims.width), height: Math.round(dims.height),
+            });
+          } else if (c.id.startsWith('shape-')) {
+            void updateShape(c.id.replace('shape-', ''), {
+              width: Math.round(dims.width), height: Math.round(dims.height),
+            });
+          }
         }
       }
     }

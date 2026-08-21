@@ -125,6 +125,7 @@ export async function duplicateFunnelAsScenario(opts: {
       funnel_id: newFunnel.id, company_id: companyId,
       label: sec.label, color: sec.color,
       x: sec.x, y: sec.y, width: sec.width, height: sec.height,
+      locked: sec.locked,
       tab_id: sec.tab_id ? tabIdMap.get(sec.tab_id) ?? null : null,
     })));
   }
