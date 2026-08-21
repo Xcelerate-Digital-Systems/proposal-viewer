@@ -130,9 +130,10 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
   const showNavPill = hasLinkedTab || hasLinkedFunnel;
   const linkedTabName = hasLinkedTab ? (tabs?.find((t) => t.id === linkedTabId)?.name ?? null) : null;
 
-  // Corner markers ride together: the link badge owns the top-right, the role
-  // chip the top-left. Every shape branch already renders `linkBadge`, so
-  // folding the chip in here reaches all of them without touching each one.
+  // Corner markers for rectangular shapes (text, description box): the link
+  // badge owns the top-right, the role chip the top-left, and both overhang the
+  // shape's edge. Diamonds use `diamondCorners` below instead — their bounding
+  // box is much wider than the shape, so these would float clear of it.
   const linkBadge = (linkedFunnelId || linkedTabId || role) ? (
     <>
       {(linkedFunnelId || linkedTabId) && (
@@ -144,18 +145,54 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
     </>
   ) : null;
 
-  // Anchored to the SHAPE, not the node frame. The frame also contains the
-  // label and any description card, so a frame-level badge floated well below
-  // a diamond instead of hugging it the way it does on a circle.
-  //
-  // Diamonds get a positive inset: their bottom-right corner of the bounding
-  // box is empty, with the shape's edge running diagonally through it.
   const isDiamondShape = shape.shape_type === 'decision'
     || shape.shape_type === 'wait'
     || DIAMOND_TYPES.has(shape.shape_type);
+
   const platformBadgeEl = shapePlatform
-    ? <PlatformBadge slug={shapePlatform} size={28} offset={isDiamondShape ? 5 : -4} />
+    ? <PlatformBadge slug={shapePlatform} size={28} offset={-4} />
     : null;
+
+  /* Corner markers for diamonds.
+   *
+   *  Diamonds can't use the frame-level markers the other shapes do. The frame
+   *  is DIAMOND_FRAME_W (200px) wide while the diamond itself is only
+   *  DIAMOND_BOX_SIZE (88px) and centred in it, so a frame-anchored badge lands
+   *  ~56px clear of the shape. The label also lives *inside* the diamond
+   *  component, so anchoring to that wrapper's bottom put the badge beside the
+   *  text instead of on the shape.
+   *
+   *  So: an explicit 88x88 overlay pinned to the top-centre of the wrapper —
+   *  exactly where the diamond box sits, whatever the label does — and the
+   *  markers positioned against its edges.
+   *
+   *  Offsets are inset rather than overhanging because a diamond's bounding-box
+   *  corners are empty: the edge runs diagonally through them, so the visual
+   *  edge midpoints are at roughly (66,22) top-right and (66,66) bottom-right. */
+  const diamondCorners = (linkedFunnelId || linkedTabId || role || shapePlatform) ? (
+    <div
+      className="absolute pointer-events-none z-20"
+      style={{
+        top: 0, left: '50%', transform: 'translateX(-50%)',
+        width: DIAMOND_BOX_SIZE, height: DIAMOND_BOX_SIZE,
+      }}
+    >
+      {(linkedFunnelId || linkedTabId) && (
+        <div
+          className="absolute w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center shadow-sm"
+          style={{ top: 10, right: 10 }}
+        >
+          {hasLinkedTab ? <Layers size={11} strokeWidth={2.5} /> : <ArrowUpRight size={11} strokeWidth={2.5} />}
+        </div>
+      )}
+      {role && (
+        <div className="absolute" style={{ top: 6, left: 6 }}>
+          <RoleChip role={role} compact />
+        </div>
+      )}
+      {shapePlatform && <PlatformBadge slug={shapePlatform} size={28} offset={8} />}
+    </div>
+  ) : null;
 
   // Email/SMS attached to this node (funnel board only). The preview modal is
   // rendered from this same slot: it portals to document.body, so its position
@@ -223,9 +260,8 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
   if (shape.shape_type === 'decision') {
     return (
       <div className="relative flex flex-col items-center">
-        {linkBadge}
         <div className="relative z-10">
-          {platformBadgeEl}
+          {diamondCorners}
           <DecisionShape shape={shape} selected={!!selected} readOnly={readOnly} onUpdateContent={onUpdateContent} />
         </div>
         {navPillEl}
@@ -240,9 +276,8 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
       <>
         <DiamondNodeHandles readOnly={readOnly} frameH={frameH} />
         <div className="relative flex flex-col items-center" style={{ width: DIAMOND_FRAME_W, minHeight: frameH }}>
-          {linkBadge}
           <div className="relative z-10">
-          {platformBadgeEl}
+            {diamondCorners}
             <WaitDiamond shape={shape} selected={!!selected} readOnly={readOnly} onUpdateContent={onUpdateContent} />
           </div>
           {navPillEl}
@@ -258,9 +293,8 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
       <>
         <DiamondNodeHandles readOnly={readOnly} frameH={frameH} />
         <div className="relative flex flex-col items-center" style={{ width: DIAMOND_FRAME_W, minHeight: frameH }}>
-          {linkBadge}
           <div className="relative z-10">
-          {platformBadgeEl}
+            {diamondCorners}
             <EventDiamond shape={shape} diamondType={shape.shape_type as DiamondType} selected={!!selected} readOnly={readOnly} onUpdateContent={onUpdateContent} />
           </div>
           {navPillEl}
