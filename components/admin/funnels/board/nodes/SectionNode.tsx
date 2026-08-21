@@ -66,6 +66,7 @@ function SectionNodeComponent({ data, selected, draggable }: NodeProps) {
           marginBottom: 6,
           transform: `scale(${labelScale})`,
           transformOrigin: 'bottom left',
+          maxWidth: 'calc(100% - 24px)',
         }}
       >
         {editing ? (
@@ -85,7 +86,7 @@ function SectionNodeComponent({ data, selected, draggable }: NodeProps) {
         ) : (
           <span
             onDoubleClick={(e) => { e.stopPropagation(); if (!readOnly) setEditing(true); }}
-            className="text-xs font-semibold whitespace-nowrap"
+            className="text-xs font-semibold whitespace-nowrap overflow-hidden text-ellipsis"
             style={{ color: palette.text }}
             title={readOnly ? section.label : 'Double-click to rename'}
           >

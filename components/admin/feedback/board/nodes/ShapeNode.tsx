@@ -368,6 +368,7 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
     const pad = strokeWidth;
     const svgWidth = Math.max(w, 4) + pad * 2;
     const svgHeight = Math.max(h, 4) + pad * 2;
+    const label = shape.content?.trim();
     return (
       <div
         style={{ position: 'relative', width: svgWidth, height: svgHeight, marginLeft: -pad, marginTop: -pad }}
@@ -387,6 +388,14 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
             ry={2}
           />
         </svg>
+        {label && (
+          <div
+            className="absolute inset-0 flex items-center justify-center text-center px-2 pointer-events-none whitespace-pre-wrap"
+            style={{ fontSize: shape.font_size ?? 14, lineHeight: 1.3, color: shape.color || '#2B2B2B' }}
+          >
+            {label}
+          </div>
+        )}
       </div>
     );
   }

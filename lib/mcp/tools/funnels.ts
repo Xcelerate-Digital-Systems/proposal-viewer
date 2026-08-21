@@ -5,6 +5,21 @@ import { FUNNEL_STEP_DEFAULTS, defaultRoleColor } from '@/lib/types/funnel';
 import { BOARD_ACTION_GROUPS } from '@/lib/types/board-actions';
 import { LUCIDE_ICON_SLUGS, BRAND_ICON_SLUGS, VALID_ICON_SLUGS_SET } from '@/lib/funnel/icon-slugs';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function friendlyError(msg: string): string {
+  if (msg.includes('invalid input syntax for type uuid'))
+    return 'Invalid UUID format — check that all IDs are valid UUIDs.';
+  if (msg.includes('foreign key constraint')) {
+    if (msg.includes('source_step_id')) return 'Source step not found — check the sourceStepId is valid.';
+    if (msg.includes('target_step_id')) return 'Target step not found — check the targetStepId is valid.';
+    if (msg.includes('source_shape_id')) return 'Source shape not found — check the sourceShapeId is valid.';
+    if (msg.includes('target_shape_id')) return 'Target shape not found — check the targetShapeId is valid.';
+    return 'One of the referenced IDs was not found — check all IDs are valid.';
+  }
+  return msg;
+}
+
 const NODE_TYPE_CATALOG = buildNodeTypeCatalog();
 
 function buildNodeTypeCatalog() {
@@ -152,6 +167,7 @@ export function registerFunnelTools(server: McpServer) {
       isTemplate: funnel.is_template,
       createdAt: funnel.created_at, updatedAt: funnel.updated_at,
       ...(tabId ? { filteredByTabId: tabId } : {}),
+      _nodeSizeHint: 'Steps are fixed-size circles — the rendered frame is roughly 140×140px, plus a description card below (140×variable). Shapes have explicit width/height when set. Use these approximations for collision/layout calculations.',
       steps: (steps || []).map(s => ({
         id: s.id, type: s.step_type, label: s.label, icon: s.icon, url: s.url, color: s.color,
         position: { x: s.board_x, y: s.board_y }, metrics: s.metrics,
@@ -203,7 +219,7 @@ export function registerFunnelTools(server: McpServer) {
     if (args.forecastPeriod) row.forecast_period = args.forecastPeriod;
     if (args.defaultDealValue !== undefined) row.default_deal_value = args.defaultDealValue;
     const { data, error } = await sb.from('funnels').insert(row).select('id').single();
-    if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
+    if (error || !data) return txt(`Failed: ${friendlyError(error?.message || 'unknown')}`);
     return json({ id: data.id });
   });
 
@@ -236,7 +252,7 @@ export function registerFunnelTools(server: McpServer) {
     }
     if (count === 0) return txt('No fields to update.');
     const { error } = await sb.from('funnels').update(updates).eq('id', args.funnelId);
-    if (error) return txt(`Failed: ${error.message}`);
+    if (error) return txt(`Failed: ${friendlyError(error.message)}`);
     return txt(`Funnel updated (${count} field${count > 1 ? 's' : ''}).`);
   });
 
@@ -249,7 +265,7 @@ export function registerFunnelTools(server: McpServer) {
     const { data: f } = await sb.from('funnels').select('id, name').eq('id', funnelId).eq('company_id', auth.companyId).single();
     if (!f) return txt('Funnel not found');
     const { error } = await sb.from('funnels').delete().eq('id', funnelId).eq('company_id', auth.companyId);
-    if (error) return txt(`Failed: ${error.message}`);
+    if (error) return txt(`Failed: ${friendlyError(error.message)}`);
     return txt(`Funnel "${f.name}" deleted.`);
   });
 
@@ -311,7 +327,7 @@ export function registerFunnelTools(server: McpServer) {
       role_id: args.roleId ?? null,
       platform: args.platform ?? null,
     }).select('id, step_type, label, board_x, board_y').single();
-    if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
+    if (error || !data) return txt(`Failed: ${friendlyError(error?.message || 'unknown')}`);
     return json({ id: data.id, type: data.step_type, label: data.label, position: { x: data.board_x, y: data.board_y } });
   });
 
@@ -375,7 +391,7 @@ export function registerFunnelTools(server: McpServer) {
     if (args.platform !== undefined) patch.platform = args.platform;
     if (Object.keys(patch).length <= 1) return txt('No fields to update.');
     const { error } = await sb.from('funnel_steps').update(patch).eq('id', args.stepId);
-    if (error) return txt(`Failed: ${error.message}`);
+    if (error) return txt(`Failed: ${friendlyError(error.message)}`);
     return txt('Step updated.');
   });
 
@@ -392,7 +408,7 @@ export function registerFunnelTools(server: McpServer) {
     if (!step) return txt('Step not found');
     await sb.from('funnel_board_edges').delete().eq('funnel_id', funnelId).or(`source_step_id.eq.${stepId},target_step_id.eq.${stepId}`);
     const { error } = await sb.from('funnel_steps').delete().eq('id', stepId);
-    if (error) return txt(`Failed: ${error.message}`);
+    if (error) return txt(`Failed: ${friendlyError(error.message)}`);
     return txt(`Step "${step.label}" deleted (incident edges removed).`);
   });
 
@@ -444,17 +460,7 @@ export function registerFunnelTools(server: McpServer) {
       tab_id: args.tabId || null,
       style: edgeStyle,
     }).select('id').single();
-    if (error || !data) {
-      const msg = error?.message || 'unknown';
-      if (msg.includes('foreign key constraint')) {
-        if (msg.includes('source_step_id')) return txt('Source step not found — check the sourceStepId is valid.');
-        if (msg.includes('target_step_id')) return txt('Target step not found — check the targetStepId is valid.');
-        if (msg.includes('source_shape_id')) return txt('Source shape not found — check the sourceShapeId is valid.');
-        if (msg.includes('target_shape_id')) return txt('Target shape not found — check the targetShapeId is valid.');
-        return txt('One of the referenced nodes was not found — check the step/shape IDs are valid.');
-      }
-      return txt(`Failed: ${msg}`);
-    }
+    if (error || !data) return txt(`Failed: ${friendlyError(error?.message || 'unknown')}`);
     return json({ id: data.id, label: args.label || null });
   });
 
@@ -503,7 +509,7 @@ export function registerFunnelTools(server: McpServer) {
     }
     if (Object.keys(patch).length <= 1) return txt('No fields to update.');
     const { error } = await sb.from('funnel_board_edges').update(patch).eq('id', args.edgeId);
-    if (error) return txt(`Failed: ${error.message}`);
+    if (error) return txt(`Failed: ${friendlyError(error.message)}`);
     return txt('Edge updated.');
   });
 
@@ -520,7 +526,7 @@ export function registerFunnelTools(server: McpServer) {
     color: z.string().optional().describe('Hex color (default: #2B2B2B)'),
     strokeWidth: z.number().optional().describe('Stroke width (default: 2)'),
     dashed: z.boolean().optional().describe('Dashed stroke (default: false)'),
-    fontSize: z.number().optional().describe('Font size for text shapes'),
+    fontSize: z.number().optional().describe('Font size for text shapes (default: 16 if omitted — large values like 40+ will overflow most containers)'),
     endX: z.number().optional().describe('End X for arrow/line shapes'),
     endY: z.number().optional().describe('End Y for arrow/line shapes'),
     linkedFunnelId: z.string().optional().describe('Link this shape to another funnel — clicking it navigates to that funnel'),
@@ -565,7 +571,7 @@ export function registerFunnelTools(server: McpServer) {
       role_id: args.roleId ?? null,
       platform: args.platform ?? null,
     }).select('id, shape_type, x, y').single();
-    if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
+    if (error || !data) return txt(`Failed: ${friendlyError(error?.message || 'unknown')}`);
     return json({ id: data.id, type: data.shape_type, position: { x: data.x, y: data.y } });
   });
 
@@ -627,7 +633,7 @@ export function registerFunnelTools(server: McpServer) {
     if (args.platform !== undefined) patch.platform = args.platform;
     if (Object.keys(patch).length <= 1) return txt('No fields to update.');
     const { error } = await sb.from('funnel_board_shapes').update(patch).eq('id', args.shapeId);
-    if (error) return txt(`Failed: ${error.message}`);
+    if (error) return txt(`Failed: ${friendlyError(error.message)}`);
     return txt('Shape updated.');
   });
 
@@ -644,7 +650,7 @@ export function registerFunnelTools(server: McpServer) {
     if (!shape) return txt('Shape not found');
     await sb.from('funnel_board_edges').delete().eq('funnel_id', funnelId).or(`source_shape_id.eq.${shapeId},target_shape_id.eq.${shapeId}`);
     const { error } = await sb.from('funnel_board_shapes').delete().eq('id', shapeId);
-    if (error) return txt(`Failed: ${error.message}`);
+    if (error) return txt(`Failed: ${friendlyError(error.message)}`);
     return txt(`Shape deleted (incident edges removed).`);
   });
 
@@ -660,21 +666,21 @@ export function registerFunnelTools(server: McpServer) {
     const { data: e } = await sb.from('funnel_board_edges').select('id').eq('id', edgeId).eq('funnel_id', funnelId).eq('company_id', auth.companyId).single();
     if (!e) return txt('Edge not found');
     const { error } = await sb.from('funnel_board_edges').delete().eq('id', edgeId);
-    if (error) return txt(`Failed: ${error.message}`);
+    if (error) return txt(`Failed: ${friendlyError(error.message)}`);
     return txt('Edge deleted.');
   });
 
   // ── Bulk position update ──
 
-  server.tool('bulk_update_funnel_nodes', 'Move multiple steps and/or shapes in one call. Useful for re-laying out a board without dozens of individual update calls.', {
+  server.tool('bulk_update_funnel_nodes', 'Move multiple steps and/or shapes in one call. Useful for re-laying out a board without dozens of individual update calls. Steps are fixed-size (no width/height); width/height only applies to shapes.', {
     funnelId: z.string(),
     updates: z.array(z.object({
-      id: z.string().describe('Step or shape ID'),
+      id: z.string().describe('Step or shape UUID'),
       kind: z.enum(['step', 'shape']).describe('Whether this ID is a step or a shape'),
       x: z.number().optional(),
       y: z.number().optional(),
-      width: z.number().optional(),
-      height: z.number().optional(),
+      width: z.number().optional().describe('Shapes only — ignored for steps'),
+      height: z.number().optional().describe('Shapes only — ignored for steps'),
     })).describe('Array of position/size updates'),
     companyId: z.string().optional().describe('Optional — auto-resolved from the funnel'),
   }, async (args, extra) => {
@@ -758,7 +764,7 @@ export function registerFunnelTools(server: McpServer) {
       name: args.name,
       position: isFirst ? 0 : maxPos + 1,
     }).select('id, name, position').single();
-    if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
+    if (error || !data) return txt(`Failed: ${friendlyError(error?.message || 'unknown')}`);
     if (isFirst) {
       await Promise.all([
         sb.from('funnel_steps').update({ tab_id: data.id }).eq('funnel_id', args.funnelId).is('tab_id', null),
@@ -783,7 +789,7 @@ export function registerFunnelTools(server: McpServer) {
       .update({ name: args.name, updated_at: new Date().toISOString() })
       .eq('id', args.tabId)
       .eq('funnel_id', args.funnelId);
-    if (error) return txt(`Failed: ${error.message}`);
+    if (error) return txt(`Failed: ${friendlyError(error.message)}`);
     return txt('Tab renamed.');
   });
 
@@ -802,7 +808,7 @@ export function registerFunnelTools(server: McpServer) {
       .eq('company_id', auth.companyId);
     if (!tabs || tabs.length <= 1) return txt('Cannot delete the last tab.');
     const { error } = await sb.from('funnel_tabs').delete().eq('id', args.tabId);
-    if (error) return txt(`Failed: ${error.message}`);
+    if (error) return txt(`Failed: ${friendlyError(error.message)}`);
     return txt('Tab deleted (all content cascaded).');
   });
 
@@ -1030,7 +1036,7 @@ export function registerFunnelTools(server: McpServer) {
       .select('id, label, color, x, y, width, height, tab_id, locked')
       .eq('funnel_id', args.funnelId).eq('company_id', resolved.auth.companyId)
       .order('created_at');
-    if (error) return txt(`Failed: ${error.message}`);
+    if (error) return txt(`Failed: ${friendlyError(error.message)}`);
     return json((data || []).map(sec => ({
       id: sec.id, label: sec.label, color: sec.color,
       x: sec.x, y: sec.y, width: sec.width, height: sec.height,
@@ -1059,7 +1065,7 @@ export function registerFunnelTools(server: McpServer) {
       width: Math.round(args.width), height: Math.round(args.height),
       tab_id: args.tabId || null,
     }).select('id').single();
-    if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
+    if (error || !data) return txt(`Failed: ${friendlyError(error?.message || 'unknown')}`);
     return json({ id: data.id });
   });
 
@@ -1088,7 +1094,7 @@ export function registerFunnelTools(server: McpServer) {
     if (args.height !== undefined) patch.height = Math.round(args.height);
     if (Object.keys(patch).length <= 1) return txt('No fields to update.');
     const { error } = await sb.from('funnel_board_sections').update(patch).eq('id', args.sectionId);
-    if (error) return txt(`Failed: ${error.message}`);
+    if (error) return txt(`Failed: ${friendlyError(error.message)}`);
     return txt('Section updated.');
   });
 
@@ -1103,7 +1109,7 @@ export function registerFunnelTools(server: McpServer) {
     const { error } = await sb.from('funnel_board_sections').delete()
       .eq('id', args.sectionId).eq('funnel_id', args.funnelId)
       .eq('company_id', resolved.auth.companyId);
-    if (error) return txt(`Failed: ${error.message}`);
+    if (error) return txt(`Failed: ${friendlyError(error.message)}`);
     return txt('Section deleted.');
   });
 
@@ -1120,7 +1126,7 @@ export function registerFunnelTools(server: McpServer) {
     const sb = createServiceClient();
     const { data, error } = await sb.from('funnel_roles')
       .select('id, name, color').eq('company_id', auth.companyId).order('name');
-    if (error) return txt(`Failed: ${error.message}`);
+    if (error) return txt(`Failed: ${friendlyError(error.message)}`);
     return json(data || []);
   });
 
@@ -1143,7 +1149,7 @@ export function registerFunnelTools(server: McpServer) {
       name,
       color: args.color || defaultRoleColor(name),
     }).select('id, name, color').single();
-    if (error || !data) return txt(`Failed: ${error?.message || 'unknown'}`);
+    if (error || !data) return txt(`Failed: ${friendlyError(error?.message || 'unknown')}`);
     return json(data);
   });
 
@@ -1155,7 +1161,7 @@ export function registerFunnelTools(server: McpServer) {
     const { data, error } = await sb.from('funnel_custom_logos')
       .select('id, name, url').eq('company_id', auth.companyId)
       .order('created_at', { ascending: false });
-    if (error) return txt(`Failed: ${error.message}`);
+    if (error) return txt(`Failed: ${friendlyError(error.message)}`);
     return json(data || []);
   });
 
@@ -1167,7 +1173,7 @@ export function registerFunnelTools(server: McpServer) {
     const sb = createServiceClient();
     const { error } = await sb.from('funnel_roles').delete()
       .eq('id', args.roleId).eq('company_id', auth.companyId);
-    if (error) return txt(`Failed: ${error.message}`);
+    if (error) return txt(`Failed: ${friendlyError(error.message)}`);
     return txt('Role deleted.');
   });
 }

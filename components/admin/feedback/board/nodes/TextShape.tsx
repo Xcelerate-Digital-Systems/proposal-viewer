@@ -81,6 +81,7 @@ export function TextShape({
           width: shapeW,
           height: shapeH,
           minWidth: 120,
+          overflow: shapeW ? 'hidden' : undefined,
         }}
       >
         {!readOnly && (
@@ -139,6 +140,8 @@ export function TextShape({
         width: shapeW,
         height: shapeH,
         minWidth: hasBg ? 120 : undefined,
+        overflow: shapeW ? 'hidden' : undefined,
+        wordBreak: shapeW ? 'break-word' : undefined,
       }}
     >
       {!readOnly && (

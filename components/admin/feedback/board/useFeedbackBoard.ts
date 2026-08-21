@@ -211,6 +211,14 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
         if (c.type === 'position' && c.position && !c.dragging) {
           dragEndIds.add(c.id);
         }
+        if (c.type === 'dimensions' && (c as NodeChange & { resizing?: boolean }).resizing === false) {
+          const dims = (c as NodeChange & { dimensions?: { width: number; height: number } }).dimensions;
+          if (dims && c.id.startsWith('shape-')) {
+            void updateShape(c.id.replace('shape-', ''), {
+              width: Math.round(dims.width), height: Math.round(dims.height),
+            });
+          }
+        }
       }
 
       setNodes((nds) => {
@@ -235,7 +243,7 @@ export function useFeedbackBoard({ onNavigateToItem }: UseFeedbackBoardOptions) 
         positionTimer.current = setTimeout(flushPositions, 250);
       }
     },
-    [flushPositions, setNodes]
+    [flushPositions, setNodes, updateShape]
   );
 
   const onEdgesChange = useCallback(
