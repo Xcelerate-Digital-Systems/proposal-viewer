@@ -53,9 +53,11 @@ CREATE POLICY "Team members manage funnel tabs" ON public.funnel_tabs
     OR is_super_admin()
   );
 
+-- No public/anon read policy here — the public viewer reads tabs through the
+-- SECURITY DEFINER get_funnel_data(p_token) RPC below, never via the anon
+-- client. A `share_token IS NOT NULL` predicate matches every row in the
+-- table and would expose every tenant's tab names to anon.
 DROP POLICY IF EXISTS "Public read funnel tabs via share" ON public.funnel_tabs;
-CREATE POLICY "Public read funnel tabs via share" ON public.funnel_tabs
-  FOR SELECT USING (funnel_id IN (SELECT id FROM public.funnels WHERE share_token IS NOT NULL));
 
 -- ─── Update get_funnel_data to include tabs ────────────────────────────────
 

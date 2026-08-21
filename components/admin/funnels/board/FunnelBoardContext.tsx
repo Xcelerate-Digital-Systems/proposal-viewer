@@ -19,6 +19,8 @@ import {
   type FunnelBoardEdge,
   type FunnelBoardNote,
   type FunnelBoardShape,
+  type FunnelBoardSection,
+  type FunnelRole,
 } from '@/lib/supabase';
 import { useBoardSyncStatus } from '@/components/admin/feedback/board/useBoardSyncStatus';
 import { useBoardHistory } from '@/components/admin/feedback/board/useBoardHistory';
@@ -27,10 +29,13 @@ import { useFunnelNoteMutations } from './useFunnelNoteMutations';
 import { useFunnelEdgeMutations } from './useFunnelEdgeMutations';
 import { useFunnelShapeMutations } from './useFunnelShapeMutations';
 import { useFunnelTabMutations } from './useFunnelTabMutations';
+import { useFunnelSectionMutations, type NewSection } from './useFunnelSectionMutations';
+import { useFunnelRoles } from './useFunnelRoles';
 
 export type NewStep = Omit<FunnelStep, 'id' | 'funnel_id' | 'company_id' | 'created_at' | 'updated_at' | 'linked_funnel_id' | 'tab_id' | 'linked_tab_id'>;
 export type NewShape = Omit<FunnelBoardShape, 'id' | 'funnel_id' | 'company_id' | 'created_at' | 'updated_at' | 'linked_funnel_id' | 'tab_id' | 'linked_tab_id'>;
 export type NewEdge = Omit<FunnelBoardEdge, 'id' | 'created_at' | 'updated_at' | 'tab_id'>;
+export type { NewSection };
 
 interface ContextValue {
   funnelId: string;
@@ -87,6 +92,23 @@ interface ContextValue {
   createShape: (shape: NewShape) => Promise<FunnelBoardShape | null>;
   updateShape: (id: string, patch: Partial<FunnelBoardShape>) => Promise<void>;
   deleteShape: (id: string) => Promise<void>;
+
+  // Labelled background regions. Membership is positional — see nodeInSection.
+  sections: FunnelBoardSection[];
+  selectedSectionId: string | null;
+  selectSection: (id: string | null) => void;
+  createSection: (section: NewSection) => Promise<FunnelBoardSection | null>;
+  updateSection: (id: string, patch: Partial<FunnelBoardSection>) => Promise<void>;
+  deleteSection: (id: string) => Promise<void>;
+
+  // Company-wide role library. Plain labels — never team_members.
+  roles: FunnelRole[];
+  ensureRole: (name: string) => Promise<FunnelRole | null>;
+  updateRole: (id: string, patch: Partial<FunnelRole>) => Promise<void>;
+  deleteRole: (id: string) => Promise<void>;
+  /** Role filter for the "View as" control. null = show everything. */
+  viewAsRoleId: string | null;
+  setViewAsRoleId: (id: string | null) => void;
 }
 
 const Ctx = createContext<ContextValue | null>(null);
@@ -116,6 +138,7 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
   const [allBoardEdges, setAllBoardEdges] = useState<FunnelBoardEdge[]>([]);
   const [allBoardNotes, setAllBoardNotes] = useState<FunnelBoardNote[]>([]);
   const [allShapes, setAllShapes] = useState<FunnelBoardShape[]>([]);
+  const [allSections, setAllSections] = useState<FunnelBoardSection[]>([]);
   const [tabs, setTabs] = useState<FunnelTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -140,25 +163,36 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
     () => tabsEnabled ? allShapes.filter((s) => s.tab_id === activeTabId) : allShapes,
     [allShapes, activeTabId, tabsEnabled]
   );
+  const sections = useMemo(
+    () => tabsEnabled ? allSections.filter((s) => s.tab_id === activeTabId) : allSections,
+    [allSections, activeTabId, tabsEnabled]
+  );
 
   // Selection — mutually exclusive
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+  const [viewAsRoleId, setViewAsRoleId] = useState<string | null>(null);
   const selectStep = useCallback((id: string | null) => {
     setSelectedStepId(id);
-    if (id) { setSelectedShapeId(null); setSelectedNoteId(null); }
+    if (id) { setSelectedShapeId(null); setSelectedNoteId(null); setSelectedSectionId(null); }
   }, []);
   const selectShape = useCallback((id: string | null) => {
     setSelectedShapeId(id);
-    if (id) { setSelectedStepId(null); setSelectedNoteId(null); }
+    if (id) { setSelectedStepId(null); setSelectedNoteId(null); setSelectedSectionId(null); }
   }, []);
   const selectNote = useCallback((id: string | null) => {
     setSelectedNoteId(id);
-    if (id) { setSelectedStepId(null); setSelectedShapeId(null); }
+    if (id) { setSelectedStepId(null); setSelectedShapeId(null); setSelectedSectionId(null); }
+  }, []);
+  const selectSection = useCallback((id: string | null) => {
+    setSelectedSectionId(id);
+    if (id) { setSelectedStepId(null); setSelectedShapeId(null); setSelectedNoteId(null); }
   }, []);
   const clearSelection = useCallback(() => {
     setSelectedStepId(null); setSelectedShapeId(null); setSelectedNoteId(null);
+    setSelectedSectionId(null);
   }, []);
 
   const switchTab = useCallback((id: string) => {
@@ -212,10 +246,17 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
     setAllShapes(data || []);
   }, [funnelId]);
 
+  const loadSections = useCallback(async () => {
+    const { data } = await supabase
+      .from('funnel_board_sections').select('*').eq('funnel_id', funnelId).order('created_at');
+    setAllSections(data || []);
+  }, [funnelId]);
+
   useEffect(() => {
-    Promise.all([fetchFunnel(), loadTabs(), loadSteps(), loadEdges(), loadNotes(), loadShapes()])
-      .finally(() => setLoading(false));
-  }, [fetchFunnel, loadTabs, loadSteps, loadEdges, loadNotes, loadShapes]);
+    Promise.all([
+      fetchFunnel(), loadTabs(), loadSteps(), loadEdges(), loadNotes(), loadShapes(), loadSections(),
+    ]).finally(() => setLoading(false));
+  }, [fetchFunnel, loadTabs, loadSteps, loadEdges, loadNotes, loadShapes, loadSections]);
 
   // Tab mutations
   const tabMutations = useFunnelTabMutations({
@@ -227,10 +268,10 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
     const isFirst = tabs.length === 0;
     const result = await tabMutations.createTab(name);
     if (result && isFirst) {
-      await Promise.all([loadSteps(), loadEdges(), loadNotes(), loadShapes()]);
+      await Promise.all([loadSteps(), loadEdges(), loadNotes(), loadShapes(), loadSections()]);
     }
     return result;
-  }, [tabs.length, tabMutations, loadSteps, loadEdges, loadNotes, loadShapes]);
+  }, [tabs.length, tabMutations, loadSteps, loadEdges, loadNotes, loadShapes, loadSections]);
 
   // Mutation hooks — pass activeTabId so new items get stamped
   const stepMutations = useFunnelStepMutations({
@@ -258,6 +299,14 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
     boardEdges: allBoardEdges, setBoardEdges: setAllBoardEdges,
     markSaving, markDone, recordHistory, loadShapes,
   });
+
+  const sectionMutations = useFunnelSectionMutations({
+    funnelId, companyId, activeTabId,
+    sections: allSections, setSections: setAllSections,
+    markSaving, markDone, recordHistory, loadSections,
+  });
+
+  const roleApi = useFunnelRoles(companyId);
 
   const setFunnel = useCallback(
     (updater: (prev: Funnel | null) => Funnel | null) => setFunnelState((prev) => updater(prev)),
@@ -290,6 +339,14 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
       ...edgeMutations,
       shapes,
       ...shapeMutations,
+      sections,
+      selectedSectionId, selectSection,
+      ...sectionMutations,
+      roles: roleApi.roles,
+      ensureRole: roleApi.ensureRole,
+      updateRole: roleApi.updateRole,
+      deleteRole: roleApi.deleteRole,
+      viewAsRoleId, setViewAsRoleId,
     }),
     [
       funnelId, companyId, userId, funnel, setFunnel, loading,
@@ -305,6 +362,8 @@ export function FunnelBoardProvider({ funnelId, companyId, userId, children }: P
       boardNotes, noteMutations,
       boardEdges, edgeMutations,
       shapes, shapeMutations,
+      sections, selectedSectionId, selectSection, sectionMutations,
+      roleApi, viewAsRoleId,
     ]
   );
 

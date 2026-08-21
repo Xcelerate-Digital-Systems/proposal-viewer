@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useCallback, useMemo } from 'react';
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   ReactFlow, ReactFlowProvider, Controls, MiniMap, Background, BackgroundVariant, useReactFlow,
   ConnectionMode, ConnectionLineType, type NodeTypes, type EdgeTypes, type Edge, type Connection, type Node, Panel,
@@ -8,7 +8,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { AnimatePresence } from 'framer-motion';
-import { Loader2, Undo2, Redo2, Wand2 } from 'lucide-react';
+import { Loader2, Undo2, Redo2, Wand2, SquareDashedBottom } from 'lucide-react';
 import UndoHistoryPanel from '@/components/admin/shared/UndoHistoryPanel';
 import { wouldCreateCycle } from '@/components/admin/shared/board-utils';
 import { computeForecast } from '@/lib/funnel/forecast';
@@ -34,12 +34,16 @@ import { useFunnelBoardInteractions } from './useFunnelBoardInteractions';
 import { useFunnelBoardClipboard } from './useFunnelBoardClipboard';
 import BulkSelectionToolbar from '@/components/admin/shared/BulkSelectionToolbar';
 import GroupNode from '@/components/admin/shared/GroupNode';
+import SectionNode from './nodes/SectionNode';
+import SectionSideDrawer from './SectionSideDrawer';
+import ViewAsRoleMenu from './ViewAsRoleMenu';
 
 const nodeTypes: NodeTypes = {
   funnelStep: FunnelStepNode,
   stickyNote: StickyNoteNode,
   shape: ShapeNode,
   group: GroupNode,
+  section: SectionNode,
 };
 const edgeTypes: EdgeTypes = { labeled: LabeledEdge };
 
@@ -49,8 +53,13 @@ function FunnelBoardInner() {
   const rf = useReactFlow();
 
   const forecast = useMemo(
-    () => computeForecast(ctx.steps, ctx.boardEdges, ctx.funnel?.forecast_period ?? 'total', ctx.funnel?.default_deal_value ?? null),
-    [ctx.steps, ctx.boardEdges, ctx.funnel?.forecast_period, ctx.funnel?.default_deal_value]
+    () => computeForecast(
+      ctx.steps, ctx.boardEdges,
+      ctx.funnel?.forecast_period ?? 'total',
+      ctx.funnel?.default_deal_value ?? null,
+      ctx.shapes,
+    ),
+    [ctx.steps, ctx.boardEdges, ctx.shapes, ctx.funnel?.forecast_period, ctx.funnel?.default_deal_value]
   );
 
   const board = useFunnelBoard(forecast.flowByEdge);
@@ -112,6 +121,13 @@ function FunnelBoardInner() {
     ctx.shapes.find((s) => s.id === ctx.selectedShapeId) || null;
   const selectedNote =
     ctx.boardNotes.find((n) => n.id === ctx.selectedNoteId) || null;
+  const selectedSection =
+    ctx.sections.find((s) => s.id === ctx.selectedSectionId) || null;
+
+  // How many nodes each role owns, for the "View as" menu.
+  const roleCounts = new Map<string, number>();
+  for (const s of ctx.steps) if (s.role_id) roleCounts.set(s.role_id, (roleCounts.get(s.role_id) ?? 0) + 1);
+  for (const sh of ctx.shapes) if (sh.role_id) roleCounts.set(sh.role_id, (roleCounts.get(sh.role_id) ?? 0) + 1);
 
   const selectedDbEdge = board.selectedEdge
     ? ctx.boardEdges.find((e) => e.id === board.selectedEdge!.id) || null
@@ -128,6 +144,77 @@ function FunnelBoardInner() {
 
   const selectionCount = rf.getNodes().filter((n) => n.selected).length;
 
+  /* ── Draw a section ──────────────────────────────────────────────────────
+   *  Arming the toolbar button turns the next drag on the canvas into a
+   *  rectangle, rather than dropping a fixed box in the middle of the viewport
+   *  and making the user resize it around the nodes it's meant to contain.
+   *  Panning is suspended while armed so the drag draws instead of moving the
+   *  canvas. */
+  const [drawingSection, setDrawingSection] = useState(false);
+  const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
+  const [drawNow, setDrawNow] = useState<{ x: number; y: number } | null>(null);
+
+  const MIN_SECTION = 60;
+
+  useEffect(() => {
+    if (!drawingSection) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setDrawingSection(false);
+        setDrawStart(null);
+        setDrawNow(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [drawingSection]);
+
+  const onDrawMouseDown = (e: React.MouseEvent) => {
+    if (!drawingSection || e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const pt = { x: e.clientX, y: e.clientY };
+    setDrawStart(pt);
+    setDrawNow(pt);
+  };
+
+  const onDrawMouseMove = (e: React.MouseEvent) => {
+    if (!drawingSection || !drawStart) return;
+    setDrawNow({ x: e.clientX, y: e.clientY });
+  };
+
+  const onDrawMouseUp = () => {
+    if (!drawingSection || !drawStart || !drawNow) {
+      setDrawStart(null); setDrawNow(null);
+      return;
+    }
+    const a = rf.screenToFlowPosition(drawStart);
+    const b = rf.screenToFlowPosition(drawNow);
+    const x = Math.round(Math.min(a.x, b.x));
+    const y = Math.round(Math.min(a.y, b.y));
+    const width = Math.round(Math.abs(b.x - a.x));
+    const height = Math.round(Math.abs(b.y - a.y));
+
+    setDrawStart(null); setDrawNow(null); setDrawingSection(false);
+
+    // A click rather than a drag — treat as a cancel, not a sliver of a section.
+    if (width < MIN_SECTION || height < MIN_SECTION) return;
+
+    void ctx.createSection({ label: 'Section', color: 'teal', x, y, width, height });
+  };
+
+  // Screen-space preview of the rectangle being dragged out.
+  const drawPreview = drawStart && drawNow ? (() => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+    return {
+      left: Math.min(drawStart.x, drawNow.x) - rect.left,
+      top: Math.min(drawStart.y, drawNow.y) - rect.top,
+      width: Math.abs(drawNow.x - drawStart.x),
+      height: Math.abs(drawNow.y - drawStart.y),
+    };
+  })() : null;
+
   return (
     <ForecastCtx.Provider value={forecast}>
     <div className="flex h-full min-h-[400px] bg-white overflow-hidden">
@@ -141,7 +228,27 @@ function FunnelBoardInner() {
         ref={containerRef}
         onDragOver={interactions.onDragOver}
         onDrop={interactions.onDrop}
+        onMouseDownCapture={onDrawMouseDown}
+        onMouseMove={onDrawMouseMove}
+        onMouseUp={onDrawMouseUp}
+        style={drawingSection ? { cursor: 'crosshair' } : undefined}
       >
+        {/* Live preview of the section being dragged out. */}
+        {drawPreview && (
+          <div
+            className="absolute z-20 pointer-events-none rounded-2xl border-2 border-dashed"
+            style={{
+              ...drawPreview,
+              backgroundColor: 'rgba(1,124,135,0.06)',
+              borderColor: 'rgba(1,124,135,0.5)',
+            }}
+          />
+        )}
+        {drawingSection && !drawStart && (
+          <div className="absolute z-20 top-3 left-1/2 -translate-x-1/2 pointer-events-none bg-ink text-white text-2xs px-2.5 py-1 rounded-full shadow-sm">
+            Drag to draw a section — Esc to cancel
+          </div>
+        )}
         <ReactFlow
           nodes={board.nodes}
           edges={board.edges}
@@ -150,8 +257,9 @@ function FunnelBoardInner() {
           onConnect={board.onConnect}
           onReconnect={board.onReconnect}
           onEdgeClick={board.onEdgeClick}
-          onNodeDrag={interactions.onNodeDrag}
-          onNodeDragStop={interactions.onNodeDragStop}
+          onNodeDragStart={board.onNodeDragStart}
+          onNodeDrag={(e, n) => { board.onNodeDrag(e, n); interactions.onNodeDrag(e, n); }}
+          onNodeDragStop={(e, n) => { board.onNodeDragStop(e, n); interactions.onNodeDragStop(e, n); }}
           onNodeClick={interactions.onNodeClick}
           onNodeContextMenu={interactions.onNodeContextMenu}
           onPaneContextMenu={interactions.onPaneContextMenu}
@@ -172,8 +280,9 @@ function FunnelBoardInner() {
           onlyRenderVisibleElements
           deleteKeyCode={['Backspace', 'Delete']}
           onBeforeDelete={interactions.onBeforeDelete}
-          panOnDrag={[0, 1]}
+          panOnDrag={drawingSection ? false : [0, 1]}
           selectionMode={SelectionMode.Partial}
+          nodesDraggable={!drawingSection}
           panActivationKeyCode="Space"
           multiSelectionKeyCode={['Meta', 'Control']}
           selectionKeyCode="Shift"
@@ -187,6 +296,7 @@ function FunnelBoardInner() {
               if (n.id.startsWith('note-')) ctx.deleteNote(n.id.replace('note-', ''));
               else if (n.id.startsWith('shape-')) ctx.deleteShape(n.id.replace('shape-', ''));
               else if (n.id.startsWith('step-')) ctx.deleteStep(n.id.replace('step-', ''));
+              else if (n.id.startsWith('section-')) ctx.deleteSection(n.id.replace('section-', ''));
             });
           }}
         >
@@ -244,7 +354,25 @@ function FunnelBoardInner() {
                 >
                   <Wand2 size={14} />
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setDrawingSection((v) => !v)}
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                    drawingSection
+                      ? 'bg-teal text-white'
+                      : 'text-ink/70 hover:text-ink hover:bg-surface'
+                  }`}
+                  title={drawingSection ? 'Click and drag on the canvas to draw the section (Esc to cancel)' : 'Draw a section'}
+                >
+                  <SquareDashedBottom size={14} />
+                </button>
               </div>
+              <ViewAsRoleMenu
+                roles={ctx.roles}
+                viewAsRoleId={ctx.viewAsRoleId}
+                onChange={ctx.setViewAsRoleId}
+                countsByRole={roleCounts}
+              />
               <ExportMenu containerRef={containerRef} boardName={ctx.funnel?.name || 'funnel'} />
               <SyncStatusPill status={ctx.syncStatus} />
             </div>
@@ -358,6 +486,31 @@ function FunnelBoardInner() {
                 linkedTabId: selectedShape.linked_tab_id,
                 onLinkTab: (id) => ctx.updateShape(selectedShape.id, { linked_tab_id: id, linked_funnel_id: id ? null : selectedShape.linked_funnel_id } as any),
               }}
+              nodeMessage={{
+                raw: selectedShape.message,
+                onChange: (next) => ctx.updateShape(selectedShape.id, { message: next }),
+              }}
+              nodePlatform={{
+                platform: selectedShape.platform,
+                onChange: (slug) => ctx.updateShape(selectedShape.id, { platform: slug }),
+              }}
+              nodeRole={{
+                roles: ctx.roles,
+                roleId: selectedShape.role_id,
+                onAssign: (id) => ctx.updateShape(selectedShape.id, { role_id: id }),
+                onCreate: ctx.ensureRole,
+                onRecolour: (id, color) => void ctx.updateRole(id, { color }),
+              }}
+            />
+          )}
+
+          {selectedSection && (
+            <SectionSideDrawer
+              key={`section-${selectedSection.id}`}
+              section={selectedSection}
+              onUpdate={(patch) => ctx.updateSection(selectedSection.id, patch)}
+              onDelete={() => { ctx.deleteSection(selectedSection.id); ctx.selectSection(null); }}
+              onClose={() => ctx.selectSection(null)}
             />
           )}
 

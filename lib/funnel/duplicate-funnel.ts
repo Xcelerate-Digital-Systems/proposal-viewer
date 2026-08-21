@@ -8,6 +8,7 @@
 import { supabase } from '@/lib/supabase';
 import type {
   Funnel, FunnelStep, FunnelBoardEdge, FunnelBoardNote, FunnelBoardShape,
+  FunnelBoardSection,
 } from '@/lib/supabase';
 
 export async function duplicateFunnelAsScenario(opts: {
@@ -27,18 +28,20 @@ export async function duplicateFunnelAsScenario(opts: {
   const { source, companyId, userId, scenarioName, asTemplate, parentFunnelIdOverride } = opts;
 
   // 1. Load all of the source's child rows in parallel.
-  const [stepsRes, edgesRes, notesRes, shapesRes, tabsRes] = await Promise.all([
+  const [stepsRes, edgesRes, notesRes, shapesRes, tabsRes, sectionsRes] = await Promise.all([
     supabase.from('funnel_steps').select('*').eq('funnel_id', source.id),
     supabase.from('funnel_board_edges').select('*').eq('funnel_id', source.id),
     supabase.from('funnel_board_notes').select('*').eq('funnel_id', source.id),
     supabase.from('funnel_board_shapes').select('*').eq('funnel_id', source.id),
     supabase.from('funnel_tabs').select('*').eq('funnel_id', source.id).order('position'),
+    supabase.from('funnel_board_sections').select('*').eq('funnel_id', source.id),
   ]);
   const srcSteps  = (stepsRes.data  || []) as FunnelStep[];
   const srcEdges  = (edgesRes.data  || []) as FunnelBoardEdge[];
   const srcNotes  = (notesRes.data  || []) as FunnelBoardNote[];
   const srcShapes = (shapesRes.data || []) as FunnelBoardShape[];
   const srcTabs   = (tabsRes.data   || []) as { id: string; name: string; position: number }[];
+  const srcSections = (sectionsRes.data || []) as FunnelBoardSection[];
 
   // 2. Create the new funnel row pointing back at the source.
   const { data: newFunnel, error: fErr } = await supabase
@@ -76,6 +79,7 @@ export async function duplicateFunnelAsScenario(opts: {
     funnel_id: newFunnel.id, company_id: companyId,
     step_type: s.step_type, label: s.label, icon: s.icon, url: s.url, color: s.color,
     board_x: s.board_x, board_y: s.board_y, metrics: s.metrics, linked_funnel_id: s.linked_funnel_id,
+    description: s.description, message: s.message, role_id: s.role_id, platform: s.platform,
     tab_id: s.tab_id ? tabIdMap.get(s.tab_id) ?? null : null,
     linked_tab_id: s.linked_tab_id ? tabIdMap.get(s.linked_tab_id) ?? null : null,
   }));
@@ -92,6 +96,7 @@ export async function duplicateFunnelAsScenario(opts: {
     x: sh.x, y: sh.y, width: sh.width, height: sh.height,
     end_x: sh.end_x, end_y: sh.end_y, content: sh.content,
     color: sh.color, stroke_width: sh.stroke_width, dashed: sh.dashed, font_size: sh.font_size, linked_funnel_id: sh.linked_funnel_id,
+    description: sh.description, message: sh.message, role_id: sh.role_id, platform: sh.platform,
     tab_id: sh.tab_id ? tabIdMap.get(sh.tab_id) ?? null : null,
     linked_tab_id: sh.linked_tab_id ? tabIdMap.get(sh.linked_tab_id) ?? null : null,
   }));
@@ -108,7 +113,19 @@ export async function duplicateFunnelAsScenario(opts: {
       content: n.content, color: n.color,
       board_x: n.board_x, board_y: n.board_y,
       width: n.width, height: n.height, font_size: n.font_size,
+      description: n.description,
       tab_id: n.tab_id ? tabIdMap.get(n.tab_id) ?? null : null,
+    })));
+  }
+
+  // 5b. Sections: independent backdrops — no id remapping needed beyond the
+  // tab they belong to, since membership is positional rather than by FK.
+  if (srcSections.length > 0) {
+    await supabase.from('funnel_board_sections').insert(srcSections.map((sec) => ({
+      funnel_id: newFunnel.id, company_id: companyId,
+      label: sec.label, color: sec.color,
+      x: sec.x, y: sec.y, width: sec.width, height: sec.height,
+      tab_id: sec.tab_id ? tabIdMap.get(sec.tab_id) ?? null : null,
     })));
   }
 

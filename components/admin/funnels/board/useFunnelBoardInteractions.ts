@@ -57,7 +57,7 @@ export function useFunnelBoardInteractions(
       width: null, height: null, end_x: null, end_y: null,
       content: isDescBox ? JSON.stringify({ title: '', body: '' }) : null,
       color: '#2B2B2B', stroke_width: 2, dashed: false,
-      font_size: null, description: null,
+      font_size: null, description: null, message: null, role_id: null, platform: null,
     });
   }, [ctx]);
 
@@ -214,9 +214,10 @@ export function useFunnelBoardInteractions(
   /* ─── Click → open the matching side drawer ─── */
 
   const onNodeClick = useCallback((_e: React.MouseEvent, node: Node) => {
-    if (node.id.startsWith('step-'))       ctx.selectStep(node.id.slice(5));
-    else if (node.id.startsWith('shape-')) ctx.selectShape(node.id.slice(6));
-    else if (node.id.startsWith('note-'))  ctx.selectNote(node.id.slice(5));
+    if (node.id.startsWith('step-'))         ctx.selectStep(node.id.slice(5));
+    else if (node.id.startsWith('shape-'))   ctx.selectShape(node.id.slice(6));
+    else if (node.id.startsWith('note-'))    ctx.selectNote(node.id.slice(5));
+    else if (node.id.startsWith('section-')) ctx.selectSection(node.id.slice(8));
   }, [ctx]);
 
   return {

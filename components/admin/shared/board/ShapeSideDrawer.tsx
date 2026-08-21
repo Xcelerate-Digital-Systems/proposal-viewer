@@ -5,9 +5,16 @@ import { motion } from 'framer-motion';
 import { X, Trash2, Bold, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 
 const FunnelLinkPicker = lazy(() => import('@/components/admin/funnels/board/FunnelLinkPicker'));
+const NodeMessageEditor = lazy(() => import('@/components/admin/funnels/board/NodeMessageEditor'));
+const NodeMessageModal = lazy(() => import('@/components/admin/funnels/board/NodeMessageModal'));
+const RolePicker = lazy(() => import('@/components/admin/funnels/board/RolePicker'));
+const PlatformPicker = lazy(() => import('@/components/admin/funnels/board/PlatformPicker'));
 import { useConfirm } from '@/components/ui/ConfirmDialog';
-import type { FeedbackWaitUnit, FunnelTab } from '@/lib/supabase';
-import { FUNNEL_COLOR_PRESETS } from '@/lib/types/funnel';
+import type { FeedbackWaitUnit, FunnelTab, FunnelRole } from '@/lib/supabase';
+import {
+  FUNNEL_COLOR_PRESETS, messageKindForShape, parseNodeMessage, hasMessageContent,
+  type FunnelNodeMessage,
+} from '@/lib/types/funnel';
 import {
   parseDecisionContent, serializeDecisionContent,
   parseWaitContent, serializeWaitContent,
@@ -40,6 +47,27 @@ interface Props<T extends BoardShape> {
     currentTabId?: string | null;
     linkedTabId?: string | null;
     onLinkTab?: (tabId: string | null) => void;
+  };
+  /** Funnel board only — enables the email/SMS content editor on
+   *  message-capable shape types. The feedback whiteboard omits this, so the
+   *  section (and its lazy chunk) never appear there. */
+  nodeMessage?: {
+    raw: unknown;
+    onChange: (next: FunnelNodeMessage | null) => void;
+  };
+  /** Funnel board only — owner assignment. Roles are plain labels, never
+   *  team members. Omitted on the feedback whiteboard. */
+  /** Funnel board only — marks which system this node runs in. */
+  nodePlatform?: {
+    platform: string | null;
+    onChange: (slug: string | null) => void;
+  };
+  nodeRole?: {
+    roles: FunnelRole[];
+    roleId: string | null;
+    onAssign: (roleId: string | null) => void;
+    onCreate: (name: string) => Promise<FunnelRole | null>;
+    onRecolour: (roleId: string, color: string) => void;
   };
 }
 
@@ -119,8 +147,11 @@ const TEXT_BG_COLORS = [
   { value: '#017C87', label: 'Teal' },
 ];
 
-export default function ShapeSideDrawer<T extends BoardShape>({ shape, onUpdate, onDelete, onClose, funnelLink }: Props<T>) {
+export default function ShapeSideDrawer<T extends BoardShape>({ shape, onUpdate, onDelete, onClose, funnelLink, nodeMessage, nodeRole, nodePlatform }: Props<T>) {
   const confirm = useConfirm();
+  const [messagePreviewOpen, setMessagePreviewOpen] = useState(false);
+  const messageKind = nodeMessage ? messageKindForShape(shape.shape_type) : null;
+  const parsedMessage = nodeMessage ? parseNodeMessage(nodeMessage.raw) : null;
   const [content, setContent] = useState(() => getEditableLabel(shape));
   useEffect(() => { setContent(getEditableLabel(shape)); }, [shape.id, shape.content]);
   const textStyle = shape.shape_type === 'text' ? parseTextContent(shape.content) : null;
@@ -276,6 +307,36 @@ export default function ShapeSideDrawer<T extends BoardShape>({ shape, onUpdate,
             Shows as a card below the node on the canvas. Leave empty to hide.
           </p>
         </Field>
+
+        {nodePlatform && (
+          <Suspense fallback={null}>
+            <PlatformPicker platform={nodePlatform.platform} onChange={nodePlatform.onChange} />
+          </Suspense>
+        )}
+
+        {nodeRole && (
+          <Suspense fallback={null}>
+            <RolePicker
+              roles={nodeRole.roles}
+              roleId={nodeRole.roleId}
+              onAssign={nodeRole.onAssign}
+              onCreate={nodeRole.onCreate}
+              onRecolour={nodeRole.onRecolour}
+            />
+          </Suspense>
+        )}
+
+        {messageKind && nodeMessage && (
+          <Suspense fallback={null}>
+            <NodeMessageEditor
+              nodeId={shape.id}
+              kind={messageKind}
+              message={parsedMessage}
+              onChange={nodeMessage.onChange}
+              onPreview={() => setMessagePreviewOpen(true)}
+            />
+          </Suspense>
+        )}
 
         {funnelLink && (
           <Suspense fallback={null}>
@@ -454,6 +515,16 @@ export default function ShapeSideDrawer<T extends BoardShape>({ shape, onUpdate,
           <Trash2 size={13} /> Delete {typeLabel.toLowerCase()}
         </button>
       </div>
+
+      {messagePreviewOpen && parsedMessage && hasMessageContent(parsedMessage) && (
+        <Suspense fallback={null}>
+          <NodeMessageModal
+            message={parsedMessage}
+            title={typeLabel}
+            onClose={() => setMessagePreviewOpen(false)}
+          />
+        </Suspense>
+      )}
     </motion.aside>
   );
 }

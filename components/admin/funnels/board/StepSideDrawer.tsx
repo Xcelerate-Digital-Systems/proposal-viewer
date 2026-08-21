@@ -6,9 +6,16 @@ import { X, ExternalLink, ArrowUpRight, Trash2, Check, Search, ChevronDown, Chev
 import type { FunnelStep, FunnelStepMetrics, FunnelTab } from '@/lib/supabase';
 import {
   FUNNEL_STEP_DEFAULTS, FUNNEL_ICON_LIBRARY, FUNNEL_COLOR_PRESETS,
+  messageKindForStep, parseNodeMessage, hasMessageContent,
+  type FunnelNodeMessage,
 } from '@/lib/types/funnel';
-import { StepIcon } from './nodes/FunnelStepNode';
+import { StepIcon, isFullColourBrand } from './nodes/FunnelStepNode';
 import FunnelLinkPicker from './FunnelLinkPicker';
+import NodeMessageEditor from './NodeMessageEditor';
+import RolePicker from './RolePicker';
+import PlatformPicker from './PlatformPicker';
+import { useFunnelBoardContext } from './FunnelBoardContext';
+import NodeMessageModal from './NodeMessageModal';
 interface Props {
   step: FunnelStep;
   onUpdate: (patch: Partial<FunnelStep>) => void;
@@ -26,30 +33,80 @@ export default function StepSideDrawer({
   tabs, activeTabId,
 }: Props) {
   const defaults = FUNNEL_STEP_DEFAULTS[step.step_type] ?? FUNNEL_STEP_DEFAULTS.generic;
+  const boardCtx = useFunnelBoardContext();
 
   const [label, setLabel] = useState(step.label);
   const [url, setUrl] = useState(step.url || '');
   const [desc, setDesc] = useState(step.description || '');
   const [iconQuery, setIconQuery] = useState('');
   const [metricsOpen, setMetricsOpen] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [notes, setNotes] = useState((step.metrics?.notes as string) ?? '');
+
+  const messageKind = messageKindForStep(step.step_type);
+  const message = parseNodeMessage(step.message);
 
   const isTrafficSource = step.step_type.startsWith('traffic_');
   const isPage = step.step_type.startsWith('page_');
   const isOffer = step.step_type.startsWith('offer_');
   const showRecurring = RECURRING_TYPES.has(step.step_type);
 
-  useEffect(() => { setLabel(step.label); setUrl(step.url || ''); setDesc(step.description || ''); }, [step.id]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setLabel(step.label);
+    setUrl(step.url || '');
+    setDesc(step.description || '');
+    setNotes((step.metrics?.notes as string) ?? '');
+  }, [step.id]);
 
+  /* ── Metric writes ───────────────────────────────────────────────────────
+   *  Every metric field shares one debounce window, so edits are accumulated
+   *  into a pending patch rather than each field owning a timer that the next
+   *  field's keystroke would cancel. Without this, tabbing from Visitors to
+   *  Conversion rate within the debounce window silently dropped the Visitors
+   *  write while the input kept showing the typed value.
+   *
+   *  The pending patch is flushed on unmount and when switching nodes, so
+   *  closing the drawer right after typing doesn't lose the last edit either. */
   const metricsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingMetricsRef = useRef<Partial<FunnelStepMetrics>>({});
+  // Latest committed metrics, read at flush time so the merge is never stale.
+  const stepMetricsRef = useRef<FunnelStepMetrics | null>(step.metrics);
+  stepMetricsRef.current = step.metrics;
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
+
+  const flushMetrics = useCallback(() => {
+    if (metricsTimerRef.current) {
+      clearTimeout(metricsTimerRef.current);
+      metricsTimerRef.current = null;
+    }
+    const pending = pendingMetricsRef.current;
+    if (Object.keys(pending).length === 0) return;
+    pendingMetricsRef.current = {};
+    onUpdateRef.current({ metrics: { ...(stepMetricsRef.current || {}), ...pending } });
+  }, []);
+
   const updateMetric = useCallback((key: keyof FunnelStepMetrics, raw: string) => {
+    const num = raw.trim() === '' ? null : Number(raw);
+    pendingMetricsRef.current = {
+      ...pendingMetricsRef.current,
+      [key]: num == null || Number.isNaN(num) ? null : num,
+    };
     if (metricsTimerRef.current) clearTimeout(metricsTimerRef.current);
-    metricsTimerRef.current = setTimeout(() => {
-      const num = raw.trim() === '' ? null : Number(raw);
-      const next: FunnelStepMetrics = { ...(step.metrics || {}), [key]: num == null || Number.isNaN(num) ? null : num };
-      onUpdate({ metrics: next });
-    }, 400);
-  }, [step.metrics, onUpdate]);
+    metricsTimerRef.current = setTimeout(flushMetrics, 400);
+  }, [flushMetrics]);
+
+  /** Notes live inside the metrics JSON, so they ride the same pending patch
+   *  and debounce rather than firing a database write per character. */
+  const queueNotes = useCallback((value: string) => {
+    pendingMetricsRef.current = { ...pendingMetricsRef.current, notes: value || null };
+    if (metricsTimerRef.current) clearTimeout(metricsTimerRef.current);
+    metricsTimerRef.current = setTimeout(flushMetrics, 400);
+  }, [flushMetrics]);
+
+  // Flush on unmount (drawer closed) and before switching to another node.
+  useEffect(() => () => flushMetrics(), [step.id, flushMetrics]);
 
   const commitLabel = () => {
     const next = label.trim() || defaults.label;
@@ -87,10 +144,14 @@ export default function StepSideDrawer({
       <div className="flex items-center justify-between px-4 py-3 border-b border-edge">
         <div className="flex items-center gap-2 min-w-0">
           <div
-            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+            className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center shrink-0"
             style={{ backgroundColor: step.color || defaults.tint }}
           >
-            <StepIcon slug={step.icon || defaults.icon} size={16} />
+            <StepIcon
+              slug={step.icon || defaults.icon}
+              size={16}
+              fillContainer={isFullColourBrand(step.icon || defaults.icon)}
+            />
           </div>
           <span className="text-xs font-semibold text-ink truncate">{step.label || defaults.label}</span>
         </div>
@@ -151,9 +212,38 @@ export default function StepSideDrawer({
             className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal resize-none"
           />
           <p className="text-2xs text-muted/70 mt-0.5 leading-snug">
-            Shows as a card below the node on the canvas. Leave empty to hide.
+            Shows as a card below the node, including to anyone with the share
+            link. Leave empty to hide.
           </p>
         </Field>
+
+        {/* Which system this step runs in — a logo badge on the node */}
+        <PlatformPicker
+          platform={step.platform}
+          onChange={(slug) => onUpdate({ platform: slug })}
+        />
+
+        {/* Owner — a label, not an AgencyViz user */}
+        {boardCtx && (
+          <RolePicker
+            roles={boardCtx.roles}
+            roleId={step.role_id}
+            onAssign={(id) => onUpdate({ role_id: id })}
+            onCreate={boardCtx.ensureRole}
+            onRecolour={(id, color) => void boardCtx.updateRole(id, { color })}
+          />
+        )}
+
+        {/* Email / SMS content — only on message-capable step types */}
+        {messageKind && (
+          <NodeMessageEditor
+            nodeId={step.id}
+            kind={messageKind}
+            message={message}
+            onChange={(next: FunnelNodeMessage | null) => onUpdate({ message: next })}
+            onPreview={() => setPreviewOpen(true)}
+          />
+        )}
 
         {/* Link to tab or funnel */}
         <FunnelLinkPicker
@@ -232,18 +322,19 @@ export default function StepSideDrawer({
           )}
         </div>
 
-        {/* Notes */}
-        <Field label="Notes (private)">
+        {/* Private notes — distinct from Description above, which renders on the
+            canvas. Shares the metrics debounce so it isn't a write per keystroke. */}
+        <Field label="Private notes">
           <textarea
-            value={(step.metrics?.notes as string) ?? ''}
-            onChange={(e) => {
-              const next: FunnelStepMetrics = { ...(step.metrics || {}), notes: e.target.value || null };
-              onUpdate({ metrics: next });
-            }}
+            value={notes}
+            onChange={(e) => { setNotes(e.target.value); queueNotes(e.target.value); }}
             rows={3}
             placeholder="Internal context for this step…"
             className="w-full px-2.5 py-1.5 rounded-lg border border-edge text-caption outline-none focus:border-teal resize-none"
           />
+          <p className="text-2xs text-muted/70 mt-0.5 leading-snug">
+            Never shown on the canvas or to anyone with the share link.
+          </p>
         </Field>
 
         {/* Icon picker */}
@@ -288,7 +379,7 @@ export default function StepSideDrawer({
                           key={slug}
                           type="button"
                           onClick={() => setIcon(slug)}
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-teal/40 ${
+                          className={`w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-teal/40 ${
                             active
                               ? 'ring-2 ring-teal/30'
                               : 'hover:ring-1 hover:ring-edge'
@@ -296,7 +387,7 @@ export default function StepSideDrawer({
                           style={{ backgroundColor: active ? (step.color || defaults.tint) : '#2B2B2B' }}
                           title={slug}
                         >
-                          <StepIcon slug={slug} size={14} />
+                          <StepIcon slug={slug} size={14} fillContainer={isFullColourBrand(slug)} />
                         </button>
                       );
                     })}
@@ -351,6 +442,14 @@ export default function StepSideDrawer({
           Delete step
         </button>
       </div>
+
+      {previewOpen && message && hasMessageContent(message) && (
+        <NodeMessageModal
+          message={message}
+          title={step.label || defaults.label}
+          onClose={() => setPreviewOpen(false)}
+        />
+      )}
     </motion.aside>
   );
 }

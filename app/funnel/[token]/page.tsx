@@ -10,8 +10,12 @@ import '@xyflow/react/dist/style.css';
 import { AlertTriangle, Monitor, RefreshCw, ServerCrash, WifiOff, Workflow } from 'lucide-react';
 import type {
   Funnel, FunnelStep, FunnelTab, FunnelBoardEdge, FunnelBoardNote, FunnelBoardShape,
+  FunnelBoardSection, FunnelRole,
   FeedbackBoardShape, FeedbackBoardNote,
 } from '@/lib/supabase';
+import { computeForecast } from '@/lib/funnel/forecast';
+import { formatCount } from '@/lib/funnel/forecast';
+import { ForecastCtx } from '@/components/admin/funnels/board/ForecastContext';
 import { type CompanyBranding } from '@/hooks/useProposal';
 import { DEFAULT_BRANDING } from '@/lib/review-defaults';
 import { useBrandingColors } from '@/hooks/useBrandingColors';
@@ -23,11 +27,14 @@ import StickyNoteNode from '@/components/admin/feedback/board/nodes/StickyNoteNo
 import ShapeNode from '@/components/admin/feedback/board/nodes/ShapeNode';
 import LabeledEdge from '@/components/admin/feedback/board/edges/LabeledEdge';
 import FunnelTabBar from '@/components/admin/funnels/board/FunnelTabBar';
+import SectionNode from '@/components/admin/funnels/board/nodes/SectionNode';
+import ViewAsRoleMenu from '@/components/admin/funnels/board/ViewAsRoleMenu';
 
 const nodeTypes: NodeTypes = {
   funnelStep: FunnelStepNode,
   stickyNote: StickyNoteNode,
   shape: ShapeNode,
+  section: SectionNode,
 };
 const edgeTypes: EdgeTypes = { labeled: LabeledEdge };
 
@@ -48,6 +55,9 @@ function PublicFunnelInner({ token }: { token: string }) {
   const [allBoardEdges, setAllBoardEdges] = useState<FunnelBoardEdge[]>([]);
   const [allBoardNotes, setAllBoardNotes] = useState<FunnelBoardNote[]>([]);
   const [allBoardShapes, setAllBoardShapes] = useState<FunnelBoardShape[]>([]);
+  const [allBoardSections, setAllBoardSections] = useState<FunnelBoardSection[]>([]);
+  const [roles, setRoles] = useState<FunnelRole[]>([]);
+  const [viewAsRoleId, setViewAsRoleId] = useState<string | null>(null);
   const [tabs, setTabs] = useState<FunnelTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [branding, setBranding] = useState<CompanyBranding>(DEFAULT_BRANDING);
@@ -76,6 +86,8 @@ function PublicFunnelInner({ token }: { token: string }) {
         setAllBoardEdges(data.boardEdges || []);
         setAllBoardNotes(data.boardNotes || []);
         setAllBoardShapes(data.boardShapes || []);
+        setAllBoardSections(data.boardSections || []);
+        setRoles(data.roles || []);
         const loadedTabs: FunnelTab[] = data.tabs || [];
         setTabs(loadedTabs);
         if (loadedTabs.length > 0) setActiveTabId(loadedTabs[0].id);
@@ -121,12 +133,38 @@ function PublicFunnelInner({ token }: { token: string }) {
     () => tabsEnabled ? allBoardShapes.filter((s) => s.tab_id === activeTabId) : allBoardShapes,
     [allBoardShapes, activeTabId, tabsEnabled]
   );
+  const boardSections = useMemo(
+    () => tabsEnabled ? allBoardSections.filter((s) => s.tab_id === activeTabId) : allBoardSections,
+    [allBoardSections, activeTabId, tabsEnabled]
+  );
+
+  // Same forecast the admin board computes. Without this the viewer showed no
+  // visitor counts, no flow labels, and — because the metrics row feeds into
+  // node height — rendered nodes at a different height than the editor did.
+  const forecast = useMemo(
+    () => computeForecast(
+      steps, boardEdges,
+      funnel?.forecast_period ?? 'total',
+      funnel?.default_deal_value ?? null,
+      boardShapes,
+    ),
+    [steps, boardEdges, boardShapes, funnel?.forecast_period, funnel?.default_deal_value]
+  );
+
+  const roleCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const s of steps) if (s.role_id) m.set(s.role_id, (m.get(s.role_id) ?? 0) + 1);
+    for (const sh of boardShapes) if (sh.role_id) m.set(sh.role_id, (m.get(sh.role_id) ?? 0) + 1);
+    return m;
+  }, [steps, boardShapes]);
 
   const handleNavigateTab = useCallback((tabId: string) => {
     setActiveTabId(tabId);
   }, []);
 
   const nodes: Node[] = useMemo(() => {
+    const roleById = new Map(roles.map((r) => [r.id, r]));
+
     const stepNodes: Node[] = steps.map((step) => ({
       id: `step-${step.id}`,
       type: 'funnelStep',
@@ -136,6 +174,7 @@ function PublicFunnelInner({ token }: { token: string }) {
         readOnly: true,
         onNavigateTab: tabsEnabled ? handleNavigateTab : undefined,
         tabs: tabsEnabled ? tabs : undefined,
+        role: step.role_id ? roleById.get(step.role_id) ?? null : null,
       },
       draggable: false, selectable: false, connectable: false,
     }));
@@ -158,11 +197,41 @@ function PublicFunnelInner({ token }: { token: string }) {
         onNavigateTab: tabsEnabled ? handleNavigateTab : undefined,
         tabs: tabsEnabled ? tabs : undefined,
         description: shape.description,
+        message: shape.message,
+        role: shape.role_id ? roleById.get(shape.role_id) ?? null : null,
       },
       draggable: false, selectable: false, connectable: false,
     }));
-    return [...stepNodes, ...noteNodes, ...shapeNodes];
-  }, [steps, boardNotes, boardShapes, tabs, tabsEnabled, handleNavigateTab]);
+    const sectionNodes: Node[] = boardSections.map((section) => ({
+      id: `section-${section.id}`,
+      type: 'section',
+      position: { x: section.x, y: section.y },
+      style: { width: section.width, height: section.height },
+      zIndex: -1,
+      data: { section, readOnly: true },
+      draggable: false, selectable: false, connectable: false,
+    }));
+
+    // "View as" fades non-matching nodes. Sections and notes carry no owner so
+    // they stay at full strength.
+    const withDim = (list: Node[]) => !viewAsRoleId ? list : list.map((n) => {
+      const roleId = n.type === 'funnelStep'
+        ? (n.data as { step?: { role_id?: string | null } }).step?.role_id
+        : (n.data as { shape?: { role_id?: string | null } }).shape?.role_id;
+      return {
+        ...n,
+        style: {
+          ...(n.style || {}),
+          opacity: roleId === viewAsRoleId ? 1 : 0.25,
+          transition: 'opacity 150ms',
+        },
+      };
+    });
+
+    return [...sectionNodes, ...withDim(stepNodes), ...noteNodes, ...withDim(shapeNodes)];
+  }, [steps, boardNotes, boardShapes, boardSections, tabs, tabsEnabled, handleNavigateTab, viewAsRoleId, roles]);
+
+  const noteIds = useMemo(() => new Set(boardNotes.map((n) => n.id)), [boardNotes]);
 
   const edges: Edge[] = useMemo(() => boardEdges.map((e) => {
     const style = (e.style || {}) as Record<string, unknown>;
@@ -172,8 +241,17 @@ function PublicFunnelInner({ token }: { token: string }) {
     const rawArrow = style.arrowDir as string | undefined;
     const arrowDir: 'none' | 'source' | 'target' | 'both' =
       rawArrow === 'none' || rawArrow === 'source' || rawArrow === 'both' ? rawArrow : 'target';
-    const source = e.source_shape_id ? `shape-${e.source_shape_id}` : `step-${e.source_step_id}`;
-    const target = e.target_shape_id ? `shape-${e.target_shape_id}` : `step-${e.target_step_id}`;
+    // Note edges are persisted through the shape FK columns, so a
+    // `*_shape_id` may address either a shape or a sticky note. Resolving it
+    // as a shape unconditionally produces an id no node carries, and React
+    // Flow silently drops the edge. Mirrors resolveSource/resolveTarget in
+    // useFunnelBoard.
+    const source = e.source_shape_id
+      ? (noteIds.has(e.source_shape_id) ? `note-${e.source_shape_id}` : `shape-${e.source_shape_id}`)
+      : `step-${e.source_step_id}`;
+    const target = e.target_shape_id
+      ? (noteIds.has(e.target_shape_id) ? `note-${e.target_shape_id}` : `shape-${e.target_shape_id}`)
+      : `step-${e.target_step_id}`;
 
     return {
       id: e.id,
@@ -185,7 +263,13 @@ function PublicFunnelInner({ token }: { token: string }) {
       style: { stroke: strokeColor, strokeWidth },
       markerEnd: undefined,
       data: {
-        label: e.label || undefined,
+        label: (() => {
+          const userLabel = e.label || '';
+          const edgeFlow = forecast.flowByEdge.get(e.id);
+          const flowLabel = edgeFlow && edgeFlow > 0 ? formatCount(edgeFlow) : '';
+          if (userLabel) return flowLabel ? `${userLabel}  ·  ${flowLabel}` : userLabel;
+          return flowLabel || undefined;
+        })(),
         color: strokeColor, strokeWidth, dashed,
         animated: e.animated || false, arrowDir,
         labelFontSize: Number(style.labelFontSize) || 16,
@@ -196,7 +280,7 @@ function PublicFunnelInner({ token }: { token: string }) {
         waypoints: Array.isArray(style.waypoints) ? style.waypoints as { x: number; y: number }[] : [],
       },
     } as Edge;
-  }), [boardEdges]);
+  }), [boardEdges, noteIds, forecast]);
 
   if (!brandingLoaded) return <div className="fixed inset-0" style={{ backgroundColor: 'transparent' }} />;
   if (loading) return <ViewerLoader branding={branding} loading={true} label="Loading funnel…" />;
@@ -338,6 +422,17 @@ function PublicFunnelInner({ token }: { token: string }) {
         )}
 
         <div className="flex-1 min-h-0 bg-notebook relative" role="region" aria-label={`${funnel.name} funnel canvas`}>
+          {roles.length > 0 && (
+            <div className="absolute top-3 right-3 z-10">
+              <ViewAsRoleMenu
+                roles={roles}
+                viewAsRoleId={viewAsRoleId}
+                onChange={setViewAsRoleId}
+                countsByRole={roleCounts}
+              />
+            </div>
+          )}
+          <ForecastCtx.Provider value={forecast}>
           <ReactFlowProvider>
             <ReactFlow
               nodes={nodes}
@@ -365,6 +460,7 @@ function PublicFunnelInner({ token }: { token: string }) {
               />
               <MiniMap
                 nodeClassName={(node) => {
+                  if (node.type === 'section') return 'fill-teal/5 stroke-teal/20';
                   if (node.type === 'stickyNote') return 'fill-sticky-yellow';
                   if (node.type === 'shape') return 'fill-ink/40';
                   return 'fill-teal/15 stroke-teal/30';
@@ -376,6 +472,7 @@ function PublicFunnelInner({ token }: { token: string }) {
               />
             </ReactFlow>
           </ReactFlowProvider>
+          </ForecastCtx.Provider>
         </div>
       </div>
     </>

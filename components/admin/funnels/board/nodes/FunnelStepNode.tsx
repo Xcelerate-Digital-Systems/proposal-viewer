@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState, useRef, useEffect } from 'react';
+import { memo, useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import {
@@ -17,12 +17,19 @@ import {
   Webhook, ClipboardCheck, CalendarCheck, Trophy, Crown, CircleX,
   type LucideIcon,
 } from 'lucide-react';
-import type { FunnelStep, FunnelTab } from '@/lib/supabase';
-import { FUNNEL_STEP_DEFAULTS } from '@/lib/types/funnel';
+import type { FunnelStep, FunnelTab, FunnelRole } from '@/lib/supabase';
+import {
+  FUNNEL_STEP_DEFAULTS, messageKindForStep, parseNodeMessage, hasMessageContent,
+} from '@/lib/types/funnel';
+import RoleChip from './RoleChip';
 import { formatCount } from '@/lib/funnel/forecast';
 import { useFunnelBoardContext } from '../FunnelBoardContext';
 import { useForecast } from '../ForecastContext';
 import PageMockup, { PAGE_MOCKUP_W, PAGE_MOCKUP_H } from './PageMockup';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import PlatformBadge from './PlatformBadge';
+
+const NodeMessageModal = lazy(() => import('../NodeMessageModal'));
 
 export interface FunnelStepNodeData extends Record<string, unknown> {
   step: FunnelStep;
@@ -33,6 +40,10 @@ export interface FunnelStepNodeData extends Record<string, unknown> {
   tabs?: FunnelTab[];
   forecastVisitors?: number;
   forecastConversions?: number;
+  /** Public viewer has no FunnelBoardProvider, so the resolved role is passed
+   *  in directly. On the admin board this is omitted and looked up from
+   *  context instead. */
+  role?: FunnelRole | null;
 }
 
 // Map icon slug → lucide component. Brand SVGs (facebook/google/etc.) are
@@ -112,15 +123,40 @@ export const LUCIDE: Record<string, LucideIcon> = {
   crown: Crown,
   'map-pin': MapPin,
   'circle-x': CircleX,
+  chatbot: Bot,
 };
+
+/** Brands whose asset is a complete app icon — it ships with its own
+ *  background (ServiceM8's green circle, AroFlo's dark tile, GoHighLevel's
+ *  navy disc). These are rendered at FULL COLOUR filling the node, because
+ *  flattening them to a white silhouette the way single-path marks are handled
+ *  would turn every one of them into a featureless white blob.
+ *
+ *  Everything else in BRAND_SLUGS_SET is a single-path Simple Icons/SVGL mark
+ *  and keeps the existing white-on-tint treatment. */
+export const FULL_COLOUR_BRANDS = new Set([
+  'ghl', 'servicem8', 'simpro', 'aroflo', 'fergus', 'workflowmax', 'ascora',
+]);
+
+/** File extension per brand asset. Explicit rather than probing .svg then
+ *  falling back to .png, which would cost a 404 on every render. */
+const BRAND_ASSET_EXT: Record<string, string> = {
+  ghl: 'svg', servicem8: 'png', simpro: 'png', aroflo: 'png',
+  fergus: 'png', workflowmax: 'png', ascora: 'png',
+};
+
+export function isFullColourBrand(slug: string): boolean {
+  return FULL_COLOUR_BRANDS.has(slug);
+}
 
 export const BRAND_SLUGS_SET = new Set([
   'facebook','instagram','google','youtube','tiktok','linkedin','pinterest',
   'twitter','snapchat','bing','reddit','stripe','mailchimp',
   'hubspot','ghl','activecampaign','salesforce','slack',
   'simpro','aroflo','workflowmax','servicem8','fergus','ascora','jobber',
-  'messenger','whatsapp','chatbot',
+  'messenger','whatsapp',
   'zoho','yelp','amazon','zoom','gmail','spotify','google-maps',
+  'ghl','servicem8','simpro','aroflo','fergus','workflowmax','ascora',
 ]);
 
 /** Lucide icon to render while a brand SVG is missing — keeps the canvas
@@ -140,9 +176,52 @@ const BRAND_FALLBACK_LUCIDE: Record<string, LucideIcon> = {
   gmail: Mail, spotify: Music, 'google-maps': MapPin,
 };
 
-export function StepIcon({ slug, size = 32, brandSize }: { slug: string; size?: number; brandSize?: number }) {
+/** Two-letter mark for a brand whose SVG isn't in /public/icons/brands yet.
+ *  Clearer than an approximate Lucide glyph — "HS" reads as HubSpot, whereas
+ *  the target icon it used to fall back to reads as nothing in particular. */
+const BRAND_LETTERMARK: Record<string, string> = {
+  hubspot: 'HS', ghl: 'HL', activecampaign: 'AC', salesforce: 'SF',
+  simpro: 'SP', aroflo: 'AF', workflowmax: 'WM', servicem8: 'M8',
+  fergus: 'FG', ascora: 'AS', jobber: 'JB', zoho: 'ZO', yelp: 'YP',
+  amazon: 'AZ', zoom: 'ZM', gmail: 'GM', spotify: 'SP',
+  'google-maps': 'GM', reddit: 'RD', slack: 'SL',
+  messenger: 'MS', whatsapp: 'WA',
+};
+
+export function StepIcon({
+  slug, size = 32, brandSize, fillContainer, onLightSurface,
+}: {
+  slug: string; size?: number; brandSize?: number; fillContainer?: boolean;
+  /** Render dark instead of white. Brand SVGs are authored white-on-transparent
+   *  for the coloured node discs; on a white surface (the platform badge) they
+   *  need flipping back to dark or they vanish. */
+  onLightSurface?: boolean;
+}) {
   const [brandFailed, setBrandFailed] = useState(false);
   const bs = brandSize ?? size;
+
+  // Reset on slug change: without this, one missing brand SVG poisoned the
+  // component instance, so picking a brand that *does* have an asset kept
+  // showing the fallback.
+  useEffect(() => { setBrandFailed(false); }, [slug]);
+
+  // Full-colour app icons: no white-out filter, and when the container asks for
+  // it the logo covers the whole disc so the mark IS the node, Puzzle-style.
+  // The container keeps its tint painted underneath, so a failed image load
+  // degrades to the lettermark on a coloured disc rather than white-on-white.
+  if (FULL_COLOUR_BRANDS.has(slug) && !brandFailed) {
+    const ext = BRAND_ASSET_EXT[slug] || 'svg';
+    return (
+      <img
+        src={`/icons/brands/${slug}.${ext}`}
+        alt={slug}
+        {...(fillContainer
+          ? { className: 'w-full h-full object-cover' }
+          : { width: bs, height: bs })}
+        onError={() => setBrandFailed(true)}
+      />
+    );
+  }
 
   if (BRAND_SLUGS_SET.has(slug) && !brandFailed) {
     return (
@@ -151,15 +230,29 @@ export function StepIcon({ slug, size = 32, brandSize }: { slug: string; size?: 
         alt={slug}
         width={bs}
         height={bs}
-        style={{ filter: 'brightness(0) invert(1)' }}
+        // brightness(0) alone gives a black silhouette; adding invert(1) takes
+        // it back to white for the coloured discs.
+        style={{ filter: onLightSurface ? 'brightness(0)' : 'brightness(0) invert(1)' }}
         onError={() => setBrandFailed(true)}
       />
     );
   }
+
+  if (brandFailed && BRAND_LETTERMARK[slug]) {
+    return (
+      <span
+        className={`font-bold leading-none select-none tracking-tight ${onLightSurface ? 'text-ink' : 'text-white'}`}
+        style={{ fontSize: Math.round(bs * 0.42) }}
+      >
+        {BRAND_LETTERMARK[slug]}
+      </span>
+    );
+  }
+
   const Lc = brandFailed
     ? (BRAND_FALLBACK_LUCIDE[slug] || Square)
     : (LUCIDE[slug] || Square);
-  return <Lc size={size} strokeWidth={1.8} className="text-white" />;
+  return <Lc size={size} strokeWidth={1.8} className={onLightSurface ? 'text-ink' : 'text-white'} />;
 }
 
 const FRAME_W = 200;
@@ -234,7 +327,7 @@ function PageHandles({ readOnly, frameH, hasDesc }: { readOnly?: boolean; frameH
 
 function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   const {
-    step, readOnly, onUpdate, onDelete, onNavigateTab, tabs,
+    step, readOnly, onUpdate, onDelete, onNavigateTab, tabs, role: roleFromData,
   } = data as FunnelStepNodeData;
   const defaults = FUNNEL_STEP_DEFAULTS[step.step_type] ?? FUNNEL_STEP_DEFAULTS.generic;
   const iconSlug = step.icon || defaults.icon;
@@ -243,15 +336,19 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   const router = useRouter();
   const ctx = useFunnelBoardContext();
   const forecast = useForecast();
+  const confirm = useConfirm();
   const isSelected = selected || ctx?.selectedStepId === step.id;
   const hasLinkedFunnel = !!step.linked_funnel_id;
   const hasLinkedTab = !!step.linked_tab_id;
   const hasLink = hasLinkedFunnel || hasLinkedTab;
+  const role = roleFromData ?? ctx?.roles.find((r) => r.id === step.role_id) ?? null;
+
   const visitors = forecast?.visitorsByStep.get(step.id) ?? 0;
   const conversions = forecast?.conversionsByStep.get(step.id) ?? 0;
   const hasMetrics = visitors > 0;
 
   const [editing, setEditing] = useState(false);
+  const [messageOpen, setMessageOpen] = useState(false);
   const [draft, setDraft] = useState(step.label || defaults.label);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -270,6 +367,19 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
     if (next !== step.label) onUpdate?.(step.id, { label: next });
   };
 
+  /** Every other destructive action in the board confirms first; this one is a
+   *  single click on a hover overlay, which is the easiest of all to hit by
+   *  accident. */
+  const confirmDelete = async () => {
+    const ok = await confirm({
+      title: `Delete "${step.label || defaults.label}"`,
+      message: 'This removes the step and any connections to it.',
+      confirmLabel: 'Delete step',
+      destructive: true,
+    });
+    if (ok) onDelete?.(step.id);
+  };
+
   const handleBodyClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (readOnly) return;
@@ -281,8 +391,15 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
 
   const isPage = step.step_type.startsWith('page_');
   const hasDescription = !!step.description;
+
+  // Email/SMS copy attached to this node. Adds its own pill row, so the frame
+  // height has to grow with it or the bottom handle drifts off the node.
+  const messageKind = messageKindForStep(step.step_type);
+  const parsedMessage = messageKind ? parseNodeMessage(step.message) : null;
+  const showMessagePill = !!parsedMessage && hasMessageContent(parsedMessage);
+
   const metricsRow = hasMetrics ? METRICS_H : 0;
-  const navRow = showNavPill ? NAV_PILL_H : 0;
+  const navRow = (showNavPill ? NAV_PILL_H : 0) + (showMessagePill ? NAV_PILL_H : 0);
   const descRow = hasDescription ? (DESC_CARD_MIN_H - DESC_CARD_OVERLAP) : 0;
   const frameH = isPage
     ? PAGE_MOCKUP_H + LABEL_GAP + LABEL_OFFSET + metricsRow + navRow + descRow
@@ -318,6 +435,8 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
   const pageBody = (
     <div onClick={handleBodyClick} className="group relative">
       <PageMockup stepType={step.step_type} tint={tint} selected={isSelected} />
+      {role && <RoleChip role={role} />}
+      {step.platform && <PlatformBadge slug={step.platform} />}
       {hasLink && (
         <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center shadow-sm pointer-events-none z-10">
           {hasLinkedTab ? <Layers size={11} strokeWidth={2.5} /> : <ArrowUpRight size={11} strokeWidth={2.5} />}
@@ -350,7 +469,7 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
             </button>
           )}
           <button type="button"
-            onClick={(e) => { e.stopPropagation(); onDelete?.(step.id); }}
+            onClick={(e) => { e.stopPropagation(); void confirmDelete(); }}
             className="w-7 h-7 rounded-full bg-white/15 hover:bg-rose-500/80 flex items-center justify-center"
             title="Delete step">
             <Trash2 size={14} />
@@ -360,15 +479,31 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
     </div>
   );
 
+  // A full-colour brand fills the disc entirely — the logo becomes the node.
+  // The tint stays painted behind it purely as the fallback surface if the
+  // image fails to load.
+  const iconIsFullColour = isFullColourBrand(iconSlug);
+
+  // The disc's hairline edge is an INSET ring rather than a border: a real
+  // border would grow the box from 88px to 90px and shift every handle anchor
+  // with it. It mostly earns its place on full-colour logos with pale
+  // backgrounds, which otherwise float on the white canvas with no defined edge.
   const discBody = (
     <div
       onClick={handleBodyClick}
-      className={`group relative flex items-center justify-center rounded-full shadow-[0_3px_8px_rgba(20,20,40,0.18)] transition-shadow ${
+      className={`group relative flex items-center justify-center rounded-full shadow-[inset_0_0_0_1px_rgba(20,20,40,0.14),0_3px_8px_rgba(20,20,40,0.18)] transition-shadow ${
         isSelected ? 'ring-2 ring-teal ring-offset-2 ring-offset-white' : 'hover:shadow-lg'
       }`}
       style={{ width: ICON_SIZE, height: ICON_SIZE, backgroundColor: tint }}
     >
-      <StepIcon slug={iconSlug} size={40} brandSize={36} />
+      {/* The clip lives on this inner wrapper, not the disc — the disc also
+          holds the link badge and role chip, which deliberately overhang its
+          edges and would be sliced off by overflow-hidden. */}
+      <div className="absolute inset-0 rounded-full overflow-hidden flex items-center justify-center">
+        <StepIcon slug={iconSlug} size={40} brandSize={36} fillContainer={iconIsFullColour} />
+      </div>
+      {role && <RoleChip role={role} />}
+      {step.platform && <PlatformBadge slug={step.platform} />}
       {hasLink && (
         <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center shadow-sm pointer-events-none z-10">
           {hasLinkedTab ? <Layers size={11} strokeWidth={2.5} /> : <ArrowUpRight size={11} strokeWidth={2.5} />}
@@ -401,7 +536,7 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
             </button>
           )}
           <button type="button"
-            onClick={(e) => { e.stopPropagation(); onDelete?.(step.id); }}
+            onClick={(e) => { e.stopPropagation(); void confirmDelete(); }}
             className="w-7 h-7 rounded-full bg-white/15 hover:bg-rose-500/80 flex items-center justify-center"
             title="Delete step">
             <Trash2 size={14} />
@@ -411,19 +546,48 @@ function FunnelStepNodeComponent({ data, selected }: NodeProps) {
     </div>
   );
 
-  const navPillEl = showNavPill ? (
-    <NavPill
-      label={hasLinkedTab ? linkedTabName : 'Linked funnel'}
-      icon={hasLinkedTab ? 'tab' : 'funnel'}
-      onClick={() => {
-        if (hasLinkedTab) {
-          if (readOnly && onNavigateTab) onNavigateTab(step.linked_tab_id!);
-          else { ctx?.switchTab(step.linked_tab_id!); onNavigateTab?.(step.linked_tab_id!); }
-        } else if (hasLinkedFunnel) {
-          router.push(`/funnels/${step.linked_funnel_id}`);
-        }
-      }}
-    />
+  // The preview modal rides along in this slot: it portals to document.body,
+  // so it renders correctly from either layout branch below.
+  const navPillEl = (showNavPill || showMessagePill) ? (
+    <>
+      {showNavPill && (
+        <NavPill
+          label={hasLinkedTab ? linkedTabName : 'Linked funnel'}
+          icon={hasLinkedTab ? 'tab' : 'funnel'}
+          onClick={() => {
+            if (hasLinkedTab) {
+              if (readOnly && onNavigateTab) onNavigateTab(step.linked_tab_id!);
+              else { ctx?.switchTab(step.linked_tab_id!); onNavigateTab?.(step.linked_tab_id!); }
+            } else if (hasLinkedFunnel) {
+              router.push(`/funnels/${step.linked_funnel_id}`);
+            }
+          }}
+        />
+      )}
+      {showMessagePill && parsedMessage && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setMessageOpen(true); }}
+          className="mt-1 flex items-center gap-1 px-2.5 py-1 rounded-full bg-white border border-edge text-ink/70 text-2xs font-medium shadow-sm hover:border-teal hover:text-teal transition-colors cursor-pointer"
+          style={{ height: NAV_PILL_H }}
+          title={parsedMessage.kind === 'email' ? 'View the email' : 'View the text message'}
+        >
+          {parsedMessage.kind === 'email'
+            ? <Mail size={11} strokeWidth={2.5} />
+            : <MessageSquare size={11} strokeWidth={2.5} />}
+          <span>{parsedMessage.kind === 'email' ? 'View email' : 'View text'}</span>
+        </button>
+      )}
+      {messageOpen && parsedMessage && (
+        <Suspense fallback={null}>
+          <NodeMessageModal
+            message={parsedMessage}
+            title={step.label || defaults.label}
+            onClose={() => setMessageOpen(false)}
+          />
+        </Suspense>
+      )}
+    </>
   ) : null;
 
   return (

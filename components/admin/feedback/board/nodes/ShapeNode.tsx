@@ -1,10 +1,15 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useState, lazy, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import type { NodeProps } from '@xyflow/react';
 import { Handle, Position } from '@xyflow/react';
-import { ArrowUpRight, Layers } from 'lucide-react';
+import { ArrowUpRight, Layers, Mail, MessageSquare } from 'lucide-react';
+import {
+  messageKindForShape, parseNodeMessage, hasMessageContent,
+} from '@/lib/types/funnel';
+import RoleChip from '@/components/admin/funnels/board/nodes/RoleChip';
+import PlatformBadge from '@/components/admin/funnels/board/nodes/PlatformBadge';
 import type { FeedbackBoardShape } from '@/lib/supabase';
 import { DIAMOND_TYPES, DIAMOND_BOX_SIZE, LEGACY_DEFAULT_COLOR, type DiamondType } from './diamond-config';
 import { TextShape } from './TextShape';
@@ -13,6 +18,15 @@ import { WaitDiamond } from './WaitDiamond';
 import { EventDiamond } from './EventDiamond';
 import { DescriptionBoxShape } from './DescriptionBoxShape';
 import { useFunnelBoardContext } from '@/components/admin/funnels/board/FunnelBoardContext';
+
+// Funnel-only surface — lazy so the feedback whiteboard never loads the chunk.
+const NodeMessageModal = lazy(() => import('@/components/admin/funnels/board/NodeMessageModal'));
+
+/** Modal title per message-capable shape type. */
+const SHAPE_MESSAGE_TITLES: Record<string, string> = {
+  email_notification: 'Email Notification',
+  sms_notification: 'SMS Notification',
+};
 
 /* ─── Re-exports (preserve public API) ───────────────────────────── */
 
@@ -97,35 +111,99 @@ function ShapeNavPill({ label, icon, onClick }: { label: string | null; icon: 't
 }
 
 function ShapeNodeComponent({ data, selected }: NodeProps) {
-  const { shape, readOnly, onUpdateContent, linkedFunnelId, linkedTabId, onNavigateTab, tabs, description } = data as import('./shape-node-types').ShapeNodeData;
+  const { shape, readOnly, onUpdateContent, linkedFunnelId, linkedTabId, onNavigateTab, tabs, description, message, role: roleFromData } = data as import('./shape-node-types').ShapeNodeData;
   const router = useRouter();
+  const [messageOpen, setMessageOpen] = useState(false);
+
   let ctx: ReturnType<typeof useFunnelBoardContext> | null = null;
   try { ctx = useFunnelBoardContext(); } catch { /* outside funnel context (feedback board) */ }
+
+  // Funnel-only owner chip and platform badge. On the feedback whiteboard
+  // there's no funnel context and the columns don't exist, so both resolve to
+  // null and nothing renders.
+  const shapeRoleId = (shape as unknown as { role_id?: string | null }).role_id ?? null;
+  const role = roleFromData ?? ctx?.roles.find((r) => r.id === shapeRoleId) ?? null;
+  const shapePlatform = (shape as unknown as { platform?: string | null }).platform ?? null;
 
   const hasLinkedTab = !!linkedTabId;
   const hasLinkedFunnel = !!linkedFunnelId;
   const showNavPill = hasLinkedTab || hasLinkedFunnel;
   const linkedTabName = hasLinkedTab ? (tabs?.find((t) => t.id === linkedTabId)?.name ?? null) : null;
 
-  const linkBadge = (linkedFunnelId || linkedTabId) ? (
-    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center shadow-sm pointer-events-none z-10">
-      {hasLinkedTab ? <Layers size={11} strokeWidth={2.5} /> : <ArrowUpRight size={11} strokeWidth={2.5} />}
-    </div>
+  // Corner markers ride together: the link badge owns the top-right, the role
+  // chip the top-left. Every shape branch already renders `linkBadge`, so
+  // folding the chip in here reaches all of them without touching each one.
+  const linkBadge = (linkedFunnelId || linkedTabId || role) ? (
+    <>
+      {(linkedFunnelId || linkedTabId) && (
+        <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-teal text-white flex items-center justify-center shadow-sm pointer-events-none z-10">
+          {hasLinkedTab ? <Layers size={11} strokeWidth={2.5} /> : <ArrowUpRight size={11} strokeWidth={2.5} />}
+        </div>
+      )}
+      {role && <RoleChip role={role} compact />}
+    </>
   ) : null;
 
-  const navPillEl = showNavPill ? (
-    <ShapeNavPill
-      label={hasLinkedTab ? linkedTabName : 'Linked funnel'}
-      icon={hasLinkedTab ? 'tab' : 'funnel'}
-      onClick={() => {
-        if (hasLinkedTab) {
-          if (readOnly && onNavigateTab) onNavigateTab(linkedTabId!);
-          else { ctx?.switchTab(linkedTabId!); onNavigateTab?.(linkedTabId!); }
-        } else if (hasLinkedFunnel) {
-          router.push(`/funnels/${linkedFunnelId}`);
-        }
-      }}
-    />
+  // Anchored to the SHAPE, not the node frame. The frame also contains the
+  // label and any description card, so a frame-level badge floated well below
+  // a diamond instead of hugging it the way it does on a circle.
+  //
+  // Diamonds get a positive inset: their bottom-right corner of the bounding
+  // box is empty, with the shape's edge running diagonally through it.
+  const isDiamondShape = shape.shape_type === 'decision'
+    || shape.shape_type === 'wait'
+    || DIAMOND_TYPES.has(shape.shape_type);
+  const platformBadgeEl = shapePlatform
+    ? <PlatformBadge slug={shapePlatform} size={28} offset={isDiamondShape ? 5 : -4} />
+    : null;
+
+  // Email/SMS attached to this node (funnel board only). The preview modal is
+  // rendered from this same slot: it portals to document.body, so its position
+  // in the tree is irrelevant and every shape branch picks it up by rendering
+  // `navPillEl`, which they all already do.
+  const messageKind = messageKindForShape(shape.shape_type);
+  const parsedMessage = messageKind ? parseNodeMessage(message) : null;
+  const showMessagePill = !!parsedMessage && hasMessageContent(parsedMessage);
+
+  const navPillEl = (showNavPill || showMessagePill) ? (
+    <>
+      {showNavPill && (
+        <ShapeNavPill
+          label={hasLinkedTab ? linkedTabName : 'Linked funnel'}
+          icon={hasLinkedTab ? 'tab' : 'funnel'}
+          onClick={() => {
+            if (hasLinkedTab) {
+              if (readOnly && onNavigateTab) onNavigateTab(linkedTabId!);
+              else { ctx?.switchTab(linkedTabId!); onNavigateTab?.(linkedTabId!); }
+            } else if (hasLinkedFunnel) {
+              router.push(`/funnels/${linkedFunnelId}`);
+            }
+          }}
+        />
+      )}
+      {showMessagePill && parsedMessage && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setMessageOpen(true); }}
+          className="mt-1.5 flex items-center gap-1 px-2.5 py-1 rounded-full bg-white border border-edge text-ink/70 text-2xs font-medium shadow-sm hover:border-teal hover:text-teal transition-colors cursor-pointer"
+          title={parsedMessage.kind === 'email' ? 'View the email' : 'View the text message'}
+        >
+          {parsedMessage.kind === 'email'
+            ? <Mail size={11} strokeWidth={2.5} />
+            : <MessageSquare size={11} strokeWidth={2.5} />}
+          <span>{parsedMessage.kind === 'email' ? 'View email' : 'View text'}</span>
+        </button>
+      )}
+      {messageOpen && parsedMessage && (
+        <Suspense fallback={null}>
+          <NodeMessageModal
+            message={parsedMessage}
+            title={SHAPE_MESSAGE_TITLES[shape.shape_type] || 'Message'}
+            onClose={() => setMessageOpen(false)}
+          />
+        </Suspense>
+      )}
+    </>
   ) : null;
 
   if (shape.shape_type === 'text') {
@@ -133,6 +211,7 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
       <div className="relative flex flex-col items-center">
         {linkBadge}
         <div className="relative z-10">
+          {platformBadgeEl}
           <TextShape shape={shape} selected={!!selected} readOnly={readOnly} onUpdateContent={onUpdateContent} />
         </div>
         {navPillEl}
@@ -146,6 +225,7 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
       <div className="relative flex flex-col items-center">
         {linkBadge}
         <div className="relative z-10">
+          {platformBadgeEl}
           <DecisionShape shape={shape} selected={!!selected} readOnly={readOnly} onUpdateContent={onUpdateContent} />
         </div>
         {navPillEl}
@@ -162,6 +242,7 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
         <div className="relative flex flex-col items-center" style={{ width: DIAMOND_FRAME_W, minHeight: frameH }}>
           {linkBadge}
           <div className="relative z-10">
+          {platformBadgeEl}
             <WaitDiamond shape={shape} selected={!!selected} readOnly={readOnly} onUpdateContent={onUpdateContent} />
           </div>
           {navPillEl}
@@ -179,6 +260,7 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
         <div className="relative flex flex-col items-center" style={{ width: DIAMOND_FRAME_W, minHeight: frameH }}>
           {linkBadge}
           <div className="relative z-10">
+          {platformBadgeEl}
             <EventDiamond shape={shape} diamondType={shape.shape_type as DiamondType} selected={!!selected} readOnly={readOnly} onUpdateContent={onUpdateContent} />
           </div>
           {navPillEl}
@@ -193,6 +275,7 @@ function ShapeNodeComponent({ data, selected }: NodeProps) {
       <div className="relative flex flex-col items-center">
         {linkBadge}
         <div className="relative z-10">
+          {platformBadgeEl}
           <DescriptionBoxShape shape={shape} selected={!!selected} readOnly={readOnly} onUpdateContent={onUpdateContent} />
         </div>
         {navPillEl}

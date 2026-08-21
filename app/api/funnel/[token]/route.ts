@@ -32,6 +32,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
+    // NOTE: this is an explicit allowlist, so anything added to get_funnel_data
+    // must be added here too or it silently never reaches the viewer.
     const res = NextResponse.json({
       funnel: data.funnel,
       tabs: data.tabs || [],
@@ -39,6 +41,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ token: s
       boardEdges: data.boardEdges || [],
       boardNotes: data.boardNotes || [],
       boardShapes: data.boardShapes || [],
+      boardSections: data.boardSections || [],
+      roles: data.roles || [],
     });
     res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     return res;
