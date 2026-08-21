@@ -56,7 +56,7 @@ No test suite or linter configured. Use `npm run build` to verify changes compil
 - **Whiteboard**: @xyflow/react 12.10
 - **Drag-and-drop**: @dnd-kit (core 6.3, sortable 10.0, modifiers 9.0)
 - **PDF**: react-pdf 9.1, pdf-lib 1.17
-- **Other**: framer-motion 12.40, html2canvas 1.4, posthog-js 1.376, react-joyride 3.1 (onboarding tours), emoji-picker-react, roughjs (drawing annotations), tippy.js, openai (text generation), isomorphic-dompurify, @number-flow/react, geist font
+- **Other**: framer-motion 12.40, html2canvas 1.4, posthog-js 1.376, react-joyride 3.1 (onboarding tours), emoji-picker-react, roughjs (drawing annotations), tippy.js, openai (text generation), dompurify (browser-only — there is NO isomorphic-dompurify), @number-flow/react, geist font
 
 Build uses Turbopack (Next 16 default). The `canvas: false` alias for pdf-lib/react-pdf SSR lives in both `turbopack.resolveAlias` and the legacy `webpack: (config) =>` block in `next.config.js`, so `next build --webpack` still works as an escape hatch.
 
@@ -283,6 +283,48 @@ Anon clients have NO INSERT/UPDATE on proposals/views. Public writes go through 
 - Types in `lib/types/feedback.ts`, main view in `components/feedback/ReviewDetailView.tsx`.
 - Dashboard widgets: "Awaiting my review" + "Needs new version" cards on `/dashboard`.
 
+### Funnel Planner
+
+Visual canvas for two jobs: marketing funnel planning (forecast flow and
+revenue) and **process mapping** — showing a client how their system works, who
+does what, and where each step happens. Purely visual: no live data, and
+deliberately no integration, even though the app has a working GHL connector
+for proposals/quotes.
+
+- **Tabs** — one funnel holds multiple named canvases sharing one share link.
+  One tab per pipeline. Cross-tab links switch tab rather than navigating away.
+- **Forecast** — manual metrics propagated forward through the graph. Shapes
+  (decision diamonds, actions) are pass-through nodes, not dead ends. An
+  explicit `split_percent` is taken literally so drop-off is expressible;
+  `default_deal_value` only backfills `offer_*` steps or revenue multiplies by
+  chain length.
+- **Roles** (`funnel_roles`) — coloured owner labels, company-scoped and
+  reusable. **Not** linked to `team_members`: assigning one invites nobody and
+  grants no access. A "View as" control fades non-matching nodes.
+- **Sections** (`funnel_board_sections`) — labelled background regions.
+  Membership is **positional**, not an FK; dragging a section carries whatever
+  sits inside it. They are NOT React Flow parent nodes — parenting makes child
+  coordinates relative, and `board_x`/`board_y` are absolute everywhere else.
+  Group/Ungroup in the multi-select toolbar creates and removes these.
+- **Node messages** (`funnel_steps.message` jsonb) — email/SMS copy on a node,
+  shown in a preview modal on click, in admin and the public viewer. Kept out
+  of `funnel_board_shapes.content` because the shared feedback shape parsers
+  drop unknown keys.
+- **Platform badges** (`.platform`) — which system a node runs in. Either a
+  brand slug (`ghl`, `servicem8`) or the public URL of an uploaded logo. The
+  node keeps its own icon: a Qualified stage stays a tick and gains a GHL badge.
+- **Brand logos** — `public/icons/brands/`. Single-path marks render white on
+  the tinted disc; full-colour app icons (`FULL_COLOUR_BRANDS`) fill the disc
+  instead. `lib/funnel/icon-slugs.ts` mirrors the renderer for MCP validation —
+  keep the two in sync.
+- **Custom logos** (`funnel_custom_logos`) — uploaded via `/api/funnel/logos`
+  into the public `company-assets` bucket. Raster only; SVG is refused because
+  the bucket is public and an SVG can carry script.
+
+Public viewer reads everything through the SECURITY DEFINER `get_funnel_data`
+RPC. **There are deliberately no anon RLS policies on the funnel tables** — see
+the note in `lib/funnel/migration.sql`.
+
 ### Template Library
 - Page-level and package-level templates for reuse across proposals/documents.
 - Page library (`/api/page-library`) with company-scoped saved pages.
@@ -422,4 +464,28 @@ NEXT_PUBLIC_LOOKER_DEPLOYMENT_ID_GHL=          # GoHighLevel connector
 Running list of mistakes and issues encountered during development. Before starting any task, scan this list to avoid repeating past errors. Add new entries as they occur with the date and a one-line description of what went wrong and the correct approach.
 
 <!-- Format: - **YYYY-MM-DD** — What went wrong → What to do instead -->
+
+- **2026-08-21** — `lib/funnel/migration.sql` declared anon read policies as
+  `USING (share_token IS NOT NULL)`. `share_token` is NOT NULL with a default,
+  so that predicate matches every row in the table and would have exposed every
+  tenant's funnels. → A share-token predicate must compare against the supplied
+  token, not test for existence. Better: don't add anon policies at all when the
+  public route already goes through a SECURITY DEFINER RPC.
+- **2026-08-21** — Added `boardSections`/`roles` to `get_funnel_data` and
+  verified the RPC in SQL, but `/api/funnel/[token]` forwards an explicit key
+  allowlist, so neither ever reached the viewer. → Verifying the RPC is not
+  verifying the feature. Trace one real payload through the actual HTTP route.
+  Same class of bug as the review-viewer column allowlist.
+- **2026-08-21** — `duplicate-funnel.ts` is a strict column allowlist and had
+  been silently dropping node `description` since that feature shipped. → When
+  adding a column to `funnel_steps`/`funnel_board_shapes`, update
+  duplicate-funnel.ts, useFunnelBoardClipboard.ts, useFunnelBoardInteractions.ts
+  and the MCP tools, or it survives editing but not duplication.
+- **2026-08-21** — Metric fields in StepSideDrawer shared one debounce timer, so
+  tabbing between two fields cancelled the first write while the input still
+  displayed the typed value. → Accumulate into one pending patch and flush on
+  unmount, rather than a timer per call site.
+- **2026-08-21** — `isomorphic-dompurify` is listed in this file's tech stack
+  but is NOT installed; only browser-only `dompurify` is. → Check package.json
+  before importing anything from the stack list.
 

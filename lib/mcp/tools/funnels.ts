@@ -1032,6 +1032,18 @@ export function registerFunnelTools(server: McpServer) {
     return json(data);
   });
 
+  server.tool('list_funnel_logos', 'List the company\'s uploaded platform logos. Pass a logo\'s url as the `platform` argument on a step or shape to badge that node with it. Uploading is done in the app UI, not over MCP.', {
+    companyId: z.string().optional().describe('Super admin only: target a different company'),
+  }, async (args, extra) => {
+    const auth = getAuth(extra, args.companyId); if (!auth) return unauthorized();
+    const sb = createServiceClient();
+    const { data, error } = await sb.from('funnel_custom_logos')
+      .select('id, name, url').eq('company_id', auth.companyId)
+      .order('created_at', { ascending: false });
+    if (error) return txt(`Failed: ${error.message}`);
+    return json(data || []);
+  });
+
   server.tool('delete_funnel_role', 'Delete a role label. Nodes using it keep their place and simply lose the owner marker.', {
     roleId: z.string(),
     companyId: z.string().optional().describe('Super admin only: target a different company'),

@@ -107,12 +107,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
       } satisfies ShapeNodeData,
     }));
 
-    setNodes((prev) => {
-      const groupNodes = prev.filter((n) => n.type === 'group');
-      const parentMap = new Map<string, { parentId: string; extent: string }>();
-      for (const n of prev) {
-        if (n.parentId) parentMap.set(n.id, { parentId: n.parentId, extent: n.extent as string });
-      }
+    setNodes(() => {
       // "View as": fade nodes not owned by the selected role. Applied here on
       // the node object rather than inside each node component, so one rule
       // covers steps, shapes, notes and sections alike. Nodes fade rather than
@@ -121,15 +116,6 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
         viewAsRoleId && roleId !== viewAsRoleId ? 0.25 : 1;
 
       const newNodes = [...sectionNodes, ...stepNodes, ...noteNodes, ...shapeNodes].map((n) => {
-        const group = parentMap.get(n.id);
-        if (group) {
-          const parent = groupNodes.find((g) => g.id === group.parentId);
-          if (parent) {
-            return { ...n, parentId: group.parentId, extent: group.extent as 'parent' };
-          }
-        }
-        return n;
-      }).map((n) => {
         if (!viewAsRoleId) return n;
         // Sections and notes carry no owner, so they stay at full strength.
         if (n.type === 'section' || n.type === 'stickyNote') return n;
@@ -138,7 +124,7 @@ export function useFunnelBoard(flowByEdge?: Map<string, number>) {
           : (n.data as { shape?: { role_id?: string | null } }).shape?.role_id;
         return { ...n, style: { ...(n.style || {}), opacity: dimFor(source), transition: 'opacity 150ms' } };
       });
-      return [...groupNodes, ...newNodes];
+      return newNodes;
     });
   }, [steps, boardNotes, shapes, sections, tabs, viewAsRoleId, updateStep, deleteStep, updateNote, deleteNote, handleShapeContentUpdate, handleSectionRename, setNodes]);
 

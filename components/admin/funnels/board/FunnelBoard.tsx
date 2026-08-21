@@ -33,7 +33,6 @@ import { useFunnelBoardContextOrThrow } from './FunnelBoardContext';
 import { useFunnelBoardInteractions } from './useFunnelBoardInteractions';
 import { useFunnelBoardClipboard } from './useFunnelBoardClipboard';
 import BulkSelectionToolbar from '@/components/admin/shared/BulkSelectionToolbar';
-import GroupNode from '@/components/admin/shared/GroupNode';
 import SectionNode from './nodes/SectionNode';
 import SectionSideDrawer from './SectionSideDrawer';
 import ViewAsRoleMenu from './ViewAsRoleMenu';
@@ -42,7 +41,6 @@ const nodeTypes: NodeTypes = {
   funnelStep: FunnelStepNode,
   stickyNote: StickyNoteNode,
   shape: ShapeNode,
-  group: GroupNode,
   section: SectionNode,
 };
 const edgeTypes: EdgeTypes = { labeled: LabeledEdge };
@@ -89,7 +87,7 @@ function FunnelBoardInner() {
   const clipboard = useFunnelBoardClipboard(viewportCentre);
 
   const minimapNodeColor = useCallback((node: Node) => {
-    if (node.type === 'group') return 'rgba(1,124,135,0.08)';
+    if (node.type === 'section') return 'rgba(1,124,135,0.08)';
     if (node.type === 'stickyNote') {
       const note = (node.data as Record<string, unknown>)?.note as { color?: string } | undefined;
       return note?.color || '#FDE68A';

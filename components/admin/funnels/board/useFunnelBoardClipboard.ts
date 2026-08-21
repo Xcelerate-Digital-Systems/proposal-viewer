@@ -7,7 +7,7 @@ import type { FunnelStep, FunnelStepType } from '@/lib/supabase';
 import type { NewShape } from './FunnelBoardContext';
 import { alignNodesCentre, distributeNodes, autoLayout } from '@/components/admin/shared/board-utils';
 import { visualCentre } from './funnel-board-config';
-import { nextGroupColor, type GroupNodeData } from '@/components/admin/shared/GroupNode';
+import { nodeInSection } from '@/lib/types/funnel';
 import { useToast } from '@/components/ui/Toast';
 
 type ClipboardEntry =
@@ -91,31 +91,7 @@ export function useFunnelBoardClipboard(
 
   const deleteSelected = useCallback(async () => {
     const selected = rf.getNodes().filter((n) => n.selected);
-    const groupIds = new Set(selected.filter((n) => n.type === 'group').map((n) => n.id));
-    if (groupIds.size > 0) {
-      rf.setNodes((nds) => {
-        const groups = new Map<string, Node>();
-        for (const n of nds) {
-          if (groupIds.has(n.id)) groups.set(n.id, n);
-        }
-        return nds
-          .filter((n) => !groupIds.has(n.id))
-          .map((n) => {
-            if (n.parentId && groupIds.has(n.parentId)) {
-              const parent = groups.get(n.parentId);
-              return {
-                ...n,
-                parentId: undefined,
-                extent: undefined,
-                position: { x: n.position.x + (parent?.position.x ?? 0), y: n.position.y + (parent?.position.y ?? 0) },
-              };
-            }
-            return n;
-          });
-      });
-    }
     for (const node of selected) {
-      if (node.type === 'group') continue;
       if (node.id.startsWith('note-'))       await ctx.deleteNote(node.id.slice(5));
       else if (node.id.startsWith('shape-')) await ctx.deleteShape(node.id.slice(6));
       else if (node.id.startsWith('step-'))  await ctx.deleteStep(node.id.slice(5));
@@ -207,12 +183,23 @@ export function useFunnelBoardClipboard(
     }
   }, [ctx, viewportCentre]);
 
-  /* ─── Group / ungroup ─── */
+  /* ─── Group / ungroup ───
+   *
+   *  These used to build a React Flow `group` node that was never persisted:
+   *  it vanished on reload and never rendered for clients. They now create and
+   *  remove real board sections, so grouping is just the "draw a section
+   *  around what I've selected" shortcut for the section feature.
+   *
+   *  Nothing is reparented — section membership is positional, so the nodes
+   *  keep their absolute coordinates and simply end up inside the new bounds.
+   */
 
-  const GROUP_PAD = 30;
+  const GROUP_PAD = 40;
 
-  const groupSelected = useCallback(() => {
-    const selected = rf.getNodes().filter((n) => n.selected && n.type !== 'group');
+  const groupSelected = useCallback(async () => {
+    const selected = rf.getNodes().filter(
+      (n) => n.selected && n.type !== 'section'
+    );
     if (selected.length < 2) return;
 
     const xs = selected.map((n) => n.position.x);
@@ -223,71 +210,52 @@ export function useFunnelBoardClipboard(
     const minX = Math.min(...xs) - GROUP_PAD;
     const minY = Math.min(...ys) - GROUP_PAD;
     const maxX = Math.max(...xs.map((x, i) => x + ws[i])) + GROUP_PAD;
-    const maxY = Math.max(...ys.map((y, i) => y + hs[i])) + GROUP_PAD;
+    // Extra bottom padding: measured height covers the node frame but not the
+    // description card or nav pill that can hang below it.
+    const maxY = Math.max(...ys.map((y, i) => y + hs[i])) + GROUP_PAD * 1.5;
 
-    const groupId = `group-${Date.now()}`;
-    const color = nextGroupColor();
-
-    const groupNode: Node = {
-      id: groupId,
-      type: 'group',
-      position: { x: minX, y: minY },
-      style: { width: maxX - minX, height: maxY - minY },
-      data: { label: 'Group', color } satisfies GroupNodeData,
-    };
-
-    rf.setNodes((nds) => {
-      const reparented = nds.map((n) => {
-        if (!n.selected || n.type === 'group') return n;
-        return {
-          ...n,
-          parentId: groupId,
-          extent: 'parent' as const,
-          position: { x: n.position.x - minX, y: n.position.y - minY },
-          selected: false,
-        };
-      });
-      return [groupNode, ...reparented];
+    await ctx.createSection({
+      label: 'Section',
+      color: 'teal',
+      x: Math.round(minX),
+      y: Math.round(minY),
+      width: Math.round(maxX - minX),
+      height: Math.round(maxY - minY),
     });
-  }, [rf]);
+  }, [rf, ctx]);
 
-  const ungroupSelected = useCallback(() => {
+  /** Removes the section(s) around the current selection — either a directly
+   *  selected section, or the ones the selected nodes sit inside. The nodes
+   *  themselves stay exactly where they are. */
+  const ungroupSelected = useCallback(async () => {
     const selected = rf.getNodes().filter((n) => n.selected);
-    const groupIds = new Set(selected.filter((n) => n.type === 'group').map((n) => n.id));
-    if (groupIds.size === 0) {
-      const parentIds = new Set(selected.map((n) => n.parentId).filter(Boolean) as string[]);
-      parentIds.forEach((id) => groupIds.add(id));
+    if (selected.length === 0) return;
+
+    const targets = new Set<string>();
+
+    for (const n of selected) {
+      if (n.id.startsWith('section-')) targets.add(n.id.slice(8));
     }
-    if (groupIds.size === 0) return;
 
-    rf.setNodes((nds) => {
-      const groups = new Map<string, Node>();
-      for (const n of nds) {
-        if (groupIds.has(n.id) && n.type === 'group') groups.set(n.id, n);
+    if (targets.size === 0) {
+      const nodes = selected.filter((n) => !n.id.startsWith('section-'));
+      for (const sec of ctx.sections) {
+        if (nodes.some((n) => nodeInSection(n.position, sec))) targets.add(sec.id);
       }
-      return nds
-        .filter((n) => !groupIds.has(n.id))
-        .map((n) => {
-          if (n.parentId && groupIds.has(n.parentId)) {
-            const parent = groups.get(n.parentId);
-            const px = parent?.position.x ?? 0;
-            const py = parent?.position.y ?? 0;
-            return {
-              ...n,
-              parentId: undefined,
-              extent: undefined,
-              position: { x: n.position.x + px, y: n.position.y + py },
-            };
-          }
-          return n;
-        });
-    });
-  }, [rf]);
+    }
 
+    for (const id of Array.from(targets)) await ctx.deleteSection(id);
+  }, [rf, ctx]);
+
+  /** Whether Ungroup would do anything: a section is selected, or the
+   *  selection sits inside one. */
   const hasGroupInSelection = useCallback(() => {
     const selected = rf.getNodes().filter((n) => n.selected);
-    return selected.some((n) => n.type === 'group' || n.parentId);
-  }, [rf]);
+    if (selected.some((n) => n.id.startsWith('section-'))) return true;
+    return ctx.sections.some((sec) =>
+      selected.some((n) => !n.id.startsWith('section-') && nodeInSection(n.position, sec))
+    );
+  }, [rf, ctx]);
 
   /* ─── Keyboard: pan, Cmd-Z/Y undo+redo, Cmd-C/V copy+paste, Cmd-D duplicate ─── */
 
